@@ -37,6 +37,11 @@
 body { background: var(--paper); color: var(--ink); font: 15px/1.45 var(--f-body); }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
 button, input, select, textarea { font: inherit; color: inherit; }
+/* Drop-down lists: the open menu draws its own panel, so give it a solid themed background and full-strength text. */
+select { color: var(--ink); background-color: transparent; accent-color: var(--brass); }
+select option, select optgroup { background-color: var(--menu-bg, var(--card)); color: var(--menu-ink, var(--ink)); }
+select option:checked { background-color: var(--brass); color: var(--brass-ink); }
+select:disabled { color: var(--ink-3); }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 .wrap { overflow-x: clip; max-width: 1180px; margin: 0 auto; padding-block: 14px 64px;
@@ -160,6 +165,9 @@ button { cursor: pointer; }
 .karma .big { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .stat { background: var(--sunk); padding: 8px 10px; display: grid; }
 .stat b { font: 600 26px/1.1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.stat.editing { box-shadow: inset 0 0 0 1.5px var(--brass); }
+.statin { width: 100%; min-width: 0; border: 0; border-bottom: 1.5px dashed var(--brass); background: transparent; color: var(--ink); padding: 0; font: 600 26px/1.1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.statin:focus { outline: none; border-bottom-style: solid; }
 .stat span { font: 600 11px/1.2 var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
 .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1.5px solid var(--rule); }
 .seg button { border: 0; background: transparent; padding: 6px 4px; font: 600 12px/1.2 var(--f-head); letter-spacing: .08em; text-transform: uppercase; }
@@ -320,11 +328,33 @@ td.num, th.num { text-align: right; }
 .loadbar span:nth-child(5) { background: color-mix(in srgb, var(--blood-soft) 50%, var(--bad)); border-right: 0; }
 .loadbar .needle { position: absolute; top: -5px; bottom: -5px; width: 3px; background: var(--rule); transition: left .2s; }
 .loadscale { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr 1fr; font: 12px var(--f-mono); color: var(--ink-3); }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 14px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 14px; align-items: start; }
 .wcard { background: var(--card); border: 1.5px solid var(--hair); padding: 12px; display: grid; gap: 8px; min-width: 0; }
 .wcard.worn { border-color: var(--rule); box-shadow: inset 4px 0 0 var(--brass); }
 .wcard .title { display: flex; gap: 8px; align-items: center; }
 .wcard .title input { font: 700 17px var(--f-head); letter-spacing: .03em; border: 0; border-bottom: 1.5px solid var(--hair); background: transparent; flex: 1; min-width: 0; }
+/* weapon cards: editing vs finished */
+.wcard.editing { border-style: dashed; border-color: var(--brass); }
+.wcard.editing .title .flag { background: var(--brass-soft); color: var(--brass); }
+.wgroup { display: grid; gap: 4px; }
+.wgroup > .lbl { font-size: 10.5px; border-bottom: 1px solid var(--hair); padding-bottom: 2px; }
+.wnote { margin: 0; font-size: 12.5px; }
+.wcard.final { gap: 10px; padding: 12px 14px; }
+.wcard.final .title { align-items: center; }
+.wcard.final .wname { flex: 1; min-width: 0; font: 700 18px var(--f-head); letter-spacing: .03em; text-transform: uppercase; overflow-wrap: anywhere; }
+.wcard.final.kind-ranged { box-shadow: inset 4px 0 0 var(--life); } .wcard.final.kind-melee { box-shadow: inset 4px 0 0 var(--blood); } .wcard.final.kind-shield { box-shadow: inset 4px 0 0 var(--ink-2); }
+.wsub { margin-top: -6px; font-size: 12.5px; color: var(--ink-3); }
+.wstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 0; border-top: 2px solid var(--rule); border-bottom: 1px solid var(--hair); }
+.wstats > div { display: grid; gap: 1px; padding: 6px 8px 6px 0; }
+.wstats span { font: 600 10.5px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.wstats b { font: 600 16px var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wdur { display: grid; gap: 6px; }
+.wdur .row { flex-wrap: nowrap; }
+.durin { width: 72px !important; text-align: center; font-family: var(--f-mono); border: 1.5px solid var(--hair) !important; padding: 3px 4px !important; }
+.wprops { margin: 0; font-size: 13.5px; color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+/* growing text boxes */
+.autotext { display: block; width: 100%; min-width: 0; resize: none; overflow: hidden; border: 0; border-bottom: 1.5px solid var(--hair); background: transparent; padding: 3px 0; line-height: 1.4; font-family: var(--f-body); font-size: 14px; }
+.autotext:focus { outline: none; border-bottom-color: var(--brass); }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px 10px; }
 .mini { display: grid; gap: 1px; min-width: 0; }
 .mini label { font: 600 10.5px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
@@ -682,7 +712,8 @@ td.num, th.num { text-align: right; }
 .gx-custom input { width: 34px; height: 28px; padding: 0; border: 1.5px solid var(--hair); background: none; }
 
 /* fate: dice */
-.gx-tray { display: flex; justify-content: center; align-items: center; gap: 18px; min-height: 150px; flex-wrap: wrap; }
+.gx-tray { display: grid; justify-items: center; align-content: center; gap: 10px; min-height: 190px; }
+.gx-dice { display: flex; justify-content: center; align-items: center; gap: 18px; }
 .d8 { width: 76px; height: 86px; position: relative; display: grid; place-items: center; transition: opacity .3s, filter .3s, transform .3s; }
 .d8::before { content: ""; position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 38%, 100% 62%, 50% 100%, 0 62%, 0 38%);
   background: linear-gradient(160deg, color-mix(in srgb, var(--brass) 55%, #fff) 0%, var(--brass) 45%, color-mix(in srgb, var(--brass) 55%, #000) 100%); }
@@ -693,7 +724,7 @@ td.num, th.num { text-align: right; }
 @keyframes tumble { 0% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-14px) rotate(25deg); } 50% { transform: translateY(0) rotate(-12deg) scale(.95); } 75% { transform: translateY(-8px) rotate(-30deg); } 100% { transform: translateY(0) rotate(0); } }
 .d8.low { opacity: .3; filter: grayscale(1); transform: scale(.86); }
 .d8.low span::after { content: ""; position: absolute; left: -6px; right: -6px; top: 50%; height: 3px; background: var(--bad); transform: rotate(-20deg); }
-.gx-sum { min-width: 110px; display: grid; justify-items: center; opacity: 0; transform: scale(.6); transition: opacity .25s, transform .35s cubic-bezier(.2, 1.6, .4, 1); }
+.gx-sum { min-height: 72px; display: grid; justify-items: center; align-content: start; opacity: 0; transform: scale(.6); transition: opacity .25s, transform .35s cubic-bezier(.2, 1.6, .4, 1); }
 .gx-sum.show { opacity: 1; transform: none; }
 .gx-sum b { font: 700 58px/1 var(--f-mono); }
 .gx-sum b.hi { color: var(--brass); text-shadow: 0 0 22px color-mix(in srgb, var(--brass) 60%, transparent); }
@@ -752,7 +783,7 @@ td.num, th.num { text-align: right; }
   .gx-two, .gx-sets { grid-template-columns: minmax(0, 1fr); }
   .gx-facegrid { grid-template-columns: minmax(0, 1fr); }
   .gx-sigils { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .d8 { width: 60px; height: 68px; } .d8 span { font-size: 24px; } .gx-tray { gap: 10px; min-height: 120px; } .gx-sum b { font-size: 46px; }
+  .d8 { width: 60px; height: 68px; } .d8 span { font-size: 24px; } .gx-dice { gap: 12px; } .gx-tray { min-height: 160px; } .gx-sum b { font-size: 46px; } .gx-sum { min-height: 62px; }
   .gx-slots { gap: 4px; } .gx-slot b { font-size: 19px; }
   .gx-attr { grid-template-columns: minmax(0, 1fr) 96px; padding: 10px; } .gx-an small { font-size: 12px; }
   .gx-chip { width: 46px; height: 46px; font-size: 19px; }
@@ -879,7 +910,7 @@ td.num, th.num { text-align: right; }
   --seal: #0a0b18; --seal-2: #2a2d4a; --blood: #ff6b81; --blood-soft: rgb(255 107 129 / .2); --tox: #6ff0a6; --tox-soft: rgb(111 240 166 / .18);
   --hunger: #ffd166; --hunger-soft: rgb(255 209 102 / .18); --life: #6fd3ff; --life-soft: rgb(111 211 255 / .18); --warn: #ffd166; --bad: #ff6b81; --good: #6ff0a6;
   --f-display: "Inter", -apple-system, system-ui, sans-serif; --f-head: "Inter", -apple-system, system-ui, sans-serif; --f-body: "Inter", -apple-system, system-ui, sans-serif; --f-mono: "Inter", -apple-system, system-ui, sans-serif;
-  --glass: blur(28px) saturate(170%);
+  --glass: blur(28px) saturate(170%); --menu-bg: #1d2040; --menu-ink: #f6f7ff;
   color-scheme: dark;
 }
 [data-skin="glass"] body { background: radial-gradient(1100px 760px at 8% -8%, #5865ff 0, transparent 62%), radial-gradient(900px 700px at 105% 12%, #ff5fa8 0, transparent 58%),
@@ -1266,6 +1297,10 @@ const CW = (() => {
     ["Stringed", "DEX"], ["Throwing", "DEX"], ["Finesse", "DEX"], ["Heavy", "DEX"],
   ];
   const WEAPON_ATTR = Object.fromEntries(WEAPON_TYPES);
+  // Rulebook: every ranged weapon has a Clip, an optimal and maximum range and a reload cost; melee weapons reach 2 m.
+  const RANGED_WEAPONS = ["Rifles", "Pistols", "Sniper Rifles", "Shotguns", "Explosives", "Stringed", "Throwing", "Heavy"];
+  // A shield is picked from the same weapon skill list ("Shield"); older sheets marked it with a checkbox.
+  const weaponKind = w => (w.shield || w.skill === "Shield" ? "shield" : RANGED_WEAPONS.includes(w.skill) ? "ranged" : "melee");
 
   // [name, attribute, connected primary skill, primary level that grants proficiency, karma cost of levels 1/2/3]
   const SECONDARY = [
@@ -1564,7 +1599,7 @@ const CW = (() => {
     let setsUsed = 0;
     c.weapons.forEach(w => {
       if (w.where === "stash") return;
-      if (w.shield) { load += 4; lines.push([w.name || "Shield", 4]); return; }
+      if (w.shield || w.skill === "Shield") { load += 4; lines.push([w.name || "Shield", 4]); return; }
       const slots = num(w.hands) === 2 ? 1 : 0.5;
       if (w.where !== "pack" && setsUsed + slots <= freeSets) { setsUsed += slots; return; }
       const u = SIZES[w.size] || 2; load += u; lines.push([w.name || "Weapon", u]);
@@ -1666,7 +1701,7 @@ const CW = (() => {
     return n;
   }
 
-  return { ATTRS, ATTR_NAME, SKILL_GROUPS, SKILLS, CASTING, WEAPON_TYPES, WEAPON_ATTR, SECONDARY, SECONDARY_BY_NAME, SIZES, ITEM_SIZES, ITEM_SIZE, PROSTHETIC_TYPES, ARMOR,
+  return { ATTRS, ATTR_NAME, SKILL_GROUPS, SKILLS, CASTING, WEAPON_TYPES, WEAPON_ATTR, RANGED_WEAPONS, weaponKind, SECONDARY, SECONDARY_BY_NAME, SIZES, ITEM_SIZES, ITEM_SIZE, PROSTHETIC_TYPES, ARMOR,
            ENCUMBRANCE, WOUNDS, EXHAUSTION, LEVELS, clamp, num, tri, karmaBetween, levelDelta, blankCharacter, normalize,
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
@@ -1924,6 +1959,14 @@ function Pips({ value, max = 10, cap = max, onSet, label, big, tipFor }) {
   }
   return html`<span class=${"pips" + (big ? " big" : "")} role="group" aria-label=${label}>${out}</span>`;
 }
+// A text box that grows with what's typed, instead of a single line that scrolls sideways.
+function AutoText({ id, value, onInput, placeholder, label, cls = "" }) {
+  const ref = useRef();
+  const fit = () => { const el = ref.current; if (!el) return; el.style.height = "auto"; el.style.height = el.scrollHeight + 2 + "px"; };
+  useEffect(fit, [value]);
+  useEffect(() => { window.addEventListener("resize", fit); return () => window.removeEventListener("resize", fit); }, []);
+  return html`<textarea ref=${ref} id=${id} rows="1" class=${"autotext " + cls} aria-label=${label} placeholder=${placeholder} value=${value ?? ""} onInput=${e => { onInput(e.target.value); fit(); }}></textarea>`;
+}
 function Field({ id, label, value, onInput, type = "text", list, placeholder }) {
   return html`<div class="field"><label for=${id}>${label}</label>
     <input id=${id} type=${type} value=${value ?? ""} list=${list} placeholder=${placeholder} onInput=${e => onInput(e.target.value)} /></div>`;
@@ -2072,9 +2115,8 @@ function App() {
           <p>${gm ? "Each player's sheet lives here: attributes, skills, Karma, vitals and gear, with the rulebook math done for you. Send any character onto your Tabletop Simulator sheet with one code."
             : "You don't have a character here yet. Roll one up below, or ask your GM to hand you an existing one."}</p>
           <div class="row"><button class="btn primary" onClick=${startNew}>Create a character</button></div>
-          <p class="muted">Walk through creation step by step, or let the dice decide everything at once.</p></div>`}`}
-    ${making === "choose" && html`<${NewChoice} gm=${gm} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")}
-      onAuto=${() => { setMaking(null); create(true); }} onBlank=${() => { setMaking(null); create(false); }} />`}
+          <p class="muted">Walk through creation step by step, or start from a blank sheet.</p></div>`}`}
+    ${making === "choose" && html`<${NewChoice} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")} onBlank=${() => { setMaking(null); create(false); }} />`}
     ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
     <${Toaster} /><${HoverCard} />
   </div>`;
@@ -2164,6 +2206,14 @@ const TAB_ICONS = {
   gear: html`<path d="M4 7.5h12v9.5H4z M7 7.5V5a3 3 0 0 1 6 0v2.5 M4 11h12" />`,
   table: html`<path d="M10 2.5l6.5 3.75v7.5L10 17.5l-6.5-3.75v-7.5z M10 10l6.5-3.75 M10 10L3.5 6.25 M10 10v7.5" />`,
 };
+// A number that can be typed over in Free edit. It saves when you leave the box or press Enter, not on every keystroke.
+function StatEdit({ id, value, label, onCommit }) {
+  const [v, setV] = useState(String(value));
+  useEffect(() => setV(String(value)), [value]);
+  const commit = () => { const n = Math.max(0, Math.floor(+v || 0)); if (n !== value) onCommit(n); else setV(String(value)); };
+  return html`<input id=${id} class="statin" type="number" min="0" inputmode="numeric" aria-label=${label} value=${v}
+    onInput=${e => setV(e.target.value)} onBlur=${commit} onKeyDown=${e => { if (e.key === "Enter") e.target.blur(); }} />`;
+}
 function Header({ c, d, update, mode, setMode, canFree }) {
   const fileRef = useRef(); const [busy, setBusy] = useState(false); const [award, setAward] = useState("");
   const upload = async e => {
@@ -2201,7 +2251,9 @@ function Header({ c, d, update, mode, setMode, canFree }) {
     </div>
     <div class="karmawrap"><div class="panel karma">
       <div class="h" style="margin:0">Karma</div>
-      <div class="big"><div class="stat"><b>${num(c.karma)}</b><span>Unspent</span></div><div class="stat"><b>${num(c.pool)}</b><span>Pool · earned</span></div></div>
+      <div class="big">${[["karma", "Unspent"], ["pool", "Pool · earned"]].map(([k, label]) => html`<div class=${"stat" + (mode === "build" ? " editing" : "")}>
+        ${mode === "build" ? html`<${StatEdit} id=${id(k)} value=${num(c[k])} label=${label} onCommit=${v => update(x => { addLog(x, `Free edit: ${label.split(" ")[0]} ${num(x[k])} → ${v}`); x[k] = v; })} />` : html`<b>${num(c[k])}</b>`}
+        <span>${label}</span></div>`)}</div>
       <div class="row"><input class="inp" style="width:70px" type="number" min="1" aria-label="Karma to award" placeholder="+0" value=${award} onInput=${e => setAward(e.target.value)} />
         <button class="btn small" disabled=${!(+award > 0)} onClick=${() => { const n = Math.floor(+award); update(x => { x.karma = num(x.karma) + n; x.pool = num(x.pool) + n; addLog(x, `Awarded ${n} Karma`); }); setAward(""); }}>Award</button>
         <span class="muted">Spent ${d.karma.total}</span></div>
@@ -2210,7 +2262,7 @@ function Header({ c, d, update, mode, setMode, canFree }) {
       ${canFree && html`<div class="seg" role="group" aria-label="Editing mode">
         <button aria-pressed=${mode === "karma"} onClick=${() => setMode("karma")}>Spend Karma</button>
         <button aria-pressed=${mode === "build"} onClick=${() => setMode("build")}>Free edit</button></div>`}
-      <div class="muted">${mode === "karma" ? html`<${Mouse} side="L" /> Left-click raises and spends Karma. <${Mouse} side="R" /> Right-click lowers and refunds it.` : "Changes cost no Karma. The pool grows or shrinks to match, so it always equals unspent + spent."}</div>
+      <div class="muted">${mode === "karma" ? html`<${Mouse} side="L" /> Left-click raises and spends Karma. <${Mouse} side="R" /> Right-click lowers and refunds it.` : "Changes cost no Karma. The pool grows or shrinks to match, so it always equals unspent + spent. You can also type over Unspent and the pool."}</div>
       ${Store.table && isGM() && html`<label class="row freeallow"><input type="checkbox" checked=${!!c.freeEdit} onChange=${e => update(x => { x.freeEdit = e.target.checked; addLog(x, e.target.checked ? "GM allowed Free edit" : "GM turned off Free edit"); })} />Player may use Free edit</label>`}
     </div></div>
   </section>`;
@@ -2510,11 +2562,10 @@ function GearTab({ c, d, update }) {
   // needle position: 3 fifths of the bar cover 0→3×unit, then one fifth per tier
   const pos = (() => { const L = e.load, u = e.unit || 1; if (L <= 3 * u) return (L / (3 * u)) * 60; const extra = Math.min(4, (L - 3 * u) / u); return 60 + extra * 10; })();
   const addItem = () => update(x => { x.items.push({ id: rid(), name: "", qty: 1, size: "small" }); });
-  const addWeapon = () => update(x => { x.weapons.push({ id: rid(), name: "", skill: "Slashing", hands: 1, size: "medium", damage: 6, crit: 5, accuracy: 0, dur: 100, durMax: 100, durDie: "d10", clip: 0, clipMax: 0, range: "", props: "", where: "set" }); });
+  const addWeapon = () => update(x => { x.weapons.push({ id: rid(), name: "", skill: "Slashing", hands: 1, size: "medium", damage: 6, crit: 5, accuracy: 0, dur: 100, durMax: 100, durDie: "d10", clip: 0, clipMax: 0, rangeOpt: 0, rangeMax: 0, reload: 0, props: "", where: "set", final: false }); });
   const addArmor = () => update(x => { x.armor.push({ id: rid(), name: "", type: "light", av: 2, soak: 30, soakMax: 30, worn: !x.armor.some(a => a.worn), where: "set" }); });
   const addProsthetic = () => update(x => { x.prosthetics.push({ id: rid(), name: "", type: R.PROSTHETIC_TYPES[0], props: "" }); });
   const it = (i, k) => v => update(x => { x.items[i][k] = v; });
-  const wp = (i, k) => v => update(x => { x.weapons[i][k] = v; });
   const ar = (i, k) => v => update(x => { x.armor[i][k] = v; });
   const pr = (i, k) => v => update(x => { x.prosthetics[i][k] = v; });
   const ef = e.effective;
@@ -2555,37 +2606,13 @@ function GearTab({ c, d, update }) {
         <tbody>${c.prosthetics.map((x, i) => html`<tr>
           <td><input class="inp" aria-label="Prosthetic name" placeholder="Brass forearm" value=${x.name} onInput=${ev => pr(i, "name")(ev.target.value)} /></td>
           <td><select class="inp" aria-label="Type" value=${x.type} onChange=${ev => pr(i, "type")(ev.target.value)}>${R.PROSTHETIC_TYPES.map(t => html`<option>${t}</option>`)}</select></td>
-          <td class="wide"><input class="inp" aria-label="Unique properties" placeholder="Hidden blade; grip strength +2" value=${x.props} onInput=${ev => pr(i, "props")(ev.target.value)} /></td>
+          <td class="wide"><${AutoText} cls="inp" label="Unique properties" placeholder="Hidden blade; grip strength +2" value=${x.props} onInput=${pr(i, "props")} /></td>
           <td><button class="iconbtn" aria-label=${`Remove ${x.name || "prosthetic"}`} onClick=${() => update(y => { y.prosthetics.splice(i, 1); })}>×</button></td></tr>`)}</tbody></table></div>`}
       <div class="row" style="margin-top:10px"><button class="btn" onClick=${addProsthetic}>+ Add prosthetic</button></div>
     </section>
 
     <section class="frame"><${Sigils} seed="weapons" n=${1} side="l" /><h2 class="h"><span>Weapons</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Two one-handed or one two-handed set ride free${e.freeSets > 2 ? ", plus a third from Strong Back" : ""}. Shields always count as large.</p>
-      <div class="cards">${c.weapons.map((w, i) => { const wl = R.weaponLine(c, w);
-        return html`<div class="wcard">
-          <div class="title"><input aria-label="Weapon name" placeholder="Weapon name" value=${w.name} onInput=${ev => wp(i, "name")(ev.target.value)} />
-            <span class="flag brass">${w.shield ? "Shield" : wl.proficiency}</span></div>
-          <div class="grid2">
-            <div class="mini"><label for=${"ws-" + w.id}>Skill</label><select id=${"ws-" + w.id} value=${w.skill} onChange=${ev => wp(i, "skill")(ev.target.value)}>${R.WEAPON_TYPES.map(([t]) => html`<option>${t}</option>`)}</select></div>
-            <div class="mini"><label for=${"wh-" + w.id}>Hands</label><select id=${"wh-" + w.id} value=${w.hands} onChange=${ev => wp(i, "hands")(+ev.target.value)}><option value="1">One</option><option value="2">Two</option></select></div>
-            <div class="mini"><label for=${"wz-" + w.id}>Size</label><select id=${"wz-" + w.id} value=${w.size} onChange=${ev => wp(i, "size")(ev.target.value)}>${Object.keys(R.SIZES).map(s => html`<option>${s}</option>`)}</select></div>
-            <div class="mini"><label for=${"ww-" + w.id}>Carried</label><select id=${"ww-" + w.id} value=${w.where || "set"} onChange=${ev => wp(i, "where")(ev.target.value)}><option value="set">In a set</option><option value="pack">In the pack</option><option value="stash">Stashed</option></select></div>
-            <${Mini} id=${"wd-" + w.id} label="Damage" value=${w.damage} onInput=${wp(i, "damage")} />
-            <${Mini} id=${"wc-" + w.id} label="Crit %" value=${w.crit} onInput=${wp(i, "crit")} />
-            <${Mini} id=${"wa-" + w.id} label="Accuracy ±" value=${w.accuracy} onInput=${wp(i, "accuracy")} />
-            <${Mini} id=${"wdu-" + w.id} label="Durability" value=${w.dur} onInput=${wp(i, "dur")} />
-            <${Mini} id=${"wdm-" + w.id} label="Dur. max" value=${w.durMax} onInput=${wp(i, "durMax")} />
-            <${Mini} id=${"wdd-" + w.id} label="Dur. die" type="text" value=${w.durDie} onInput=${wp(i, "durDie")} />
-            <${Mini} id=${"wcl-" + w.id} label="Clip" value=${w.clip} onInput=${wp(i, "clip")} />
-            <${Mini} id=${"wcm-" + w.id} label="Clip size" value=${w.clipMax} onInput=${wp(i, "clipMax")} />
-          </div>
-          <div class="mini"><label for=${"wp-" + w.id}>Properties and flaws</label><input id=${"wp-" + w.id} style="font-family:var(--f-body)" placeholder="Fast, Penetrating (2), Brittle (3)…" value=${w.props} onInput=${ev => wp(i, "props")(ev.target.value)} /></div>
-          <div class="calc">Accuracy +${wl.accuracy}% · crit ${wl.crit}% · ${num(w.clipMax) ? `clip ${num(w.clip)}/${num(w.clipMax)}` : "melee"}${num(w.durMax) && num(w.dur) <= 0 ? " · broken: gains a flaw" : ""}</div>
-          <div class="row" style="justify-content:space-between">
-            <span class="row"><button class="btn small" disabled=${!num(w.clipMax) || !num(w.clip)} onClick=${() => update(x => { x.weapons[i].clip = num(x.weapons[i].clip) - 1; })}>Fire</button>
-              <button class="btn small" disabled=${!num(w.clipMax)} onClick=${() => update(x => { x.weapons[i].clip = num(x.weapons[i].clipMax); })}>Reload</button>
-              <label class="muted row" style="gap:4px"><input type="checkbox" checked=${!!w.shield} onChange=${ev => wp(i, "shield")(ev.target.checked)} />Shield</label></span>
-            <button class="btn small danger" onClick=${() => update(x => { x.weapons.splice(i, 1); })}>Remove</button></div></div>`; })}
+      <div class="cards">${c.weapons.map((w, i) => html`<${WeaponCard} key=${w.id} c=${c} w=${w} i=${i} update=${update} />`)}
         <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addWeapon}>+ Add weapon</button></div></div>
     </section>
 
@@ -2603,6 +2630,90 @@ function GearTab({ c, d, update }) {
         <button class="btn" onClick=${() => update(x => { [["Rations", 6, "small"], ["Bandages", 10, "bundle"], ["Rope (m)", 20, "bundle"], ["Camping kit", 1, "large"]].forEach(([n, q, sz]) => x.items.push({ id: rid(), name: n, qty: q, size: sz })); })}>+ Adventuring basics</button>
         <span class="coins"><label for=${"coins-" + c.id}>Coins</label><input id=${"coins-" + c.id} class="inp" type="number" min="0" value=${c.coins} onInput=${ev => update(x => { x.coins = +ev.target.value || 0; })} /><small class="muted">100 weigh one slot</small></span></div>
     </section>
+  </div>`;
+}
+
+/* ================= weapon cards ================= */
+// A weapon is set up in edit mode, then finalised into a compact card for play where only durability changes.
+// The fields follow the weapon: melee weapons reach 2 m and have no clip; ranged weapons have a clip, ranges and
+// a reload cost (rulebook, Weapon Combat); a shield blocks with Shield Mastery and always counts as large.
+const PENCIL = html`<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+function WeaponCard({ c, w, i, update }) {
+  const kind = R.weaponKind(w), wl = R.weaponLine(c, w);
+  const set = (k, v) => update(x => { x.weapons[i][k] = v; });
+  // Picking a skill keeps the card consistent: only ranged weapons keep a clip and ranges; a shield is always large.
+  const setSkill = v => update(x => {
+    const y = x.weapons[i]; y.skill = v; y.shield = v === "Shield";
+    if (!R.RANGED_WEAPONS.includes(v)) Object.assign(y, { clip: 0, clipMax: 0, rangeOpt: 0, rangeMax: 0, reload: 0 });
+    if (y.shield) Object.assign(y, { size: "large", accuracy: 0 });
+  });
+  const clipSize = num(w.clipMax), inClip = num(w.clip);
+  const id = k => `w${k}-${w.id}`;
+  const dur = num(w.dur), durMax = num(w.durMax);
+  const reach = kind === "ranged" ? (num(w.rangeOpt) || num(w.rangeMax) ? `${num(w.rangeOpt)} / ${num(w.rangeMax)} m` : w.range || "—") : kind === "melee" ? "2 m" : "—";
+  // Weapons saved before this existed count as finished once they have a name.
+  if (w.final === true || (w.final === undefined && w.name)) return html`<div class=${"wcard final kind-" + kind}>
+    <div class="title"><b class="wname">${w.name || "Unnamed weapon"}</b>
+      <span class="flag brass">${kind === "shield" ? "Shield" : wl.proficiency}</span>
+      <button class="iconbtn" aria-label=${`Edit ${w.name || "weapon"}`} title="Edit" onClick=${() => set("final", false)}>${PENCIL}</button></div>
+    <div class="wsub">${kind === "shield" ? "Shield · blocks with Shield Mastery" : `${w.skill} · ${kind === "ranged" ? "ranged" : "melee"}`} · ${num(w.hands) === 2 ? "two-handed" : "one-handed"} · ${w.where === "pack" ? "in the pack" : w.where === "stash" ? "stashed" : "in a set"}</div>
+    <div class="wstats">
+      <div><span>Damage</span><b>${num(w.damage)}</b></div>
+      ${kind !== "shield" && html`<div><span>Crit</span><b>${wl.crit}%</b></div><div><span>Accuracy</span><b>${wl.accuracy >= 0 ? "+" : ""}${wl.accuracy}%</b></div>`}
+      <div><span>${kind === "ranged" ? "Range" : "Reach"}</span><b>${reach}</b></div>
+      ${kind === "ranged" && num(w.reload) ? html`<div><span>Reload</span><b>${num(w.reload)} AP</b></div>` : ""}
+    </div>
+    ${kind === "ranged" && html`<div class="wdur"><span class="lbl">Clip</span>
+      <div class="row"><button class="iconbtn" aria-label="Fire one" onClick=${() => set("clip", Math.max(0, inClip - 1))}>−</button>
+        <input class="inp durin" type="number" min="0" max=${clipSize || undefined} aria-label="Rounds in the clip" value=${w.clip} onInput=${ev => set("clip", ev.target.value === "" ? "" : R.clamp(+ev.target.value, 0, clipSize || 999))} />
+        <span class="muted">/ ${clipSize}</span>
+        <button class="iconbtn" aria-label="Add one" onClick=${() => set("clip", Math.min(clipSize || 999, inClip + 1))}>+</button>
+        <button class="btn small" disabled=${!clipSize || inClip >= clipSize} onClick=${() => set("clip", clipSize)}>Reload</button></div></div>`}
+    <div class="wdur">
+      <span class="lbl">Durability</span>
+      <div class="track"><i style=${`width:${durMax ? R.clamp((dur / durMax) * 100, 0, 100) : 0}%;background:${dur <= 0 ? "var(--bad)" : "var(--ink-2)"}`}></i></div>
+      <div class="row"><button class="iconbtn" aria-label="Lose 1 durability" onClick=${() => set("dur", Math.max(0, dur - 1))}>−</button>
+        <input class="inp durin" type="number" min="0" aria-label="Durability" value=${w.dur} onInput=${ev => set("dur", ev.target.value === "" ? "" : Math.max(0, +ev.target.value))} />
+        <span class="muted">/ ${durMax} · die ${w.durDie || "—"}</span>
+        <button class="iconbtn" aria-label="Restore 1 durability" onClick=${() => set("dur", Math.min(durMax || Infinity, dur + 1))}>+</button></div>
+      ${durMax > 0 && dur <= 0 && html`<span class="flag bad">Broken: gains a flaw</span>`}
+    </div>
+    ${w.props && html`<p class="wprops">${w.props}</p>`}
+  </div>`;
+  return html`<div class="wcard editing">
+    <div class="title"><input aria-label="Weapon name" placeholder=${kind === "shield" ? "Shield name" : "Weapon name"} value=${w.name} onInput=${ev => set("name", ev.target.value)} />
+      <span class="flag">Editing</span></div>
+    <div class="grid2">
+      <div class="mini"><label for=${id("s")}>Weapon skill</label><select id=${id("s")} value=${kind === "shield" ? "Shield" : w.skill} onChange=${ev => setSkill(ev.target.value)}>
+        <optgroup label="Melee">${R.WEAPON_TYPES.filter(([t]) => !R.RANGED_WEAPONS.includes(t)).map(([t]) => html`<option>${t}</option>`)}</optgroup>
+        <optgroup label="Ranged">${R.RANGED_WEAPONS.map(t => html`<option>${t}</option>`)}</optgroup>
+        <optgroup label="Other"><option>Shield</option></optgroup></select></div>
+      <div class="mini"><label for=${id("h")}>Hands</label><select id=${id("h")} value=${w.hands} onChange=${ev => set("hands", +ev.target.value)}><option value="1">One</option><option value="2">Two</option></select></div>
+      ${kind !== "shield" && html`<div class="mini"><label for=${id("z")}>Size</label><select id=${id("z")} value=${w.size} onChange=${ev => set("size", ev.target.value)}>${Object.keys(R.SIZES).map(z => html`<option value=${z}>${z[0].toUpperCase() + z.slice(1)}</option>`)}</select></div>`}
+      <div class="mini"><label for=${id("w")}>Carried</label><select id=${id("w")} value=${w.where || "set"} onChange=${ev => set("where", ev.target.value)}><option value="set">In a set</option><option value="pack">In the pack</option><option value="stash">Stashed</option></select></div>
+    </div>
+    <div class="wgroup"><span class="lbl">Combat</span><div class="grid2">
+      <${Mini} id=${id("d")} label="Damage" value=${w.damage} onInput=${v => set("damage", v)} />
+      ${kind !== "shield" && html`<${Mini} id=${id("c")} label="Crit %" value=${w.crit} onInput=${v => set("crit", v)} />
+        <${Mini} id=${id("a")} label="Accuracy ±" value=${w.accuracy} onInput=${v => set("accuracy", v)} />`}
+    </div></div>
+    ${kind === "ranged" && html`<div class="wgroup"><span class="lbl">Ranged</span><div class="grid2">
+      <${Mini} id=${id("cm")} label="Clip size" value=${w.clipMax} min="1" onInput=${v => update(x => { const y = x.weapons[i]; y.clipMax = v; if (num(y.clip) > num(v) || !num(y.clip)) y.clip = v; })} />
+      <${Mini} id=${id("ro")} label="Optimal m" value=${w.rangeOpt} onInput=${v => set("rangeOpt", v)} />
+      <${Mini} id=${id("rm")} label="Max range m" value=${w.rangeMax} onInput=${v => set("rangeMax", v)} />
+      <${Mini} id=${id("rl")} label="Reload AP" value=${w.reload} onInput=${v => set("reload", v)} />
+    </div></div>`}
+    <p class="muted wnote">${kind === "melee" ? "Melee: reaches 2 m and has no clip." : kind === "ranged" ? "Ranged: attacks between the optimal and maximum range roll with disadvantage; beyond the maximum they miss." : "Shield: blocks with Shield Mastery and always counts as a large item."}</p>
+    <div class="wgroup"><span class="lbl">Durability</span><div class="grid2">
+      <${Mini} id=${id("du")} label="Current" value=${w.dur} onInput=${v => set("dur", v)} />
+      <${Mini} id=${id("dm")} label="Maximum" value=${w.durMax} onInput=${v => set("durMax", v)} />
+      <${Mini} id=${id("dd")} label="Die" type="text" value=${w.durDie} onInput=${v => set("durDie", v)} />
+    </div></div>
+    <div class="mini"><label for=${id("p")}>Properties and flaws</label>
+      <${AutoText} id=${id("p")} value=${w.props} placeholder="Fast, Penetrating (2), Brittle (3)…" onInput=${v => set("props", v)} /></div>
+    <div class="row" style="justify-content:space-between">
+      <button class="btn small danger" onClick=${() => update(x => { x.weapons.splice(i, 1); })}>Remove</button>
+      <button class="btn small primary" onClick=${() => set("final", true)}>Done</button></div>
   </div>`;
 }
 
@@ -2660,7 +2771,7 @@ function TableTab({ c, update, onDelete }) {
 /* ================= character creation ================= */
 // "New character" offers two roads: a guided genesis, step by step, or an instant auto-generated sheet.
 
-function NewChoice({ gm, onClose, onGuide, onAuto, onBlank }) {
+function NewChoice({ onClose, onGuide, onBlank }) {
   useEffect(() => { const k = e => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, []);
   const draft = lsGet(GENESIS_KEY, null);
   return html`<div class="gx-veil" onClick=${e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -2672,12 +2783,11 @@ function NewChoice({ gm, onClose, onGuide, onAuto, onBlank }) {
           <i class="emblem sg-astro" aria-hidden="true"></i>
           <b>${draft ? "Continue character creation" : "Character creation"}</b>
           <span>${draft ? `Pick up ${draft.name ? draft.name + "'s" : "your"} creation where you left it.` : "Name them, give them a face, watch the dice decide their nature, then shape it yourself."}</span></button>
-        <button class="gx-road" onClick=${onAuto}>
-          <i class="emblem sg-gears" aria-hidden="true"></i>
-          <b>Auto-generate</b>
-          <span>Roll every attribute in the background and assign them straight away. Fill in the rest on the sheet.</span></button>
+        <button class="gx-road" onClick=${onBlank}>
+          <i class="emblem sg-note" aria-hidden="true"></i>
+          <b>Blank character sheet</b>
+          <span>Every attribute set to 10, nothing else filled in. For copying over an existing character or building one by hand.</span></button>
       </div>
-      ${gm && html`<button class="linkbtn gx-blank" onClick=${onBlank}>or start from a blank sheet</button>`}
     </div>
   </div>`;
 }
@@ -2811,7 +2921,7 @@ function DiceTray({ roll, rolling }) {
   }, [rolling]);
   const faces = rolling ? flick : roll ? roll.dice : [8, 8, 8];
   return html`<div class=${"gx-tray" + (rolling ? " rolling" : "")}>
-    ${faces.map((d, i) => html`<div class=${"d8" + (!rolling && roll && roll.low === i ? " low" : "") + (!roll && !rolling ? " idle" : "")} style=${`--i:${i}`}><span>${d}</span></div>`)}
+    <div class="gx-dice">${faces.map((d, i) => html`<div class=${"d8" + (!rolling && roll && roll.low === i ? " low" : "") + (!roll && !rolling ? " idle" : "")} style=${`--i:${i}`}><span>${d}</span></div>`)}</div>
     <div class=${"gx-sum" + (roll && !rolling ? " show" : "")}>${roll && !rolling ? html`<b class=${roll.total >= 15 ? "hi" : roll.total < 10 ? "lo" : ""}>${roll.total}</b>${roll.sum < 6 ? html`<small>${roll.sum}, raised to 6</small>` : html`<small>${roll.dice.filter((_, i) => i !== roll.low).join(" + ")}</small>`}` : ""}</div>
   </div>`;
 }
