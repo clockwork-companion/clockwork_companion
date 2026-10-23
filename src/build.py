@@ -59,7 +59,7 @@ def build(libs, web=False, dev=False):
     app = "\n".join(read(f) for f in ["app.js", "genesis.js", "gm.js"])
     if dev:
         head += "\n" + DEV_MARK
-    egg = ("\n" + read("egg.html") + "\n") if web else ""   # hidden mini-game (Skyward Boiler), website only
+    egg = ("\n" + read("egg.html") + "\n" + read("egg-furnace.html") + "\n") if web else ""   # hidden mini-games (Skyward Boiler, Furnace Below), website only
     return f'{head}\n<div id="app"></div>\n' + "\n".join(tags) + f"\n{backend}<script>\n{data}\n</script>\n<script>\n{app}\n</script>\n{egg}"
 
 

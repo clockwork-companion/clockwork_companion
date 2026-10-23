@@ -25,7 +25,7 @@
   };
 
   function launch() {
-    if (open) return; open = true;
+    if (open || document.getElementById("cw-doom")) return; open = true;
     const wrap = document.createElement("div"); wrap.id = "cw-egg";
     wrap.innerHTML = `<div class="box" role="dialog" aria-label="Skyward Boiler, a hidden game"><canvas width="${W}" height="${H}"></canvas><button class="x" aria-label="Close">×</button>
       <form hidden><input maxlength="16" placeholder="Your name" aria-label="Your name for the high scores" autocomplete="nickname" /><button type="submit">Save</button></form></div>`;
