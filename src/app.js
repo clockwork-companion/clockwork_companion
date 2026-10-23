@@ -454,7 +454,7 @@ function Character({ c, update, tab, setTab, onDelete }) {
   // Free edit is always there for a GM; a player gets it only when the GM switches it on for this sheet.
   const canFree = isGM() || !!c.freeEdit;
   const mode = canFree ? chosenMode : "karma";
-  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ["table", "Tabletop"]];
+  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ["craft", "Crafting"], ["table", "Tabletop"]];
   const [panel, setPanel] = useState(null);
   const [invested, setInvested] = useState(() => { const v = lsGet("cw-invested2", null); return v && typeof v === "object" ? v : { skills: false, weapons: false, sec: false }; });
   useEffect(() => lsSet("cw-invested2", invested), [invested]);
@@ -474,6 +474,7 @@ function Character({ c, update, tab, setTab, onDelete }) {
     ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
     ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
     ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
+    ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
     ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}`;
 }
 
@@ -483,6 +484,7 @@ const TAB_ICONS = {
   vitals: html`<path d="M10 16.5s-6.5-4-6.5-8.5A3.5 3.5 0 0 1 10 6a3.5 3.5 0 0 1 6.5 2c0 4.5-6.5 8.5-6.5 8.5z" />`,
   talents: html`<path d="M10 2.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.8l5-.7z" />`,
   gear: html`<path d="M4 7.5h12v9.5H4z M7 7.5V5a3 3 0 0 1 6 0v2.5 M4 11h12" />`,
+  craft: html`<path d="M3 11.5h10.5l3-3H5.5z M5.5 11.5v2.5h8v-2.5 M7.5 14v3 M11.5 14v3 M9 6.5l1-4 1.2 3.2" />`,
   table: html`<path d="M10 2.5l6.5 3.75v7.5L10 17.5l-6.5-3.75v-7.5z M10 10l6.5-3.75 M10 10L3.5 6.25 M10 10v7.5" />`,
 };
 // A number that can be typed over in Free edit. It saves when you leave the box or press Enter, not on every keystroke.
