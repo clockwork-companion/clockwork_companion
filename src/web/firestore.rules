@@ -58,5 +58,18 @@ service cloud.firestore {
     match /tables/{t}/portraits/{id} {
       allow read, write: if isMember(t);
     }
+
+    // Hidden mini-game (Skyward Boiler): one shared high-score list for every visitor.
+    // Anyone may read it and add a score; nobody can edit or delete entries from the site.
+    match /arcade/{game}/scores/{id} {
+      allow read: if game == "skyward-boiler";
+      allow create: if game == "skyward-boiler"
+                    && request.resource.data.keys().hasOnly(["name", "score", "at"])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 16
+                    && request.resource.data.score is int
+                    && request.resource.data.score > 0 && request.resource.data.score <= 9999
+                    && request.resource.data.at == request.time;
+    }
   }
 }
