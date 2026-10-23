@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Every table lives under tables/<key>, where <key> is a 64-character code made from the table password.
+    // The list of tables can't be read, so the only way into a table is to know its password.
+
+    // The marker that says a table exists: anyone may check it, and the GM creates it once.
+    match /tables/{table}/meta/{doc} {
+      allow get: if table.size() == 64;
+      allow create: if table.size() == 64 && doc == "table";
+    }
+
+    // Characters, the initiative deck and portraits: open to everyone who knows the table's key.
+    match /tables/{table}/{coll}/{doc} {
+      allow read, write: if table.size() == 64 && coll in ["characters", "encounters", "portraits"];
+    }
+  }
+}
