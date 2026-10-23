@@ -1,5 +1,8 @@
 # Clockwork Companion — website
 
+**Live site: [vansinan101.github.io/clockwork_companion](https://vansinan101.github.io/clockwork_companion/)**  
+**Dev page: [vansinan101.github.io/clockwork_companion/dev](https://vansinan101.github.io/clockwork_companion/dev/)** (test build from the Dev branch)
+
 Character sheets, Karma, vitals, gear and the GM initiative deck for *Clockwork: Tales of Steam and Magick*.
 Players sign in with a username and password. The GM sees every character and runs the initiative deck;
 players see only the characters (and companions) the GM gives them, plus any they create themselves.
@@ -47,3 +50,28 @@ players see only the characters (and companions) the GM gives them, plus any the
 - **Sign out** is at the top right.
 - Portraits are shrunk to small images and stored in the database, so no file storage (or billing) is needed.
 - To update the app later, replace `index.html` in the repository with the new version. Keep your `firebase-config.js`.
+
+## Branches and the Dev page
+- **main** is the live site. Change it only when a release is ready.
+- **Dev** is the shared test branch. Merge work into Dev to try it on the Dev page before it goes to main.
+- **SinanDev**, **BedoDev**, … are personal branches. Start them from main, and pull main into them regularly.
+
+**Pages:**
+- Live site: `https://vansinan101.github.io/clockwork_companion/`
+- Dev page: `https://vansinan101.github.io/clockwork_companion/dev/` (red **DEV** ribbon in the corner).
+
+The Dev page uses the same database as the live site. Join it with a **test table password**, so real characters are never touched while testing.
+
+**How it's published:** `.github/workflows/pages.yml` runs on every push to main or Dev.
+1. It copies main to the site root.
+2. It builds Dev from `src/` into `/dev/`.
+3. It pushes the result to the `gh-pages` branch.
+
+One-time switch: **Settings → Pages → Deploy from a branch → `gh-pages` / (root)**. Until that switch, the live site keeps serving main directly, exactly as before. Once switched, the workflow file must also be on main, so the live site updates when main does.
+
+## Source
+The app is built from `src/` with `python3 src/build.py --web .` (add `--dev` for a Dev build). Edit the files in `src/`, never `index.html` by hand.
+- **Code:** `app.js`, `genesis.js`, `gm.js`.
+- **Data:** `rules.js`, `rules-info.js`, `skills-data.js`, `skill-tables.js`.
+- **Styles and themes:** `app.css`.
+- **Website-only parts:** `web-backend.js`, `web/`.

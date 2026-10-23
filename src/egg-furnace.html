@@ -1,0 +1,340 @@
+<style>
+#cw-doom { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgb(0 0 0 / .88); }
+#cw-doom .box { position: relative; width: min(960px, calc(100vw - 24px), calc((100vh - 24px) * 1.6)); aspect-ratio: 8 / 5; border: 2px solid #b88a3c; box-shadow: 0 0 0 4px #1b130b, 0 0 0 5px #6b4a1c, 0 20px 60px #000; background: #000; }
+#cw-doom canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+#cw-doom .x { position: absolute; top: 6px; right: 8px; width: 32px; height: 32px; border: 1px solid #6b4a1c; background: #1b130bcc; color: #e9c27a; font: 20px/1 serif; cursor: pointer; z-index: 2; }
+#cw-doom .fire { display: none; position: absolute; right: 14px; bottom: 22%; width: 74px; height: 74px; border-radius: 50%; border: 2px solid #e0b462; background: #8a2e1ccc; color: #ffe2a8; font: bold 13px Georgia, serif; letter-spacing: .08em; touch-action: none; }
+@media (pointer: coarse) { #cw-doom .fire { display: block; } }
+</style>
+<script>
+/* Easter egg: "Furnace Below", a first-person automaton hunt (an original Doom-style raycaster; every texture,
+   sprite and sound is generated here). Opened by clicking "Clockwork" in the header five times quickly, or by
+   typing "furnace" outside a text box. Self-contained; touches nothing in the app. */
+(() => {
+  const W = 320, H = 200, VH = 168, TS = 32;
+  // 1 brick, 2 pipe wall, 3 iron, D door, L locked door (needs the valve key), X furnace lever (the exit).
+  // P start, k key, a pressure canister (ammo), h oil can (health), t tinker automaton, g gunner automaton.
+  const LEVEL = [
+    "3333333333333333",
+    "3P..3......t...3",
+    "3...3.......g..3",
+    "3.a.D....h.....3",
+    "3...3..........3",
+    "33D333333333L333",
+    "1..t.1....2.g..2",
+    "1....D....2....2",
+    "1....1.k..2..h.2",
+    "1.a..1..t.2.t..2",
+    "1111111111222X22",
+  ];
+  let open = false;
+
+  // ---------- generated art ----------
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const mk = (w, h, draw) => { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); return c; };
+  const shade = (src, a) => mk(src.width, src.height, (x) => { x.drawImage(src, 0, 0); x.fillStyle = `rgba(0,0,0,${a})`; x.fillRect(0, 0, src.width, src.height); });
+  const rivet = (x, cx, cy) => { x.fillStyle = "#1a1612"; x.fillRect(cx, cy, 2, 2); x.fillStyle = "#b9a888"; x.fillRect(cx, cy, 1, 1); };
+  const TEX = {};
+  function buildArt() {
+    if (TEX["1"]) return;
+    const walls = {
+      "1": (x) => { x.fillStyle = "#2a140c"; x.fillRect(0, 0, TS, TS);
+        for (let r = 0; r < 4; r++) for (let c = -1; c < 3; c++) { const ox = c * 16 + (r % 2 ? 8 : 0);
+          x.fillStyle = `hsl(${12 + rnd() * 8} ${45 + rnd() * 15}% ${22 + rnd() * 9}%)`; x.fillRect(ox + 1, r * 8 + 1, 14, 6);
+          for (let i = 0; i < 5; i++) { x.fillStyle = "rgb(0 0 0 / .25)"; x.fillRect(ox + 1 + rnd() * 13, r * 8 + 1 + rnd() * 5, 1, 1); } } },
+      "2": (x) => { x.fillStyle = "#24201b"; x.fillRect(0, 0, TS, TS);
+        for (const px of [3, 18]) { const gr = x.createLinearGradient(px, 0, px + 10, 0); gr.addColorStop(0, "#5a3a18"); gr.addColorStop(.45, "#e0b462"); gr.addColorStop(1, "#4a2e12");
+          x.fillStyle = gr; x.fillRect(px, 0, 10, TS); x.fillStyle = "#3a2410"; x.fillRect(px - 1, 9, 12, 3); x.fillRect(px - 1, 25, 12, 3); }
+        x.fillStyle = "#6b6560"; x.fillRect(14, 14, 3, 4); },
+      "3": (x) => { x.fillStyle = "#3b3d40"; x.fillRect(0, 0, TS, TS); x.fillStyle = "#2a2c2f"; x.fillRect(0, 15, TS, 2); x.fillRect(15, 0, 2, TS);
+        for (let i = 0; i < 30; i++) { x.fillStyle = `rgb(${90 + rnd() * 40} ${70 + rnd() * 20} 50 / .25)`; x.fillRect(rnd() * TS, rnd() * TS, 2, 1); }
+        for (const [a, b] of [[2, 2], [12, 2], [2, 12], [12, 12], [19, 2], [29, 2], [19, 12], [29, 12], [2, 19], [12, 19], [2, 29], [12, 29], [19, 19], [29, 19], [19, 29], [29, 29]]) rivet(x, a, b); },
+      "D": (x) => { x.fillStyle = "#4a4038"; x.fillRect(0, 0, TS, TS); x.fillStyle = "#b88a3c"; x.fillRect(0, 0, TS, 2); x.fillRect(0, 0, 2, TS); x.fillRect(30, 0, 2, TS);
+        x.fillStyle = "#332b25"; for (let y = 5; y < TS; y += 6) x.fillRect(3, y, 26, 2); x.fillStyle = "#e0b462"; x.fillRect(22, 14, 4, 4); },
+      "L": (x) => { walls.D(x); x.fillStyle = "#a01e14"; x.fillRect(2, 13, 28, 6); x.strokeStyle = "#ff5a3a"; x.lineWidth = 2; x.beginPath(); x.arc(16, 16, 5, 0, 7); x.stroke(); },
+      "X": (x) => { walls["3"](x); x.fillStyle = "#1a1612"; x.fillRect(11, 6, 10, 22); x.fillStyle = "#e0b462"; x.fillRect(15, 8, 2, 14); x.fillStyle = "#a01e14"; x.fillRect(13, 6, 6, 4);
+        x.fillStyle = "#4dff7a"; x.fillRect(5, 5, 3, 3); x.fillRect(24, 5, 3, 3); },
+    };
+    for (const k in walls) { const c = mk(TS, TS, walls[k]); TEX[k] = [c, shade(c, .38)]; }
+    const bot = (x, body, eye, frame, arm) => {
+      x.fillStyle = "#2a1e14"; const leg = frame ? 2 : -2; x.fillRect(11 + leg, 24, 3, 8); x.fillRect(18 - leg, 24, 3, 8);
+      const gr = x.createLinearGradient(8, 0, 24, 0); gr.addColorStop(0, body[0]); gr.addColorStop(.5, body[1]); gr.addColorStop(1, body[0]);
+      x.fillStyle = gr; x.beginPath(); x.ellipse(16, 18, 8, 8, 0, 0, 7); x.fill(); x.fillRect(12, 6, 8, 8);
+      x.fillStyle = "#1a1210"; x.fillRect(13, 9, 6, 3); x.fillStyle = eye; x.fillRect(14, 9, 4, 2);
+      x.fillStyle = body[1]; x.fillRect(5, arm ? 8 : 15, 3, 9); x.fillRect(24, arm ? 8 : 15, 3, 9);
+      x.fillStyle = "#3a2410"; for (const [a, b] of [[12, 18], [19, 18], [15, 22]]) x.fillRect(a, b, 2, 2);
+    };
+    const tink = [["#5a3a18", "#c99a4a"], "#ff3a2a"], gun = [["#2c2e31", "#7d8188"], "#38e0ff"];
+    const S = TEX.spr = {
+      t0: mk(TS, TS, x => bot(x, ...tink, 0, 0)), t1: mk(TS, TS, x => bot(x, ...tink, 1, 0)), ta: mk(TS, TS, x => bot(x, ...tink, 0, 1)),
+      g0: mk(TS, TS, x => { bot(x, ...gun, 0, 0); x.fillStyle = "#e0b462"; x.fillRect(24, 14, 6, 4); }),
+      g1: mk(TS, TS, x => { bot(x, ...gun, 1, 0); x.fillStyle = "#e0b462"; x.fillRect(24, 14, 6, 4); }),
+      ga: mk(TS, TS, x => { bot(x, ...gun, 0, 0); x.fillStyle = "#ffd27a"; x.fillRect(24, 13, 8, 6); }),
+      dead: mk(TS, TS, x => { for (let i = 0; i < 9; i++) { x.fillStyle = ["#c99a4a", "#5a3a18", "#7d8188"][i % 3]; x.beginPath(); x.arc(6 + rnd() * 20, 26 + rnd() * 5, 2 + rnd() * 3, 0, 7); x.fill(); } }),
+      k: mk(TS, TS, x => { x.strokeStyle = "#ff3a2a"; x.lineWidth = 3; x.beginPath(); x.arc(16, 22, 6, 0, 7); x.stroke(); x.fillStyle = "#ff3a2a"; x.fillRect(15, 15, 2, 14); x.fillRect(9, 21, 14, 2); }),
+      a: mk(TS, TS, x => { const gr = x.createLinearGradient(10, 0, 22, 0); gr.addColorStop(0, "#7a3d1a"); gr.addColorStop(.5, "#e08a4a"); gr.addColorStop(1, "#5a2a10");
+        x.fillStyle = gr; x.fillRect(11, 16, 10, 15); x.fillStyle = "#e9e2d0"; x.beginPath(); x.arc(16, 21, 3, 0, 7); x.fill(); x.fillStyle = "#3a2410"; x.fillRect(14, 13, 4, 3); }),
+      h: mk(TS, TS, x => { x.fillStyle = "#2f6b34"; x.fillRect(10, 18, 12, 13); x.fillStyle = "#4da857"; x.fillRect(11, 19, 3, 11); x.fillStyle = "#b88a3c"; x.fillRect(19, 13, 2, 6); x.fillRect(20, 11, 6, 2); }),
+      bolt: mk(TS, TS, x => { const gr = x.createRadialGradient(16, 16, 1, 16, 16, 12); gr.addColorStop(0, "#fff8d0"); gr.addColorStop(.4, "#ffb04a"); gr.addColorStop(1, "rgb(255 120 40 / 0)"); x.fillStyle = gr; x.fillRect(0, 0, TS, TS); }),
+    };
+    S.hurt = {}; for (const k of ["t0", "t1", "ta", "g0", "g1", "ga"]) S.hurt[k] = mk(TS, TS, x => { x.drawImage(S[k], 0, 0); x.globalCompositeOperation = "source-atop"; x.fillStyle = "rgb(255 255 255 / .7)"; x.fillRect(0, 0, TS, TS); });
+  }
+
+  // ---------- sound (WebAudio, generated) ----------
+  let ac = null;
+  const audio = () => { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); } catch { ac = null; } return ac; };
+  const tone = (f1, f2, dur, type = "square", vol = .08) => { const a = audio(); if (!a) return; const o = a.createOscillator(), v = a.createGain(), t = a.currentTime;
+    o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
+    v.gain.setValueAtTime(vol, t); v.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(v).connect(a.destination); o.start(t); o.stop(t + dur); };
+  const noise = (dur, freq, vol = .25) => { const a = audio(); if (!a) return; const n = Math.floor(a.sampleRate * dur), b = a.createBuffer(1, n, a.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n) ** 2;
+    const s = a.createBufferSource(), f = a.createBiquadFilter(), v = a.createGain(); s.buffer = b; f.type = "lowpass"; f.frequency.value = freq; v.gain.value = vol; s.connect(f).connect(v).connect(a.destination); s.start(); };
+  const SFX = { shot: () => { noise(.35, 1800, .35); tone(120, 40, .25, "sawtooth", .12); }, hit: () => tone(300, 90, .12, "square", .06),
+    pickup: () => { tone(660, 990, .09, "sine", .1); setTimeout(() => tone(990, 1320, .09, "sine", .1), 90); }, door: () => noise(.5, 300, .3),
+    hurt: () => tone(220, 60, .25, "sawtooth", .1), bolt: () => tone(900, 300, .2, "triangle", .05), empty: () => tone(140, 120, .05, "square", .05), die: () => tone(300, 30, .9, "sawtooth", .12) };
+
+  function launch() {
+    if (open || document.getElementById("cw-egg")) return; open = true; buildArt();
+    const wrap = document.createElement("div"); wrap.id = "cw-doom";
+    wrap.innerHTML = `<div class="box" role="dialog" aria-label="Furnace Below, a hidden game"><canvas width="${W}" height="${H}" tabindex="0"></canvas>
+      <button class="x" aria-label="Close">×</button><button class="fire" aria-label="Fire">FIRE</button></div>`;
+    document.body.appendChild(wrap);
+    const cv = wrap.querySelector("canvas"), g = cv.getContext("2d"); g.imageSmoothingEnabled = false;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const zbuf = new Float32Array(W);
+    let grid, P, ents, bolts, st, raf = 0, last = 0;
+    const keys = {};
+
+    const reset = () => {
+      grid = LEVEL.map(r => r.split("")); ents = []; bolts = [];
+      P = { x: 1.5, y: 1.5, dx: 1, dy: 0, cx: 0, cy: .66, hp: 100, ammo: 12, key: false, kills: 0, bob: 0, flash: 0, hurt: 0, glow: 0, recoil: 0 };
+      grid.forEach((row, y) => row.forEach((c, x) => {
+        if (c === "P") { P.x = x + .5; P.y = y + .5; row[x] = "."; }
+        else if ("kahtg".includes(c)) { row[x] = ".";
+          ents.push(c === "t" || c === "g" ? { kind: c, x: x + .5, y: y + .5, hp: c === "t" ? 30 : 45, alive: true, awake: false, cd: 1, atk: 0, hurt: 0, anim: 0 }
+                                           : { kind: c, x: x + .5, y: y + .5, alive: true, item: true }); } }));
+      st = { mode: st ? "play" : "title", time: 0, msg: "", msgT: 0, total: ents.filter(e => !e.item).length };
+    };
+    reset();
+    const say = (m, t = 2.2) => { st.msg = m; st.msgT = t; };
+    const tile = (x, y) => (grid[y] && grid[y][x]) || "3";
+    const walk = (x, y) => tile(Math.floor(x), Math.floor(y)) === ".";
+    const los = (ax, ay, bx, by) => { const d = Math.hypot(bx - ax, by - ay), n = Math.ceil(d / .1);
+      for (let i = 1; i < n; i++) if (!walk(ax + (bx - ax) * i / n, ay + (by - ay) * i / n)) return false; return true; };
+    const rotate = a => { const c = Math.cos(a), s = Math.sin(a);
+      [P.dx, P.dy] = [P.dx * c - P.dy * s, P.dx * s + P.dy * c]; [P.cx, P.cy] = [P.cx * c - P.cy * s, P.cx * s + P.cy * c]; };
+
+    const use = (tx, ty) => {
+      const t = tile(tx, ty);
+      if (t === "D") { grid[ty][tx] = "."; SFX.door(); }
+      else if (t === "L") { if (P.key) { grid[ty][tx] = "."; SFX.door(); say("The valve turns. The way is open."); } else if (st.msgT < 1) say("Sealed. Find the red valve key."); }
+      else if (t === "X") { st.mode = "won"; st.t0 = 0; SFX.pickup(); setTimeout(() => SFX.door(), 150); document.exitPointerLock && document.exitPointerLock(); }
+    };
+    const move = (mx, my) => {
+      const r = .22, nx = P.x + mx, ny = P.y + my;
+      const cx = Math.floor(nx + Math.sign(mx) * r), cy = Math.floor(ny + Math.sign(my) * r);
+      if (mx) { if (tile(cx, Math.floor(P.y)) === ".") P.x = nx; else use(cx, Math.floor(P.y)); }
+      if (my) { if (tile(Math.floor(P.x), cy) === ".") P.y = ny; else use(Math.floor(P.x), cy); }
+    };
+    const hurt = n => { if (st.mode !== "play") return; P.hp -= n; P.hurt = .35; SFX.hurt();
+      if (P.hp <= 0) { P.hp = 0; st.mode = "dead"; st.t0 = 0; SFX.die(); document.exitPointerLock && document.exitPointerLock(); } };
+
+    const fire = () => {
+      if (st.mode !== "play" || P.recoil > 0) return;
+      if (P.ammo <= 0) { SFX.empty(); say("Out of pressure. Find a canister."); P.recoil = .3; return; }
+      P.ammo--; P.flash = .1; P.recoil = .55; SFX.shot();
+      const ang = Math.atan2(P.dy, P.dx); let best = null, bd = 1e9;
+      for (const e of ents) { if (e.item || !e.alive) continue;
+        const d = Math.hypot(e.x - P.x, e.y - P.y); let da = Math.atan2(e.y - P.y, e.x - P.x) - ang; da = Math.atan2(Math.sin(da), Math.cos(da));
+        if (Math.abs(da) < Math.atan(.38 / d) + .04 && d < bd && los(P.x, P.y, e.x, e.y)) { best = e; bd = d; } }
+      for (const e of ents) if (!e.item && Math.hypot(e.x - P.x, e.y - P.y) < 8) e.awake = true;
+      if (best) { best.hp -= Math.round(48 * Math.max(.3, 1 - bd / 9) + Math.random() * 10); best.hurt = .15; SFX.hit();
+        if (best.hp <= 0) { best.alive = false; P.kills++; } }
+    };
+
+    const update = dt => {
+      if (st.msgT > 0) st.msgT -= dt;
+      for (const k of ["flash", "hurt", "glow", "recoil"]) P[k] = Math.max(0, P[k] - dt);
+      if (st.mode !== "play") { st.t0 = (st.t0 || 0) + dt; return; }
+      st.time += dt;
+      const run = keys.ShiftLeft || keys.ShiftRight ? 1.5 : 1, sp = 2.6 * run * dt;
+      let f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) + touch.f;
+      let s = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touch.s;
+      const turn = (keys.ArrowRight ? 1 : 0) - (keys.ArrowLeft ? 1 : 0);
+      if (turn) rotate(turn * 2.4 * dt);
+      f = Math.max(-1, Math.min(1, f)); s = Math.max(-1, Math.min(1, s));
+      if (f || s) { move((P.dx * f + P.cx / .66 * s) * sp, 0); move(0, (P.dy * f + P.cy / .66 * s) * sp); P.bob += dt * 9; }
+      if (keys.Space || keys.ControlLeft || keys.ControlRight || touch.fire) fire();
+      for (const e of ents) {
+        if (!e.alive) continue;
+        const d = Math.hypot(P.x - e.x, P.y - e.y);
+        if (e.item) { if (d < .55) {
+          if (e.kind === "k") { P.key = true; e.alive = false; SFX.pickup(); P.glow = .3; say("You found the red valve key."); }
+          else if (e.kind === "a") { P.ammo = Math.min(50, P.ammo + 8); e.alive = false; SFX.pickup(); P.glow = .3; say("+8 pressure", 1.2); }
+          else if (e.kind === "h" && P.hp < 100) { P.hp = Math.min(100, P.hp + 25); e.alive = false; SFX.pickup(); P.glow = .3; say("+25 health", 1.2); } }
+          continue; }
+        e.hurt = Math.max(0, e.hurt - dt); e.atk = Math.max(0, e.atk - dt); e.cd -= dt;
+        const see = d < 10 && los(e.x, e.y, P.x, P.y);
+        if (!e.awake) { if (see && d < 7.5) e.awake = true; else continue; }
+        const ux = (P.x - e.x) / d, uy = (P.y - e.y) / d;
+        const step = (dir, v) => { const nx = e.x + ux * dir * v * dt, ny = e.y + uy * dir * v * dt; if (walk(nx, e.y)) e.x = nx; if (walk(e.x, ny)) e.y = ny; e.anim += dt * 6; };
+        if (e.kind === "t") { if (d > .8) step(1, 1.7); else if (e.cd <= 0) { e.cd = .9; e.atk = .3; hurt(8); } }
+        else { if (!see || d > 5.5) step(1, 1.1); else if (d < 2.5) step(-1, .9);
+          if (see && e.cd <= 0) { e.cd = 1.8; e.atk = .35; SFX.bolt(); bolts.push({ x: e.x + ux * .4, y: e.y + uy * .4, vx: ux * 4.5, vy: uy * 4.5 }); } }
+      }
+      bolts = bolts.filter(b => { b.x += b.vx * dt; b.y += b.vy * dt;
+        if (!walk(b.x, b.y)) return false; if (Math.hypot(b.x - P.x, b.y - P.y) < .35) { hurt(12); return false; } return true; });
+    };
+
+    // ---------- drawing ----------
+    const sky = g.createLinearGradient(0, 0, 0, VH / 2); sky.addColorStop(0, "#0d0806"); sky.addColorStop(1, "#3a1c0e");
+    const floor = g.createLinearGradient(0, VH / 2, 0, VH); floor.addColorStop(0, "#140c08"); floor.addColorStop(1, "#4a2c18");
+    const drawWeapon = () => {
+      const b = reduced ? 0 : Math.sin(P.bob) * 3, kick = P.recoil > .3 ? (P.recoil - .3) * 40 : 0;
+      const bx = W / 2 + 20 + Math.cos(P.bob * .5) * (reduced ? 0 : 3), by = VH + 6 + Math.abs(b) + kick;
+      if (P.flash > 0) { const gr = g.createRadialGradient(bx - 8, by - 74, 2, bx - 8, by - 74, 30); gr.addColorStop(0, "#fff8d0"); gr.addColorStop(.4, "#ffb04acc"); gr.addColorStop(1, "#ff782800");
+        g.fillStyle = gr; g.fillRect(bx - 45, by - 110, 74, 74); }
+      g.fillStyle = "#3a2410"; g.beginPath(); g.moveTo(bx - 4, by); g.lineTo(bx + 34, by); g.lineTo(bx + 12, by - 34); g.lineTo(bx - 2, by - 34); g.fill();
+      const gr = g.createLinearGradient(bx - 18, 0, bx + 6, 0); gr.addColorStop(0, "#5a3a18"); gr.addColorStop(.5, "#e0b462"); gr.addColorStop(1, "#4a2e12");
+      g.fillStyle = gr; g.beginPath(); g.moveTo(bx - 20, by - 20); g.lineTo(bx + 6, by - 20); g.lineTo(bx - 2, by - 74); g.lineTo(bx - 14, by - 74); g.fill();
+      g.fillStyle = "#1a1210"; g.fillRect(bx - 13, by - 76, 4, 4); g.fillRect(bx - 7, by - 76, 4, 4);
+      g.fillStyle = "#e9e2d0"; g.beginPath(); g.arc(bx + 14, by - 30, 7, 0, 7); g.fill(); g.strokeStyle = "#b88a3c"; g.lineWidth = 2; g.stroke();
+      g.strokeStyle = "#a01e14"; g.lineWidth = 1; g.beginPath(); g.moveTo(bx + 14, by - 30); g.lineTo(bx + 14 + 5 * Math.cos(-2.4 + P.ammo / 50 * 3.2), by - 30 + 5 * Math.sin(-2.4 + P.ammo / 50 * 3.2)); g.stroke();
+    };
+    const hud = () => {
+      g.fillStyle = "#1b130b"; g.fillRect(0, VH, W, H - VH); g.fillStyle = "#b88a3c"; g.fillRect(0, VH, W, 1);
+      g.font = "bold 9px monospace"; g.textBaseline = "middle"; g.textAlign = "left";
+      const cell = (x, label, val, col) => { g.fillStyle = "#8a6a3a"; g.fillText(label, x, VH + 10); g.fillStyle = col; g.font = "bold 13px monospace"; g.fillText(val, x, VH + 23); g.font = "bold 9px monospace"; };
+      cell(8, "HEALTH", String(P.hp), P.hp > 30 ? "#ffe2a8" : "#ff5a3a");
+      cell(78, "PRESSURE", String(P.ammo), P.ammo ? "#ffe2a8" : "#ff5a3a");
+      cell(160, "AUTOMATA", `${P.kills}/${st.total}`, "#ffe2a8");
+      g.fillStyle = "#8a6a3a"; g.fillText("KEY", 246, VH + 10);
+      if (P.key) g.drawImage(TEX.spr.k, 240, VH + 6, 26, 26); else { g.strokeStyle = "#3a2a18"; g.strokeRect(246, VH + 16, 14, 13); }
+      const m = Math.floor(st.time / 60), sec = Math.floor(st.time % 60);
+      g.fillStyle = "#8a6a3a"; g.textAlign = "right"; g.fillText(`${m}:${String(sec).padStart(2, "0")}`, W - 8, VH + 23); g.textAlign = "left";
+    };
+    const center = (lines, y) => { g.textAlign = "center"; g.textBaseline = "middle";
+      lines.forEach(([t, font, col], i) => { g.font = font; g.fillStyle = "#000"; g.fillText(t, W / 2 + 1, y + i * 16 + 1); g.fillStyle = col; g.fillText(t, W / 2, y + i * 16); }); };
+
+    const render = () => {
+      g.fillStyle = sky; g.fillRect(0, 0, W, VH / 2); g.fillStyle = floor; g.fillRect(0, VH / 2, W, VH / 2);
+      for (let x = 0; x < W; x++) {
+        const cam = 2 * x / W - 1, rx = P.dx + P.cx * cam, ry = P.dy + P.cy * cam;
+        let mx = Math.floor(P.x), my = Math.floor(P.y);
+        const ddx = Math.abs(1 / rx), ddy = Math.abs(1 / ry), sx = rx < 0 ? -1 : 1, sy = ry < 0 ? -1 : 1;
+        let sdx = (rx < 0 ? P.x - mx : mx + 1 - P.x) * ddx, sdy = (ry < 0 ? P.y - my : my + 1 - P.y) * ddy, side = 0, t = ".", n = 0;
+        while (t === "." && n++ < 64) { if (sdx < sdy) { sdx += ddx; mx += sx; side = 0; } else { sdy += ddy; my += sy; side = 1; } t = tile(mx, my); }
+        const perp = Math.max(.05, side ? sdy - ddy : sdx - ddx), lh = VH / perp, top = VH / 2 - lh / 2;
+        let wx = side ? P.x + perp * rx : P.y + perp * ry; wx -= Math.floor(wx);
+        let tx = Math.floor(wx * TS); if ((!side && rx > 0) || (side && ry < 0)) tx = TS - 1 - tx;
+        g.drawImage((TEX[t] || TEX["3"])[side], tx, 0, 1, TS, x, top, 1, lh);
+        const fog = Math.min(.85, perp / 9); if (fog > .05) { g.fillStyle = `rgba(8,4,2,${fog})`; g.fillRect(x, top, 1, lh); }
+        zbuf[x] = perp;
+      }
+      const S = TEX.spr, inv = 1 / (P.cx * P.dy - P.dx * P.cy);
+      const list = [...ents.filter(e => e.alive || !e.item), ...bolts.map(b => ({ ...b, kind: "bolt" }))]
+        .map(e => ({ e, d: (e.x - P.x) ** 2 + (e.y - P.y) ** 2 })).sort((a, b) => b.d - a.d);
+      for (const { e } of list) {
+        const sx = e.x - P.x, sy = e.y - P.y, tx = inv * (P.dy * sx - P.dx * sy), ty = inv * (-P.cy * sx + P.cx * sy);
+        if (ty < .15) continue;
+        let img, scale = 1, float = false;
+        if (e.kind === "bolt") { img = S.bolt; scale = .5; float = true; }
+        else if (e.item) { img = S[e.kind]; scale = .55; }
+        else if (!e.alive) { img = S.dead; scale = .8; }
+        else { const fr = e.atk > 0 ? e.kind + "a" : e.kind + (Math.floor(e.anim) % 2); img = e.hurt > 0 ? S.hurt[fr] : S[fr]; scale = e.kind === "g" ? 1.05 : .9; }
+        const full = VH / ty, size = full * scale, scx = (W / 2) * (1 + tx / ty);
+        const top = float ? VH / 2 - size / 2 : VH / 2 + full / 2 - size, x0 = scx - size / 2;
+        for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, x0 + size); x++)
+          if (ty < zbuf[x]) g.drawImage(img, Math.min(TS - 1, Math.floor((x - x0) / size * TS)), 0, 1, TS, x, top, 1, size);
+      }
+      if (st.mode === "play") drawWeapon();
+      g.fillStyle = "rgba(255,248,200,.85)"; g.fillRect(W / 2 - 1, VH / 2, 3, 1); g.fillRect(W / 2, VH / 2 - 1, 1, 3);
+      if (P.hurt > 0) { g.fillStyle = `rgba(200,20,10,${P.hurt})`; g.fillRect(0, 0, W, VH); }
+      if (P.glow > 0) { g.fillStyle = `rgba(255,210,120,${P.glow * .6})`; g.fillRect(0, 0, W, VH); }
+      hud();
+      if (st.msgT > 0) center([[st.msg, "bold 10px Georgia, serif", "#ffe2a8"]], 18);
+      const shadeAll = a => { g.fillStyle = `rgba(0,0,0,${a})`; g.fillRect(0, 0, W, VH); };
+      if (st.mode === "title") { shadeAll(.7);
+        const touchy = matchMedia("(pointer: coarse)").matches;
+        center([["FURNACE BELOW", "bold 22px Georgia, serif", "#ffb04a"], ["", "", ""],
+          ["The automata have taken the boiler halls.", "11px Georgia, serif", "#e9c27a"],
+          ["Find the red valve key and pull the furnace lever.", "11px Georgia, serif", "#e9c27a"], ["", "", ""],
+          ...(touchy ? [["Left side: drag to walk · Right side: drag to turn", "9px monospace", "#c9a56a"], ["FIRE button or tap right side to shoot", "9px monospace", "#c9a56a"]]
+                     : [["WASD / arrows move · mouse or ←→ turn · Shift run", "9px monospace", "#c9a56a"], ["Click / Space / Ctrl fire · walk into doors to open", "9px monospace", "#c9a56a"]]),
+          ["", "", ""], [touchy ? "Tap to begin" : "Click to begin · Esc to leave", "bold 11px Georgia, serif", "#ffe2a8"]], 30); }
+      else if (st.mode === "dead") { shadeAll(.55); center([["YOUR BOILER HAS GONE COLD", "bold 16px Georgia, serif", "#ff5a3a"], ["", "", ""], [st.t0 > .8 ? "Click to try again" : "", "11px Georgia, serif", "#e9c27a"]], 64); }
+      else if (st.mode === "won") { shadeAll(.6); const m = Math.floor(st.time / 60), s = Math.floor(st.time % 60);
+        center([["THE FURNACE ROARS BACK TO LIFE", "bold 15px Georgia, serif", "#4dff7a"], ["", "", ""],
+          [`Time ${m}:${String(s).padStart(2, "0")} · Automata ${P.kills}/${st.total}`, "11px Georgia, serif", "#ffe2a8"],
+          [P.kills === st.total ? "Not a cog left turning." : "", "10px Georgia, serif", "#e9c27a"], ["", "", ""],
+          [st.t0 > .8 ? "Click to play again" : "", "11px Georgia, serif", "#e9c27a"]], 50); }
+    };
+
+    const loop = now => { const dt = Math.min(.05, (now - (last || now)) / 1000); last = now; update(dt); render(); raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+
+    // ---------- input ----------
+    const touch = { f: 0, s: 0, fire: false }, pts = {};
+    const start = () => { audio(); if (st.mode === "title") st.mode = "play";
+      else if ((st.mode === "dead" || st.mode === "won") && st.t0 > .8) { reset(); st.mode = "play"; } };
+    const locked = () => document.pointerLockElement === cv;
+    const GAME = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight", "Enter"]);
+    const kd = e => {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); return; }
+      if (!GAME.has(e.code)) return; e.preventDefault(); e.stopPropagation();
+      if (st.mode !== "play" && (e.code === "Space" || e.code === "Enter")) { start(); return; }
+      keys[e.code] = true;
+      if (!e.repeat && (e.code === "Space" || e.code === "ControlLeft" || e.code === "ControlRight")) fire();
+      if (e.code === "KeyE") { const tx = Math.floor(P.x + P.dx * .9), ty = Math.floor(P.y + P.dy * .9); use(tx, ty); }
+    };
+    const ku = e => { if (GAME.has(e.code)) { keys[e.code] = false; e.stopPropagation(); } };
+    addEventListener("keydown", kd, true); addEventListener("keyup", ku, true);
+    const mm = e => { if (locked() && st.mode === "play") rotate(e.movementX * .0025); };
+    document.addEventListener("mousemove", mm);
+    cv.addEventListener("pointerdown", e => {
+      e.preventDefault(); cv.focus();
+      if (e.pointerType !== "mouse") { const r = cv.getBoundingClientRect(); pts[e.pointerId] = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, left: e.clientX < r.left + r.width / 2, t: performance.now() };
+        cv.setPointerCapture(e.pointerId); if (st.mode !== "play") start(); return; }
+      if (st.mode !== "play") { start(); }
+      else { if (!locked() && cv.requestPointerLock) { try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch {} } fire(); }
+    });
+    cv.addEventListener("pointermove", e => { const p = pts[e.pointerId]; if (!p) return;
+      if (p.left) { touch.f = Math.max(-1, Math.min(1, -(e.clientY - p.y0) / 40)); touch.s = Math.max(-1, Math.min(1, (e.clientX - p.x0) / 40)); }
+      else if (st.mode === "play") rotate((e.clientX - p.x) * .008);
+      p.x = e.clientX; p.y = e.clientY; });
+    const up = e => { const p = pts[e.pointerId]; if (!p) return; delete pts[e.pointerId];
+      if (p.left) { touch.f = 0; touch.s = 0; } else if (Math.hypot(e.clientX - p.x0, e.clientY - p.y0) < 10 && performance.now() - p.t < 250) fire(); };
+    cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+    cv.addEventListener("contextmenu", e => e.preventDefault());
+    const fb = wrap.querySelector(".fire");
+    fb.addEventListener("pointerdown", e => { e.preventDefault(); if (st.mode !== "play") start(); else touch.fire = true; });
+    for (const ev of ["pointerup", "pointercancel", "pointerleave"]) fb.addEventListener(ev, () => { touch.fire = false; });
+    const blur = () => { for (const k in keys) keys[k] = false; };
+    addEventListener("blur", blur);
+    function close() {
+      cancelAnimationFrame(raf); if (locked()) document.exitPointerLock();
+      removeEventListener("keydown", kd, true); removeEventListener("keyup", ku, true); removeEventListener("blur", blur);
+      document.removeEventListener("mousemove", mm); wrap.remove(); open = false;
+    }
+    wrap.querySelector(".x").addEventListener("click", close);
+    cv.focus();
+  }
+
+  // Trigger 1: five quick clicks on "Clockwork" in the header.
+  let clicks = [];
+  document.addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest(".brand");
+    if (!b || e.target.closest(".brand small")) return;
+    const now = Date.now(); clicks = clicks.filter(t => now - t < 2500); clicks.push(now);
+    if (clicks.length >= 5) { clicks = []; launch(); }
+  });
+  // Trigger 2: type "furnace" while not in a text box.
+  let typed = "";
+  document.addEventListener("keydown", e => {
+    if (open || (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]"))) return;
+    if (!e.key || e.key.length !== 1) return;
+    typed = (typed + e.key.toLowerCase()).slice(-7);
+    if (typed === "furnace") { typed = ""; launch(); }
+  });
+})();
+</script>
