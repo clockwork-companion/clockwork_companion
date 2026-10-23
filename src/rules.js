@@ -128,6 +128,7 @@ const CW = (() => {
                 wounds: { light: 0, moderate: 0, mortal: 0 }, conditions: [] },
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
+      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [] },
       talents: [], uses: {},
     };
   }
@@ -150,6 +151,10 @@ const CW = (() => {
     out.vitals.exhaustion = clamp(Math.max(num(out.vitals.exhaustion), num(out.vitals.staminaLost)), 0, 10);
     out.vitals.staminaLost = out.vitals.exhaustion;
     if (!Array.isArray(out.vitals.conditions)) out.vitals.conditions = [];
+    out.craft = Object.assign({}, b.craft, out.craft);
+    ["supplies", "batch"].forEach(k => (out.craft[k] = Object.assign({}, b.craft[k], out.craft[k])));
+    out.craft.recipe = Object.assign({ type: "rifle" }, out.craft.recipe);
+    if (!Array.isArray(out.craft.ledger)) out.craft.ledger = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
     out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
@@ -420,6 +425,134 @@ const CW = (() => {
     PRS: "Force of personality. Leading, persuading and holding a room.",
   };
 
+  // ---------- Powdertinkering (rulebook 2020.1, Crafting chapter 16.2) ----------
+  // A munition is built in steps: the Coat first (always), then each Tip, the Area, the Core and each Status.
+  // Every step costs 200 g and one roll: d100 − Powdertinker modifier, a success if the result is below the step's difficulty.
+  // A failure loses that 200 g and gives the batch a Detriment (the GM decides what it is); the step may be tried again.
+  // Too many Detriments scrap the whole batch and every material spent on it.
+  const PT_PARTS = ["coat", "tip", "area", "core", "status"];
+  // Munition types and which components each may carry (the book's Component Access table).
+  // The extracted table is garbled; this is our reading, to confirm against the printed page (see notes).
+  // a: [coat, tip, area, core, status]. batch: munitions per successful craft (book: 4 bullets, 1 grenade, 1 oil).
+  const MUNITIONS = [
+    { k: "rifle",    n: "Rifle ammo",        w: "Rifles",        shape: "rifle",   a: [1, 1, 0, 1, 1], batch: 4, size: "ammo" },
+    { k: "pistol",   n: "Pistol ammo",       w: "Pistols",       shape: "pistol",  a: [1, 1, 0, 1, 1], batch: 4, size: "ammo" },
+    { k: "sniper",   n: "Sniper ammo",       w: "Sniper Rifles", shape: "sniper",  a: [1, 1, 0, 1, 1], batch: 4, size: "ammo" },
+    { k: "shotgun",  n: "Shotgun shells",    w: "Shotguns",      shape: "shell",   a: [1, 0, 0, 1, 1], batch: 4, size: "ammo" },
+    { k: "heavy",    n: "Heavy weapon ammo", w: "Heavy",         shape: "heavy",   a: [1, 1, 1, 1, 1], batch: 4, size: "ammo" },
+    { k: "stringed", n: "Arrows and bolts",  w: "Stringed",      shape: "arrow",   a: [1, 1, 0, 1, 1], batch: 4, size: "ammo" },
+    { k: "bomb",     n: "Explosives",        w: "Explosives",    shape: "grenade", a: [0, 0, 1, 1, 1], batch: 1, size: "small" },
+    { k: "throwing", n: "Throwing weapons",  w: "Throwing",      shape: "knife",   a: [1, 1, 0, 1, 1], batch: 1, size: "small" },
+    { k: "oil",      n: "Weapon oils",       w: "",              shape: "flask",   a: [0, 0, 0, 1, 1], batch: 1, size: "small" },
+  ];
+  const MUNITION = Object.fromEntries(MUNITIONS.map(m => [m.k, m]));
+  const ptAccess = (type, part) => !!(MUNITION[type] || MUNITIONS[0]).a[PT_PARTS.indexOf(part)];
+  const COATS = [["Piercing", "The default coat: the munition deals piercing damage."],
+                 ["Bludgeoning", "Changes the munition's damage type to bludgeoning."],
+                 ["Slashing", "Changes the munition's damage type to slashing."]];
+  const TIPS = [["Precise", true, "Attack rolls that fire it gain the Rating to their accuracy."],
+                ["Penetrating", true, "Ignores Rating points of armor."],
+                ["Impale", false, "Critically strikes on multiples of 10 (10, 20, 30 …)."]];
+  const AREAS = [["Sphere", "Explodes in a sphere with radius Rating. Every bomb has this by default."],
+                 ["Plus", "Explodes in a plus shape, radius Rating, each arm 2 m thick. Cheaper than a sphere of the same length."],
+                 ["Cross", "Explodes in a cross shape, radius Rating, each arm 2 m thick. Cheaper than a sphere of the same length."],
+                 ["Cone", "Explodes in a cone of 30, 60 or 90 degrees with radius Rating."]];
+  const ELEMENTS = ["Fire", "Cold", "Electric", "Poison", "Acid", "Radiant", "Necrotic"];
+  const STATUSES = [
+    ["Scorched", "Fire", "Scarred with burns: Rating/2 fire damage each turn until resisted."],
+    ["Blinding Shot", "Radiant", "Blinded for Rating turns."],
+    ["Hallowed Scar", "Radiant", "Outlined in a radiant glow, always visible. Attacks against it have advantage until resisted."],
+    ["Arc", "Electric", "Creatures starting their turn within 1 m of the target take Rating electric damage."],
+    ["Shocked", "Electric", "Recovers 1 less AP each turn until resisted."],
+    ["Soul Sear", "Necrotic", "Can't use reactions or legendary actions other than the Resist action."],
+    ["Decay", "Necrotic", "Can't regenerate hit points or use Active abilities."],
+    ["Corrode", "Acid", "Natural armor unusable up to Rating damage; worn armor takes 2×Rating damage."],
+    ["Dissolve", "Acid", "Weapons corroded: their damage drops by Rating/2 until the target spends 3 AP cleaning them."],
+    ["Toxin", "Poison", "Rating/2 poison damage each turn until resisted."],
+    ["Acrimony", "Poison", "Saving throws of one attribute (shooter's choice) drop by Rating until resisted."],
+    ["Slick", "Cold", "Treats all ground as difficult terrain until resisted."],
+    ["Hypothermia", "Cold", "Counts as having 1 stack of Exhaustion until resisted."],
+  ];
+  const PT_GRAMS = 200;
+
+  // What this character's Powdertinker level allows (perks Tinkerling → Master o' Munitions).
+  function ptState(c) {
+    const lvl = sk(c, "Powdertinker");
+    const cr = c.craft || {};
+    const mod = skillModifier(c, "Powdertinker") + num(cr.bonus);
+    return {
+      lvl, mod, bonus: num(cr.bonus),
+      proficient: lvl >= 3,                       // L3: proficient, may craft
+      unlock: { coat: lvl >= 3, tip: lvl >= 4, core: lvl >= 4, area: lvl >= 7, status: lvl >= 7 },
+      unlockAt: { coat: 3, tip: 4, core: 4, area: 7, status: 7 },
+      maxFails: lvl >= 6 ? 2 : 1,                 // L3 "fail once"; L6 "fail twice before the process ends"
+      keepFailed: lvl >= 5,                       // L5 Novice Tinker (Active, long rest): keep a failed property as well as its Detriment
+      ignoreOne: lvl >= 10,                       // L10 (Active, long rest): ignore 1 Detriment
+      halfClipPerUnused: lvl >= 8,                // L8: each unused failure → an extra half batch
+      extraClip: lvl >= 9,                        // L9: an extra batch every craft
+      base: { tip: lvl, area: lvl, core: Math.floor(lvl / 2), status: Math.floor(lvl / 2) },
+      // Novice Tinker (L5) and the L10 ability are tracked with every other Active ability in c.uses, recharged by rests.
+      used: { keep: num((c.uses || {})["p:Powdertinker:5"]) > 0, ignore: num((c.uses || {})["p:Powdertinker:10"]) > 0 },
+    };
+  }
+  // Difficulty (in %) of a step. Tips: 40 − 5 per Rating increment above the base; Cores: 40 − 10 per increment.
+  function ptDifficulty(part, inc = 0) {
+    if (part === "coat") return 60;
+    if (part === "tip") return 40 - 5 * inc;
+    if (part === "area") return 30;
+    if (part === "core") return 40 - 10 * inc;
+    return 40;
+  }
+  // Chance that d100 (1–100) − mod lands below dc.
+  const ptChance = (dc, mod) => clamp(dc + mod - 1, 0, 100);
+  // The steps a recipe needs, in crafting order. A recipe: { type, coat, tips: {Precise: inc, …}, area: {k, cone}, core: {el, inc}, status: [names] }.
+  function ptSteps(c, rc) {
+    const st = ptState(c), type = rc.type, steps = [];
+    const can = p => ptAccess(type, p) && st.unlock[p];
+    const m = MUNITION[type] || MUNITIONS[0];
+    const coat = can("coat") ? rc.coat || "Piercing" : "Piercing";
+    steps.push({ part: "coat", key: "coat", label: m.shape === "grenade" ? "Casing" : m.shape === "flask" ? "Base oil" : `${coat} coat`, dc: 60, mat: "container" });
+    if (can("tip")) TIPS.forEach(([k, rated]) => {
+      const inc = rc.tips && rc.tips[k];
+      if (inc == null || inc === false) return;
+      const i = rated ? num(inc) : 0;
+      steps.push({ part: "tip", key: "tip:" + k, label: rated ? `${k} (${st.base.tip + i})` : k, dc: ptDifficulty("tip", i), mat: "container", name: k, rating: rated ? st.base.tip + i : null });
+    });
+    const area = rc.area && rc.area.k;
+    if (area && can("area") && !(m.shape === "grenade" && area === "Sphere"))
+      steps.push({ part: "area", key: "area", label: `${area === "Cone" ? `Cone ${rc.area.cone || 60}°` : area} (${st.base.area})`, dc: 30, mat: "container", name: area, rating: st.base.area });
+    const core = rc.core && rc.core.el;
+    if (core && can("core")) {
+      const i = num(rc.core.inc);
+      steps.push({ part: "core", key: "core", label: `${core} core (${st.base.core + i})`, dc: ptDifficulty("core", i), mat: core, name: core, rating: st.base.core + i });
+      if (can("status")) (rc.status || []).forEach(s => { const S = STATUSES.find(x => x[0] === s); if (S && S[1] === core)
+        steps.push({ part: "status", key: "status:" + s, label: `${s} (${st.base.status})`, dc: 40, mat: core, name: s, rating: st.base.status }); });
+    }
+    steps.forEach(s => (s.chance = ptChance(s.dc, st.mod)));
+    return steps;
+  }
+  // Munitions out of one finished craft. unused = failures still allowed when the craft ended.
+  function ptYield(c, type, unused) {
+    const st = ptState(c), m = MUNITION[type] || MUNITIONS[0];
+    const batch = Math.max(1, num((c.craft && c.craft.batch && c.craft.batch[type]) || m.batch));
+    let n = batch;
+    if (st.halfClipPerUnused) n += unused * Math.ceil(batch / 2);
+    if (st.extraClip) n += batch;
+    return { batch, n };
+  }
+  // A short name for a finished batch: "Rifle ammo · Slashing · Penetrating 7 · Fire 3 · Scorched".
+  function ptName(type, done, rc) {
+    const m = MUNITION[type] || MUNITIONS[0];
+    const bits = [];
+    done.forEach(s => {
+      if (s.part === "coat") { if (rc.coat && rc.coat !== "Piercing" && s.label.endsWith("coat")) bits.push(rc.coat); }
+      else if (s.part === "area") bits.push(s.label.replace(/ \((\d+)\)$/, " $1"));
+      else bits.push(s.label.replace(/ core/, "").replace(/ \((\d+)\)$/, " $1"));
+    });
+    if (m.shape === "grenade" && !done.some(s => s.part === "area")) bits.unshift("Sphere");
+    return [m.n, ...bits].join(" · ");
+  }
+
   // ---------- Tabletop Simulator export ----------
   function toTabletop(c) {
     const d = derived(c);
@@ -465,6 +598,7 @@ const CW = (() => {
            ENCUMBRANCE, WOUNDS, EXHAUSTION, LEVELS, clamp, num, tri, karmaBetween, levelDelta, blankCharacter, normalize,
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
-           encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop };
+           encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
+           PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie };
 })();
 if (typeof module !== "undefined") module.exports = CW;

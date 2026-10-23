@@ -56,7 +56,7 @@ def build(libs, web=False, dev=False):
         if libs[k] not in seen:
             seen.add(libs[k]); tags.append(f'<script src="{libs[k]}"></script>')
     data = "\n".join(read(f) for f in ["rules.js", "skills-data.js", "skill-tables.js", "rules-info.js"])
-    app = "\n".join(read(f) for f in ["app.js", "genesis.js", "gm.js"])
+    app = "\n".join(read(f) for f in ["app.js", "craft.js", "genesis.js", "gm.js"])
     if dev:
         head += "\n" + DEV_MARK
     egg = ("\n" + read("egg.html") + "\n" + read("egg-furnace.html") + "\n") if web else ""   # hidden mini-games (Skyward Boiler, Furnace Below), website only
