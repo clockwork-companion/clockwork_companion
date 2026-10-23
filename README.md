@@ -1,6 +1,7 @@
 # Clockwork Companion — website
 
-**Live site: [vansinan101.github.io/clockwork_companion](https://vansinan101.github.io/clockwork_companion/)**
+**Live site: [vansinan101.github.io/clockwork_companion](https://vansinan101.github.io/clockwork_companion/)**  
+**Dev page: [vansinan101.github.io/clockwork_companion/dev](https://vansinan101.github.io/clockwork_companion/dev/)** (test build from the Dev branch)
 
 Character sheets, Karma, vitals, gear and the GM initiative deck for *Clockwork: Tales of Steam and Magick*.
 Players sign in with a username and password. The GM sees every character and runs the initiative deck;
