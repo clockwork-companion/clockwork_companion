@@ -52,17 +52,42 @@ button { cursor: pointer; }
 .dot.local { background: var(--warn); }
 
 /* roster */
-.roster { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0 4px; scrollbar-width: thin; }
-.chip { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 5px 12px 5px 5px; background: var(--card);
-  border: 1.5px solid var(--hair); border-radius: 3px; text-align: left; min-width: 0; }
-.chip:hover { border-color: var(--ink-2); }
-.chip[aria-current="true"] { border-color: var(--rule); box-shadow: inset 0 -3px 0 var(--brass); }
-.chip .who { display: grid; line-height: 1.15; }
-.chip b { font-weight: 700; font-size: 14px; white-space: nowrap; }
-.chip span { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
-.chip .bar { height: 3px; background: var(--blood-soft); margin-top: 3px; }
-.chip .bar i { display: block; height: 100%; background: var(--blood); }
-.chip.add { padding: 5px 14px; font-family: var(--f-head); letter-spacing: .08em; text-transform: uppercase; font-size: 13px; border-style: dashed; }
+.roster { position: relative; padding: 12px 0 4px; z-index: 15; }
+.rbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rnow { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 0 1 auto; padding: 6px 12px 6px 6px; text-align: left;
+  background: var(--card); border: 1.5px solid var(--rule); border-radius: 3px; box-shadow: inset 0 -3px 0 var(--brass); }
+.rnow:hover { background: color-mix(in srgb, var(--card) 80%, var(--brass-soft)); }
+.rnow .who, .rcard .who { display: grid; line-height: 1.2; min-width: 0; }
+.rnow b { font: 700 16px var(--f-head); letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rnow .who > span, .rcard .who > span { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rswitch { display: inline-flex; align-items: center; gap: 6px; margin-left: 10px; padding-left: 12px; border-left: 1px solid var(--hair); white-space: nowrap;
+  font: 600 12px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--brass); }
+.rswitch svg { width: 11px; height: 8px; transition: transform .15s; }
+.rnow[aria-expanded="true"] .rswitch svg { transform: rotate(180deg); }
+.radd { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.rpanel { position: absolute; left: 0; top: calc(100% + 2px); width: min(820px, 100%); max-height: min(70vh, 640px); overflow: auto;
+  background: var(--card); border: 1.5px solid var(--rule); box-shadow: 0 18px 40px rgb(0 0 0 / .35); padding: 14px 16px 16px; display: grid; gap: 14px; animation: rIn .14s ease-out; }
+@keyframes rIn { from { transform: translateY(-6px); opacity: 0; } }
+.rhead { display: flex; justify-content: space-between; align-items: center; margin: -4px 0 -6px; }
+.rhead b { font: 600 12px var(--f-head); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.rsearch { width: 100%; border: 1.5px solid var(--hair); background: var(--paper); padding: 8px 10px; font-size: 14px; }
+.rsearch:focus { outline: none; border-color: var(--brass); }
+.rgroup h4 { margin: 0 0 8px; font: 600 11.5px var(--f-head); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1px solid var(--hair); padding-bottom: 4px; }
+.rgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr)); gap: 8px; }
+.rcard { border: 1.5px solid var(--hair); background: var(--paper); min-width: 0; display: grid; }
+.rcard.on { border-color: var(--brass); box-shadow: inset 3px 0 0 var(--brass); }
+.rcard:hover { border-color: var(--ink-2); }
+.rmain { display: flex; align-items: center; gap: 10px; padding: 7px 10px 7px 7px; text-align: left; background: none; border: 0; min-width: 0; width: 100%; }
+.rmain b { font-weight: 700; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rcard .bar { height: 3px; background: var(--blood-soft); margin-top: 4px; } .rcard .bar i { display: block; height: 100%; background: var(--blood); }
+.rcomps { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 8px 8px 50px; }
+.rcomp { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px 2px 2px; border: 1px dashed var(--hair); background: var(--card); font-size: 12.5px; color: var(--ink-2); }
+.rcomp .thumb { width: 20px; height: 20px; flex-basis: 20px; font-size: 10px; }
+.rcomp.on { border-style: solid; border-color: var(--brass); color: var(--ink); }
+@media (max-width: 560px) {
+  .rnow { flex: 1 1 100%; } .rswitch { margin-left: auto; }
+  .rpanel { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: auto; max-height: 78vh; border-width: 2px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+}
 .thumb { width: 34px; height: 34px; flex: 0 0 34px; background: var(--sunk); border: 1px solid var(--rule); display: grid; place-items: center;
   font-family: var(--f-display); font-size: 16px; overflow: hidden; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; }
@@ -505,14 +530,235 @@ td.num, th.num { text-align: right; }
 .mhead b { font-size: 15px; }
 .mact { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .give { width: auto; max-width: 100%; font-size: 13px; }
-.chip.comp { border-style: dashed; margin-left: -4px; }
-.chip.comp .who > span:first-of-type { color: var(--brass); }
 
-/* ---------- website build: table password gate, leave link ---------- */
-.gate { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: var(--paper); overflow: auto; }
-.gatebox { width: min(440px, 100%); display: grid; gap: 14px; background: var(--card); }
-.gatebox p { margin: 0; }
+/* ---------- website sign-in: a forge-lit scene in the spirit of a fantasy MMO login, with gears and steam ---------- */
+.gate { position: fixed; inset: 0; z-index: 70; overflow: auto; color: #f0e0c0; font-family: "Alegreya", Georgia, serif;
+  --gold: #e2b25a; --gold-hi: #fbe7b0; --gold-lo: #8a5a22; --iron: #1b1410;
+  background: radial-gradient(1100px 620px at 50% 118%, rgb(255 120 40 / .30), transparent 62%),
+    radial-gradient(900px 560px at 50% -12%, rgb(110 140 180 / .16), transparent 60%),
+    radial-gradient(circle at 50% 45%, #1d150e 0, #0b0806 72%); }
+.gate::after { content: ""; position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / .65) 100%); }
+.gate-bg { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.gate .gear { position: absolute; fill: currentColor; color: #3b2a1a; opacity: .55; filter: drop-shadow(0 0 1px #000); animation: gateSpin 90s linear infinite; }
+.gate .g1 { width: 620px; left: -230px; bottom: -250px; }
+.gate .g2 { width: 420px; right: -150px; top: -150px; animation-duration: 70s; animation-direction: reverse; color: #33251a; }
+.gate .g3 { width: 250px; right: 9%; bottom: -110px; animation-duration: 40s; animation-direction: reverse; color: #4a3420; opacity: .4; }
+.gate .g4 { width: 300px; left: 12%; top: -170px; animation-duration: 110s; color: #2c2017; opacity: .5; }
+@keyframes gateSpin { to { transform: rotate(360deg); } }
+.gate .steam { position: absolute; width: 70vw; height: 34vh; border-radius: 50%; background: radial-gradient(closest-side, rgb(235 225 210 / .09), transparent); filter: blur(24px); animation: gateDrift 28s ease-in-out infinite alternate; }
+.gate .s1 { left: -20vw; bottom: 8vh; } .gate .s2 { right: -25vw; top: 22vh; animation-duration: 36s; animation-delay: -12s; } .gate .s3 { left: 20vw; bottom: -10vh; animation-duration: 44s; animation-delay: -20s; }
+@keyframes gateDrift { from { transform: translateX(-6vw) scale(1); opacity: .6; } to { transform: translateX(8vw) scale(1.15); opacity: 1; } }
+.gate .embers i { position: absolute; left: var(--x); bottom: -12px; width: 3px; height: 3px; border-radius: 50%; background: #ffc069; box-shadow: 0 0 6px 1px #ff8a3c;
+  animation: gateRise var(--d) linear infinite; animation-delay: var(--delay); opacity: 0; }
+@keyframes gateRise { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: .9; } 70% { opacity: .55; } 100% { transform: translate(var(--w), -105vh); opacity: 0; } }
+
+.gate-wrap { position: relative; z-index: 1; min-height: 100%; display: grid; justify-items: center; align-content: center; gap: 14px; padding: 36px 16px 28px; }
+.gate-crest { display: grid; justify-items: center; text-align: center; }
+.gate .crest { width: 118px; height: 118px; filter: drop-shadow(0 0 18px rgb(255 160 70 / .35)) drop-shadow(0 4px 0 #000); }
+.gate .crest-gear { transform-origin: 100px 100px; animation: gateSpin 60s linear infinite; }
+.gate h1 { margin: -4px 0 0; font: 900 clamp(44px, 10vw, 68px)/1 "Cinzel Decorative", "Cinzel", Georgia, serif; letter-spacing: .03em;
+  background: linear-gradient(180deg, #fff3cf 0%, #f0c470 42%, #a8692a 54%, #e9bb64 78%, #fde6ad 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 2px 0 #2a1608) drop-shadow(0 0 16px rgb(255 160 70 / .3)); }
+.gate-tag { margin: 6px 0 0; display: flex; align-items: center; gap: 12px; font: 600 12px "Cinzel", Georgia, serif; letter-spacing: .32em; text-transform: uppercase; color: #c9a15c; }
+.gate-tag::before, .gate-tag::after { content: ""; width: 46px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
+.gate-tag::after { transform: scaleX(-1); }
+
+/* the panel: dark iron plate, double gold rim, riveted corners and a glowing gem on top */
+.gate-plate { position: relative; width: min(400px, 100%); margin-top: 18px; }
+.gate-panel { position: relative; display: grid; gap: 14px; padding: 34px 30px 28px; border-radius: 6px;
+  background: radial-gradient(120% 80% at 50% 0%, rgb(255 190 110 / .07), transparent 60%), linear-gradient(180deg, #2a1f16 0%, #18110c 100%);
+  border: 1.5px solid #9a6c2c;
+  box-shadow: 0 0 0 1px #0c0805, 0 0 0 5px #241a11, 0 0 0 6.5px #b8862f, 0 0 0 8px #0c0805,
+    0 30px 80px rgb(0 0 0 / .75), 0 0 60px rgb(255 140 60 / .08), inset 0 0 40px rgb(0 0 0 / .55), inset 0 1px 0 rgb(255 220 150 / .14); }
+.gp-corner { position: absolute; width: 46px; height: 46px; z-index: 2; pointer-events: none; filter: drop-shadow(0 1px 1px #000); }
+.gp-corner.tl { left: -12px; top: -12px; } .gp-corner.tr { right: -12px; top: -12px; transform: scaleX(-1); }
+.gp-corner.bl { left: -12px; bottom: -12px; transform: scaleY(-1); } .gp-corner.br { right: -12px; bottom: -12px; transform: scale(-1); }
+.gp-gem { position: absolute; z-index: 3; left: 50%; top: -13px; width: 22px; height: 22px; transform: translateX(-50%) rotate(45deg);
+  background: radial-gradient(circle at 35% 35%, #fff4d2, #ffb04a 40%, #8f2a0c 100%); border: 2px solid var(--gold); box-shadow: 0 0 0 2px #0c0805, 0 0 16px 3px rgb(255 150 60 / .55); }
+
+.gate-tabs { display: flex; justify-content: center; gap: 30px; margin: -4px 0 4px; border-bottom: 1px solid rgb(201 161 92 / .22); }
+.gate-tabs button { position: relative; border: 0; background: none; padding: 4px 2px 10px; cursor: pointer; color: #9c825e;
+  font: 600 14px "Cinzel", Georgia, serif; letter-spacing: .16em; text-transform: uppercase; }
+.gate-tabs button:hover { color: #e9d3a6; }
+.gate-tabs button[aria-pressed="true"] { color: var(--gold-hi); text-shadow: 0 0 10px rgb(255 170 80 / .45); }
+.gate-tabs button[aria-pressed="true"]::after { content: ""; position: absolute; left: -6px; right: -6px; bottom: -1px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent); box-shadow: 0 0 8px rgb(255 170 80 / .7); }
+.gate-field { display: grid; gap: 6px; }
+.gate-field label { font: 600 11px "Cinzel", Georgia, serif; letter-spacing: .22em; text-transform: uppercase; color: #c9a15c; }
+.gate-field small { font-size: 13px; font-style: italic; color: #a58c68; }
+.gate-field input { width: 100%; padding: 11px 13px; border-radius: 3px; border: 1px solid #5c4020; background: #0b0806; color: #f6e8c8;
+  font: 17px "Alegreya", Georgia, serif; box-shadow: inset 0 2px 8px rgb(0 0 0 / .85), 0 1px 0 rgb(255 210 140 / .07); transition: border-color .15s, box-shadow .15s; }
+.gate-field input:focus { outline: none; border-color: var(--gold); box-shadow: inset 0 2px 8px rgb(0 0 0 / .85), 0 0 0 1px rgb(226 178 90 / .4), 0 0 14px rgb(255 160 70 / .25); }
+.gate-msg { margin: 0; min-height: 1.3em; text-align: center; font-style: italic; font-size: 14.5px; color: #e0c088; }
+.gate-msg:empty { min-height: 0; margin-top: -14px; }
+
+/* buttons: an ember-red seal with a gold rim for the main action, darker iron for the rest */
+.gate-btn { justify-self: center; min-width: min(240px, 100%); padding: 12px 30px; cursor: pointer; border-radius: 4px;
+  font: 700 15px "Cinzel", Georgia, serif; letter-spacing: .16em; text-transform: uppercase; color: #ffe8b5;
+  text-shadow: 0 1px 0 #3a0c04, 0 0 10px rgb(255 170 80 / .45);
+  background: linear-gradient(180deg, #d0552a 0%, #9a2a14 47%, #6c170b 53%, #8f2c13 100%);
+  border: 2px solid #e0aa55; box-shadow: 0 0 0 1px #2a0e06, inset 0 1px 0 rgb(255 220 170 / .55), inset 0 -3px 6px rgb(0 0 0 / .35), 0 6px 18px rgb(0 0 0 / .6);
+  transition: filter .15s, box-shadow .15s, transform .05s; }
+.gate-btn:hover { filter: brightness(1.12) saturate(1.1); box-shadow: 0 0 0 1px #2a0e06, inset 0 1px 0 rgb(255 220 170 / .6), inset 0 -3px 6px rgb(0 0 0 / .35), 0 6px 18px rgb(0 0 0 / .6), 0 0 22px rgb(255 120 50 / .45); }
+.gate-btn:active { transform: translateY(1px); }
+.gate-btn:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 3px; }
+.gate-btn.alt { color: #ecd7aa; text-shadow: 0 1px 0 #000; background: linear-gradient(180deg, #4b3a29 0%, #2e2219 50%, #241a12 51%, #33261b 100%); border-color: #9a6c2c; font-size: 13px; }
+.gate-btn[hidden], .gate-claim[hidden] { display: none; }
+.gate-claim { display: grid; gap: 10px; justify-items: center; }
+.gate-who { margin: 0; text-align: center; color: #c8b28c; font-size: 15px; }
+.gate-who b { color: var(--gold-hi); font-weight: 500; }
+.gate-link { border: 0; background: none; padding: 0; cursor: pointer; color: var(--gold); font: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.gate-foot { margin: 10px 0 0; font: 500 11px "Cinzel", Georgia, serif; letter-spacing: .26em; text-transform: uppercase; color: #6f5a3f; text-align: center; }
+@media (max-width: 480px) {
+  .gate-panel { padding: 30px 20px 24px; }
+  .gate .crest { width: 92px; height: 92px; }
+  .gate-tag { letter-spacing: .2em; font-size: 10.5px; } .gate-tag::before, .gate-tag::after { width: 22px; }
+  .gate .g1 { width: 420px; left: -200px; bottom: -180px; } .gate .g2 { width: 280px; right: -130px; top: -110px; }
+}
+/* ---------- website build: sign-out link ---------- */
 .linkbtn { border: 0; background: none; padding: 0 0 0 6px; color: var(--brass); text-decoration: underline; text-underline-offset: 2px; font: inherit; }
+
+/* ---------- sigil emblems (a character's face when there's no portrait) ---------- */
+.emblem { display: block; width: 100%; height: 100%; background: var(--em, var(--brass));
+  -webkit-mask: var(--sigil) center / 82% no-repeat; mask: var(--sigil) center / 82% no-repeat; }
+.thumb .emblem, .portrait .emblem { background: radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--em, var(--brass)) 55%, #fff), var(--em, var(--brass)) 60%); }
+.portrait .emblem { -webkit-mask-size: 78%; mask-size: 78%; }
+
+/* ---------- new character: choose a road ---------- */
+.gx-veil { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: 16px; background: rgb(0 0 0 / .55); backdrop-filter: blur(3px); animation: rIn .15s ease-out; }
+.gx-choose { position: relative; width: min(640px, 100%); background: var(--card); border: 1.5px solid var(--rule); padding: 28px 26px 22px; display: grid; gap: 18px; box-shadow: 0 24px 60px rgb(0 0 0 / .45); }
+.gx-choose h2 { margin: 0; font-size: 28px; text-align: center; }
+.gx-x { position: absolute; right: 10px; top: 10px; }
+.gx-roads { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.gx-road { display: grid; justify-items: center; text-align: center; gap: 8px; padding: 20px 16px 18px; background: var(--paper); border: 1.5px solid var(--hair); cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s; }
+.gx-road:hover { border-color: var(--brass); transform: translateY(-2px); box-shadow: 0 10px 24px rgb(0 0 0 / .18); }
+.gx-road.main { border-color: var(--brass); box-shadow: inset 0 3px 0 var(--brass); }
+.gx-road .emblem { width: 74px; height: 74px; --em: var(--brass); }
+.gx-road b { font: 700 17px var(--f-head); letter-spacing: .08em; text-transform: uppercase; }
+.gx-road span { font-size: 14px; color: var(--ink-2); }
+.gx-blank { justify-self: center; font-size: 13px; }
+@media (max-width: 560px) { .gx-roads { grid-template-columns: minmax(0, 1fr); } .gx-road { grid-template-columns: 56px minmax(0, 1fr); justify-items: start; text-align: left; gap: 2px 14px; padding: 14px; } .gx-road .emblem { grid-row: span 2; width: 56px; height: 56px; } }
+
+/* ---------- the guide ---------- */
+.genesis { position: fixed; inset: 0; z-index: 46; display: grid; grid-template-rows: auto minmax(0, 1fr); color: var(--ink);
+  background: radial-gradient(900px 600px at 50% 0%, color-mix(in srgb, var(--brass) 14%, transparent), transparent 70%), var(--paper); animation: rIn .2s ease-out; }
+.gx-top { display: flex; align-items: center; gap: 12px; padding: 12px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1.5px solid var(--hair); background: var(--card); }
+.gx-steps { list-style: none; display: flex; gap: 4px; margin: 0 auto; padding: 0; overflow-x: auto; scrollbar-width: none; }
+.gx-steps li { display: flex; align-items: center; gap: 7px; padding: 4px 10px; font: 600 12px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.gx-steps li span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--hair); font: 600 11px var(--f-mono); }
+.gx-steps li.done { color: var(--ink-2); } .gx-steps li.done span { background: var(--ink-2); border-color: var(--ink-2); color: var(--paper); }
+.gx-steps li.now { color: var(--brass); } .gx-steps li.now span { border-color: var(--brass); background: var(--brass); color: var(--brass-ink); box-shadow: 0 0 0 3px var(--brass-soft); }
+.gx-body { overflow-y: auto; padding: 28px 16px 40px; }
+.gx-step { width: min(760px, 100%); margin: 0 auto; display: grid; gap: 18px; animation: gxIn .35s ease-out; }
+@keyframes gxIn { from { opacity: 0; transform: translateY(10px); } }
+.gx-kicker { margin: 0; text-align: center; font: italic 15px var(--f-body); color: var(--brass); }
+.gx-title { margin: -8px 0 0; text-align: center; font: 400 clamp(28px, 5vw, 40px)/1.15 var(--f-display); }
+.gx-lede { margin: -4px auto 0; max-width: 60ch; text-align: center; color: var(--ink-2); }
+.gx-form { display: grid; gap: 16px; width: min(520px, 100%); margin: 0 auto; }
+.gx-form .field input, .gx-form .field select { font-size: 16px; padding: 6px 0; }
+.gx-big { font: 400 26px var(--f-display) !important; }
+.gx-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.gx-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 6px; padding-top: 16px; border-top: 1px solid var(--hair); }
+.gx-abandon { justify-self: center; font-size: 13px; color: var(--bad); }
+.center { text-align: center; }
+
+/* likeness */
+.gx-facegrid { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; align-items: start; }
+.gx-face { display: grid; justify-items: center; gap: 10px; }
+.gx-face > i, .gx-face > img { width: 120px; height: 120px; border: 3px solid var(--rule); background: var(--sunk); object-fit: cover; }
+.gx-face > i.emblem { background: radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--em) 55%, #fff), var(--em) 60%); -webkit-mask-size: 82%; mask-size: 82%; border: 0; }
+.gx-face.big > i, .gx-face.big > img { width: 180px; height: 180px; }
+.gx-face.big > i.emblem { filter: drop-shadow(0 0 16px color-mix(in srgb, var(--em) 50%, transparent)); }
+.gx-face b { font: 400 20px var(--f-display); text-align: center; }
+.gx-modes { margin-bottom: 12px; }
+.gx-sigils { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 10px 0 14px; }
+.gx-sigil { aspect-ratio: 1; padding: 8px; background: var(--card); border: 1.5px solid var(--hair); cursor: pointer; }
+.gx-sigil .emblem { -webkit-mask-size: 92%; mask-size: 92%; }
+.gx-sigil:hover { border-color: var(--ink-2); } .gx-sigil.on { border-color: var(--brass); box-shadow: inset 0 0 0 2px var(--brass-soft); }
+.gx-hues { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gx-hue { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--card); box-shadow: 0 0 0 1.5px var(--hair); cursor: pointer; padding: 0; }
+.gx-hue.on { box-shadow: 0 0 0 2px var(--rule); }
+.gx-custom { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); margin-left: 4px; }
+.gx-custom input { width: 34px; height: 28px; padding: 0; border: 1.5px solid var(--hair); background: none; }
+
+/* fate: dice */
+.gx-tray { display: flex; justify-content: center; align-items: center; gap: 18px; min-height: 150px; flex-wrap: wrap; }
+.d8 { width: 76px; height: 86px; position: relative; display: grid; place-items: center; transition: opacity .3s, filter .3s, transform .3s; }
+.d8::before { content: ""; position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 38%, 100% 62%, 50% 100%, 0 62%, 0 38%);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--brass) 55%, #fff) 0%, var(--brass) 45%, color-mix(in srgb, var(--brass) 55%, #000) 100%); }
+.d8::after { content: ""; position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 38%, 50% 50%, 0 38%); background: rgb(255 255 255 / .18); }
+.d8 span { position: relative; z-index: 1; margin-top: 8px; font: 700 30px var(--f-mono); color: var(--brass-ink); text-shadow: 0 1px 0 rgb(255 255 255 / .25); }
+.d8.idle { opacity: .45; }
+.gx-tray.rolling .d8 { animation: tumble .32s linear infinite; animation-delay: calc(var(--i) * -.1s); }
+@keyframes tumble { 0% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-14px) rotate(25deg); } 50% { transform: translateY(0) rotate(-12deg) scale(.95); } 75% { transform: translateY(-8px) rotate(-30deg); } 100% { transform: translateY(0) rotate(0); } }
+.d8.low { opacity: .3; filter: grayscale(1); transform: scale(.86); }
+.d8.low span::after { content: ""; position: absolute; left: -6px; right: -6px; top: 50%; height: 3px; background: var(--bad); transform: rotate(-20deg); }
+.gx-sum { min-width: 110px; display: grid; justify-items: center; opacity: 0; transform: scale(.6); transition: opacity .25s, transform .35s cubic-bezier(.2, 1.6, .4, 1); }
+.gx-sum.show { opacity: 1; transform: none; }
+.gx-sum b { font: 700 58px/1 var(--f-mono); }
+.gx-sum b.hi { color: var(--brass); text-shadow: 0 0 22px color-mix(in srgb, var(--brass) 60%, transparent); }
+.gx-sum b.lo { color: var(--bad); }
+.gx-sum small { color: var(--ink-3); font: 12px var(--f-mono); }
+.gx-rollbtns { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.gx-set { display: grid; justify-items: center; gap: 6px; }
+.gx-slots { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; width: min(560px, 100%); }
+.gx-slot { display: grid; justify-items: center; padding: 6px 0 8px; border: 1.5px dashed var(--hair); background: var(--card); }
+.gx-slot small { font: 600 10.5px var(--f-head); letter-spacing: .1em; color: var(--ink-3); }
+.gx-slot b { font: 700 24px var(--f-mono); color: var(--ink-3); }
+.gx-slot.got { border-style: solid; border-color: var(--ink-2); animation: pop .35s ease-out; } .gx-slot.got b { color: var(--ink); }
+.gx-slot.hi { border-color: var(--brass); box-shadow: inset 0 -3px 0 var(--brass); } .gx-slot.hi b { color: var(--brass); }
+.gx-slot.lo { border-color: var(--bad); } .gx-slot.lo b { color: var(--bad); }
+.gx-slot.next { border-color: var(--brass); border-style: dashed; animation: breathe 1.6s ease-in-out infinite; }
+@keyframes pop { 0% { transform: scale(.7); } 60% { transform: scale(1.12); } 100% { transform: none; } }
+@keyframes breathe { 50% { box-shadow: 0 0 0 3px var(--brass-soft); } }
+
+/* choose a set */
+.gx-sets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.gx-pick { display: grid; gap: 10px; justify-items: center; padding: 18px 14px; background: var(--card); border: 1.5px solid var(--hair); cursor: pointer; }
+.gx-pick.on { border-color: var(--brass); box-shadow: inset 0 0 0 2px var(--brass-soft), 0 8px 22px rgb(0 0 0 / .15); }
+.gx-vals { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.gx-vals b { min-width: 34px; padding: 4px 0; text-align: center; font: 700 18px var(--f-mono); border: 1px solid var(--hair); background: var(--paper); }
+.gx-vals b.hi { color: var(--brass); border-color: var(--brass); } .gx-vals b.lo { color: var(--bad); border-color: var(--bad); }
+
+/* shape: place rolls on attributes */
+.gx-hand { position: sticky; top: -28px; z-index: 2; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; padding: 12px 0; background: var(--paper); }
+.gx-chip { width: 54px; height: 54px; font: 700 22px var(--f-mono); border: 2px solid var(--ink-2); background: var(--card); color: var(--ink); cursor: pointer; transition: transform .12s, box-shadow .12s, opacity .2s; }
+.gx-chip.hi { border-color: var(--brass); color: var(--brass); } .gx-chip.lo { border-color: var(--bad); color: var(--bad); }
+.gx-chip.held { transform: translateY(-4px) scale(1.08); box-shadow: 0 0 0 3px var(--brass-soft), 0 8px 18px rgb(0 0 0 / .25); background: var(--brass); color: var(--brass-ink); border-color: var(--brass); }
+.gx-chip.used { opacity: .22; cursor: default; }
+.gx-attrs { display: grid; gap: 8px; }
+.gx-attr { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 12px; align-items: center; text-align: left; padding: 10px 14px; background: var(--card); border: 1.5px solid var(--hair); cursor: pointer; }
+.gx-attr.target { border-style: dashed; border-color: var(--brass); }
+.gx-attr.filled { border-style: solid; border-color: var(--ink-2); }
+.gx-an b { display: block; font: 400 21px var(--f-display); } .gx-an small { color: var(--ink-3); font-size: 13px; }
+.gx-av { display: grid; justify-items: end; } .gx-av b { font: 700 28px/1 var(--f-mono); } .gx-av small { font-size: 12px; color: var(--ink-3); } .gx-av i { font: 24px var(--f-mono); color: var(--hair); }
+.gx-attr.hi .gx-av b { color: var(--brass); } .gx-attr.lo .gx-av b, .gx-attr.lo .gx-av small { color: var(--bad); }
+.gx-shapebtns { justify-content: center; }
+
+/* awaken */
+.gx-awaken { justify-items: center; text-align: center; }
+.gx-awaken .gx-face { animation: awaken 1.2s ease-out; }
+@keyframes awaken { 0% { opacity: 0; transform: scale(.6) rotate(-20deg); filter: brightness(2.2) blur(4px); } 60% { opacity: 1; filter: brightness(1.4); } 100% { transform: none; filter: none; } }
+.gx-name { margin-top: 0; }
+.gx-final { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; width: 100%; }
+.gx-fa { display: grid; justify-items: center; gap: 2px; padding: 8px 2px; border: 1.5px solid var(--hair); background: var(--card); }
+.gx-fa small { font: 600 10.5px var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.gx-fa b { font: 700 24px var(--f-mono); } .gx-fa.hi b { color: var(--brass); } .gx-fa.lo b { color: var(--bad); }
+.gx-awaken .gx-nav { width: 100%; }
+
+@media (max-width: 560px) {
+  .gx-steps li { padding: 4px 4px; font-size: 0; gap: 0; } .gx-steps li.now { font-size: 11px; gap: 6px; }
+  .gx-body { padding: 20px 14px 32px; }
+  .gx-two, .gx-sets { grid-template-columns: minmax(0, 1fr); }
+  .gx-facegrid { grid-template-columns: minmax(0, 1fr); }
+  .gx-sigils { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .d8 { width: 60px; height: 68px; } .d8 span { font-size: 24px; } .gx-tray { gap: 10px; min-height: 120px; } .gx-sum b { font-size: 46px; }
+  .gx-slots { gap: 4px; } .gx-slot b { font-size: 19px; }
+  .gx-attr { grid-template-columns: minmax(0, 1fr) 96px; padding: 10px; } .gx-an small { font-size: 12px; }
+  .gx-chip { width: 46px; height: 46px; font-size: 19px; }
+  .gx-final { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .gx-nav .muted { order: 3; width: 100%; text-align: center; }
+}
 
 /* ---------- theme picker ---------- */
 .skinpick { display: flex; align-items: center; gap: 6px; }
@@ -576,7 +822,7 @@ td.num, th.num { text-align: right; }
 [data-skin="light"] .frame::before, [data-skin="light"] .frame::after { display: none; }
 [data-skin="light"] .h { letter-spacing: .02em; font-size: 20px; }
 [data-skin="light"] .top, [data-skin="light"] .namefield { border-bottom-width: 1.5px; }
-[data-skin="light"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .spbox, .sptable, .chip) { border-radius: 10px; border-width: 1px; }
+[data-skin="light"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .spbox, .sptable, .rnow, .rcard, .rpanel) { border-radius: 10px; border-width: 1px; }
 [data-skin="light"] :is(.btn, .iconbtn, .seg, .skinpick select) { border-radius: 8px; border-width: 1px; }
 [data-skin="light"] .seg { overflow: hidden; border-color: var(--hair); }
 [data-skin="light"] .seg button[aria-pressed="true"] { background: var(--ink); }
@@ -608,7 +854,7 @@ td.num, th.num { text-align: right; }
 [data-skin="retro"] .brand { font-size: 38px; } [data-skin="retro"] .namefield { font-size: 44px; font-weight: 400; }
 [data-skin="retro"] .frame { border-left: 2px dashed var(--bracket); }
 [data-skin="retro"] .frame::before, [data-skin="retro"] .frame::after { height: 2px; left: -2px; background: repeating-linear-gradient(90deg, var(--bracket) 0 6px, transparent 6px 10px); }
-[data-skin="retro"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .spbox, .sptable, .chip) { border: 1px solid var(--ink-3); border-radius: 0; background: rgb(255 184 77 / .03); }
+[data-skin="retro"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .spbox, .sptable, .rnow, .rcard, .rpanel) { border: 1px solid var(--ink-3); border-radius: 0; background: rgb(255 184 77 / .03); }
 [data-skin="retro"] :is(.btn, .tabs button, .seg button, .stat span, .fact span, .lbl, .field label, .mini label, .legend b, .flag, .ptype, .pname, .meter .t, .skinpick select, .chip.add, .brand small, .spbox summary, .sptable h4, th) { font-family: var(--f-head); font-size: 17px; font-weight: 400; }
 [data-skin="retro"] .btn:hover, [data-skin="retro"] .iconbtn:hover { background: var(--ink); color: var(--paper); text-shadow: none; }
 [data-skin="retro"] .tabs { border-bottom: 4px double var(--rule); }
@@ -716,9 +962,17 @@ td.num, th.num { text-align: right; }
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-auth-compat.js"></script>
-<script src="https://unpkg.com/preact@10.19.3/dist/preact.umd.js"></script>
-<script src="https://unpkg.com/preact@10.19.3/hooks/dist/hooks.umd.js"></script>
-<script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+<script>
+!function(n,l){"object"==typeof exports&&"undefined"!=typeof module?l(exports):"function"==typeof define&&define.amd?define(["exports"],l):l((n||self).preact={})}(this,function(n){var l,u,t,i,o,r,f,e,c,s=65536,a=1<<17,h={},p=[],v=/acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i,y=Array.isArray;function d(n,l){for(var u in l)n[u]=l[u];return n}function _(n){var l=n.parentNode;l&&l.removeChild(n)}function b(n,u,t){var i,o,r,f={};for(r in u)"key"==r?i=u[r]:"ref"==r?o=u[r]:f[r]=u[r];if(arguments.length>2&&(f.children=arguments.length>3?l.call(arguments,2):t),"function"==typeof n&&null!=n.defaultProps)for(r in n.defaultProps)void 0===f[r]&&(f[r]=n.defaultProps[r]);return g(n,f,i,o,null)}function g(n,l,i,o,r){var f={type:n,props:l,key:i,ref:o,__k:null,__:null,__b:0,__e:null,__d:void 0,__c:null,constructor:void 0,__v:null==r?++t:r,__i:-1,__u:0};return null==r&&null!=u.vnode&&u.vnode(f),f}function m(n){return n.children}function k(n,l){this.props=n,this.context=l}function w(n,l){if(null==l)return n.__?w(n.__,n.__i+1):null;for(var u;l<n.__k.length;l++)if(null!=(u=n.__k[l])&&null!=u.__e)return u.__e;return"function"==typeof n.type?w(n):null}function x(n){var l,u;if(null!=(n=n.__)&&null!=n.__c){for(n.__e=n.__c.base=null,l=0;l<n.__k.length;l++)if(null!=(u=n.__k[l])&&null!=u.__e){n.__e=n.__c.base=u.__e;break}return x(n)}}function P(n){(!n.__d&&(n.__d=!0)&&o.push(n)&&!S.__r++||r!==u.debounceRendering)&&((r=u.debounceRendering)||f)(S)}function S(){var n,l,t,i,r,f,c,s,a;for(o.sort(e);n=o.shift();)n.__d&&(l=o.length,i=void 0,f=(r=(t=n).__v).__e,s=[],a=[],(c=t.__P)&&((i=d({},r)).__v=r.__v+1,u.vnode&&u.vnode(i),L(c,i,r,t.__n,void 0!==c.ownerSVGElement,32&r.__u?[f]:null,s,null==f?w(r):f,!!(32&r.__u),a),i.__.__k[i.__i]=i,M(s,i,a),i.__e!=f&&x(i)),o.length>l&&o.sort(e));S.__r=0}function T(n,l,u,t,i,o,r,f,e,c,a){var v,y,d,_,b,g=t&&t.__k||p,m=l.length;for(u.__d=e,$(u,l,g),e=u.__d,v=0;v<m;v++)null!=(d=u.__k[v])&&"boolean"!=typeof d&&"function"!=typeof d&&(y=-1===d.__i?h:g[d.__i]||h,d.__i=v,L(n,d,y,i,o,r,f,e,c,a),_=d.__e,d.ref&&y.ref!=d.ref&&(y.ref&&N(y.ref,null,d),a.push(d.ref,d.__c||_,d)),null==b&&null!=_&&(b=_),d.__u&s||y.__k===d.__k?e=C(d,e,n):"function"==typeof d.type&&void 0!==d.__d?e=d.__d:_&&(e=_.nextSibling),d.__d=void 0,d.__u&=-196609);u.__d=e,u.__e=b}function $(n,l,u){var t,i,o,r,f,e=l.length,c=u.length,h=c,p=0;for(n.__k=[],t=0;t<e;t++)null!=(i=n.__k[t]=null==(i=l[t])||"boolean"==typeof i||"function"==typeof i?null:"string"==typeof i||"number"==typeof i||"bigint"==typeof i||i.constructor==String?g(null,i,null,null,i):y(i)?g(m,{children:i},null,null,null):void 0===i.constructor&&i.__b>0?g(i.type,i.props,i.key,i.ref?i.ref:null,i.__v):i)?(i.__=n,i.__b=n.__b+1,f=H(i,u,r=t+p,h),i.__i=f,o=null,-1!==f&&(h--,(o=u[f])&&(o.__u|=a)),null==o||null===o.__v?(-1==f&&p--,"function"!=typeof i.type&&(i.__u|=s)):f!==r&&(f===r+1?p++:f>r?h>e-r?p+=f-r:p--:p=f<r&&f==r-1?f-r:0,f!==t+p&&(i.__u|=s))):(o=u[t])&&null==o.key&&o.__e&&(o.__e==n.__d&&(n.__d=w(o)),O(o,o,!1),u[t]=null,h--);if(h)for(t=0;t<c;t++)null!=(o=u[t])&&0==(o.__u&a)&&(o.__e==n.__d&&(n.__d=w(o)),O(o,o))}function C(n,l,u){var t,i;if("function"==typeof n.type){for(t=n.__k,i=0;t&&i<t.length;i++)t[i]&&(t[i].__=n,l=C(t[i],l,u));return l}return n.__e!=l&&(u.insertBefore(n.__e,l||null),l=n.__e),l&&l.nextSibling}function H(n,l,u,t){var i=n.key,o=n.type,r=u-1,f=u+1,e=l[u];if(null===e||e&&i==e.key&&o===e.type)return u;if(t>(null!=e&&0==(e.__u&a)?1:0))for(;r>=0||f<l.length;){if(r>=0){if((e=l[r])&&0==(e.__u&a)&&i==e.key&&o===e.type)return r;r--}if(f<l.length){if((e=l[f])&&0==(e.__u&a)&&i==e.key&&o===e.type)return f;f++}}return-1}function I(n,l,u){"-"===l[0]?n.setProperty(l,null==u?"":u):n[l]=null==u?"":"number"!=typeof u||v.test(l)?u:u+"px"}function j(n,l,u,t,i){var o;n:if("style"===l)if("string"==typeof u)n.style.cssText=u;else{if("string"==typeof t&&(n.style.cssText=t=""),t)for(l in t)u&&l in u||I(n.style,l,"");if(u)for(l in u)t&&u[l]===t[l]||I(n.style,l,u[l])}else if("o"===l[0]&&"n"===l[1])o=l!==(l=l.replace(/(PointerCapture)$|Capture$/,"$1")),l=l.toLowerCase()in n?l.toLowerCase().slice(2):l.slice(2),n.l||(n.l={}),n.l[l+o]=u,u?t?u.u=t.u:(u.u=Date.now(),n.addEventListener(l,o?D:A,o)):n.removeEventListener(l,o?D:A,o);else{if(i)l=l.replace(/xlink(H|:h)/,"h").replace(/sName$/,"s");else if("width"!==l&&"height"!==l&&"href"!==l&&"list"!==l&&"form"!==l&&"tabIndex"!==l&&"download"!==l&&"rowSpan"!==l&&"colSpan"!==l&&"role"!==l&&l in n)try{n[l]=null==u?"":u;break n}catch(n){}"function"==typeof u||(null==u||!1===u&&"-"!==l[4]?n.removeAttribute(l):n.setAttribute(l,u))}}function A(n){var l=this.l[n.type+!1];if(n.t){if(n.t<=l.u)return}else n.t=Date.now();return l(u.event?u.event(n):n)}function D(n){return this.l[n.type+!0](u.event?u.event(n):n)}function L(n,l,t,i,o,r,f,e,c,s){var a,h,p,v,_,b,g,w,x,P,S,$,C,H,I,j=l.type;if(void 0!==l.constructor)return null;128&t.__u&&(c=!!(32&t.__u),r=[e=l.__e=t.__e]),(a=u.__b)&&a(l);n:if("function"==typeof j)try{if(w=l.props,x=(a=j.contextType)&&i[a.__c],P=a?x?x.props.value:a.__:i,t.__c?g=(h=l.__c=t.__c).__=h.__E:("prototype"in j&&j.prototype.render?l.__c=h=new j(w,P):(l.__c=h=new k(w,P),h.constructor=j,h.render=q),x&&x.sub(h),h.props=w,h.state||(h.state={}),h.context=P,h.__n=i,p=h.__d=!0,h.__h=[],h._sb=[]),null==h.__s&&(h.__s=h.state),null!=j.getDerivedStateFromProps&&(h.__s==h.state&&(h.__s=d({},h.__s)),d(h.__s,j.getDerivedStateFromProps(w,h.__s))),v=h.props,_=h.state,h.__v=l,p)null==j.getDerivedStateFromProps&&null!=h.componentWillMount&&h.componentWillMount(),null!=h.componentDidMount&&h.__h.push(h.componentDidMount);else{if(null==j.getDerivedStateFromProps&&w!==v&&null!=h.componentWillReceiveProps&&h.componentWillReceiveProps(w,P),!h.__e&&(null!=h.shouldComponentUpdate&&!1===h.shouldComponentUpdate(w,h.__s,P)||l.__v===t.__v)){for(l.__v!==t.__v&&(h.props=w,h.state=h.__s,h.__d=!1),l.__e=t.__e,l.__k=t.__k,l.__k.forEach(function(n){n&&(n.__=l)}),S=0;S<h._sb.length;S++)h.__h.push(h._sb[S]);h._sb=[],h.__h.length&&f.push(h);break n}null!=h.componentWillUpdate&&h.componentWillUpdate(w,h.__s,P),null!=h.componentDidUpdate&&h.__h.push(function(){h.componentDidUpdate(v,_,b)})}if(h.context=P,h.props=w,h.__P=n,h.__e=!1,$=u.__r,C=0,"prototype"in j&&j.prototype.render){for(h.state=h.__s,h.__d=!1,$&&$(l),a=h.render(h.props,h.state,h.context),H=0;H<h._sb.length;H++)h.__h.push(h._sb[H]);h._sb=[]}else do{h.__d=!1,$&&$(l),a=h.render(h.props,h.state,h.context),h.state=h.__s}while(h.__d&&++C<25);h.state=h.__s,null!=h.getChildContext&&(i=d(d({},i),h.getChildContext())),p||null==h.getSnapshotBeforeUpdate||(b=h.getSnapshotBeforeUpdate(v,_)),T(n,y(I=null!=a&&a.type===m&&null==a.key?a.props.children:a)?I:[I],l,t,i,o,r,f,e,c,s),h.base=l.__e,l.__u&=-161,h.__h.length&&f.push(h),g&&(h.__E=h.__=null)}catch(n){l.__v=null,c||null!=r?(l.__e=e,l.__u|=c?160:32,r[r.indexOf(e)]=null):(l.__e=t.__e,l.__k=t.__k),u.__e(n,l,t)}else null==r&&l.__v===t.__v?(l.__k=t.__k,l.__e=t.__e):l.__e=z(t.__e,l,t,i,o,r,f,c,s);(a=u.diffed)&&a(l)}function M(n,l,t){l.__d=void 0;for(var i=0;i<t.length;i++)N(t[i],t[++i],t[++i]);u.__c&&u.__c(l,n),n.some(function(l){try{n=l.__h,l.__h=[],n.some(function(n){n.call(l)})}catch(n){u.__e(n,l.__v)}})}function z(n,u,t,i,o,r,f,e,c){var s,a,p,v,d,b,g,m=t.props,k=u.props,x=u.type;if("svg"===x&&(o=!0),null!=r)for(s=0;s<r.length;s++)if((d=r[s])&&"setAttribute"in d==!!x&&(x?d.localName===x:3===d.nodeType)){n=d,r[s]=null;break}if(null==n){if(null===x)return document.createTextNode(k);n=o?document.createElementNS("http://www.w3.org/2000/svg",x):document.createElement(x,k.is&&k),r=null,e=!1}if(null===x)m===k||e&&n.data===k||(n.data=k);else{if(r=r&&l.call(n.childNodes),m=t.props||h,!e&&null!=r)for(m={},s=0;s<n.attributes.length;s++)m[(d=n.attributes[s]).name]=d.value;for(s in m)d=m[s],"children"==s||("dangerouslySetInnerHTML"==s?p=d:"key"===s||s in k||j(n,s,null,d,o));for(s in k)d=k[s],"children"==s?v=d:"dangerouslySetInnerHTML"==s?a=d:"value"==s?b=d:"checked"==s?g=d:"key"===s||e&&"function"!=typeof d||m[s]===d||j(n,s,d,m[s],o);if(a)e||p&&(a.__html===p.__html||a.__html===n.innerHTML)||(n.innerHTML=a.__html),u.__k=[];else if(p&&(n.innerHTML=""),T(n,y(v)?v:[v],u,t,i,o&&"foreignObject"!==x,r,f,r?r[0]:t.__k&&w(t,0),e,c),null!=r)for(s=r.length;s--;)null!=r[s]&&_(r[s]);e||(s="value",void 0!==b&&(b!==n[s]||"progress"===x&&!b||"option"===x&&b!==m[s])&&j(n,s,b,m[s],!1),s="checked",void 0!==g&&g!==n[s]&&j(n,s,g,m[s],!1))}return n}function N(n,l,t){try{"function"==typeof n?n(l):n.current=l}catch(n){u.__e(n,t)}}function O(n,l,t){var i,o;if(u.unmount&&u.unmount(n),(i=n.ref)&&(i.current&&i.current!==n.__e||N(i,null,l)),null!=(i=n.__c)){if(i.componentWillUnmount)try{i.componentWillUnmount()}catch(n){u.__e(n,l)}i.base=i.__P=null,n.__c=void 0}if(i=n.__k)for(o=0;o<i.length;o++)i[o]&&O(i[o],l,t||"function"!=typeof n.type);t||null==n.__e||_(n.__e),n.__=n.__e=n.__d=void 0}function q(n,l,u){return this.constructor(n,u)}function B(n,t,i){var o,r,f,e;u.__&&u.__(n,t),r=(o="function"==typeof i)?null:i&&i.__k||t.__k,f=[],e=[],L(t,n=(!o&&i||t).__k=b(m,null,[n]),r||h,h,void 0!==t.ownerSVGElement,!o&&i?[i]:r?null:t.firstChild?l.call(t.childNodes):null,f,!o&&i?i:r?r.__e:t.firstChild,o,e),M(f,n,e)}l=p.slice,u={__e:function(n,l,u,t){for(var i,o,r;l=l.__;)if((i=l.__c)&&!i.__)try{if((o=i.constructor)&&null!=o.getDerivedStateFromError&&(i.setState(o.getDerivedStateFromError(n)),r=i.__d),null!=i.componentDidCatch&&(i.componentDidCatch(n,t||{}),r=i.__d),r)return i.__E=i}catch(l){n=l}throw n}},t=0,i=function(n){return null!=n&&null==n.constructor},k.prototype.setState=function(n,l){var u;u=null!=this.__s&&this.__s!==this.state?this.__s:this.__s=d({},this.state),"function"==typeof n&&(n=n(d({},u),this.props)),n&&d(u,n),null!=n&&this.__v&&(l&&this._sb.push(l),P(this))},k.prototype.forceUpdate=function(n){this.__v&&(this.__e=!0,n&&this.__h.push(n),P(this))},k.prototype.render=m,o=[],f="function"==typeof Promise?Promise.prototype.then.bind(Promise.resolve()):setTimeout,e=function(n,l){return n.__v.__b-l.__v.__b},S.__r=0,c=0,n.Component=k,n.Fragment=m,n.cloneElement=function(n,u,t){var i,o,r,f,e=d({},n.props);for(r in n.type&&n.type.defaultProps&&(f=n.type.defaultProps),u)"key"==r?i=u[r]:"ref"==r?o=u[r]:e[r]=void 0===u[r]&&void 0!==f?f[r]:u[r];return arguments.length>2&&(e.children=arguments.length>3?l.call(arguments,2):t),g(n.type,e,i||n.key,o||n.ref,null)},n.createContext=function(n,l){var u={__c:l="__cC"+c++,__:n,Consumer:function(n,l){return n.children(l)},Provider:function(n){var u,t;return this.getChildContext||(u=[],(t={})[l]=this,this.getChildContext=function(){return t},this.shouldComponentUpdate=function(n){this.props.value!==n.value&&u.some(function(n){n.__e=!0,P(n)})},this.sub=function(n){u.push(n);var l=n.componentWillUnmount;n.componentWillUnmount=function(){u.splice(u.indexOf(n),1),l&&l.call(n)}}),n.children}};return u.Provider.__=u.Consumer.contextType=u},n.createElement=b,n.createRef=function(){return{current:null}},n.h=b,n.hydrate=function n(l,u){B(l,u,n)},n.isValidElement=i,n.options=u,n.render=B,n.toChildArray=function n(l,u){return u=u||[],null==l||"boolean"==typeof l||(y(l)?l.some(function(l){n(l,u)}):u.push(l)),u}});
+//# sourceMappingURL=preact.umd.js.map
+</script>
+<script>
+!function(n,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports,require("preact")):"function"==typeof define&&define.amd?define(["exports","preact"],t):t((n||self).preactHooks={},n.preact)}(this,function(n,t){var u,r,i,o,f=0,e=[],c=[],a=t.options.__b,v=t.options.__r,l=t.options.diffed,d=t.options.__c,s=t.options.unmount;function p(n,u){t.options.__h&&t.options.__h(r,n,f||u),f=0;var i=r.__H||(r.__H={__:[],__h:[]});return n>=i.__.length&&i.__.push({__V:c}),i.__[n]}function h(n){return f=1,y(g,n)}function y(n,t,i){var o=p(u++,2);if(o.t=n,!o.__c&&(o.__=[i?i(t):g(void 0,t),function(n){var t=o.__N?o.__N[0]:o.__[0],u=o.t(t,n);t!==u&&(o.__N=[u,o.__[1]],o.__c.setState({}))}],o.__c=r,!r.u)){var f=function(n,t,u){if(!o.__c.__H)return!0;var r=o.__c.__H.__.filter(function(n){return n.__c});if(r.every(function(n){return!n.__N}))return!e||e.call(this,n,t,u);var i=!1;return r.forEach(function(n){if(n.__N){var t=n.__[0];n.__=n.__N,n.__N=void 0,t!==n.__[0]&&(i=!0)}}),!(!i&&o.__c.props===n)&&(!e||e.call(this,n,t,u))};r.u=!0;var e=r.shouldComponentUpdate,c=r.componentWillUpdate;r.componentWillUpdate=function(n,t,u){if(this.__e){var r=e;e=void 0,f(n,t,u),e=r}c&&c.call(this,n,t,u)},r.shouldComponentUpdate=f}return o.__N||o.__}function m(n,i){var o=p(u++,4);!t.options.__s&&F(o.__H,i)&&(o.__=n,o.i=i,r.__h.push(o))}function _(n,t){var r=p(u++,7);return F(r.__H,t)?(r.__V=n(),r.i=t,r.__h=n,r.__V):r.__}function T(){for(var n;n=e.shift();)if(n.__P&&n.__H)try{n.__H.__h.forEach(x),n.__H.__h.forEach(A),n.__H.__h=[]}catch(u){n.__H.__h=[],t.options.__e(u,n.__v)}}t.options.__b=function(n){r=null,a&&a(n)},t.options.__r=function(n){v&&v(n),u=0;var t=(r=n.__c).__H;t&&(i===r?(t.__h=[],r.__h=[],t.__.forEach(function(n){n.__N&&(n.__=n.__N),n.__V=c,n.__N=n.i=void 0})):(t.__h.forEach(x),t.__h.forEach(A),t.__h=[],u=0)),i=r},t.options.diffed=function(n){l&&l(n);var u=n.__c;u&&u.__H&&(u.__H.__h.length&&(1!==e.push(u)&&o===t.options.requestAnimationFrame||((o=t.options.requestAnimationFrame)||q)(T)),u.__H.__.forEach(function(n){n.i&&(n.__H=n.i),n.__V!==c&&(n.__=n.__V),n.i=void 0,n.__V=c})),i=r=null},t.options.__c=function(n,u){u.some(function(n){try{n.__h.forEach(x),n.__h=n.__h.filter(function(n){return!n.__||A(n)})}catch(r){u.some(function(n){n.__h&&(n.__h=[])}),u=[],t.options.__e(r,n.__v)}}),d&&d(n,u)},t.options.unmount=function(n){s&&s(n);var u,r=n.__c;r&&r.__H&&(r.__H.__.forEach(function(n){try{x(n)}catch(n){u=n}}),r.__H=void 0,u&&t.options.__e(u,r.__v))};var b="function"==typeof requestAnimationFrame;function q(n){var t,u=function(){clearTimeout(r),b&&cancelAnimationFrame(t),setTimeout(n)},r=setTimeout(u,100);b&&(t=requestAnimationFrame(u))}function x(n){var t=r,u=n.__c;"function"==typeof u&&(n.__c=void 0,u()),r=t}function A(n){var t=r;n.__c=n.__(),r=t}function F(n,t){return!n||n.length!==t.length||t.some(function(t,u){return t!==n[u]})}function g(n,t){return"function"==typeof t?t(n):t}n.useCallback=function(n,t){return f=8,_(function(){return n},t)},n.useContext=function(n){var t=r.context[n.__c],i=p(u++,9);return i.c=n,t?(null==i.__&&(i.__=!0,t.sub(r)),t.props.value):n.__},n.useDebugValue=function(n,u){t.options.useDebugValue&&t.options.useDebugValue(u?u(n):n)},n.useEffect=function(n,i){var o=p(u++,3);!t.options.__s&&F(o.__H,i)&&(o.__=n,o.i=i,r.__H.__h.push(o))},n.useErrorBoundary=function(n){var t=p(u++,10),i=h();return t.__=n,r.componentDidCatch||(r.componentDidCatch=function(n,u){t.__&&t.__(n,u),i[1](n)}),[i[0],function(){i[1](void 0)}]},n.useId=function(){var n=p(u++,11);if(!n.__){for(var t=r.__v;null!==t&&!t.__m&&null!==t.__;)t=t.__;var i=t.__m||(t.__m=[0,0]);n.__="P"+i[0]+"-"+i[1]++}return n.__},n.useImperativeHandle=function(n,t,u){f=6,m(function(){return"function"==typeof n?(n(t()),function(){return n(null)}):n?(n.current=t(),function(){return n.current=null}):void 0},null==u?u:u.concat(n))},n.useLayoutEffect=m,n.useMemo=_,n.useReducer=y,n.useRef=function(n){return f=5,_(function(){return{current:n}},[])},n.useState=h});
+//# sourceMappingURL=hooks.umd.js.map
+</script>
+<script>
+!function(n,e){"object"==typeof exports&&"undefined"!=typeof module?module.exports=e():"function"==typeof define&&define.amd?define(e):n.htm=e()}(this,function(){var n=function(e,t,u,s){var r;t[0]=0;for(var p=1;p<t.length;p++){var h=t[p++],o=t[p]?(t[0]|=h?1:2,u[t[p++]]):t[++p];3===h?s[0]=o:4===h?s[1]=Object.assign(s[1]||{},o):5===h?(s[1]=s[1]||{})[t[++p]]=o:6===h?s[1][t[++p]]+=o+"":h?(r=e.apply(o,n(e,o,u,["",null])),s.push(r),o[0]?t[0]|=2:(t[p-2]=0,t[p]=r)):s.push(o)}return s},e=new Map;return function(t){var u=e.get(this);return u||(u=new Map,e.set(this,u)),(u=n(this,u.get(t)||(u.set(t,u=function(n){for(var e,t,u=1,s="",r="",p=[0],h=function(n){1===u&&(n||(s=s.replace(/^\s*\n\s*|\s*\n\s*$/g,"")))?p.push(0,n,s):3===u&&(n||s)?(p.push(3,n,s),u=2):2===u&&"..."===s&&n?p.push(4,n,0):2===u&&s&&!n?p.push(5,0,!0,s):u>=5&&((s||!n&&5===u)&&(p.push(u,0,s,t),u=6),n&&(p.push(u,n,0,t),u=6)),s=""},o=0;o<n.length;o++){o&&(1===u&&h(),h(o));for(var f=0;f<n[o].length;f++)e=n[o][f],1===u?"<"===e?(h(),p=[p],u=3):s+=e:4===u?"--"===s&&">"===e?(u=1,s=""):s=e+s[0]:r?e===r?r="":s+=e:'"'===e||"'"===e?r=e:">"===e?(h(),u=1):u&&("="===e?(u=5,t=s,s=""):"/"===e&&(u<5||">"===n[o][f+1])?(h(),3===u&&(p=p[0]),u=p,(p=p[0]).push(2,0,u),u=0):" "===e||"\t"===e||"\n"===e||"\r"===e?(h(),u=2):s+=e),3===u&&"!--"===s&&(u=4,p=p[0])}return h(),p}(t)),u),arguments,[])).length>1?u:u[0]}});
+</script>
 <script src="firebase-config.js"></script>
 <script>
 /* Clockwork Companion — web build backend.
@@ -823,25 +1077,59 @@ td.num, th.num { text-align: right; }
     "auth/network-request-failed": "Couldn't reach the server. Check your connection.",
   }[code] || "That didn't work. Try again.");
 
-  // ---- the gate, drawn with the app's own styles so it follows the theme ----
+  // ---- the gate: a forge-lit sign-in scene of its own, the same whatever theme a player picks ----
+  // An outline gear as an SVG path: teeth around the rim and a round hole in the middle.
+  function gearPath(teeth, outer, inner, hole, c = 100) {
+    const step = (Math.PI * 2) / teeth, pt = (a, r) => `${(c + r * Math.cos(a)).toFixed(1)} ${(c + r * Math.sin(a)).toFixed(1)}`;
+    let d = "";
+    for (let i = 0; i < teeth; i++) { const a = i * step; d += (i ? "L" : "M") + pt(a, inner) + "L" + pt(a + step * 0.12, outer) + "L" + pt(a + step * 0.42, outer) + "L" + pt(a + step * 0.54, inner); }
+    return d + `Z M${c + hole} ${c} A${hole} ${hole} 0 1 0 ${c - hole} ${c} A${hole} ${hole} 0 1 0 ${c + hole} ${c} Z`;
+  }
+  const gearSvg = (cls, teeth, outer, inner, hole) => `<svg class="gear ${cls}" viewBox="0 0 200 200"><path fill-rule="evenodd" d="${gearPath(teeth, outer, inner, hole)}"/><circle cx="100" cy="100" r="${hole - 14}" fill="none" stroke="currentColor" stroke-width="6"/></svg>`;
+  const corner = cls => `<svg class="gp-corner ${cls}" viewBox="0 0 48 48" aria-hidden="true"><path d="M3 45V12a9 9 0 0 1 9-9h33" fill="none" stroke="url(#gate-gold)" stroke-width="3"/><path d="M10 38V17a7 7 0 0 1 7-7h21" fill="none" stroke="url(#gate-gold)" stroke-width="1.2" opacity=".75"/><path d="M17 26c0-5 4-9 9-9" fill="none" stroke="url(#gate-gold)" stroke-width="1.4"/><circle cx="10" cy="10" r="4" fill="url(#gate-gold)"/><circle cx="10" cy="10" r="1.4" fill="#2a1a0c"/></svg>`;
+  const SCENE = `<div class="gate-bg" aria-hidden="true">
+      ${gearSvg("g1", 18, 98, 84, 58)}${gearSvg("g2", 14, 98, 82, 50)}${gearSvg("g3", 10, 98, 78, 44)}${gearSvg("g4", 22, 98, 88, 66)}
+      <i class="steam s1"></i><i class="steam s2"></i><i class="steam s3"></i>
+      <div class="embers">${Array.from({ length: 16 }, (_, i) => `<i style="--x:${(i * 61) % 100}%;--d:${9 + ((i * 7) % 8)}s;--w:${(i * 3) % 5 - 2}vw;--delay:-${(i * 1.7).toFixed(1)}s"></i>`).join("")}</div>
+    </div>
+    <svg width="0" height="0" style="position:absolute"><defs>
+      <linearGradient id="gate-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbe7b0"/><stop offset=".5" stop-color="#d49a45"/><stop offset="1" stop-color="#8a5a22"/></linearGradient>
+      <radialGradient id="gate-gem" cx=".45" cy=".35" r=".7"><stop offset="0" stop-color="#fff4d2"/><stop offset=".35" stop-color="#ffb04a"/><stop offset="1" stop-color="#8f2a0c"/></radialGradient>
+    </defs></svg>
+    <main class="gate-wrap">
+      <header class="gate-crest">
+        <svg class="crest" viewBox="0 0 200 200" aria-hidden="true">
+          <g class="crest-gear"><path fill="url(#gate-gold)" fill-rule="evenodd" d="${gearPath(24, 98, 86, 72)}"/></g>
+          <circle cx="100" cy="100" r="66" fill="#140d08" stroke="url(#gate-gold)" stroke-width="3"/>
+          <circle cx="100" cy="100" r="56" fill="none" stroke="#6b4a20" stroke-width="1.5" stroke-dasharray="2 5"/>
+          <path d="M100 50 L122 100 L100 150 L78 100 Z" fill="url(#gate-gem)" stroke="#fbe7b0" stroke-width="1.5"/>
+          <path d="M100 50 L100 150 M78 100 L122 100 M100 50 L90 100 L100 150 M100 50 L110 100 L100 150" fill="none" stroke="#fff1c8" stroke-width=".8" opacity=".55"/>
+          <path d="M60 100h-14M154 100h-14M100 40v-6M100 166v-6" stroke="url(#gate-gold)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <h1>Clockwork</h1>
+        <p class="gate-tag"><span>Tales of Steam and Magick</span></p>
+      </header>
+      <div class="gate-plate">${corner("tl")}${corner("tr")}${corner("bl")}${corner("br")}<i class="gp-gem" aria-hidden="true"></i>
+        <form class="gate-panel" novalidate></form></div>
+      <p class="gate-foot">The companion ledger for your table</p>
+    </main>`;
   let box = null;
   function gate(user, note, key) {
     if (box) box.remove();
     box = document.createElement("div");
     box.className = "gate";
+    box.innerHTML = SCENE;
     document.body.appendChild(box);
     if (user) return tableStep(user, note, key);
     let mode = "in";
     const draw = msg => {
-      box.innerHTML = `<form class="frame gatebox" novalidate>
-        <div class="brand">Clockwork<small>Companion</small></div>
-        <div class="seg" role="group" aria-label="Account"><button type="button" data-m="in" aria-pressed="${mode === "in"}">Sign in</button><button type="button" data-m="up" aria-pressed="${mode === "up"}">New player</button></div>
-        <div class="field"><label for="gate-user">Username</label><input id="gate-user" autocomplete="username" autocapitalize="none" spellcheck="false" /></div>
-        <div class="field"><label for="gate-pass">Password</label><input id="gate-pass" type="password" autocomplete="${mode === "in" ? "current-password" : "new-password"}" /></div>
-        ${mode === "up" ? `<div class="field"><label for="gate-table">Table password</label><input id="gate-table" type="password" autocomplete="off" /><small class="muted">Your GM gives you this. You only need it once.</small></div>` : ""}
-        <p class="gate-msg muted" role="status"></p>
-        <div class="row"><button class="btn primary" type="submit">${mode === "in" ? "Sign in" : "Create my account"}</button></div>
-      </form>`;
+      box.querySelector(".gate-panel").innerHTML = `
+        <div class="gate-tabs" role="group" aria-label="Account"><button type="button" data-m="in" aria-pressed="${mode === "in"}">Sign in</button><button type="button" data-m="up" aria-pressed="${mode === "up"}">New player</button></div>
+        <div class="gate-field"><label for="gate-user">Username</label><input id="gate-user" autocomplete="username" autocapitalize="none" spellcheck="false" /></div>
+        <div class="gate-field"><label for="gate-pass">Password</label><input id="gate-pass" type="password" autocomplete="${mode === "in" ? "current-password" : "new-password"}" /></div>
+        ${mode === "up" ? `<div class="gate-field"><label for="gate-table">Table password</label><input id="gate-table" type="password" autocomplete="off" /><small>Your GM gives you this. You only need it once.</small></div>` : ""}
+        <p class="gate-msg" role="status"></p>
+        <button class="gate-btn" type="submit">${mode === "in" ? "Enter" : "Create my account"}</button>`;
       const q = s => box.querySelector(s), say = t => { q(".gate-msg").textContent = t || ""; };
       say(msg);
       box.querySelectorAll("[data-m]").forEach(b => (b.onclick = () => { mode = b.dataset.m; draw(); }));
@@ -871,14 +1159,13 @@ td.num, th.num { text-align: right; }
 
   // Signed in but not (yet) in a table: ask for the table password, create a table, or claim an old one.
   function tableStep(user, note, key) {
-    box.innerHTML = `<form class="frame gatebox" novalidate>
-        <div class="brand">Clockwork<small>Companion</small></div>
-        <p>Signed in as <b></b>. <button type="button" class="linkbtn gate-out">Sign out</button></p>
-        <div class="field"><label for="gate-table">Table password</label><input id="gate-table" type="password" autocomplete="off" /></div>
-        <p class="gate-msg muted" role="status"></p>
-        <div class="row"><button class="btn primary" type="submit">Open table</button><button class="btn gate-new" type="button" hidden>Create a new table with this password</button></div>
-        <div class="row gate-claim" hidden><button class="btn primary" type="button" data-claim="1">I'm the GM: claim this table</button><button class="btn" type="button" data-claim="0">Join as a player</button></div>
-      </form>`;
+    box.querySelector(".gate-panel").innerHTML = `
+        <p class="gate-who">Signed in as <b></b> · <button type="button" class="gate-link gate-out">Sign out</button></p>
+        <div class="gate-field"><label for="gate-table">Table password</label><input id="gate-table" type="password" autocomplete="off" /></div>
+        <p class="gate-msg" role="status"></p>
+        <button class="gate-btn" type="submit">Open table</button>
+        <button class="gate-btn alt gate-new" type="button" hidden>Create a new table with this password</button>
+        <div class="gate-claim" hidden><button class="gate-btn" type="button" data-claim="1">I'm the GM: claim this table</button><button class="gate-btn alt" type="button" data-claim="0">Join as a player</button></div>`;
     const q = s => box.querySelector(s), say = t => { q(".gate-msg").textContent = t || ""; };
     q("b").textContent = shortName(user);
     q(".gate-out").onclick = () => auth.signOut();
@@ -911,10 +1198,15 @@ td.num, th.num { text-align: right; }
 
   window.CW_WEB = {
     configured,
+    reason: configured ? "" : cfg && cfg.apiKey ? "offline" : "noconfig",   // why shared saving is off, if it is
     leave() { lsSet(KEY, null); (auth ? auth.signOut() : Promise.resolve()).then(() => location.reload()); },
   };
   if (!configured) return;   // no Firebase settings yet: the app runs in this-browser-only mode
 
+  const gateFonts = document.createElement("link");
+  gateFonts.rel = "stylesheet";
+  gateFonts.href = "https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@500;600;700&family=Alegreya:ital,wght@0,400;0,500;1,400&display=swap";
+  document.head.appendChild(gateFonts);
   firebase.initializeApp(cfg);
   fs = firebase.firestore();
   auth = firebase.auth();
@@ -1318,7 +1610,24 @@ const CW = (() => {
     return "Long rest: " + parts.join(" · ");
   }
 
-  function rollAttribute() { const r = [rollDie(8), rollDie(8), rollDie(8)].sort((a, b) => a - b); return Math.max(6, r[1] + r[2]); }
+  // The rulebook roll for one attribute: 3d8, set the lowest die aside, add the other two; never below 6.
+  function rollAttributeDetail() {
+    const dice = [rollDie(8), rollDie(8), rollDie(8)];
+    const low = dice.indexOf(Math.min(...dice));
+    const sum = dice.reduce((s, d, i) => (i === low ? s : s + d), 0);
+    return { dice, low, sum, total: Math.max(6, sum) };
+  }
+  function rollAttribute() { return rollAttributeDetail().total; }
+  // One line per attribute for the creation guide.
+  const ATTR_BLURB = {
+    STR: "Brute power. Carrying, lifting and most melee weapons.",
+    DEX: "Nimbleness and speed. Stealth, thievery and most ranged weapons.",
+    END: "Toughness. Hit points, hunger and how much punishment you can take.",
+    MND: "Raw brain power. Learning, invention and critical thinking.",
+    WIL: "Mental resolve. Shrugging off the mind's assaults and some schools of magic.",
+    WIS: "Knowledge and patience. Fitting into the world and crafts that take learning.",
+    PRS: "Force of personality. Leading, persuading and holding a room.",
+  };
 
   // ---------- Tabletop Simulator export ----------
   function toTabletop(c) {
@@ -1361,7 +1670,7 @@ const CW = (() => {
            ENCUMBRANCE, WOUNDS, EXHAUSTION, LEVELS, clamp, num, tri, karmaBetween, levelDelta, blankCharacter, normalize,
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
-           encumbrance, itemUnits, weaponLine, shortRest, longRest, rollAttribute, toTabletop, fromTabletop };
+           encumbrance, itemUnits, weaponLine, shortRest, longRest, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop };
 })();
 if (typeof module !== "undefined") module.exports = CW;
 /* Skill descriptions and perks from the Clockwork Rulebook 2020.1.
@@ -1625,7 +1934,10 @@ function Mini({ id, label, value, onInput, type = "number", step, min }) {
 }
 const pct = n => `${n}%`;
 const initials = n => (n || "?").trim().split(/\s+/).map(w => w[0]).slice(0, 2).join("").toUpperCase() || "?";
-const portraitSrc = c => (!c || !c.portraitAsset ? "" : Store.assets && Store.assets.urlFor ? Store.assets.urlFor(c.portraitAsset) : "/_blob/" + c.portraitAsset);
+// An uploaded portrait first, then a portrait link; otherwise the character's sigil emblem or initials.
+const portraitSrc = c => (!c ? "" : c.portraitAsset ? (Store.assets && Store.assets.urlFor ? Store.assets.urlFor(c.portraitAsset) : "/_blob/" + c.portraitAsset) : /^https?:\/\//.test(c.portraitUrl || "") ? c.portraitUrl : "");
+const Face = ({ c, name }) => portraitSrc(c) ? html`<img src=${portraitSrc(c)} alt="" />`
+  : c && c.emblem && c.emblem.shape ? html`<i class=${"emblem sg-" + c.emblem.shape} style=${`--em:${c.emblem.hue || "var(--brass)"}`} aria-hidden="true"></i>` : initials(c ? c.name : name);
 // Shrink an image to a small JPEG data URL (portraits in backups, and on the website's database).
 async function shrinkImage(blob, max = 360) {
   const img = await createImageBitmap(blob);
@@ -1643,7 +1955,7 @@ async function saveFile(filename, data) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 // A character's small square portrait, or their initials.
-const Thumb = ({ c, name, lg }) => html`<span class=${"thumb" + (lg ? " lg" : "")}>${portraitSrc(c) ? html`<img src=${portraitSrc(c)} alt="" />` : initials(c ? c.name : name)}</span>`;
+const Thumb = ({ c, name, lg }) => html`<span class=${"thumb" + (lg ? " lg" : "")}><${Face} c=${c} name=${name} /></span>`;
 const subtitle = c => [c.profession, c.campaign].filter(Boolean).join(" · ") || "No profession yet";
 
 /* ================= themes ================= */
@@ -1716,18 +2028,22 @@ function App() {
   const openChar = id => { setSel(id); setView("chars"); setTab("sheet"); window.scrollTo(0, 0); };
 
   // A new character belongs to the player who made it. A companion belongs to whoever plays its master.
-  const create = (rolled, master) => {
+  // fill(c): the creation guide's choices, applied to the new character before it's saved.
+  const create = (rolled, master, fill) => {
     if (Store.readOnly) { toast("You can view these characters but not add new ones."); return; }
     const c = R.blankCharacter(); c.id = rid(); c.name = master ? "New companion" : "New character"; c.ownerId = Store.uid || ""; c.createdAt = Date.now();
     if (Store.table) c.players = gm ? (master ? playersOf(master).slice() : []) : [Store.table.uid];
     if (master) { c.companionOf = master.id; c.campaign = master.campaign || ""; }
     if (rolled) R.ATTRS.forEach(a => { const v = R.rollAttribute(); c.attrs[a.k] = { base: v, value: v }; });
+    if (fill) fill(c);
     c._rev = rid();
     lastEdit.current[c.id] = Date.now();
     setDrafts(d => Object.assign({}, d, { [c.id]: c })); setSel(c.id); setTab("sheet");
     Store.flush(c);
-    toast(master ? `Companion added for ${master.name || "this character"}.` : rolled ? "Rolled 3d8, kept the best two, minimum 6." : "Character created.");
+    toast(fill ? `Welcome to the table, ${c.name}.` : master ? `Companion added for ${master.name || "this character"}.` : rolled ? "Rolled 3d8, kept the best two, minimum 6." : "Character created.");
   };
+  const [making, setMaking] = useState(null);   // null | "choose" | "guide"
+  const startNew = () => setMaking("choose");
   const remove = async id => { const gone = all[id]; await Store.remove(id);
     if (gone && gone.portraitAsset && Store.assets && Store.assets.remove) Store.assets.remove(gone.portraitAsset); setDrafts(d => { const n = Object.assign({}, d); delete n[id]; return n; }); setSel(null); toast("Character deleted."); };
 
@@ -1742,30 +2058,77 @@ function App() {
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
     </header>
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
-      ? "Shared saving isn't set up yet, so characters are kept in this browser only. Add your Firebase settings to firebase-config.js to share them with your table."
+      ? (window.CW_WEB.reason === "offline" ? "Couldn't reach the shared save, so for now characters are kept in this browser only. Check your connection and reload."
+        : "Shared saving isn't set up yet, so characters are kept in this browser only. Add your Firebase settings to firebase-config.js to share them with your table.")
       : "Shared saving isn't available in this view, so characters are kept in this browser only. Open the published page while signed in to share them with your table."}</div>`}
     ${Store.readOnly && html`<div class="banner">You're viewing these characters read-only. To edit, ask the owner to invite you as an Editor.</div>`}
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
     ${view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
-    <nav class="roster" aria-label="Characters">
-      ${list.map(c => { const d = derive(c); const hpPct = d.max.hp ? R.clamp((d.cur.hp / d.max.hp) * 100, 0, 100) : 0;
-        return html`<button class=${"chip" + (c.companionOf && all[c.companionOf] ? " comp" : "")} aria-current=${c.id === sel} onClick=${() => setSel(c.id)}>
-          <${Thumb} c=${c} />
-          <span class="who"><b>${c.name || "Unnamed"}</b><span>${c.companionOf && all[c.companionOf] ? `Companion of ${all[c.companionOf].name || "Unnamed"}` : subtitle(c)}</span>
-          <span class="bar" title=${`HP ${d.cur.hp}/${d.max.hp}`}><i style=${`width:${hpPct}%`}></i></span></span></button>`; })}
-      ${list.length > 0 && html`<button class="chip add" onClick=${() => create(true)}>+ New character</button>`}
-      ${current && !current.companionOf && html`<button class="chip add" onClick=${() => create(false, current)}>+ Companion for ${current.name || "this character"}</button>`}
-    </nav>
+    <${Roster} list=${list} all=${all} sel=${sel} setSel=${setSel} current=${current} create=${create} startNew=${startNew} />
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
       : Store.mode === "loading" ? html`<div class="empty"><p class="muted">Opening the character ledger…</p></div>`
       : html`<div class="empty">
           <div class="ornate">${gm ? "No characters yet" : "Welcome to the table"}</div>
           <p>${gm ? "Each player's sheet lives here: attributes, skills, Karma, vitals and gear, with the rulebook math done for you. Send any character onto your Tabletop Simulator sheet with one code."
             : "You don't have a character here yet. Roll one up below, or ask your GM to hand you an existing one."}</p>
-          <div class="row"><button class="btn primary" onClick=${() => create(true)}>Roll a new character</button>
-          <button class="btn" onClick=${() => create(false)}>Start from a blank sheet</button></div>
-          <p class="muted">Rolling uses the rulebook method for each attribute: 3d8, keep the best two, minimum 6.</p></div>`}`}
+          <div class="row"><button class="btn primary" onClick=${startNew}>Create a character</button></div>
+          <p class="muted">Walk through creation step by step, or let the dice decide everything at once.</p></div>`}`}
+    ${making === "choose" && html`<${NewChoice} gm=${gm} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")}
+      onAuto=${() => { setMaking(null); create(true); }} onBlank=${() => { setMaking(null); create(false); }} />`}
+    ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
     <${Toaster} /><${HoverCard} />
+  </div>`;
+}
+
+/* ================= character switcher ================= */
+// The current character up front; everyone else in a panel that opens below it, grouped by campaign,
+// with each character's companions tucked under them and a search box when the list grows long.
+function Roster({ list, all, sel, setSel, current, create, startNew }) {
+  const [open, setOpen] = useState(false); const [q, setQ] = useState("");
+  const ref = useRef(), searchRef = useRef();
+  useEffect(() => {
+    if (!open) return;
+    const key = e => { if (e.key === "Escape") setOpen(false); };
+    const out = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    window.addEventListener("keydown", key); document.addEventListener("pointerdown", out);
+    if (searchRef.current) searchRef.current.focus();
+    return () => { window.removeEventListener("keydown", key); document.removeEventListener("pointerdown", out); };
+  }, [open]);
+  const pick = id => { setSel(id); setOpen(false); setQ(""); };
+  const master = c => (c && c.companionOf && all[c.companionOf]) || null;
+  const comps = id => list.filter(c => c.companionOf === id);
+  const needle = q.trim().toLowerCase();
+  const hit = c => !needle || [c.name, c.profession, c.player, c.campaign].some(v => (v || "").toLowerCase().includes(needle));
+  const tops = list.filter(c => !master(c) && (hit(c) || comps(c.id).some(hit)));
+  const order = [...CAMPAIGNS, ...new Set(tops.map(c => c.campaign || "").filter(x => x && !CAMPAIGNS.includes(x))), ""];
+  const groups = order.map(k => ({ k, rows: tops.filter(c => (c.campaign || "") === k) })).filter(g => g.rows.length);
+  const hp = c => { const d = derive(c); return d.max.hp ? R.clamp((d.cur.hp / d.max.hp) * 100, 0, 100) : 0; };
+  const cur = current, m = master(cur);
+  return html`<div class="roster" ref=${ref}>
+    <div class="rbar">
+      ${cur ? html`<button type="button" class="rnow" aria-expanded=${open} aria-haspopup="true" onClick=${() => setOpen(!open)}>
+          <${Thumb} c=${cur} lg />
+          <span class="who"><b>${cur.name || "Unnamed"}</b><span>${m ? `Companion of ${m.name || "Unnamed"}` : subtitle(cur)}</span></span>
+          <span class="rswitch">${list.length > 1 ? `Switch · ${list.length}` : "Characters"}<svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span></button>`
+        : html`<span class="muted">No character selected</span>`}
+      <span class="radd">
+        <button class="btn small" onClick=${startNew}>+ New character</button>
+        ${cur && !m && html`<button class="btn small" onClick=${() => create(false, cur)}>+ Companion</button>`}
+      </span>
+    </div>
+    ${open && html`<div class="rpanel" role="dialog" aria-label="Choose a character">
+      <div class="rhead"><b>Characters</b><button type="button" class="iconbtn" aria-label="Close" onClick=${() => setOpen(false)}>×</button></div>
+      ${list.length > 6 && html`<input ref=${searchRef} class="rsearch" type="search" placeholder="Find a character, profession or player…" value=${q} onInput=${e => setQ(e.target.value)} />`}
+      ${groups.map(g => html`<div class="rgroup"><h4>${g.k || "No campaign"}</h4><div class="rgrid">
+        ${g.rows.map(c => html`<div class=${"rcard" + (c.id === sel ? " on" : "")}>
+          <button type="button" class="rmain" onClick=${() => pick(c.id)}>
+            <${Thumb} c=${c} />
+            <span class="who"><b>${c.name || "Unnamed"}</b><span>${[c.profession, c.player].filter(Boolean).join(" · ") || "No profession yet"}</span>
+              <span class="bar"><i style=${`width:${hp(c)}%`}></i></span></span></button>
+          ${comps(c.id).length > 0 && html`<div class="rcomps">${comps(c.id).map(k => html`<button type="button" class=${"rcomp" + (k.id === sel ? " on" : "")} onClick=${() => pick(k.id)}><${Thumb} c=${k} />${k.name || "Unnamed"}</button>`)}</div>`}
+        </div>`)}</div></div>`)}
+      ${!groups.length && html`<p class="muted">Nobody matches “${q}”.</p>`}
+    </div>`}
   </div>`;
 }
 
@@ -1815,7 +2178,7 @@ function Header({ c, d, update, mode, setMode, canFree }) {
   const off = num(c.pool) - num(c.karma) - d.karma.total;   // pool should equal unspent + spent
   const masters = Object.values(Store.chars).filter(x => x.id !== c.id && !x.companionOf).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   return html`<section class="head" style="position:relative;isolation:isolate"><${Sigils} seed="header" n=${1} lead="gears" side="l" />
-    <div class="portrait">${portraitSrc(c) ? html`<img src=${portraitSrc(c)} alt=${`Portrait of ${c.name}`} />` : initials(c.name)}
+    <div class="portrait"><${Face} c=${c} />
       ${Store.assets && html`<button class="over" onClick=${() => fileRef.current.click()} disabled=${busy}>${busy ? "Uploading…" : portraitSrc(c) ? "Replace portrait" : "Add portrait"}</button>
       <input ref=${fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange=${upload} />`}</div>
     <div style="min-width:0">
@@ -2293,6 +2656,256 @@ function TableTab({ c, update, onDelete }) {
           <button class="btn small danger" onClick=${() => onDelete(c.id)}>Delete</button><button class="btn small" onClick=${() => setDel(false)}>Keep</button></div>`
         : html`<button class="btn danger" onClick=${() => setDel(true)}>Delete character</button>`}</section>
   </div>`;
+}
+/* ================= character creation ================= */
+// "New character" offers two roads: a guided genesis, step by step, or an instant auto-generated sheet.
+
+function NewChoice({ gm, onClose, onGuide, onAuto, onBlank }) {
+  useEffect(() => { const k = e => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, []);
+  const draft = lsGet(GENESIS_KEY, null);
+  return html`<div class="gx-veil" onClick=${e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div class="gx-choose" role="dialog" aria-label="Create a character">
+      <button class="iconbtn gx-x" aria-label="Close" onClick=${onClose}>×</button>
+      <h2 class="ornate">A new soul for the table</h2>
+      <div class="gx-roads">
+        <button class="gx-road main" onClick=${onGuide}>
+          <i class="emblem sg-astro" aria-hidden="true"></i>
+          <b>${draft ? "Continue character creation" : "Character creation"}</b>
+          <span>${draft ? `Pick up ${draft.name ? draft.name + "'s" : "your"} creation where you left it.` : "Name them, give them a face, watch the dice decide their nature, then shape it yourself."}</span></button>
+        <button class="gx-road" onClick=${onAuto}>
+          <i class="emblem sg-gears" aria-hidden="true"></i>
+          <b>Auto-generate</b>
+          <span>Roll every attribute in the background and assign them straight away. Fill in the rest on the sheet.</span></button>
+      </div>
+      ${gm && html`<button class="linkbtn gx-blank" onClick=${onBlank}>or start from a blank sheet</button>`}
+    </div>
+  </div>`;
+}
+
+const GENESIS_KEY = "cw-genesis";
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
+const EMBLEM_SHAPES = ["astro", "gears", "attr", "skill", "weap", "sec", "note", "glyphs", "elements", "broken"];
+const HUES = ["#d39d48", "#c9483c", "#6fb6d2", "#8cc06a", "#b48ade", "#e8e2d4", "#e07a3c", "#4fb3a2"];
+const STEPS = ["Name", "Likeness", "Fate", "Choose", "Shape", "Awaken"];
+const freshDraft = () => ({ step: 0, name: "", campaign: "", karma: 0, face: { mode: "sigil", shape: "astro", hue: HUES[0], url: "", asset: "" }, sets: [], chosen: 0, assign: {} });
+
+function Genesis({ onClose, onDone }) {
+  // The draft is kept in this browser, so closing the guide never loses (or re-rolls) your dice.
+  const [g, setG] = useState(() => Object.assign(freshDraft(), lsGet(GENESIS_KEY, null) || {}));
+  useEffect(() => lsSet(GENESIS_KEY, g), [g]);
+  const up = patch => setG(x => Object.assign({}, x, typeof patch === "function" ? patch(x) : patch));
+  const go = step => { up({ step }); const el = document.querySelector(".gx-body"); if (el) el.scrollTop = 0; };
+  const twoSets = g.sets.length > 1;
+  const stepOrder = twoSets ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 4, 5];
+  const next = () => go(stepOrder[stepOrder.indexOf(g.step) + 1]);
+  const back = () => go(stepOrder[Math.max(0, stepOrder.indexOf(g.step) - 1)]);
+  const abandon = () => { lsSet(GENESIS_KEY, null); try { localStorage.removeItem(GENESIS_KEY); } catch {} onClose(); };
+  const finish = () => {
+    const set = g.sets[g.chosen] || [];
+    const extra = twoSets ? 10 : 0, karma = Math.max(0, num(g.karma) - extra);
+    onDone(c => {
+      c.name = g.name.trim() || "Unnamed";
+      c.campaign = g.campaign;
+      R.ATTRS.forEach(a => { const v = set[g.assign[a.k]].total; c.attrs[a.k] = { base: v, value: v }; });
+      c.karma = karma; c.pool = karma;   // nothing spent yet, so the pool is what's left to spend
+      if (g.face.mode === "link" && g.face.url) c.portraitUrl = g.face.url.trim();
+      else if (g.face.mode === "upload" && g.face.asset) c.portraitAsset = g.face.asset;
+      else c.emblem = { shape: g.face.shape, hue: g.face.hue };
+      const rolls = s => s.map(r => r.total).join(", ");
+      c.log = [
+        { t: Date.now(), m: `Created through character creation · starting Karma ${num(g.karma)}${extra ? `, −10 for a second set` : ""}` },
+        ...g.sets.map((s, i) => ({ t: Date.now(), m: `${i ? "Second" : "First"} set rolled: ${rolls(s)}${twoSets && g.chosen === i ? " (kept)" : ""}` })),
+      ];
+    });
+    try { localStorage.removeItem(GENESIS_KEY); } catch {}
+  };
+  const pos = stepOrder.indexOf(g.step);
+  return html`<div class="genesis" role="dialog" aria-label="Character creation">
+    <div class="gx-top">
+      <ol class="gx-steps">${stepOrder.map((s, i) => html`<li class=${(i < pos ? "done " : "") + (i === pos ? "now" : "")}><span>${i + 1}</span>${STEPS[s]}</li>`)}</ol>
+      <button class="iconbtn" aria-label="Close (your progress is kept)" title="Close. Your progress is kept." onClick=${onClose}>×</button>
+    </div>
+    <div class="gx-body">
+      ${g.step === 0 && html`<${StepName} g=${g} up=${up} next=${next} abandon=${abandon} />`}
+      ${g.step === 1 && html`<${StepFace} g=${g} up=${up} next=${next} back=${back} />`}
+      ${g.step === 2 && html`<${StepRoll} g=${g} up=${up} next=${next} back=${back} />`}
+      ${g.step === 3 && html`<${StepChoose} g=${g} up=${up} next=${next} back=${back} />`}
+      ${g.step === 4 && html`<${StepShape} g=${g} up=${up} next=${next} back=${back} />`}
+      ${g.step === 5 && html`<${StepAwaken} g=${g} back=${back} finish=${finish} />`}
+    </div>
+  </div>`;
+}
+
+const GxNav = ({ back, next, nextLabel = "Continue", disabled, hint }) => html`<div class="gx-nav">
+  ${back ? html`<button class="btn" onClick=${back}>Back</button>` : html`<span></span>`}
+  ${hint && html`<span class="muted">${hint}</span>`}
+  ${next && html`<button class="btn primary big" disabled=${disabled} onClick=${next}>${nextLabel}</button>`}</div>`;
+
+// A face for the preview: the chosen picture, or the sigil in its hue.
+const GxFace = ({ face, name, big }) => html`<div class=${"gx-face" + (big ? " big" : "")}>
+  ${face.mode === "link" && /^https?:\/\//.test(face.url) ? html`<img src=${face.url} alt="" onError=${e => { e.target.style.display = "none"; }} />`
+    : face.mode === "upload" && face.asset && Store.assets && Store.assets.urlFor ? html`<img src=${Store.assets.urlFor(face.asset)} alt="" />`
+    : face.mode === "upload" && face.asset ? html`<img src=${"/_blob/" + face.asset} alt="" />`
+    : html`<i class=${"emblem sg-" + face.shape} style=${`--em:${face.hue}`}></i>`}
+  ${name !== undefined && html`<b>${name || "Unnamed"}</b>`}</div>`;
+
+function StepName({ g, up, next, abandon }) {
+  const begun = g.sets.length > 0 || g.name;
+  return html`<section class="gx-step">
+    <p class="gx-kicker">Every tale begins with a name</p>
+    <h2 class="gx-title">Who steps out of the smoke?</h2>
+    <div class="gx-form">
+      <div class="field"><label for="gx-name">Name</label><input id="gx-name" class="gx-big" value=${g.name} placeholder="Anne Domaltici of Tanisburg" onInput=${e => up({ name: e.target.value })} autofocus /></div>
+      <div class="gx-two">
+        <div class="field"><label for="gx-camp">Campaign</label><select id="gx-camp" value=${g.campaign} onChange=${e => up({ campaign: e.target.value })}>
+          <option value="">—</option>${CAMPAIGNS.map(x => html`<option>${x}</option>`)}</select></div>
+        <div class="field"><label for="gx-karma">Starting Karma</label><input id="gx-karma" type="number" min="0" value=${g.karma} onInput=${e => up({ karma: Math.max(0, Math.floor(+e.target.value || 0)) })} />
+          <small class="muted">Your GM sets this for the campaign.</small></div>
+      </div>
+    </div>
+    <${GxNav} next=${next} disabled=${!g.name.trim()} hint=${!g.name.trim() ? "Give them a name to continue." : ""} />
+    ${begun && html`<button class="linkbtn gx-abandon" onClick=${abandon}>Abandon this character and start over</button>`}
+  </section>`;
+}
+
+function StepFace({ g, up, next, back }) {
+  const f = g.face, setF = patch => up(x => ({ face: Object.assign({}, x.face, patch) }));
+  const fileRef = useRef(); const [busy, setBusy] = useState(false);
+  const upload = async e => {
+    const file = e.target.files && e.target.files[0]; e.target.value = ""; if (!file || !Store.assets) return;
+    setBusy(true);
+    try { const r = await Store.assets.upload(file, f.asset); setF({ mode: "upload", asset: r.id }); } catch { toast("Couldn't upload that image. Try a PNG, JPG or WebP."); }
+    setBusy(false);
+  };
+  return html`<section class="gx-step">
+    <p class="gx-kicker">A face for the tale</p>
+    <h2 class="gx-title">How will the table know ${g.name.trim() || "them"}?</h2>
+    <div class="gx-facegrid">
+      <${GxFace} face=${f} name=${g.name} big />
+      <div>
+        <div class="seg three gx-modes" role="group" aria-label="Likeness">
+          <button aria-pressed=${f.mode === "sigil"} onClick=${() => setF({ mode: "sigil" })}>Sigil</button>
+          <button aria-pressed=${f.mode === "link"} onClick=${() => setF({ mode: "link" })}>Image link</button>
+          <button aria-pressed=${f.mode === "upload"} disabled=${!Store.assets} onClick=${() => setF({ mode: "upload" })}>Upload</button></div>
+        ${f.mode === "sigil" && html`<p class="muted">Not ready for a portrait? Bear a sigil. You can add a picture any time from the sheet.</p>
+          <div class="gx-sigils">${EMBLEM_SHAPES.map(s => html`<button class=${"gx-sigil" + (f.shape === s ? " on" : "")} aria-label=${`Sigil ${s}`} onClick=${() => setF({ shape: s })}><i class=${"emblem sg-" + s} style=${`--em:${f.hue}`}></i></button>`)}</div>
+          <div class="gx-hues"><span class="lbl">Hue</span>${HUES.map(h => html`<button class=${"gx-hue" + (f.hue === h ? " on" : "")} style=${`background:${h}`} aria-label=${`Hue ${h}`} onClick=${() => setF({ hue: h })}></button>`)}
+            <label class="gx-custom">Any colour<input type="color" value=${f.hue} onInput=${e => setF({ hue: e.target.value })} /></label></div>`}
+        ${f.mode === "link" && html`<div class="field"><label for="gx-url">Image link</label><input id="gx-url" placeholder="https://…" value=${f.url} onInput=${e => setF({ url: e.target.value.trim() })} />
+          <small class="muted">A public picture link. It also shows on your Tabletop Simulator sheet.</small></div>`}
+        ${f.mode === "upload" && html`<div class="row"><button class="btn" disabled=${busy} onClick=${() => fileRef.current.click()}>${busy ? "Uploading…" : f.asset ? "Choose another picture" : "Choose a picture"}</button>
+          <input ref=${fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange=${upload} /></div>`}
+      </div>
+    </div>
+    <${GxNav} back=${back} next=${next} disabled=${(f.mode === "link" && !/^https?:\/\//.test(f.url)) || (f.mode === "upload" && !f.asset)} />
+  </section>`;
+}
+
+// Three tumbling d8s for the roll in progress (or the last one rolled).
+function DiceTray({ roll, rolling }) {
+  const [flick, setFlick] = useState([1, 1, 1]);
+  useEffect(() => {
+    if (!rolling) return;
+    const t = setInterval(() => setFlick([0, 0, 0].map(() => 1 + Math.floor(Math.random() * 8))), 70);
+    return () => clearInterval(t);
+  }, [rolling]);
+  const faces = rolling ? flick : roll ? roll.dice : [8, 8, 8];
+  return html`<div class=${"gx-tray" + (rolling ? " rolling" : "")}>
+    ${faces.map((d, i) => html`<div class=${"d8" + (!rolling && roll && roll.low === i ? " low" : "") + (!roll && !rolling ? " idle" : "")} style=${`--i:${i}`}><span>${d}</span></div>`)}
+    <div class=${"gx-sum" + (roll && !rolling ? " show" : "")}>${roll && !rolling ? html`<b class=${roll.total >= 15 ? "hi" : roll.total < 10 ? "lo" : ""}>${roll.total}</b>${roll.sum < 6 ? html`<small>${roll.sum}, raised to 6</small>` : html`<small>${roll.dice.filter((_, i) => i !== roll.low).join(" + ")}</small>`}` : ""}</div>
+  </div>`;
+}
+const toneOf = t => (t >= 15 ? "hi" : t < 10 ? "lo" : "");
+
+function StepRoll({ g, up, next, back }) {
+  const [rolling, setRolling] = useState(false);
+  const [last, setLast] = useState(null);
+  const cur = g.sets.length ? g.sets[g.sets.length - 1] : [];
+  const full = cur.length === 7;
+  const canSecond = g.sets.length === 1 && full && num(g.karma) >= 10;
+  const rollOne = () => new Promise(res => {
+    setRolling(true);
+    setTimeout(() => {
+      const r = R.rollAttributeDetail();
+      up(x => { const sets = x.sets.length ? x.sets.map(s => s.slice()) : [[]]; sets[sets.length - 1].push(r); return { sets }; });
+      setLast(r); setRolling(false); res();
+    }, 950);
+  });
+  const rollRest = async () => { const left = 7 - cur.length; for (let i = 0; i < left; i++) { await rollOne(); await new Promise(r => setTimeout(r, 450)); } };
+  const second = () => { up(x => ({ sets: [...x.sets, []] })); setLast(null); };
+  const setRow = (s, idx) => html`<div class="gx-set"><span class="lbl">${g.sets.length > 1 ? (idx ? "Second set" : "First set") : "Your rolls"}</span>
+    <div class="gx-slots">${ROMAN.map((n, i) => html`<div class=${"gx-slot " + (s[i] ? "got " + toneOf(s[i].total) : "") + (i === s.length && !rolling && s === cur && !full ? " next" : "")}>
+      <small>${n}</small><b>${s[i] ? s[i].total : "·"}</b></div>`)}</div>
+    ${s.length === 7 && html`<span class="muted">Total ${s.reduce((a, r) => a + r.total, 0)}</span>`}</div>`;
+  return html`<section class="gx-step">
+    <p class="gx-kicker">Fate is cast in brass and bone</p>
+    <h2 class="gx-title">Roll for ${g.name.trim() || "your character"}</h2>
+    <p class="gx-lede">Seven rolls, one for each attribute. Each is three eight-sided dice: the lowest is set aside and the other two are added, never less than 6. Ten is the measure of common folk; you'll decide which roll goes where.</p>
+    <${DiceTray} roll=${rolling ? null : last} rolling=${rolling} />
+    <div class="gx-rollbtns">
+      ${!full && html`<button class="btn primary big" disabled=${rolling} onClick=${rollOne}>${rolling ? "Rolling…" : `Roll ${ROMAN[cur.length] || "I"}`}</button>
+        ${cur.length > 0 && html`<button class="btn" disabled=${rolling} onClick=${rollRest}>Roll the rest</button>`}`}
+      ${canSecond && html`<button class="btn" onClick=${second}>Roll a second set (−10 Karma)</button>`}
+    </div>
+    ${g.sets.length === 1 && full && num(g.karma) < 10 && html`<p class="muted center">A second set costs 10 Karma; this character starts with ${num(g.karma)}.</p>`}
+    ${g.sets.map((s, i) => setRow(s, i))}
+    <${GxNav} back=${back} next=${full ? next : null} nextLabel=${g.sets.length > 1 ? "Choose a set" : "Keep these rolls"} hint=${full ? "" : "Roll all seven to continue."} />
+  </section>`;
+}
+
+function StepChoose({ g, up, next, back }) {
+  return html`<section class="gx-step">
+    <p class="gx-kicker">Two fates, one life</p>
+    <h2 class="gx-title">Which set will ${g.name.trim() || "they"} carry?</h2>
+    <p class="gx-lede">The second set cost 10 Karma, whichever you keep.</p>
+    <div class="gx-sets">${g.sets.map((s, i) => html`<button class=${"gx-pick" + (g.chosen === i ? " on" : "")} aria-pressed=${g.chosen === i} onClick=${() => up({ chosen: i, assign: {} })}>
+      <span class="lbl">${i ? "Second set" : "First set"}</span>
+      <div class="gx-vals">${s.map(r => r.total).sort((a, b) => b - a).map(t => html`<b class=${toneOf(t)}>${t}</b>`)}</div>
+      <span class="muted">Total ${s.reduce((a, r) => a + r.total, 0)} · ${s.filter(r => r.total < 10).length} broken</span></button>`)}</div>
+    <${GxNav} back=${back} next=${next} nextLabel="Shape this fate" />
+  </section>`;
+}
+
+function StepShape({ g, up, next, back }) {
+  const set = g.sets[g.chosen] || [];
+  const [held, setHeld] = useState(null);   // index into the set of the roll in hand
+  const placed = new Set(Object.values(g.assign));
+  const order = set.map((r, i) => i).sort((a, b) => set[b].total - set[a].total);
+  const place = k => {
+    const at = g.assign[k];
+    if (held === null) { if (at !== undefined) up(x => { const a = Object.assign({}, x.assign); delete a[k]; return { assign: a }; }); return; }
+    up(x => { const a = Object.assign({}, x.assign); Object.keys(a).forEach(q => { if (a[q] === held) delete a[q]; }); a[k] = held; return { assign: a }; });
+    setHeld(null);
+  };
+  const autoFill = () => { const free = order.filter(i => !placed.has(i)); const a = Object.assign({}, g.assign); R.ATTRS.forEach(at => { if (a[at.k] === undefined) a[at.k] = free.shift(); }); up({ assign: a }); };
+  const done = R.ATTRS.every(a => g.assign[a.k] !== undefined);
+  return html`<section class="gx-step">
+    <p class="gx-kicker">The dice decide the clay; you decide the shape</p>
+    <h2 class="gx-title">Shape ${g.name.trim() || "your character"}</h2>
+    <p class="gx-lede">Tap a roll, then tap the attribute it belongs to. Tap a placed roll to take it back.</p>
+    <div class="gx-hand" role="group" aria-label="Your rolls">${order.map(i => html`<button class=${"gx-chip " + toneOf(set[i].total) + (held === i ? " held" : "") + (placed.has(i) ? " used" : "")}
+        aria-pressed=${held === i} disabled=${placed.has(i)} onClick=${() => setHeld(held === i ? null : i)}>${set[i].total}</button>`)}</div>
+    <div class="gx-attrs">${R.ATTRS.map(a => { const at = g.assign[a.k], v = at !== undefined ? set[at].total : null;
+      return html`<button class=${"gx-attr" + (v !== null ? " filled " + toneOf(v) : "") + (held !== null ? " target" : "")} onClick=${() => place(a.k)}>
+        <span class="gx-an"><b>${a.n}</b><small>${R.ATTR_BLURB[a.k]}</small></span>
+        <span class="gx-av">${v !== null ? html`<b>${v}</b><small>${v < 10 ? `broken · can rise to ${v + 10}` : v === 10 ? "median" : `+${v - 10}`}</small>` : html`<i>—</i>`}</span></button>`; })}</div>
+    <div class="row gx-shapebtns">${!done && placed.size > 0 && html`<button class="btn small" onClick=${autoFill}>Fill the rest, highest first</button>`}
+      ${placed.size > 0 && html`<button class="btn small" onClick=${() => { up({ assign: {} }); setHeld(null); }}>Clear all</button>`}</div>
+    <${GxNav} back=${back} next=${next} disabled=${!done} nextLabel="Awaken" hint=${done ? "" : `${7 - placed.size} left to place`} />
+  </section>`;
+}
+
+function StepAwaken({ g, back, finish }) {
+  const set = g.sets[g.chosen] || [];
+  const extra = g.sets.length > 1 ? 10 : 0;
+  return html`<section class="gx-step gx-awaken">
+    <p class="gx-kicker">The gears catch. A heart begins to tick.</p>
+    <${GxFace} face=${g.face} big />
+    <h2 class="gx-title gx-name">${g.name.trim()}</h2>
+    <p class="muted">${[g.campaign, `${Math.max(0, num(g.karma) - extra)} Karma to spend`].filter(Boolean).join(" · ")}</p>
+    <div class="gx-final">${R.ATTRS.map(a => { const v = set[g.assign[a.k]].total; return html`<div class=${"gx-fa " + toneOf(v)}><small>${a.n}</small><b>${v}</b></div>`; })}</div>
+    <${GxNav} back=${back} next=${finish} nextLabel="Begin the tale" />
+  </section>`;
 }
 /* ================= GM table ================= */
 // Initiative is a deck: one card per combatant, a second card for anyone with Dexterity above 15.
