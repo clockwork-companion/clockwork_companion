@@ -4999,304 +4999,445 @@ render(html`<${App} />`, document.getElementById("app"));
 })();
 </script>
 <style>
-#cw-doom { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgb(0 0 0 / .88); }
-#cw-doom .box { position: relative; width: min(960px, calc(100vw - 24px), calc((100vh - 24px) * 1.6)); aspect-ratio: 8 / 5; border: 2px solid #b88a3c; box-shadow: 0 0 0 4px #1b130b, 0 0 0 5px #6b4a1c, 0 20px 60px #000; background: #000; }
+#cw-doom { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgb(0 0 0 / .92); }
+#cw-doom .box { position: relative; width: min(calc(100vw - 16px), calc((100vh - 16px) * 1.6)); aspect-ratio: 8 / 5; border: 2px solid #b88a3c; box-shadow: 0 0 0 3px #1b130b, 0 0 0 4px #6b4a1c, 0 20px 60px #000; background: #000; }
 #cw-doom canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; cursor: crosshair; user-select: none; -webkit-user-select: none; }
-#cw-doom .x { position: absolute; top: 6px; right: 8px; width: 32px; height: 32px; border: 1px solid #6b4a1c; background: #1b130bcc; color: #e9c27a; font: 20px/1 serif; cursor: pointer; z-index: 2; }
-#cw-doom .fire { display: none; position: absolute; right: 14px; bottom: 22%; width: 74px; height: 74px; border-radius: 50%; border: 2px solid #e0b462; background: #8a2e1ccc; color: #ffe2a8; font: bold 13px Georgia, serif; letter-spacing: .08em; touch-action: none; }
+#cw-doom .tb { position: absolute; top: 6px; right: 8px; display: flex; gap: 6px; z-index: 2; }
+#cw-doom .tb button { width: 32px; height: 32px; border: 1px solid #6b4a1c; background: #1b130bcc; color: #e9c27a; font: 18px/1 serif; cursor: pointer; }
+#cw-doom .tb button:hover { border-color: #e9c27a; }
+#cw-doom .fire { display: none; position: absolute; right: 16px; bottom: 24%; width: 78px; height: 78px; border-radius: 50%; border: 2px solid #e0b462; background: #8a2e1ccc; color: #ffe2a8; font: bold 13px Georgia, serif; letter-spacing: .08em; touch-action: none; z-index: 2; }
 @media (pointer: coarse) { #cw-doom .fire { display: block; } }
+#cw-doom form { position: absolute; left: 50%; top: 71%; transform: translateX(-50%); display: flex; gap: 6px; align-items: center; padding: 8px; background: #1b130b; border: 1px solid #b88a3c; z-index: 3; }
+#cw-doom form[hidden] { display: none; }
+#cw-doom input { width: 160px; padding: 6px 8px; border: 1px solid #6b4a1c; background: #0d0905; color: #ffe2a8; font: 16px Georgia, serif; }
+#cw-doom form button { padding: 6px 12px; border: 1px solid #e0b462; background: #8a2e1c; color: #ffe2a8; font: bold 14px Georgia, serif; cursor: pointer; }
+#cw-doom form button:disabled { opacity: .5; cursor: default; }
 </style>
 <script>
-/* Easter egg: "Furnace Below", a first-person automaton hunt (an original Doom-style raycaster; every texture,
-   sprite and sound is generated here). Opened by clicking "Clockwork" in the header five times quickly, or by
-   typing "furnace" outside a text box. Self-contained; touches nothing in the app. */
+/* Easter egg: "Furnace Below", a first-person hunt through generated halls, floor after floor.
+   Art and sound are free CC0 assets (see egg/furnace/CREDITS.md), loaded from egg/furnace/.
+   Opened by clicking "Clockwork" in the header five times quickly, or by typing "furnace" outside a text box.
+   Scores go to the shared high-score list in Firestore (arcade/furnace-below/scores). Touches nothing in the app. */
 (() => {
-  const W = 320, H = 200, VH = 168, TS = 32;
-  // 1 brick, 2 pipe wall, 3 iron, D door, L locked door (needs the valve key), X furnace lever (the exit).
-  // P start, k key, a pressure canister (ammo), h oil can (health), t tinker automaton, g gunner automaton.
-  const LEVEL = [
-    "3333333333333333",
-    "3P..3......t...3",
-    "3...3.......g..3",
-    "3.a.D....h.....3",
-    "3...3..........3",
-    "33D333333333L333",
-    "1..t.1....2.g..2",
-    "1....D....2....2",
-    "1....1.k..2..h.2",
-    "1.a..1..t.2.t..2",
-    "1111111111222X22",
-  ];
-  let open = false;
+  const W = 480, H = 300, VH = 252, TS = 64, SL = 10, GW = 4, GH = 4, MW = GW * SL + 1, MH = GH * SL + 1;
+  const BASE = "egg/furnace/";
+  let open = false, ART = null, artLoading = null;
 
-  // ---------- generated art ----------
-  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const mk = (w, h, draw) => { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); return c; };
-  const shade = (src, a) => mk(src.width, src.height, (x) => { x.drawImage(src, 0, 0); x.fillStyle = `rgba(0,0,0,${a})`; x.fillRect(0, 0, src.width, src.height); });
-  const rivet = (x, cx, cy) => { x.fillStyle = "#1a1612"; x.fillRect(cx, cy, 2, 2); x.fillStyle = "#b9a888"; x.fillRect(cx, cy, 1, 1); };
-  const TEX = {};
-  function buildArt() {
-    if (TEX["1"]) return;
-    const walls = {
-      "1": (x) => { x.fillStyle = "#2a140c"; x.fillRect(0, 0, TS, TS);
-        for (let r = 0; r < 4; r++) for (let c = -1; c < 3; c++) { const ox = c * 16 + (r % 2 ? 8 : 0);
-          x.fillStyle = `hsl(${12 + rnd() * 8} ${45 + rnd() * 15}% ${22 + rnd() * 9}%)`; x.fillRect(ox + 1, r * 8 + 1, 14, 6);
-          for (let i = 0; i < 5; i++) { x.fillStyle = "rgb(0 0 0 / .25)"; x.fillRect(ox + 1 + rnd() * 13, r * 8 + 1 + rnd() * 5, 1, 1); } } },
-      "2": (x) => { x.fillStyle = "#24201b"; x.fillRect(0, 0, TS, TS);
-        for (const px of [3, 18]) { const gr = x.createLinearGradient(px, 0, px + 10, 0); gr.addColorStop(0, "#5a3a18"); gr.addColorStop(.45, "#e0b462"); gr.addColorStop(1, "#4a2e12");
-          x.fillStyle = gr; x.fillRect(px, 0, 10, TS); x.fillStyle = "#3a2410"; x.fillRect(px - 1, 9, 12, 3); x.fillRect(px - 1, 25, 12, 3); }
-        x.fillStyle = "#6b6560"; x.fillRect(14, 14, 3, 4); },
-      "3": (x) => { x.fillStyle = "#3b3d40"; x.fillRect(0, 0, TS, TS); x.fillStyle = "#2a2c2f"; x.fillRect(0, 15, TS, 2); x.fillRect(15, 0, 2, TS);
-        for (let i = 0; i < 30; i++) { x.fillStyle = `rgb(${90 + rnd() * 40} ${70 + rnd() * 20} 50 / .25)`; x.fillRect(rnd() * TS, rnd() * TS, 2, 1); }
-        for (const [a, b] of [[2, 2], [12, 2], [2, 12], [12, 12], [19, 2], [29, 2], [19, 12], [29, 12], [2, 19], [12, 19], [2, 29], [12, 29], [19, 19], [29, 19], [19, 29], [29, 29]]) rivet(x, a, b); },
-      "D": (x) => { x.fillStyle = "#4a4038"; x.fillRect(0, 0, TS, TS); x.fillStyle = "#b88a3c"; x.fillRect(0, 0, TS, 2); x.fillRect(0, 0, 2, TS); x.fillRect(30, 0, 2, TS);
-        x.fillStyle = "#332b25"; for (let y = 5; y < TS; y += 6) x.fillRect(3, y, 26, 2); x.fillStyle = "#e0b462"; x.fillRect(22, 14, 4, 4); },
-      "L": (x) => { walls.D(x); x.fillStyle = "#a01e14"; x.fillRect(2, 13, 28, 6); x.strokeStyle = "#ff5a3a"; x.lineWidth = 2; x.beginPath(); x.arc(16, 16, 5, 0, 7); x.stroke(); },
-      "X": (x) => { walls["3"](x); x.fillStyle = "#1a1612"; x.fillRect(11, 6, 10, 22); x.fillStyle = "#e0b462"; x.fillRect(15, 8, 2, 14); x.fillStyle = "#a01e14"; x.fillRect(13, 6, 6, 4);
-        x.fillStyle = "#4dff7a"; x.fillRect(5, 5, 3, 3); x.fillRect(24, 5, 3, 3); },
-    };
-    for (const k in walls) { const c = mk(TS, TS, walls[k]); TEX[k] = [c, shade(c, .38)]; }
-    const bot = (x, body, eye, frame, arm) => {
-      x.fillStyle = "#2a1e14"; const leg = frame ? 2 : -2; x.fillRect(11 + leg, 24, 3, 8); x.fillRect(18 - leg, 24, 3, 8);
-      const gr = x.createLinearGradient(8, 0, 24, 0); gr.addColorStop(0, body[0]); gr.addColorStop(.5, body[1]); gr.addColorStop(1, body[0]);
-      x.fillStyle = gr; x.beginPath(); x.ellipse(16, 18, 8, 8, 0, 0, 7); x.fill(); x.fillRect(12, 6, 8, 8);
-      x.fillStyle = "#1a1210"; x.fillRect(13, 9, 6, 3); x.fillStyle = eye; x.fillRect(14, 9, 4, 2);
-      x.fillStyle = body[1]; x.fillRect(5, arm ? 8 : 15, 3, 9); x.fillRect(24, arm ? 8 : 15, 3, 9);
-      x.fillStyle = "#3a2410"; for (const [a, b] of [[12, 18], [19, 18], [15, 22]]) x.fillRect(a, b, 2, 2);
-    };
-    const tink = [["#5a3a18", "#c99a4a"], "#ff3a2a"], gun = [["#2c2e31", "#7d8188"], "#38e0ff"];
-    const S = TEX.spr = {
-      t0: mk(TS, TS, x => bot(x, ...tink, 0, 0)), t1: mk(TS, TS, x => bot(x, ...tink, 1, 0)), ta: mk(TS, TS, x => bot(x, ...tink, 0, 1)),
-      g0: mk(TS, TS, x => { bot(x, ...gun, 0, 0); x.fillStyle = "#e0b462"; x.fillRect(24, 14, 6, 4); }),
-      g1: mk(TS, TS, x => { bot(x, ...gun, 1, 0); x.fillStyle = "#e0b462"; x.fillRect(24, 14, 6, 4); }),
-      ga: mk(TS, TS, x => { bot(x, ...gun, 0, 0); x.fillStyle = "#ffd27a"; x.fillRect(24, 13, 8, 6); }),
-      dead: mk(TS, TS, x => { for (let i = 0; i < 9; i++) { x.fillStyle = ["#c99a4a", "#5a3a18", "#7d8188"][i % 3]; x.beginPath(); x.arc(6 + rnd() * 20, 26 + rnd() * 5, 2 + rnd() * 3, 0, 7); x.fill(); } }),
-      k: mk(TS, TS, x => { x.strokeStyle = "#ff3a2a"; x.lineWidth = 3; x.beginPath(); x.arc(16, 22, 6, 0, 7); x.stroke(); x.fillStyle = "#ff3a2a"; x.fillRect(15, 15, 2, 14); x.fillRect(9, 21, 14, 2); }),
-      a: mk(TS, TS, x => { const gr = x.createLinearGradient(10, 0, 22, 0); gr.addColorStop(0, "#7a3d1a"); gr.addColorStop(.5, "#e08a4a"); gr.addColorStop(1, "#5a2a10");
-        x.fillStyle = gr; x.fillRect(11, 16, 10, 15); x.fillStyle = "#e9e2d0"; x.beginPath(); x.arc(16, 21, 3, 0, 7); x.fill(); x.fillStyle = "#3a2410"; x.fillRect(14, 13, 4, 3); }),
-      h: mk(TS, TS, x => { x.fillStyle = "#2f6b34"; x.fillRect(10, 18, 12, 13); x.fillStyle = "#4da857"; x.fillRect(11, 19, 3, 11); x.fillStyle = "#b88a3c"; x.fillRect(19, 13, 2, 6); x.fillRect(20, 11, 6, 2); }),
-      bolt: mk(TS, TS, x => { const gr = x.createRadialGradient(16, 16, 1, 16, 16, 12); gr.addColorStop(0, "#fff8d0"); gr.addColorStop(.4, "#ffb04a"); gr.addColorStop(1, "rgb(255 120 40 / 0)"); x.fillStyle = gr; x.fillRect(0, 0, TS, TS); }),
-    };
-    S.hurt = {}; for (const k of ["t0", "t1", "ta", "g0", "g1", "ga"]) S.hurt[k] = mk(TS, TS, x => { x.drawImage(S[k], 0, 0); x.globalCompositeOperation = "source-atop"; x.fillStyle = "rgb(255 255 255 / .7)"; x.fillRect(0, 0, TS, TS); });
+  // ---------- assets ----------
+  const loadImg = src => new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = BASE + src; });
+  const pixels = img => { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const x = c.getContext("2d"); x.drawImage(img, 0, 0);
+    return new Uint32Array(x.getImageData(0, 0, img.width, img.height).data.buffer); };
+  function loadArt() {
+    if (ART) return Promise.resolve(ART);
+    return artLoading || (artLoading = Promise.all([fetch(BASE + "frames.json").then(r => { if (!r.ok) throw 0; return r.json(); }), loadImg("walls.png"), loadImg("sprites.png"), loadImg("shotgun.png")])
+      .then(([map, walls, sprites, gun]) => {
+        const id = {}; map.walls.forEach((n, i) => id[n] = i);
+        ART = { map, id, walls: pixels(walls), wallW: walls.width, spr: pixels(sprites), sprW: sprites.width, sprites, gun, gunN: map.shotgun };
+        return ART; })
+      .catch(e => { artLoading = null; throw e; }));
+  }
+  let ac = null; const SND = {}, SND_NAMES = ["shot", "m_alert", "m_die", "m_attack", "m_pain", "s_fire", "s_die", "door", "locked", "key", "pickup", "lever", "slam", "hurt", "click", "treasure"];
+  const audio = () => { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); } catch { ac = null; } return ac; };
+  const loadSounds = () => { const a = audio(); if (!a) return;
+    for (const n of SND_NAMES) if (!SND[n]) { SND[n] = "loading";
+      fetch(`${BASE}sfx/${n}.mp3`).then(r => r.arrayBuffer()).then(b => new Promise((ok, bad) => a.decodeAudioData(b, ok, bad))).then(buf => SND[n] = buf).catch(() => { delete SND[n]; }); } };
+  const play = (n, vol = 1, rate = 1) => { const b = SND[n]; if (!ac || !b || b === "loading") return;
+    const s = ac.createBufferSource(), v = ac.createGain(); s.buffer = b; s.playbackRate.value = rate * (.94 + Math.random() * .12); v.gain.value = vol; s.connect(v).connect(ac.destination); s.start(); };
+  const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+  const scoresRef = () => { try { if (window.firebase && firebase.apps && firebase.apps.length) return firebase.firestore().collection("arcade").doc("furnace-below").collection("scores"); } catch {} return null; };
+
+  // ---------- level generator: rooms on a 4x4 grid of slots, joined by a random tree ----------
+  const THEMES = [
+    { base: "brick", alt: ["brick2", "brickskull"], floor: "stone2", deco: ["candles", "barrel", "torchstand"] },
+    { base: "grey", alt: ["grey2", "greyvent"], floor: "stone", deco: ["barrel", "toxic", "plant"] },
+    { base: "stone", alt: ["stone2", "moss", "gate"], floor: "stone2", deco: ["candles", "torchstand", "bones"] },
+    { base: "teal", alt: ["teal2", "bars"], floor: "teal2", deco: ["plant", "barrel", "candles"] },
+    { base: "earth", alt: ["earth2"], floor: "earth2", deco: ["bones", "barrel", "toxic"] },
+    { base: "wood", alt: ["wood"], floor: "earth", deco: ["stove", "candles", "barrel"] },
+    { base: "steel", alt: ["steel2", "steel3", "pipe"], floor: "steel3", deco: ["toxic", "stove", "barrel"] },
+  ];
+  // Interior layouts (9x9, "#" = pillar in the room's wall texture). Mirrored at random.
+  const ROOMS = [
+    [],
+    ["2,2", "2,6", "6,2", "6,6"],
+    ["2,2", "2,4", "2,6", "4,2", "4,6", "6,2", "6,4", "6,6"],
+    ["3,3", "3,4", "3,5", "4,3", "4,5", "5,3", "5,4", "5,5", "4,4"],
+    ["1,2", "3,2", "5,2", "7,2", "1,6", "3,6", "5,6", "7,6"],
+    ["2,2", "2,3", "2,5", "2,6", "6,2", "6,3", "6,5", "6,6"],
+    ["1,1", "1,7", "7,1", "7,7", "3,3", "3,5", "5,3", "5,5"],
+    ["2,1", "2,2", "2,3", "6,5", "6,6", "6,7"],
+  ];
+  function generate(floorNo) {
+    const id = ART.id, R = Math.random, ri = n => Math.floor(R() * n), pick = a => a[ri(a.length)];
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const want = Math.min(16, 7 + floorNo + ri(2));
+      const key = (x, y) => y * GW + x, rooms = new Map(), edges = [];
+      const s0 = [ri(GW), ri(GH)]; rooms.set(key(...s0), { x: s0[0], y: s0[1] });
+      for (let tries = 0; rooms.size < want && tries < 500; tries++) {
+        const a = pick([...rooms.values()]), [dx, dy] = pick([[1, 0], [-1, 0], [0, 1], [0, -1]]), nx = a.x + dx, ny = a.y + dy;
+        if (nx < 0 || ny < 0 || nx >= GW || ny >= GH || rooms.has(key(nx, ny))) continue;
+        rooms.set(key(nx, ny), { x: nx, y: ny }); edges.push([key(a.x, a.y), key(nx, ny)]);
+      }
+      const adj = new Map([...rooms.keys()].map(k => [k, []])); edges.forEach(([a, b]) => { adj.get(a).push(b); adj.get(b).push(a); });
+      const start = key(...s0), dist = new Map([[start, 0]]), q = [start];
+      while (q.length) { const k = q.shift(); for (const n of adj.get(k)) if (!dist.has(n)) { dist.set(n, dist.get(k) + 1); q.push(n); } }
+      const leaves = [...rooms.keys()].filter(k => k !== start && adj.get(k).length === 1);
+      if (!leaves.length) continue;
+      const exit = leaves.sort((a, b) => dist.get(b) - dist.get(a))[0];
+      const others = [...rooms.keys()].filter(k => k !== start && k !== exit).sort((a, b) => dist.get(b) - dist.get(a));
+      if (!others.length) continue;
+      const keyRoom = others[ri(Math.max(1, Math.ceil(others.length / 2)))];
+      // a loop or two (never into the exit room) so the layout isn't a pure tree
+      for (const [k, r] of rooms) for (const [dx, dy] of [[1, 0], [0, 1]]) { const n = key(r.x + dx, r.y + dy);
+        if (r.x + dx < GW && r.y + dy < GH && rooms.has(n) && k !== exit && n !== exit && !adj.get(k).includes(n) && R() < .18) { edges.push([k, n]); adj.get(k).push(n); adj.get(n).push(k); } }
+
+      const grid = new Int16Array(MW * MH).fill(id.steel + 1), ftex = new Int16Array(MW * MH).fill(id.stone2), owner = new Int16Array(MW * MH).fill(-1);
+      const at = (x, y) => y * MW + x, theme = new Map();
+      for (const [k, r] of rooms) {
+        const t = k === exit ? THEMES[6] : pick(THEMES); theme.set(k, t);
+        for (let y = r.y * SL; y <= r.y * SL + SL; y++) for (let x = r.x * SL; x <= r.x * SL + SL; x++)
+          grid[at(x, y)] = (R() < .12 ? id[pick(t.alt)] : id[t.base]) + 1;
+      }
+      for (const [k, r] of rooms) {
+        const t = theme.get(k), layout = k === start || k === exit ? pick([ROOMS[0], ROOMS[1]]) : pick(ROOMS), fx = R() < .5, fy = R() < .5;
+        for (let y = 1; y < SL; y++) for (let x = 1; x < SL; x++) { const c = at(r.x * SL + x, r.y * SL + y); grid[c] = 0; ftex[c] = id[t.floor]; owner[c] = k; }
+        for (const p of layout) { let [py, px] = p.split(",").map(Number); if (fx) px = 8 - px; if (fy) py = 8 - py;
+          grid[at(r.x * SL + 1 + px, r.y * SL + 1 + py)] = id[t.base] + 1; }
+      }
+      const DOOR = id.door + 1, LOCK = id.locked + 1, LEVER = id.lever + 1;
+      let exitDoor = null;
+      for (const [a, b] of edges) {
+        const A = rooms.get(a), B = rooms.get(b), horiz = A.y === B.y, wx = horiz ? Math.max(A.x, B.x) * SL : A.x * SL + 5, wy = horiz ? A.y * SL + 5 : Math.max(A.y, B.y) * SL;
+        const isExit = a === exit || b === exit, kind = isExit ? "lock" : R() < .22 ? "wide" : R() < .12 ? "open" : "door";
+        if (kind === "door" || kind === "lock") { grid[at(wx, wy)] = kind === "lock" ? LOCK : DOOR; if (isExit) exitDoor = [wx, wy, horiz]; }
+        else { const span = kind === "wide" ? 1 : 3;
+          for (let d = -span; d <= span; d++) { const c = horiz ? at(wx, wy + d) : at(wx + d, wy); grid[c] = 0; ftex[c] = ftex[horiz ? at(wx - 1, wy) : at(wx, wy - 1)]; } }
+      }
+      // lever on the exit room's wall facing away from its door
+      const E = rooms.get(exit), [dx0, dy0] = exitDoor;
+      const cx = E.x * SL + 5, cy = E.y * SL + 5;
+      const lever = dx0 === E.x * SL ? [E.x * SL + SL, cy] : dx0 === E.x * SL + SL ? [E.x * SL, cy] : dy0 === E.y * SL ? [cx, E.y * SL + SL] : [cx, E.y * SL];
+      grid[at(...lever)] = LEVER;
+      // reachability check from the start room centre, treating doors as passable
+      const S = rooms.get(start), sx = S.x * SL + 5, sy = S.y * SL + 5;
+      if (grid[at(sx, sy)]) grid[at(sx, sy)] = 0;
+      const seen = new Uint8Array(MW * MH), st = [at(sx, sy)]; seen[st[0]] = 1;
+      while (st.length) { const c = st.pop(), x = c % MW, y = (c - x) / MW;
+        for (const n of [c + 1, c - 1, c + MW, c - MW]) { const nx = n % MW, ny = (n - nx) / MW; if (Math.abs(nx - x) + Math.abs(ny - y) !== 1 || seen[n]) continue;
+          if (grid[n] === 0 || grid[n] === DOOR || grid[n] === LOCK) { seen[n] = 1; if (grid[n] === 0 || grid[n] === DOOR || grid[n] === LOCK) st.push(n); } } }
+      const leverOk = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => { const n = at(lever[0] + a, lever[1] + b); return seen[n] && owner[n] === exit; });
+      if (![...rooms.keys()].every(k => { const r = rooms.get(k); return seen[at(r.x * SL + 5, r.y * SL + 5)] || [...Array(81).keys()].some(i => seen[at(r.x * SL + 1 + i % 9, r.y * SL + 1 + Math.floor(i / 9))]); }) || !leverOk) continue;
+
+      // fill the rooms
+      const ents = [], used = new Set();
+      const free = k => { const r = rooms.get(k), out = [];
+        for (let y = 1; y < SL; y++) for (let x = 1; x < SL; x++) { const c = at(r.x * SL + x, r.y * SL + y);
+          if (grid[c] === 0 && seen[c] && !used.has(c) && ![c + 1, c - 1, c + MW, c - MW].some(n => grid[n] === DOOR || grid[n] === LOCK || grid[n] === LEVER)) out.push(c); }
+        return out; };
+      const place = (k, kind, extra = {}) => { const f = free(k); if (!f.length) return null; const c = pick(f); used.add(c);
+        const e = { kind, x: c % MW + .5 + (R() - .5) * .3, y: Math.floor(c / MW) + .5 + (R() - .5) * .3, alive: true, ...extra }; ents.push(e); return e; };
+      const soldierP = Math.min(.6, .3 + floorNo * .06);
+      for (const k of rooms.keys()) {
+        const d = dist.get(k) ?? 1, t = theme.get(k);
+        // decoration near the walls (does not block)
+        for (let i = 0, n = 1 + ri(3); i < n; i++) { const f = free(k).filter(c => { const x = c % MW % SL, y = Math.floor(c / MW) % SL; return x === 1 || x === 9 || y === 1 || y === 9; });
+          if (f.length) { const c = pick(f); used.add(c); ents.push({ kind: pick(t.deco), deco: true, x: c % MW + .5, y: Math.floor(c / MW) + .5, alive: true }); } }
+        if (k === start) { place(k, "ammo", { item: true }); continue; }
+        const nEn = Math.min(4, ri(2) + Math.floor(d / 2) + Math.floor((floorNo - 1) / 2) + (k === exit ? 1 : 0));
+        for (let i = 0; i < nEn; i++) { const sol = R() < soldierP;
+          place(k, sol ? "s" : "m", { foe: true, hp: (sol ? 30 : 45) + (floorNo - 1) * 6, awake: false, cd: 1 + R(), atk: 0, hurt: 0, anim: R() * 4, die: 0 }); }
+        if (R() < .55) place(k, floorNo > 2 && R() < .3 ? "bigammo" : "ammo", { item: true });
+        if (R() < .38) place(k, R() < .25 ? "bighealth" : "health", { item: true });
+        if (R() < .33) place(k, pick(["cup", "cup", "crown", "chest"]), { item: true });
+      }
+      if (!place(keyRoom, "key", { item: true })) continue;
+      // face the first way out of the start room
+      const firstN = adj.get(start)[0], FN = rooms.get(firstN), ang = Math.atan2(FN.y - S.y, FN.x - S.x);
+      return { grid, ftex, owner, ents, exit, start: { x: sx + .5, y: sy + .5, ang }, foes: ents.filter(e => e.foe).length, rooms: rooms.size };
+    }
+    throw new Error("level generation failed");
   }
 
-  // ---------- sound (WebAudio, generated) ----------
-  let ac = null;
-  const audio = () => { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); } catch { ac = null; } return ac; };
-  const tone = (f1, f2, dur, type = "square", vol = .08) => { const a = audio(); if (!a) return; const o = a.createOscillator(), v = a.createGain(), t = a.currentTime;
-    o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
-    v.gain.setValueAtTime(vol, t); v.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(v).connect(a.destination); o.start(t); o.stop(t + dur); };
-  const noise = (dur, freq, vol = .25) => { const a = audio(); if (!a) return; const n = Math.floor(a.sampleRate * dur), b = a.createBuffer(1, n, a.sampleRate), d = b.getChannelData(0);
-    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n) ** 2;
-    const s = a.createBufferSource(), f = a.createBiquadFilter(), v = a.createGain(); s.buffer = b; f.type = "lowpass"; f.frequency.value = freq; v.gain.value = vol; s.connect(f).connect(v).connect(a.destination); s.start(); };
-  const SFX = { shot: () => { noise(.35, 1800, .35); tone(120, 40, .25, "sawtooth", .12); }, hit: () => tone(300, 90, .12, "square", .06),
-    pickup: () => { tone(660, 990, .09, "sine", .1); setTimeout(() => tone(990, 1320, .09, "sine", .1), 90); }, door: () => noise(.5, 300, .3),
-    hurt: () => tone(220, 60, .25, "sawtooth", .1), bolt: () => tone(900, 300, .2, "triangle", .05), empty: () => tone(140, 120, .05, "square", .05), die: () => tone(300, 30, .9, "sawtooth", .12) };
-
   function launch() {
-    if (open || document.getElementById("cw-egg")) return; open = true; buildArt();
+    if (open || document.getElementById("cw-egg")) return; open = true;
     const wrap = document.createElement("div"); wrap.id = "cw-doom";
     wrap.innerHTML = `<div class="box" role="dialog" aria-label="Furnace Below, a hidden game"><canvas width="${W}" height="${H}" tabindex="0"></canvas>
-      <button class="x" aria-label="Close">×</button><button class="fire" aria-label="Fire">FIRE</button></div>`;
+      <div class="tb"><button class="fs" aria-label="Full screen" title="Full screen">⛶</button><button class="x" aria-label="Close" title="Close">×</button></div>
+      <button class="fire" aria-label="Fire">FIRE</button>
+      <form hidden><input maxlength="16" placeholder="Your name" aria-label="Your name for the high scores" autocomplete="nickname" /><button type="submit">Save</button></form></div>`;
     document.body.appendChild(wrap);
     const cv = wrap.querySelector("canvas"), g = cv.getContext("2d"); g.imageSmoothingEnabled = false;
+    const img = g.createImageData(W, VH), buf = new Uint32Array(img.data.buffer), zbuf = new Float32Array(W);
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const zbuf = new Float32Array(W);
-    let grid, P, ents, bolts, st, raf = 0, last = 0;
-    const keys = {};
+    const keys = {}, touch = { f: 0, s: 0, fire: false }, pts = {};
+    let L = null, P = null, bolts = [], st = { mode: "loading", t0: 0, msg: "", msgT: 0 }, raf = 0, last = 0, err = "";
 
-    const reset = () => {
-      grid = LEVEL.map(r => r.split("")); ents = []; bolts = [];
-      P = { x: 1.5, y: 1.5, dx: 1, dy: 0, cx: 0, cy: .66, hp: 100, ammo: 12, key: false, kills: 0, bob: 0, flash: 0, hurt: 0, glow: 0, recoil: 0 };
-      grid.forEach((row, y) => row.forEach((c, x) => {
-        if (c === "P") { P.x = x + .5; P.y = y + .5; row[x] = "."; }
-        else if ("kahtg".includes(c)) { row[x] = ".";
-          ents.push(c === "t" || c === "g" ? { kind: c, x: x + .5, y: y + .5, hp: c === "t" ? 30 : 45, alive: true, awake: false, cd: 1, atk: 0, hurt: 0, anim: 0 }
-                                           : { kind: c, x: x + .5, y: y + .5, alive: true, item: true }); } }));
-      st = { mode: st ? "play" : "title", time: 0, msg: "", msgT: 0, total: ents.filter(e => !e.item).length };
-    };
-    reset();
-    const say = (m, t = 2.2) => { st.msg = m; st.msgT = t; };
-    const tile = (x, y) => (grid[y] && grid[y][x]) || "3";
-    const walk = (x, y) => tile(Math.floor(x), Math.floor(y)) === ".";
-    const los = (ax, ay, bx, by) => { const d = Math.hypot(bx - ax, by - ay), n = Math.ceil(d / .1);
-      for (let i = 1; i < n; i++) if (!walk(ax + (bx - ax) * i / n, ay + (by - ay) * i / n)) return false; return true; };
-    const rotate = a => { const c = Math.cos(a), s = Math.sin(a);
-      [P.dx, P.dy] = [P.dx * c - P.dy * s, P.dx * s + P.dy * c]; [P.cx, P.cy] = [P.cx * c - P.cy * s, P.cx * s + P.cy * c]; };
+    // high scores
+    const form = wrap.querySelector("form"), nameBox = form.querySelector("input"), saveBtn = form.querySelector("button");
+    const ref = scoresRef(); let top = [], board = ref ? "loading" : "offline", pending = null, note = "";
+    const unsub = ref ? ref.orderBy("score", "desc").limit(3).onSnapshot(
+      q => { top = q.docs.map(d => d.data()).map(x => ({ name: String(x.name || "?").slice(0, 16), score: +x.score || 0, floor: +x.floor || 1 })); board = "live"; },
+      () => { board = "offline"; }) : null;
+    const hideForm = () => { form.hidden = true; pending = null; cv.focus(); };
+    form.addEventListener("submit", e => { e.preventDefault();
+      const name = nameBox.value.trim().slice(0, 16); if (!name || !pending || !ref) return;
+      saveBtn.disabled = true; store.set("cw-egg-name", name);
+      ref.add({ name, score: pending.score, floor: pending.floor, at: firebase.firestore.FieldValue.serverTimestamp() })
+        .then(() => { note = "Saved to the high scores."; hideForm(); }).catch(() => { note = "Couldn't save the score just now."; hideForm(); })
+        .finally(() => { saveBtn.disabled = false; }); });
 
+    const say = (m, t = 2.4) => { st.msg = m; st.msgT = t; };
+    const newGame = () => { P = { x: 0, y: 0, dx: 1, dy: 0, cx: 0, cy: .66, hp: 100, ammo: 20, key: false, kills: 0, score: 0, floor: 1, bob: 0, recoil: 0, hurt: 0, glow: 0, floorT: 0, floorKills: 0, treasure: 0 };
+      enterFloor(); note = ""; };
+    const enterFloor = () => { L = generate(P.floor); bolts = []; P.key = false; P.floorT = 0; P.floorKills = 0; P.treasure = 0;
+      P.x = L.start.x; P.y = L.start.y; P.dx = Math.cos(L.start.ang); P.dy = Math.sin(L.start.ang); P.cx = -P.dy * .66; P.cy = P.dx * .66;
+      L.doors = new Map(); say(`Floor ${P.floor} · find the key, then the lever`, 3); };
+
+    const cell = (x, y) => (x < 0 || y < 0 || x >= MW || y >= MH) ? 1 : L.grid[y * MW + x];
+    const solid = (x, y) => { const c = cell(Math.floor(x), Math.floor(y)); if (!c) return false; const d = L.doors.get(Math.floor(y) * MW + Math.floor(x)); return !(d && d.open >= 1); };
+    const los = (ax, ay, bx, by) => { const d = Math.hypot(bx - ax, by - ay), n = Math.ceil(d / .1); for (let i = 1; i < n; i++) if (solid(ax + (bx - ax) * i / n, ay + (by - ay) * i / n)) return false; return true; };
+    const rotate = a => { const c = Math.cos(a), s = Math.sin(a); [P.dx, P.dy] = [P.dx * c - P.dy * s, P.dx * s + P.dy * c]; [P.cx, P.cy] = [P.cx * c - P.cy * s, P.cx * s + P.cy * c]; };
+    const ID = () => ART.id;
     const use = (tx, ty) => {
-      const t = tile(tx, ty);
-      if (t === "D") { grid[ty][tx] = "."; SFX.door(); }
-      else if (t === "L") { if (P.key) { grid[ty][tx] = "."; SFX.door(); say("The valve turns. The way is open."); } else if (st.msgT < 1) say("Sealed. Find the red valve key."); }
-      else if (t === "X") { st.mode = "won"; st.t0 = 0; SFX.pickup(); setTimeout(() => SFX.door(), 150); document.exitPointerLock && document.exitPointerLock(); }
+      const c = cell(tx, ty) - 1, k = ty * MW + tx;
+      if (c === ID().door || c === ID().locked) {
+        if (L.doors.has(k)) return;
+        if (c === ID().locked && !P.key) { if (st.msgT < 1) { say("Locked. The key is somewhere on this floor."); play("locked", .8); } return; }
+        L.doors.set(k, { open: 0 }); play("door", .7); if (c === ID().locked) say("The key turns. The furnace room is open.");
+      } else if (c === ID().lever && L.owner[Math.floor(P.y) * MW + Math.floor(P.x)] === L.exit) {
+        play("lever", .9); play("slam", .6);
+        const bonus = 500 * P.floor, tb = Math.max(0, Math.round(400 - P.floorT * 3)), all = P.floorKills >= L.foes ? 300 : 0;
+        P.score += bonus + tb + all; st.clear = { bonus, tb, all, kills: P.floorKills, foes: L.foes, t: P.floorT, treasure: P.treasure };
+        st.mode = "clear"; st.t0 = 0; unlock();
+      }
     };
-    const move = (mx, my) => {
-      const r = .22, nx = P.x + mx, ny = P.y + my;
-      const cx = Math.floor(nx + Math.sign(mx) * r), cy = Math.floor(ny + Math.sign(my) * r);
-      if (mx) { if (tile(cx, Math.floor(P.y)) === ".") P.x = nx; else use(cx, Math.floor(P.y)); }
-      if (my) { if (tile(Math.floor(P.x), cy) === ".") P.y = ny; else use(Math.floor(P.x), cy); }
-    };
-    const hurt = n => { if (st.mode !== "play") return; P.hp -= n; P.hurt = .35; SFX.hurt();
-      if (P.hp <= 0) { P.hp = 0; st.mode = "dead"; st.t0 = 0; SFX.die(); document.exitPointerLock && document.exitPointerLock(); } };
+    const move = (mx, my) => { const r = .24, nx = P.x + mx, ny = P.y + my;
+      const tx = Math.floor(nx + Math.sign(mx) * r), ty = Math.floor(ny + Math.sign(my) * r);
+      if (mx) { if (!solid(nx + Math.sign(mx) * r, P.y)) P.x = nx; else use(tx, Math.floor(P.y)); }
+      if (my) { if (!solid(P.x, ny + Math.sign(my) * r)) P.y = ny; else use(Math.floor(P.x), ty); } };
+    const unlock = () => { if (document.pointerLockElement === cv) document.exitPointerLock(); };
+    const hurt = n => { if (st.mode !== "play") return; P.hp -= n; P.hurt = .4; play("hurt", .8);
+      if (P.hp <= 0) { P.hp = 0; st.mode = "dead"; st.t0 = 0; unlock(); play("m_die", .7, .7);
+        if (board === "live" && P.score > 0 && (top.length < 3 || P.score > top[top.length - 1].score)) { pending = { score: P.score, floor: P.floor }; form.hidden = false; nameBox.value = store.get("cw-egg-name", ""); setTimeout(() => nameBox.focus(), 0); } } };
 
     const fire = () => {
       if (st.mode !== "play" || P.recoil > 0) return;
-      if (P.ammo <= 0) { SFX.empty(); say("Out of pressure. Find a canister."); P.recoil = .3; return; }
-      P.ammo--; P.flash = .1; P.recoil = .55; SFX.shot();
-      const ang = Math.atan2(P.dy, P.dx); let best = null, bd = 1e9;
-      for (const e of ents) { if (e.item || !e.alive) continue;
-        const d = Math.hypot(e.x - P.x, e.y - P.y); let da = Math.atan2(e.y - P.y, e.x - P.x) - ang; da = Math.atan2(Math.sin(da), Math.cos(da));
-        if (Math.abs(da) < Math.atan(.38 / d) + .04 && d < bd && los(P.x, P.y, e.x, e.y)) { best = e; bd = d; } }
-      for (const e of ents) if (!e.item && Math.hypot(e.x - P.x, e.y - P.y) < 8) e.awake = true;
-      if (best) { best.hp -= Math.round(48 * Math.max(.3, 1 - bd / 9) + Math.random() * 10); best.hurt = .15; SFX.hit();
-        if (best.hp <= 0) { best.alive = false; P.kills++; } }
+      if (P.ammo <= 0) { play("click"); say("Out of shells."); P.recoil = .3; return; }
+      P.ammo--; P.recoil = .62; play("shot", .9);
+      const ang = Math.atan2(P.dy, P.dx);
+      for (const e of L.ents) if (e.foe && e.alive && Math.hypot(e.x - P.x, e.y - P.y) < 11) wake(e);
+      // five pellets with a little spread
+      const hits = new Map();
+      for (let p = 0; p < 5; p++) { const a = ang + (p - 2) * .035 + (Math.random() - .5) * .02; let best = null, bd = 1e9;
+        for (const e of L.ents) { if (!e.foe || !e.alive) continue;
+          const d = Math.hypot(e.x - P.x, e.y - P.y); let da = Math.atan2(e.y - P.y, e.x - P.x) - a; da = Math.atan2(Math.sin(da), Math.cos(da));
+          if (Math.abs(da) < Math.atan(.3 / d) && d < bd && los(P.x, P.y, e.x, e.y)) { best = e; bd = d; } }
+        if (best) hits.set(best, (hits.get(best) || 0) + Math.round(16 * Math.max(.25, 1 - bd / 10) + Math.random() * 5)); }
+      for (const [e, dmg] of hits) { e.hp -= dmg; e.hurt = .18; e.pain = .25;
+        if (e.hp <= 0) { e.alive = false; e.die = 0; P.kills++; P.floorKills++; P.score += e.kind === "s" ? 150 : 100; play(e.kind === "s" ? "s_die" : "m_die", .8); }
+        else if (Math.random() < .5) play(e.kind === "m" ? "m_pain" : "hurt", .5); }
     };
+    const wake = e => { if (!e.awake) { e.awake = true; if (e.kind === "m" && Math.random() < .7) play("m_alert", .6); } };
 
+    const PICK = { ammo: ["ammo", 8, "+8 shells"], bigammo: ["ammo", 20, "+20 shells"], health: ["hp", 20, "+20 health"], bighealth: ["hp", 50, "+50 health"],
+      cup: ["score", 100, "Goblet · +100"], crown: ["score", 250, "Crown · +250"], chest: ["score", 500, "Treasure chest · +500"] };
     const update = dt => {
       if (st.msgT > 0) st.msgT -= dt;
-      for (const k of ["flash", "hurt", "glow", "recoil"]) P[k] = Math.max(0, P[k] - dt);
-      if (st.mode !== "play") { st.t0 = (st.t0 || 0) + dt; return; }
-      st.time += dt;
-      const run = keys.ShiftLeft || keys.ShiftRight ? 1.5 : 1, sp = 2.6 * run * dt;
-      let f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) + touch.f;
-      let s = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touch.s;
-      const turn = (keys.ArrowRight ? 1 : 0) - (keys.ArrowLeft ? 1 : 0);
-      if (turn) rotate(turn * 2.4 * dt);
-      f = Math.max(-1, Math.min(1, f)); s = Math.max(-1, Math.min(1, s));
+      if (P) for (const k of ["recoil", "hurt", "glow"]) P[k] = Math.max(0, P[k] - dt);
+      if (st.mode !== "play") { st.t0 += dt; return; }
+      P.floorT += dt;
+      for (const [k, d] of L.doors) if (d.open < 1) d.open = Math.min(1, d.open + dt * 2.2);
+      const run = keys.ShiftLeft || keys.ShiftRight ? 1.6 : 1, sp = 2.7 * run * dt;
+      const f = Math.max(-1, Math.min(1, (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) + touch.f));
+      const s = Math.max(-1, Math.min(1, (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0) + touch.s));
+      const turn = (keys.ArrowRight ? 1 : 0) - (keys.ArrowLeft ? 1 : 0); if (turn) rotate(turn * 2.5 * dt);
       if (f || s) { move((P.dx * f + P.cx / .66 * s) * sp, 0); move(0, (P.dy * f + P.cy / .66 * s) * sp); P.bob += dt * 9; }
       if (keys.Space || keys.ControlLeft || keys.ControlRight || touch.fire) fire();
-      for (const e of ents) {
-        if (!e.alive) continue;
+      for (const e of L.ents) {
+        if (!e.alive) { if (e.foe) e.die += dt; continue; }
+        if (e.deco) continue;
         const d = Math.hypot(P.x - e.x, P.y - e.y);
-        if (e.item) { if (d < .55) {
-          if (e.kind === "k") { P.key = true; e.alive = false; SFX.pickup(); P.glow = .3; say("You found the red valve key."); }
-          else if (e.kind === "a") { P.ammo = Math.min(50, P.ammo + 8); e.alive = false; SFX.pickup(); P.glow = .3; say("+8 pressure", 1.2); }
-          else if (e.kind === "h" && P.hp < 100) { P.hp = Math.min(100, P.hp + 25); e.alive = false; SFX.pickup(); P.glow = .3; say("+25 health", 1.2); } }
-          continue; }
-        e.hurt = Math.max(0, e.hurt - dt); e.atk = Math.max(0, e.atk - dt); e.cd -= dt;
-        const see = d < 10 && los(e.x, e.y, P.x, P.y);
-        if (!e.awake) { if (see && d < 7.5) e.awake = true; else continue; }
+        if (e.item) { if (d < .55) { if (e.kind === "key") { P.key = true; e.alive = false; play("key"); P.glow = .35; say("You have the key. Find the locked door."); continue; }
+          const [what, n, label] = PICK[e.kind];
+          if (what === "ammo") { if (P.ammo >= 60) continue; P.ammo = Math.min(60, P.ammo + n); play("pickup", .7); }
+          else if (what === "hp") { if (P.hp >= 100) continue; P.hp = Math.min(100, P.hp + n); play("pickup", .7); }
+          else { P.score += n; P.treasure += n; play("treasure", .8); }
+          e.alive = false; P.glow = .3; say(label, 1.4); } continue; }
+        e.hurt = Math.max(0, e.hurt - dt); e.pain = Math.max(0, (e.pain || 0) - dt); e.atk = Math.max(0, e.atk - dt); e.cd -= dt;
+        const see = d < 12 && los(e.x, e.y, P.x, P.y);
+        if (!e.awake) { if (see && d < 7.5) wake(e); else continue; }
+        if (e.pain > 0) continue;
         const ux = (P.x - e.x) / d, uy = (P.y - e.y) / d;
-        const step = (dir, v) => { const nx = e.x + ux * dir * v * dt, ny = e.y + uy * dir * v * dt; if (walk(nx, e.y)) e.x = nx; if (walk(e.x, ny)) e.y = ny; e.anim += dt * 6; };
-        if (e.kind === "t") { if (d > .8) step(1, 1.7); else if (e.cd <= 0) { e.cd = .9; e.atk = .3; hurt(8); } }
-        else { if (!see || d > 5.5) step(1, 1.1); else if (d < 2.5) step(-1, .9);
-          if (see && e.cd <= 0) { e.cd = 1.8; e.atk = .35; SFX.bolt(); bolts.push({ x: e.x + ux * .4, y: e.y + uy * .4, vx: ux * 4.5, vy: uy * 4.5 }); } }
+        const step = (dir, v) => { const nx = e.x + ux * dir * v * dt, ny = e.y + uy * dir * v * dt; if (!solid(nx, e.y)) e.x = nx; if (!solid(e.x, ny)) e.y = ny; e.anim += dt * 7; };
+        if (e.kind === "m") { if (d > .85) step(1, 1.8 + P.floor * .08); else if (e.cd <= 0) { e.cd = .85; e.atk = .45; play("m_attack", .7); setTimeout(() => { if (e.alive && Math.hypot(P.x - e.x, P.y - e.y) < 1.2) hurt(6 + P.floor); }, 260); } }
+        else { if (!see || d > 6) step(1, 1.3); else if (d < 2.6) step(-1, 1.1);
+          if (see && e.cd <= 0) { e.cd = Math.max(1.1, 2.1 - P.floor * .1) + Math.random() * .4; e.atk = .4; play("s_fire", .5);
+            bolts.push({ x: e.x + ux * .4, y: e.y + uy * .4, vx: ux * 5, vy: uy * 5, dmg: 5 + P.floor }); } }
+        for (const o of L.ents) if (o !== e && o.foe && o.alive) { const ox = e.x - o.x, oy = e.y - o.y, od = Math.hypot(ox, oy); if (od > 0 && od < .5) { e.x += ox / od * .02; e.y += oy / od * .02; } }
       }
-      bolts = bolts.filter(b => { b.x += b.vx * dt; b.y += b.vy * dt;
-        if (!walk(b.x, b.y)) return false; if (Math.hypot(b.x - P.x, b.y - P.y) < .35) { hurt(12); return false; } return true; });
+      bolts = bolts.filter(b => { b.x += b.vx * dt; b.y += b.vy * dt; if (solid(b.x, b.y)) return false; if (Math.hypot(b.x - P.x, b.y - P.y) < .35) { hurt(b.dmg); return false; } return true; });
     };
 
-    // ---------- drawing ----------
-    const sky = g.createLinearGradient(0, 0, 0, VH / 2); sky.addColorStop(0, "#0d0806"); sky.addColorStop(1, "#3a1c0e");
-    const floor = g.createLinearGradient(0, VH / 2, 0, VH); floor.addColorStop(0, "#140c08"); floor.addColorStop(1, "#4a2c18");
-    const drawWeapon = () => {
-      const b = reduced ? 0 : Math.sin(P.bob) * 3, kick = P.recoil > .3 ? (P.recoil - .3) * 40 : 0;
-      const bx = W / 2 + 20 + Math.cos(P.bob * .5) * (reduced ? 0 : 3), by = VH + 6 + Math.abs(b) + kick;
-      if (P.flash > 0) { const gr = g.createRadialGradient(bx - 8, by - 74, 2, bx - 8, by - 74, 30); gr.addColorStop(0, "#fff8d0"); gr.addColorStop(.4, "#ffb04acc"); gr.addColorStop(1, "#ff782800");
-        g.fillStyle = gr; g.fillRect(bx - 45, by - 110, 74, 74); }
-      g.fillStyle = "#3a2410"; g.beginPath(); g.moveTo(bx - 4, by); g.lineTo(bx + 34, by); g.lineTo(bx + 12, by - 34); g.lineTo(bx - 2, by - 34); g.fill();
-      const gr = g.createLinearGradient(bx - 18, 0, bx + 6, 0); gr.addColorStop(0, "#5a3a18"); gr.addColorStop(.5, "#e0b462"); gr.addColorStop(1, "#4a2e12");
-      g.fillStyle = gr; g.beginPath(); g.moveTo(bx - 20, by - 20); g.lineTo(bx + 6, by - 20); g.lineTo(bx - 2, by - 74); g.lineTo(bx - 14, by - 74); g.fill();
-      g.fillStyle = "#1a1210"; g.fillRect(bx - 13, by - 76, 4, 4); g.fillRect(bx - 7, by - 76, 4, 4);
-      g.fillStyle = "#e9e2d0"; g.beginPath(); g.arc(bx + 14, by - 30, 7, 0, 7); g.fill(); g.strokeStyle = "#b88a3c"; g.lineWidth = 2; g.stroke();
-      g.strokeStyle = "#a01e14"; g.lineWidth = 1; g.beginPath(); g.moveTo(bx + 14, by - 30); g.lineTo(bx + 14 + 5 * Math.cos(-2.4 + P.ammo / 50 * 3.2), by - 30 + 5 * Math.sin(-2.4 + P.ammo / 50 * 3.2)); g.stroke();
-    };
-    const hud = () => {
-      g.fillStyle = "#1b130b"; g.fillRect(0, VH, W, H - VH); g.fillStyle = "#b88a3c"; g.fillRect(0, VH, W, 1);
-      g.font = "bold 9px monospace"; g.textBaseline = "middle"; g.textAlign = "left";
-      const cell = (x, label, val, col) => { g.fillStyle = "#8a6a3a"; g.fillText(label, x, VH + 10); g.fillStyle = col; g.font = "bold 13px monospace"; g.fillText(val, x, VH + 23); g.font = "bold 9px monospace"; };
-      cell(8, "HEALTH", String(P.hp), P.hp > 30 ? "#ffe2a8" : "#ff5a3a");
-      cell(78, "PRESSURE", String(P.ammo), P.ammo ? "#ffe2a8" : "#ff5a3a");
-      cell(160, "AUTOMATA", `${P.kills}/${st.total}`, "#ffe2a8");
-      g.fillStyle = "#8a6a3a"; g.fillText("KEY", 246, VH + 10);
-      if (P.key) g.drawImage(TEX.spr.k, 240, VH + 6, 26, 26); else { g.strokeStyle = "#3a2a18"; g.strokeRect(246, VH + 16, 14, 13); }
-      const m = Math.floor(st.time / 60), sec = Math.floor(st.time % 60);
-      g.fillStyle = "#8a6a3a"; g.textAlign = "right"; g.fillText(`${m}:${String(sec).padStart(2, "0")}`, W - 8, VH + 23); g.textAlign = "left";
-    };
-    const center = (lines, y) => { g.textAlign = "center"; g.textBaseline = "middle";
-      lines.forEach(([t, font, col], i) => { g.font = font; g.fillStyle = "#000"; g.fillText(t, W / 2 + 1, y + i * 16 + 1); g.fillStyle = col; g.fillText(t, W / 2, y + i * 16); }); };
-
-    const render = () => {
-      g.fillStyle = sky; g.fillRect(0, 0, W, VH / 2); g.fillStyle = floor; g.fillRect(0, VH / 2, W, VH / 2);
+    // ---------- software renderer ----------
+    const shadePx = (c, s) => (0xff000000 | ((((c >>> 16) & 255) * s >> 8) << 16) | ((((c >>> 8) & 255) * s >> 8) << 8) | (((c & 255) * s) >> 8));
+    const fogS = d => Math.max(28, Math.min(256, 256 - d * 19)) | 0;
+    function renderWorld() {
+      const A = ART, WP = A.walls, AW = A.wallW, half = VH / 2;
+      const ceil = A.id.grey2 * TS;
+      // floor and ceiling
+      const r0x = P.dx - P.cx, r0y = P.dy - P.cy, r1x = P.dx + P.cx, r1y = P.dy + P.cy;
+      for (let y = half + 1; y < VH; y++) {
+        const rd = half / (y - half), sx = rd * (r1x - r0x) / W, sy = rd * (r1y - r0y) / W, s = fogS(rd);
+        let fx = P.x + rd * r0x, fy = P.y + rd * r0y; const ro = y * W, rc = (VH - 1 - y) * W;
+        for (let x = 0; x < W; x++, fx += sx, fy += sy) {
+          const cx = fx | 0, cy = fy | 0, tx = ((fx - cx) * TS) & 63, ty = ((fy - cy) * TS) & 63;
+          const ft = (cx >= 0 && cy >= 0 && cx < MW && cy < MH) ? L.ftex[cy * MW + cx] * TS : 0;
+          buf[ro + x] = shadePx(WP[ty * AW + ft + tx], s);
+          buf[rc + x] = shadePx(WP[ty * AW + ceil + tx], s * .8);
+        }
+      }
+      for (let x = 0; x < W; x++) buf[half * W + x] = 0xff000000;
+      // walls
       for (let x = 0; x < W; x++) {
         const cam = 2 * x / W - 1, rx = P.dx + P.cx * cam, ry = P.dy + P.cy * cam;
         let mx = Math.floor(P.x), my = Math.floor(P.y);
         const ddx = Math.abs(1 / rx), ddy = Math.abs(1 / ry), sx = rx < 0 ? -1 : 1, sy = ry < 0 ? -1 : 1;
-        let sdx = (rx < 0 ? P.x - mx : mx + 1 - P.x) * ddx, sdy = (ry < 0 ? P.y - my : my + 1 - P.y) * ddy, side = 0, t = ".", n = 0;
-        while (t === "." && n++ < 64) { if (sdx < sdy) { sdx += ddx; mx += sx; side = 0; } else { sdy += ddy; my += sy; side = 1; } t = tile(mx, my); }
-        const perp = Math.max(.05, side ? sdy - ddy : sdx - ddx), lh = VH / perp, top = VH / 2 - lh / 2;
-        let wx = side ? P.x + perp * rx : P.y + perp * ry; wx -= Math.floor(wx);
-        let tx = Math.floor(wx * TS); if ((!side && rx > 0) || (side && ry < 0)) tx = TS - 1 - tx;
-        g.drawImage((TEX[t] || TEX["3"])[side], tx, 0, 1, TS, x, top, 1, lh);
-        const fog = Math.min(.85, perp / 9); if (fog > .05) { g.fillStyle = `rgba(8,4,2,${fog})`; g.fillRect(x, top, 1, lh); }
-        zbuf[x] = perp;
+        let sdx = (rx < 0 ? P.x - mx : mx + 1 - P.x) * ddx, sdy = (ry < 0 ? P.y - my : my + 1 - P.y) * ddy, side = 0, t = 0, perp = 0, wx = 0, n = 0;
+        while (n++ < 96) {
+          if (sdx < sdy) { sdx += ddx; mx += sx; side = 0; } else { sdy += ddy; my += sy; side = 1; }
+          t = cell(mx, my); if (!t) continue;
+          perp = side ? sdy - ddy : sdx - ddx; wx = side ? P.x + perp * rx : P.y + perp * ry; wx -= Math.floor(wx);
+          const d = L.doors.get(my * MW + mx);
+          if (d) { if (d.open >= 1 || wx < d.open) continue; wx -= d.open; }
+          break;
+        }
+        perp = Math.max(.02, perp); zbuf[x] = perp;
+        let tx = (wx * TS) | 0; if ((!side && rx > 0) || (side && ry < 0)) tx = TS - 1 - tx;
+        const lh = VH / perp, top = half - lh / 2, y0 = Math.max(0, top | 0), y1 = Math.min(VH, (top + lh) | 0), s = fogS(perp) * (side ? .78 : 1);
+        const tex = (t - 1) * TS + tx, step = TS / lh; let ty = (y0 - top) * step;
+        for (let y = y0; y < y1; y++, ty += step) buf[y * W + x] = shadePx(WP[(ty & 63) * AW + tex], s);
       }
-      const S = TEX.spr, inv = 1 / (P.cx * P.dy - P.dx * P.cy);
-      const list = [...ents.filter(e => e.alive || !e.item), ...bolts.map(b => ({ ...b, kind: "bolt" }))]
-        .map(e => ({ e, d: (e.x - P.x) ** 2 + (e.y - P.y) ** 2 })).sort((a, b) => b.d - a.d);
-      for (const { e } of list) {
-        const sx = e.x - P.x, sy = e.y - P.y, tx = inv * (P.dy * sx - P.dx * sy), ty = inv * (-P.cy * sx + P.cx * sy);
-        if (ty < .15) continue;
-        let img, scale = 1, float = false;
-        if (e.kind === "bolt") { img = S.bolt; scale = .5; float = true; }
-        else if (e.item) { img = S[e.kind]; scale = .55; }
-        else if (!e.alive) { img = S.dead; scale = .8; }
-        else { const fr = e.atk > 0 ? e.kind + "a" : e.kind + (Math.floor(e.anim) % 2); img = e.hurt > 0 ? S.hurt[fr] : S[fr]; scale = e.kind === "g" ? 1.05 : .9; }
-        const full = VH / ty, size = full * scale, scx = (W / 2) * (1 + tx / ty);
-        const top = float ? VH / 2 - size / 2 : VH / 2 + full / 2 - size, x0 = scx - size / 2;
-        for (let x = Math.max(0, Math.floor(x0)); x < Math.min(W, x0 + size); x++)
-          if (ty < zbuf[x]) g.drawImage(img, Math.min(TS - 1, Math.floor((x - x0) / size * TS)), 0, 1, TS, x, top, 1, size);
+      // sprites
+      const SP = A.spr, SW = A.sprW, FR = A.map.sprites, inv = 1 / (P.cx * P.dy - P.dx * P.cy);
+      const list = [];
+      for (const e of L.ents) if (e.alive || e.foe) list.push(e);
+      for (const b of bolts) list.push({ x: b.x, y: b.y, kind: "bolt", bolt: true });
+      list.sort((a, b) => ((b.x - P.x) ** 2 + (b.y - P.y) ** 2) - ((a.x - P.x) ** 2 + (a.y - P.y) ** 2));
+      for (const e of list) {
+        const ex = e.x - P.x, ey = e.y - P.y, tx = inv * (P.dy * ex - P.dx * ey), ty = inv * (-P.cy * ex + P.cx * ey);
+        if (ty < .2) continue;
+        const fr = FR[frameOf(e)]; if (!fr) continue;
+        const [fx, fy, fw, fh, ppu] = fr, full = VH / ty, sh = fh / ppu * full, sw = fw / ppu * full, scx = W / 2 * (1 + tx / ty);
+        const top = e.bolt ? half - sh / 2 : half + full / 2 - sh, x0 = scx - sw / 2, s = fogS(ty), bright = e.hurt > 0;
+        const xa = Math.max(0, Math.ceil(x0)), xb = Math.min(W, x0 + sw), ya = Math.max(0, Math.ceil(top)), yb = Math.min(VH, top + sh);
+        for (let x = xa; x < xb; x++) { if (ty >= zbuf[x]) continue;
+          const sx = fx + Math.min(fw - 1, ((x - x0) / sw * fw) | 0);
+          for (let y = ya; y < yb; y++) { const c = SP[(fy + Math.min(fh - 1, ((y - top) / sh * fh) | 0)) * SW + sx];
+            if ((c >>> 24) > 100) buf[y * W + x] = bright ? 0xffffffff : e.bolt ? c : shadePx(c, s); } }
       }
-      if (st.mode === "play") drawWeapon();
-      g.fillStyle = "rgba(255,248,200,.85)"; g.fillRect(W / 2 - 1, VH / 2, 3, 1); g.fillRect(W / 2, VH / 2 - 1, 1, 3);
-      if (P.hurt > 0) { g.fillStyle = `rgba(200,20,10,${P.hurt})`; g.fillRect(0, 0, W, VH); }
-      if (P.glow > 0) { g.fillStyle = `rgba(255,210,120,${P.glow * .6})`; g.fillRect(0, 0, W, VH); }
-      hud();
-      if (st.msgT > 0) center([[st.msg, "bold 10px Georgia, serif", "#ffe2a8"]], 18);
-      const shadeAll = a => { g.fillStyle = `rgba(0,0,0,${a})`; g.fillRect(0, 0, W, VH); };
-      if (st.mode === "title") { shadeAll(.7);
-        const touchy = matchMedia("(pointer: coarse)").matches;
-        center([["FURNACE BELOW", "bold 22px Georgia, serif", "#ffb04a"], ["", "", ""],
-          ["The automata have taken the boiler halls.", "11px Georgia, serif", "#e9c27a"],
-          ["Find the red valve key and pull the furnace lever.", "11px Georgia, serif", "#e9c27a"], ["", "", ""],
-          ...(touchy ? [["Left side: drag to walk · Right side: drag to turn", "9px monospace", "#c9a56a"], ["FIRE button or tap right side to shoot", "9px monospace", "#c9a56a"]]
-                     : [["WASD / arrows move · mouse or ←→ turn · Shift run", "9px monospace", "#c9a56a"], ["Click / Space / Ctrl fire · walk into doors to open", "9px monospace", "#c9a56a"]]),
-          ["", "", ""], [touchy ? "Tap to begin" : "Click to begin · Esc to leave", "bold 11px Georgia, serif", "#ffe2a8"]], 30); }
-      else if (st.mode === "dead") { shadeAll(.55); center([["YOUR BOILER HAS GONE COLD", "bold 16px Georgia, serif", "#ff5a3a"], ["", "", ""], [st.t0 > .8 ? "Click to try again" : "", "11px Georgia, serif", "#e9c27a"]], 64); }
-      else if (st.mode === "won") { shadeAll(.6); const m = Math.floor(st.time / 60), s = Math.floor(st.time % 60);
-        center([["THE FURNACE ROARS BACK TO LIFE", "bold 15px Georgia, serif", "#4dff7a"], ["", "", ""],
-          [`Time ${m}:${String(s).padStart(2, "0")} · Automata ${P.kills}/${st.total}`, "11px Georgia, serif", "#ffe2a8"],
-          [P.kills === st.total ? "Not a cog left turning." : "", "10px Georgia, serif", "#e9c27a"], ["", "", ""],
-          [st.t0 > .8 ? "Click to play again" : "", "11px Georgia, serif", "#e9c27a"]], 50); }
+      g.putImageData(img, 0, 0);
+    }
+    const frameOf = e => {
+      if (e.bolt) return "bolt";
+      if (!e.foe) return e.kind;
+      if (e.kind === "m") {
+        if (!e.alive) return e.die < .6 ? "m_die" + Math.min(4, Math.floor(e.die / .12)) : "m_dead";
+        if (e.pain > 0) return "m_pain";
+        if (e.atk > 0) return "m_atk" + Math.min(2, Math.floor((.45 - e.atk) / .15));
+        return e.awake ? "m_walk" + (Math.floor(e.anim) % 4) : "m_walk0";
+      }
+      if (!e.alive) return e.die < .25 ? "s_pain" : "s_dead";
+      if (e.pain > 0) return "s_pain";
+      if (e.atk > 0) return e.atk > .3 ? "s_fire" + (Math.floor(e.atk * 20) % 2) : "s_aim";
+      return e.awake ? "s_walk" + (Math.floor(e.anim) % 2) : "s_idle";
     };
-
-    const loop = now => { const dt = Math.min(.05, (now - (last || now)) / 1000); last = now; update(dt); render(); raf = requestAnimationFrame(loop); };
+    const drawGun = () => {
+      const A = ART, n = A.gunN, r = P.recoil;
+      const f = r > .56 ? 3 : r > .5 ? 2 : r > .44 ? 1 : r > .2 ? n - 1 : 0;
+      const bob = reduced ? 0 : Math.sin(P.bob) * 4, sway = reduced ? 0 : Math.cos(P.bob * .5) * 5;
+      const sc = 1.25, gw = 320 * sc, gh = 180 * sc;
+      g.drawImage(A.gun, f * 320, 0, 320, 180, (W - gw) / 2 + sway + 40, VH - gh + 8 + Math.abs(bob) + (r > .44 ? 6 : 0), gw, gh);
+    };
+    const spr = (name, x, y, h) => { const fr = ART.map.sprites[name]; if (!fr) return 0; const [fx, fy, fw, fh] = fr, w = fw / fh * h; g.drawImage(ART.sprites, fx, fy, fw, fh, x, y, w, h); return w; };
+    const hud = () => {
+      const y = VH; g.fillStyle = "#16100a"; g.fillRect(0, y, W, H - VH); g.fillStyle = "#b88a3c"; g.fillRect(0, y, W, 2); g.fillStyle = "#4a3418"; g.fillRect(0, y + 2, W, 1);
+      g.textBaseline = "alphabetic"; g.textAlign = "left";
+      const cellT = (x, label, val, col) => { g.font = "bold 9px monospace"; g.fillStyle = "#8a6a3a"; g.fillText(label, x, y + 16); g.font = "bold 20px monospace"; g.fillStyle = col; g.fillText(val, x, y + 40); };
+      const iw = spr("health", 8, y + 24, 18); cellT(14 + iw, "HEALTH", String(P.hp), P.hp > 30 ? "#ffe2a8" : "#ff5a3a");
+      const aw = spr("ammo", 100, y + 24, 18); cellT(106 + aw, "SHELLS", String(P.ammo), P.ammo ? "#ffe2a8" : "#ff5a3a");
+      g.font = "bold 9px monospace"; g.fillStyle = "#8a6a3a"; g.fillText("KEY", 214, y + 16);
+      if (P.key) spr("key", 210, y + 26, 12); else { g.strokeStyle = "#3a2a18"; g.strokeRect(214, y + 22, 22, 18); }
+      cellT(256, "FLOOR", String(P.floor), "#ffe2a8");
+      cellT(312, "SCORE", String(P.score), "#ffd27a");
+      g.font = "bold 9px monospace"; g.fillStyle = "#8a6a3a"; g.textAlign = "right"; g.fillText(`FOES ${P.floorKills}/${L.foes}`, W - 8, y + 16);
+      const m = Math.floor(P.floorT / 60), sc = Math.floor(P.floorT % 60); g.font = "bold 14px monospace"; g.fillText(`${m}:${String(sc).padStart(2, "0")}`, W - 8, y + 40); g.textAlign = "left";
+    };
+    const text = (lines, y) => { g.textAlign = "center"; g.textBaseline = "middle";
+      for (const [t, font, col, gap = 20] of lines) { if (t) { g.font = font; g.fillStyle = "#000"; g.fillText(t, W / 2 + 1, y + 1); g.fillStyle = col; g.fillText(t, W / 2, y); } y += gap; } return y; };
+    const boardLines = () => {
+      if (board !== "live") return [["High scores need the shared site connection.", "12px Georgia, serif", "#c9a56a"]];
+      if (!top.length) return [["Top three", "bold 13px Georgia, serif", "#ffd27a"], ["No runs logged yet. Be the first!", "12px Georgia, serif", "#c9a56a"]];
+      return [["Top three", "bold 13px Georgia, serif", "#ffd27a", 18], ...top.map((r, i) => [`${i + 1}.  ${r.name}  ·  ${r.score}  ·  floor ${r.floor}`, "13px Georgia, serif", ["#ffd27a", "#d9dde2", "#d08a52"][i], 17])];
+    };
+    const shadeAll = a => { g.fillStyle = `rgba(0,0,0,${a})`; g.fillRect(0, 0, W, VH); };
+    const render = () => {
+      if (!ART || !L) { g.fillStyle = "#0d0805"; g.fillRect(0, 0, W, H);
+        text([[err ? "Couldn't load the game's art." : "Stoking the furnace…", "bold 16px Georgia, serif", err ? "#ff5a3a" : "#ffb04a"], [err ? "Check your connection and open it again." : "", "12px Georgia, serif", "#c9a56a"]], H / 2 - 10); return; }
+      renderWorld();
+      if (st.mode === "play") drawGun();
+      g.fillStyle = "rgba(255,248,200,.85)"; g.fillRect(W / 2 - 2, VH / 2, 5, 1); g.fillRect(W / 2, VH / 2 - 2, 1, 5);
+      if (P.hurt > 0) { g.fillStyle = `rgba(200,20,10,${P.hurt * .8})`; g.fillRect(0, 0, W, VH); }
+      if (P.glow > 0) { g.fillStyle = `rgba(255,210,120,${P.glow * .5})`; g.fillRect(0, 0, W, VH); }
+      hud();
+      if (st.msgT > 0 && st.mode === "play") text([[st.msg, "bold 13px Georgia, serif", "#ffe2a8"]], 22);
+      const touchy = matchMedia("(pointer: coarse)").matches;
+      if (st.mode === "title") { shadeAll(.72);
+        const y = text([["FURNACE BELOW", "bold 34px Georgia, serif", "#ffb04a", 34], ["Every descent is a new maze. Find the key, reach the lever, go deeper.", "13px Georgia, serif", "#e9c27a", 26],
+          ...(touchy ? [["Left side: drag to walk · Right side: drag to turn · FIRE to shoot", "11px monospace", "#c9a56a"]]
+                     : [["WASD / arrows move · mouse or ←→ turn · Shift run", "11px monospace", "#c9a56a", 16], ["Click / Space / Ctrl fire · walk into doors (or E) to open", "11px monospace", "#c9a56a"]]),
+          ["", "", "", 6]], 46);
+        text([...boardLines(), ["", "", "", 10], [touchy ? "Tap to begin" : "Click to begin · Esc to leave", "bold 14px Georgia, serif", "#ffe2a8"]], y + 8); }
+      else if (st.mode === "clear") { shadeAll(.7); const c = st.clear, m = Math.floor(c.t / 60), s = Math.floor(c.t % 60);
+        text([[`FLOOR ${P.floor} CLEARED`, "bold 24px Georgia, serif", "#4dff7a", 32], [`Time ${m}:${String(s).padStart(2, "0")} · foes ${c.kills}/${c.foes} · treasure ${c.treasure}`, "13px Georgia, serif", "#ffe2a8", 24],
+          [`Descent bonus +${c.bonus} · time bonus +${c.tb}${c.all ? ` · every foe +${c.all}` : ""}`, "13px Georgia, serif", "#e9c27a", 24],
+          [`Score ${P.score}`, "bold 18px Georgia, serif", "#ffd27a", 34], [st.t0 > .8 ? (touchy ? "Tap to go deeper" : "Click to go deeper") : "", "bold 14px Georgia, serif", "#ffe2a8"]], 56); }
+      else if (st.mode === "dead") { shadeAll(.62);
+        const y = text([["THE FURNACE CLAIMS YOU", "bold 24px Georgia, serif", "#ff5a3a", 30], [`Score ${P.score} · reached floor ${P.floor} · ${P.kills} foes`, "14px Georgia, serif", "#ffe2a8", 26]], 40);
+        const y2 = text(boardLines(), y + 4);
+        text([[!form.hidden ? "A top-three run! Enter your name:" : st.t0 > .8 ? (note ? note + " " : "") + (touchy ? "Tap to try again" : "Click to try again") : "", "bold 13px Georgia, serif", "#e9c27a"]], Math.max(y2 + 6, 158)); }
+    };
+    const loop = now => { const dt = Math.min(.05, (now - (last || now)) / 1000); last = now; if (L) update(dt); render(); raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
+    loadArt().then(() => { newGame(); st.mode = "title"; }).catch(() => { err = "art"; });
 
     // ---------- input ----------
-    const touch = { f: 0, s: 0, fire: false }, pts = {};
-    const start = () => { audio(); if (st.mode === "title") st.mode = "play";
-      else if ((st.mode === "dead" || st.mode === "won") && st.t0 > .8) { reset(); st.mode = "play"; } };
+    const start = () => { audio(); loadSounds(); if (!L) return;
+      if (st.mode === "title") st.mode = "play";
+      else if (st.mode === "clear" && st.t0 > .8) { P.floor++; enterFloor(); st.mode = "play"; }
+      else if (st.mode === "dead" && st.t0 > .8 && form.hidden) { newGame(); st.mode = "play"; } };
     const locked = () => document.pointerLockElement === cv;
     const GAME = new Set(["KeyW", "KeyA", "KeyS", "KeyD", "KeyE", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight", "Enter"]);
     const kd = e => {
+      if (e.target === nameBox) { if (e.key === "Escape") { e.preventDefault(); hideForm(); } return; }
       if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); return; }
       if (!GAME.has(e.code)) return; e.preventDefault(); e.stopPropagation();
-      if (st.mode !== "play" && (e.code === "Space" || e.code === "Enter")) { start(); return; }
+      if (st.mode !== "play") { if (e.code === "Space" || e.code === "Enter") start(); return; }
       keys[e.code] = true;
       if (!e.repeat && (e.code === "Space" || e.code === "ControlLeft" || e.code === "ControlRight")) fire();
-      if (e.code === "KeyE") { const tx = Math.floor(P.x + P.dx * .9), ty = Math.floor(P.y + P.dy * .9); use(tx, ty); }
+      if (e.code === "KeyE") use(Math.floor(P.x + P.dx * .9), Math.floor(P.y + P.dy * .9));
     };
-    const ku = e => { if (GAME.has(e.code)) { keys[e.code] = false; e.stopPropagation(); } };
+    const ku = e => { if (GAME.has(e.code)) { keys[e.code] = false; if (e.target !== nameBox) e.stopPropagation(); } };
     addEventListener("keydown", kd, true); addEventListener("keyup", ku, true);
-    const mm = e => { if (locked() && st.mode === "play") rotate(e.movementX * .0025); };
+    const mm = e => { if (locked() && st.mode === "play") rotate(e.movementX * .0024); };
     document.addEventListener("mousemove", mm);
     cv.addEventListener("pointerdown", e => {
       e.preventDefault(); cv.focus();
-      if (e.pointerType !== "mouse") { const r = cv.getBoundingClientRect(); pts[e.pointerId] = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, left: e.clientX < r.left + r.width / 2, t: performance.now() };
+      if (e.pointerType !== "mouse") { const r = cv.getBoundingClientRect();
+        pts[e.pointerId] = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, left: e.clientX < r.left + r.width / 2, t: performance.now() };
         cv.setPointerCapture(e.pointerId); if (st.mode !== "play") start(); return; }
-      if (st.mode !== "play") { start(); }
-      else { if (!locked() && cv.requestPointerLock) { try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch {} } fire(); }
+      if (st.mode !== "play") { start(); return; }
+      if (!locked() && cv.requestPointerLock) { try { const p = cv.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch {} }
+      fire();
     });
     cv.addEventListener("pointermove", e => { const p = pts[e.pointerId]; if (!p) return;
       if (p.left) { touch.f = Math.max(-1, Math.min(1, -(e.clientY - p.y0) / 40)); touch.s = Math.max(-1, Math.min(1, (e.clientX - p.x0) / 40)); }
@@ -5311,13 +5452,16 @@ render(html`<${App} />`, document.getElementById("app"));
     for (const ev of ["pointerup", "pointercancel", "pointerleave"]) fb.addEventListener(ev, () => { touch.fire = false; });
     const blur = () => { for (const k in keys) keys[k] = false; };
     addEventListener("blur", blur);
+    wrap.querySelector(".fs").addEventListener("click", () => { try { if (document.fullscreenElement) document.exitFullscreen(); else wrap.requestFullscreen && wrap.requestFullscreen(); } catch {} cv.focus(); });
     function close() {
-      cancelAnimationFrame(raf); if (locked()) document.exitPointerLock();
+      cancelAnimationFrame(raf); unlock(); if (unsub) unsub();
+      try { if (document.fullscreenElement === wrap) document.exitFullscreen(); } catch {}
       removeEventListener("keydown", kd, true); removeEventListener("keyup", ku, true); removeEventListener("blur", blur);
       document.removeEventListener("mousemove", mm); wrap.remove(); open = false;
     }
     wrap.querySelector(".x").addEventListener("click", close);
     cv.focus();
+    if (/[?&]cwtest\b/.test(location.search)) window.__cwFurnace = { get P() { return P; }, get L() { return L; }, get st() { return st; }, use, hurt, start, MW };
   }
 
   // Trigger 1: five quick clicks on "Clockwork" in the header.
@@ -5336,5 +5480,7 @@ render(html`<${App} />`, document.getElementById("app"));
     typed = (typed + e.key.toLowerCase()).slice(-7);
     if (typed === "furnace") { typed = ""; launch(); }
   });
+  // For tests only (page opened with ?cwtest): expose the generator so a script can check many layouts.
+  if (/[?&]cwtest\b/.test(location.search)) window.__cwFurnaceGen = n => loadArt().then(() => Array.from({ length: n }, (_, i) => generate(1 + (i % 6))));
 })();
 </script>

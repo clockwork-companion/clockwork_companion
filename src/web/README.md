@@ -11,6 +11,7 @@ players see only the characters (and companions) the GM gives them, plus any the
 - `index.html` — the whole app.
 - `firebase-config.js` — your Firebase settings (fill this in once).
 - `firestore.rules` — the database rules to paste into Firebase.
+- `egg/` — art and sound for a hidden game (free CC0 assets; sources in `egg/furnace/CREDITS.md`).
 
 ## One-time setup
 
