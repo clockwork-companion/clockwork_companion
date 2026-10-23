@@ -1,7 +1,8 @@
 # Clockwork Companion — website
 
 Character sheets, Karma, vitals, gear and the GM initiative deck for *Clockwork: Tales of Steam and Magick*.
-Players open the site, type the table password once, and everyone shares the same characters live.
+Players sign in with a username and password. The GM sees every character and runs the initiative deck;
+players see only the characters (and companions) the GM gives them, plus any they create themselves.
 
 ## Files
 - `index.html` — the whole app.
@@ -16,7 +17,9 @@ Players open the site, type the table password once, and everyone shares the sam
 2. In the left menu open **Build → Firestore Database → Create database**. Pick a location near your players
    (for example `eur3 (europe-west)`), then **Start in production mode**.
 3. Open the **Rules** tab, replace everything there with the contents of `firestore.rules`, and click **Publish**.
-4. Click the gear icon → **Project settings** → **General**. Under **Your apps** click the web icon **</>**,
+4. Turn on usernames: **Security → Authentication → Get started → Sign-in method → Email/Password → Enable → Save**.
+   (Players never type an email; the app makes one up from their username.)
+5. Click the gear icon → **Project settings** → **General**. Under **Your apps** click the web icon **</>**,
    give it a nickname, leave Hosting unticked, and click **Register app**. Copy the values it shows
    (`apiKey`, `authDomain`, `projectId`, …) into `firebase-config.js`.
 
@@ -27,15 +30,20 @@ Players open the site, type the table password once, and everyone shares the sam
 4. After a minute the site is live at `https://<your-username>.github.io/clockwork/`.
 
 ### 3. Open your table
-1. Visit the link, type the password you want for your table, and click **Open table**. As the first person in,
-   you'll be offered **Create a new table with this password**. Click it.
-2. Share the link and the password with your players. Each device asks for the password once.
-3. To bring over characters from the claude.ai version: there, open **GM table → Table backup → Download backup**.
+1. Visit the link, click **New player**, choose a username and password, and type the table password you want.
+   As the first person in, you'll be offered **Create a new table with this password**. Click it: you're the GM.
+   (A table made with an earlier version asks you to **claim** it instead. Do that before your players sign up.)
+2. Share the link and the table password. Each player clicks **New player** once; after that they just sign in,
+   on any device, with their username and password.
+3. On the **GM table**, *Players at the table* lists everyone. Give each player their characters, make someone else
+   a GM, or remove a player.
+4. To bring over characters from the claude.ai version: there, open **GM table → Table backup → Download backup**.
    On the new site, **GM table → Table backup → Restore from backup** and pick that file.
 
 ## Good to know
-- Anyone with the link **and** the password can view and edit every character at the table, like a shared document.
-  To lock someone out later, start a new table with a new password and restore a backup into it.
-- Passwords are not case-sensitive. "Leave" next to *Shared table* at the top signs a device out of the table.
+- Usernames and the table password are not case-sensitive; account passwords are.
+- There's no password reset (no real email). A player who forgets theirs makes a new account, and the GM gives
+  their characters to it.
+- **Sign out** is at the top right.
 - Portraits are shrunk to small images and stored in the database, so no file storage (or billing) is needed.
 - To update the app later, replace `index.html` in the repository with the new version. Keep your `firebase-config.js`.

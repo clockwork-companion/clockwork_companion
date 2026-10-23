@@ -306,6 +306,28 @@ td.num, th.num { text-align: right; }
 .mini input, .mini select { border: 0; border-bottom: 1.5px solid var(--hair); background: transparent; padding: 2px 0; width: 100%; min-width: 0; font-family: var(--f-mono); font-size: 14px; }
 .calc { font: 600 13px var(--f-mono); color: var(--ink-2); }
 
+/* karma panel: pool check and the GM's Free edit switch */
+.poolwarn { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: var(--warn); background: var(--hunger-soft); padding: 6px 8px; }
+.freeallow { font-size: 13px; gap: 6px; }
+
+/* gear: load figure, inventory and prosthetic tables */
+.loadnum { font: 13px var(--f-mono); color: var(--ink-3); } .loadnum b { font: 600 24px var(--f-mono); color: var(--ink); }
+.itable td.wide, .ptable td.wide { width: 100%; min-width: 180px; }
+.itable td:first-child { min-width: 160px; }
+.itable select, .ptable select { width: auto; min-width: 170px; }
+@media (max-width: 560px) {
+  .itable thead, .ptable thead { display: none; }
+  .itable tr, .ptable tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; padding: 8px 0; border-bottom: 1px solid var(--hair); }
+  .itable td, .ptable td { border: 0; padding: 0; min-width: 0 !important; }
+  .itable td[colspan] { grid-column: 1 / -1; }
+  .itable select, .ptable select { min-width: 0; width: 100%; }
+  .coins { margin-left: 0; flex-wrap: wrap; }
+}
+.ptable td:first-child { min-width: 150px; }
+.coins { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+.coins label { font: 600 11.5px var(--f-head); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.coins .inp { width: 80px; font-family: var(--f-mono); text-align: right; }
+
 /* tabletop */
 .codebox { width: 100%; min-height: 120px; font: 12px/1.4 var(--f-mono); background: var(--sunk); border: 1.5px solid var(--hair); padding: 10px; resize: vertical; }
 .steps { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 70ch; }
@@ -476,6 +498,16 @@ td.num, th.num { text-align: right; }
 }
 @keyframes spUp { from { transform: translateY(40px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+/* ---------- website build: players panel, companions ---------- */
+.members { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 12px; }
+.member { background: var(--card); border: 1.5px solid var(--hair); padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
+.mhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mhead b { font-size: 15px; }
+.mact { margin-left: auto; display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.give { width: auto; max-width: 100%; font-size: 13px; }
+.chip.comp { border-style: dashed; margin-left: -4px; }
+.chip.comp .who > span:first-of-type { color: var(--brass); }
+
 /* ---------- website build: table password gate, leave link ---------- */
 .gate { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: var(--paper); overflow: auto; }
 .gatebox { width: min(440px, 100%); display: grid; gap: 14px; background: var(--card); }
@@ -683,6 +715,7 @@ td.num, th.num { text-align: right; }
 <div id="app"></div>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-auth-compat.js"></script>
 <script src="https://unpkg.com/preact@10.19.3/dist/preact.umd.js"></script>
 <script src="https://unpkg.com/preact@10.19.3/hooks/dist/hooks.umd.js"></script>
 <script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
@@ -690,11 +723,13 @@ td.num, th.num { text-align: right; }
 <script>
 /* Clockwork Companion — web build backend.
    On claude.ai the page gets shared saving from the artifact runtime (window.claude.use). On its own website it
-   gets the same thing from Firebase Firestore instead: this file provides a stand-in window.claude with the same
-   db / assets interface, so the app code is identical in both builds.
+   gets the same thing from Firebase instead: this file provides a stand-in window.claude with the same
+   db / assets interface, plus a "table" service (who is signed in, their role, the members list).
 
+   Players sign in with Google, then type the table password once per device.
    Everything for one group lives under tables/<key>/…, where <key> is a hash of the table password.
-   Players type the password once per device; it is remembered in that browser. */
+   The person who creates a table is its GM; the GM can make other members GMs.
+   GMs see every character; players see only the characters assigned to them. The database rules enforce this. */
 (() => {
   const cfg = window.CLOCKWORK_FIREBASE;
   const configured = !!(cfg && cfg.apiKey && cfg.projectId && window.firebase);
@@ -708,11 +743,15 @@ td.num, th.num { text-align: right; }
     return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, "0")).join("");
   }
 
-  let fs = null, root = "";
+  let fs = null, auth = null, root = "", me = null;   // me: { uid, role, name }
   const portraits = {};   // asset id -> data URL
 
   const db = {
-    collection: name => fs.collection(`${root}/${name}`),
+    // Players may only read their own characters, so their list is narrowed to the ones assigned to them.
+    collection: name => {
+      const ref = fs.collection(`${root}/${name}`);
+      return name === "characters" && me.role !== "gm" ? ref.where("players", "array-contains", me.uid) : ref;
+    },
     doc: path => fs.doc(`${root}/${path}`),
   };
   const assets = {
@@ -728,66 +767,178 @@ td.num, th.num { text-align: right; }
     urlFor: id => portraits[id] || "",
     remove: id => fs.doc(`${root}/portraits/${id}`).delete().catch(() => {}),
   };
+  const table = {
+    get uid() { return me.uid; }, get role() { return me.role; }, get name() { return me.name; },
+    members: (cb, err) => fs.collection(`${root}/members`).onSnapshot(s => cb(s.docs.map(d => Object.assign({ uid: d.id }, d.data()))), err || (() => {})),
+    setRole: (uid, role) => fs.doc(`${root}/members/${uid}`).update({ role }),
+    remove: uid => fs.doc(`${root}/members/${uid}`).delete(),
+  };
 
-  // ---- the password gate, drawn with the app's own styles so it follows the chosen theme ----
+  // ---- joining a table ----
   let opened;
   const ready = new Promise(res => (opened = res));
-  async function open(key) {
+  const profile = u => ({ name: (u.email || "player").split("@")[0] });
+
+  async function join(key, user, claim) {
+    const metaRef = fs.doc(`tables/${key}/meta/table`), meRef = fs.doc(`tables/${key}/members/${user.uid}`);
+    const meta = await metaRef.get();
+    if (!meta.exists) return { error: "missing" };
+    const owner = meta.data().owner;
+    if (!owner && claim === undefined) return { error: "unclaimed" };   // a table made before GM roles existed
+    if (!owner && claim) await metaRef.update({ owner: user.uid });
+    const mine = await meRef.get();
+    let role;
+    if (mine.exists) { role = mine.data().role; await meRef.update(profile(user)).catch(() => {}); }
+    else { role = owner === user.uid || claim ? "gm" : "player"; await meRef.set(Object.assign({ role, joined: Date.now() }, profile(user))); }
     root = `tables/${key}`; lsSet(KEY, key);
+    fs.doc(`users/${user.uid}`).set({ table: key }).catch(() => {});   // so signing in on another device finds this table
+    me = { uid: user.uid, role, name: profile(user).name };
+    // If the GM changes this person's role, reload so they get the right view; if they're removed, send them out.
+    meRef.onSnapshot(s => {
+      if (!s.exists) { lsSet(KEY, null); alertLeft(); return; }
+      if (s.data().role !== me.role) location.reload();
+    }, () => {});
     fs.collection(`${root}/portraits`).onSnapshot(snap => {
       snap.docs.forEach(d => { portraits[d.id] = d.data().data; });
       window.dispatchEvent(new Event("cw-portraits"));
     }, () => {});
-    opened(db);
+    started = true; opened(db);
+    return { ok: true };
   }
-  function gate() {
-    const box = document.createElement("div");
+  function alertLeft() {
+    fs.doc(`users/${auth.currentUser.uid}`).delete().catch(() => {});
+    root = ""; gate(auth.currentUser, "The GM has removed you from this table. Ask them for the table password to join again.");
+  }
+
+  // ---- accounts: a username and password, kept by Firebase. The username becomes a made-up email address
+  // behind the scenes (Firebase's password sign-in needs one), so nobody has to give a real email. ----
+  const cleanName = u => u.trim().toLowerCase();
+  const validName = u => /^[a-z0-9][a-z0-9_.-]{1,23}$/.test(u);
+  const emailFor = u => `${u}@${cfg.projectId}.firebaseapp.com`;
+  const authError = code => ({
+    "auth/invalid-credential": "That username and password don't match.", "auth/wrong-password": "That username and password don't match.",
+    "auth/user-not-found": "That username and password don't match.", "auth/email-already-in-use": "That username is taken. Pick another.",
+    "auth/weak-password": "Use at least 6 characters for the password.", "auth/too-many-requests": "Too many tries. Wait a minute and try again.",
+    "auth/operation-not-allowed": "Username sign-in isn't switched on in Firebase yet (Authentication → Sign-in method → Email/Password).",
+    "auth/network-request-failed": "Couldn't reach the server. Check your connection.",
+  }[code] || "That didn't work. Try again.");
+
+  // ---- the gate, drawn with the app's own styles so it follows the theme ----
+  let box = null;
+  function gate(user, note, key) {
+    if (box) box.remove();
+    box = document.createElement("div");
     box.className = "gate";
-    box.innerHTML = `<form class="frame gatebox">
+    document.body.appendChild(box);
+    if (user) return tableStep(user, note, key);
+    let mode = "in";
+    const draw = msg => {
+      box.innerHTML = `<form class="frame gatebox" novalidate>
         <div class="brand">Clockwork<small>Companion</small></div>
-        <p>Enter your table's password. You only need to do this once on each device.</p>
-        <div class="field"><label for="gate-pw">Table password</label><input id="gate-pw" type="password" autocomplete="current-password" required /></div>
+        <div class="seg" role="group" aria-label="Account"><button type="button" data-m="in" aria-pressed="${mode === "in"}">Sign in</button><button type="button" data-m="up" aria-pressed="${mode === "up"}">New player</button></div>
+        <div class="field"><label for="gate-user">Username</label><input id="gate-user" autocomplete="username" autocapitalize="none" spellcheck="false" /></div>
+        <div class="field"><label for="gate-pass">Password</label><input id="gate-pass" type="password" autocomplete="${mode === "in" ? "current-password" : "new-password"}" /></div>
+        ${mode === "up" ? `<div class="field"><label for="gate-table">Table password</label><input id="gate-table" type="password" autocomplete="off" /><small class="muted">Your GM gives you this. You only need it once.</small></div>` : ""}
+        <p class="gate-msg muted" role="status"></p>
+        <div class="row"><button class="btn primary" type="submit">${mode === "in" ? "Sign in" : "Create my account"}</button></div>
+      </form>`;
+      const q = s => box.querySelector(s), say = t => { q(".gate-msg").textContent = t || ""; };
+      say(msg);
+      box.querySelectorAll("[data-m]").forEach(b => (b.onclick = () => { mode = b.dataset.m; draw(); }));
+      q("form").onsubmit = async e => {
+        e.preventDefault();
+        const name = cleanName(q("#gate-user").value), pass = q("#gate-pass").value;
+        if (!validName(name)) { say("Usernames are 2–24 letters or numbers (dots, dashes and underscores are fine too)."); return; }
+        if (mode === "in") {
+          say("Signing in…");
+          try { await auth.signInWithEmailAndPassword(emailFor(name), pass); } catch (err) { say(authError(err && err.code)); }
+          return;
+        }
+        const tpw = q("#gate-table").value;
+        if (pass.length < 6) { say("Use at least 6 characters for the password."); return; }
+        if (!tpw.trim()) { say("Type the table password your GM gave you."); return; }
+        say("Checking the table…");
+        try {
+          const key = await tableKey(tpw);
+          pendingSignup = { key, name };
+          await auth.createUserWithEmailAndPassword(emailFor(name), pass);   // onAuthStateChanged takes it from here
+        } catch (err) { pendingSignup = null; say(authError(err && err.code)); }
+      };
+      setTimeout(() => q("#gate-user").focus(), 50);
+    };
+    draw(note);
+  }
+
+  // Signed in but not (yet) in a table: ask for the table password, create a table, or claim an old one.
+  function tableStep(user, note, key) {
+    box.innerHTML = `<form class="frame gatebox" novalidate>
+        <div class="brand">Clockwork<small>Companion</small></div>
+        <p>Signed in as <b></b>. <button type="button" class="linkbtn gate-out">Sign out</button></p>
+        <div class="field"><label for="gate-table">Table password</label><input id="gate-table" type="password" autocomplete="off" /></div>
         <p class="gate-msg muted" role="status"></p>
         <div class="row"><button class="btn primary" type="submit">Open table</button><button class="btn gate-new" type="button" hidden>Create a new table with this password</button></div>
+        <div class="row gate-claim" hidden><button class="btn primary" type="button" data-claim="1">I'm the GM: claim this table</button><button class="btn" type="button" data-claim="0">Join as a player</button></div>
       </form>`;
-    document.body.appendChild(box);
-    const form = box.querySelector("form"), input = box.querySelector("input"), msg = box.querySelector(".gate-msg"), make = box.querySelector(".gate-new");
-    let pending = null;
-    form.addEventListener("submit", async e => {
-      e.preventDefault(); make.hidden = true; msg.textContent = "Checking…";
-      try {
-        const key = await tableKey(input.value);
-        const marker = await fs.doc(`tables/${key}/meta/table`).get();
-        if (marker.exists) { box.remove(); open(key); return; }
-        pending = key; make.hidden = false;
-        msg.textContent = "No table uses that password yet. Check it with your GM, or create a new table if you're the GM.";
-      } catch (err) { msg.textContent = "Couldn't reach the table just now. Check your connection and try again."; }
-    });
-    make.addEventListener("click", async () => {
-      if (!pending) return;
-      try { await fs.doc(`tables/${pending}/meta/table`).set({ created: Date.now() }); box.remove(); open(pending); }
-      catch { msg.textContent = "Couldn't create the table. Check the database rules in Firebase."; }
-    });
-    setTimeout(() => input.focus(), 50);
+    const q = s => box.querySelector(s), say = t => { q(".gate-msg").textContent = t || ""; };
+    q("b").textContent = shortName(user);
+    q(".gate-out").onclick = () => auth.signOut();
+    let pending = key || null;
+    const tryJoin = async (k, claim) => {
+      const r = await join(k, user, claim);
+      if (r.ok) { box.remove(); box = null; return; }
+      pending = k;
+      if (r.error === "missing") { q(".gate-new").hidden = false; say("No table uses that password yet. Check it with your GM, or create a new table if you're the GM."); }
+      if (r.error === "unclaimed") { q(".gate-claim").hidden = false; say("This table doesn't have a GM yet. If you run it, claim it now. Everyone else joins as a player."); }
+    };
+    q("form").onsubmit = async e => {
+      e.preventDefault(); const v = q("#gate-table").value; if (!v.trim()) { say("Type the table password first."); return; }
+      q(".gate-new").hidden = true; q(".gate-claim").hidden = true; say("Checking…");
+      try { await tryJoin(await tableKey(v)); } catch { say("Couldn't reach the table just now. Check your connection and try again."); }
+    };
+    q(".gate-new").onclick = async () => {
+      try { await fs.doc(`tables/${pending}/meta/table`).set({ created: Date.now(), owner: user.uid }); await tryJoin(pending); }
+      catch { say("Couldn't create the table. Check the database rules in Firebase."); }
+    };
+    box.querySelectorAll("[data-claim]").forEach(b => (b.onclick = async () => {
+      try { await tryJoin(pending, b.dataset.claim === "1"); } catch { say("Couldn't join just now. Try again."); }
+    }));
+    say(note);
+    if (pending) tryJoin(pending).catch(() => say("Couldn't reach the table just now."));
+    setTimeout(() => q("#gate-table").focus(), 50);
   }
+  const shortName = u => (u.email || "").split("@")[0] || "player";
+  let pendingSignup = null;
 
   window.CW_WEB = {
     configured,
-    leave() { lsSet(KEY, null); location.reload(); },
+    leave() { lsSet(KEY, null); (auth ? auth.signOut() : Promise.resolve()).then(() => location.reload()); },
   };
   if (!configured) return;   // no Firebase settings yet: the app runs in this-browser-only mode
 
   firebase.initializeApp(cfg);
   fs = firebase.firestore();
+  auth = firebase.auth();
   window.claude = {
     use(name) {
       if (name === "db") return ready;
       if (name === "assets") return ready.then(() => assets);
-      return Promise.resolve(null);   // no "user" (everyone at the table can edit); downloads use the browser's own
+      if (name === "table") return ready.then(() => table);
+      return Promise.resolve(null);   // downloads use the browser's own
     },
   };
-  const saved = lsGet(KEY);
-  const start = () => (saved ? open(saved) : gate());
+  let started = false;
+  const start = () => auth.onAuthStateChanged(async user => {
+    if (!user) { if (started) location.reload(); else gate(null); return; }
+    if (started) return;
+    const signup = pendingSignup; pendingSignup = null;
+    let key = signup ? signup.key : lsGet(KEY);
+    if (!key) { try { const u = await fs.doc(`users/${user.uid}`).get(); if (u.exists) key = u.data().table; } catch {} }
+    if (key) {
+      try { const r = await join(key, user); if (r.ok) { if (box) { box.remove(); box = null; } return; } } catch {}
+      lsSet(KEY, null);
+    }
+    gate(user, "", key);
+  });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
 </script>
@@ -856,6 +1007,11 @@ const CW = (() => {
   const SECONDARY_BY_NAME = Object.fromEntries(SECONDARY.map(s => [s.name, s]));
 
   const SIZES = { small: 1, medium: 2, large: 4, huge: 8 };
+  // Inventory sizes: [key, label, slots per stack, how many fit in one stack]. Bundles and ammo stack into one small slot.
+  const ITEM_SIZES = [["small", "Small", 1, 1], ["medium", "Medium", 2, 1], ["large", "Large", 4, 1], ["huge", "Huge", 8, 1],
+    ["bundle", "Bundle · 10 a slot", 1, 10], ["ammo", "Ammo · 50 a slot", 1, 50]];
+  const ITEM_SIZE = Object.fromEntries(ITEM_SIZES.map(([k, label, slots, per]) => [k, { label, slots, per }]));
+  const PROSTHETIC_TYPES = ["Replacement limb", "Added limb", "Replacement organ", "Implant", "Other"];
 
   const ARMOR = {
     light:  { label: "Light",  av: [1, 4],   str: 0,  am: 0, repairPerAV: 50,  repairDie: "d6"  },
@@ -911,7 +1067,7 @@ const CW = (() => {
       attrs, skills, weaponSkills: weapons, secondary,
       vitals: { hp: null, bp: null, dp: null, tox: 0, exhaustion: 0, staminaLost: 0,
                 wounds: { light: 0, moderate: 0, mortal: 0 }, conditions: [] },
-      prosthetics: 0, coins: 0,
+      prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
     };
   }
@@ -929,6 +1085,9 @@ const CW = (() => {
     out.vitals.wounds = Object.assign({}, b.vitals.wounds, c && c.vitals && c.vitals.wounds);
     ["items", "weapons", "armor", "log"].forEach(k => (out[k] = Array.isArray(out[k]) ? out[k] : []));
     if (!Array.isArray(out.vitals.conditions)) out.vitals.conditions = [];
+    // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
+    if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
+    out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
     return out;
   }
 
@@ -1036,8 +1195,8 @@ const CW = (() => {
     else if (lvl > 0) { bonus = 7 * lvl; source = `Level ${lvl}`; }
     else { bonus = 0; source = attr(c, s.attr) < 10 ? "Untrained · disadvantage" : "Untrained · flat d100"; }
     // armor and prosthetic penalties
-    if (name === "Stealth") bonus -= p.stealth + 4 * num(c.prosthetics);
-    if (name === "Entrada") bonus -= p.entrada + 7 * num(c.prosthetics);
+    if (name === "Stealth") bonus -= p.stealth + 4 * c.prosthetics.length;
+    if (name === "Entrada") bonus -= p.entrada + 7 * c.prosthetics.length;
     if (s.attr === "DEX") bonus -= p.dexSkills;
     const disadv = (name === "Stealth" && p.stealthDisadv) || (lvl === 0 && !viaPrimary && attr(c, s.attr) < 10);
     return { bonus: Math.max(0, bonus), source, disadv, trained: !!(lvl > 0 || viaPrimary) };
@@ -1087,7 +1246,7 @@ const CW = (() => {
       overToxic: cur.tox > max.tox,
       move, baseMove, climb: Math.floor(move / 2),
       mealsPerDay: sk(c, "Deprivation") >= 3 ? 2 : 3,
-      rationsPerDay: (sk(c, "Deprivation") >= 3 ? 2 : 3) + num(c.prosthetics),
+      rationsPerDay: (sk(c, "Deprivation") >= 3 ? 2 : 3) + c.prosthetics.length,
       rationsPerMeal,
       exhaustionEffect: EXHAUSTION[clamp(num(v.exhaustion), 0, 10)],
       enc,
@@ -1099,14 +1258,15 @@ const CW = (() => {
   // ---------- encumbrance ----------
   function itemUnits(it) {
     const per = Math.max(1, num(it.per) || 1);
-    return Math.ceil(num(it.qty) / per) * (SIZES[it.size] || 1);
+    const z = ITEM_SIZE[it.size] || ITEM_SIZE.small;
+    return Math.ceil(num(it.qty) / Math.max(z.per, per)) * z.slots;
   }
   function encumbrance(c) {
     const unit = attr(c, "STR") + 2 * sk(c, "Strong Back");
     const freeSets = sk(c, "Strong Back") >= 3 ? 3 : 2;
     let load = 0;
     const lines = [];
-    c.items.forEach(it => { if (it.where !== "stash" && it.where !== "worn") { const u = itemUnits(it); load += u; if (u) lines.push([it.name || "Item", u]); } });
+    c.items.forEach(it => { const u = itemUnits(it); load += u; if (u) lines.push([it.name || "Item", u]); });   // everything listed is carried
     if (num(c.coins) > 0) { const u = Math.ceil(num(c.coins) / 100); load += u; lines.push(["Coins", u]); }
     // Weapons: the first sets ride free; shields always count as large; spares count by size.
     let setsUsed = 0;
@@ -1197,7 +1357,7 @@ const CW = (() => {
     return n;
   }
 
-  return { ATTRS, ATTR_NAME, SKILL_GROUPS, SKILLS, CASTING, WEAPON_TYPES, WEAPON_ATTR, SECONDARY, SECONDARY_BY_NAME, SIZES, ARMOR,
+  return { ATTRS, ATTR_NAME, SKILL_GROUPS, SKILLS, CASTING, WEAPON_TYPES, WEAPON_ATTR, SECONDARY, SECONDARY_BY_NAME, SIZES, ITEM_SIZES, ITEM_SIZE, PROSTHETIC_TYPES, ARMOR,
            ENCUMBRANCE, WOUNDS, EXHAUSTION, LEVELS, clamp, num, tri, karmaBetween, levelDelta, blankCharacter, normalize,
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
@@ -1301,7 +1461,7 @@ const rid = () => "c" + Date.now().toString(36) + Math.random().toString(36).sli
 const clean = o => JSON.parse(JSON.stringify(o));
 
 const Store = {
-  mode: "loading", db: null, uid: null, assets: null, downloads: null, readOnly: false,
+  mode: "loading", db: null, table: null, members: [], uid: null, assets: null, downloads: null, readOnly: false,
   listeners: new Set(), chars: {}, encounter: null,
   emit() { this.listeners.forEach(f => f(this)); },
   async init() {
@@ -1325,6 +1485,8 @@ const Store = {
     }, () => {});
     this.emit();
     use("assets").then(a => { this.assets = a; this.emit(); });
+    // On the website: who is signed in and their role. GMs also get the list of everyone at the table.
+    use("table").then(t => { if (!t) return; this.table = t; if (t.role === "gm") t.members(ms => { this.members = ms; this.emit(); }); this.emit(); });
     use("downloads").then(d => { this.downloads = d; this.emit(); });
   },
   goLocal() { this.mode = "local"; this.chars = lsGet(LS_KEY, {}); this.encounter = lsGet("cw-encounter", null); this.emit(); },
@@ -1358,6 +1520,17 @@ const Store = {
     await this.db.doc("characters/" + id).delete();
   },
 };
+
+// GMs (and everyone on claude.ai, where there are no roles) see every character and the GM table.
+const isGM = () => !Store.table || Store.table.role === "gm";
+const playersOf = c => (Array.isArray(c.players) ? c.players : []);
+// Characters in roster order: alphabetical, each followed by its companions.
+function rosterOrder(chars) {
+  const byName = (a, b) => (a.name || "").localeCompare(b.name || "");
+  const ids = new Set(chars.map(c => c.id));
+  const tops = chars.filter(c => !c.companionOf || !ids.has(c.companionOf)).sort(byName);
+  return tops.flatMap(t => [t, ...chars.filter(c => c.companionOf === t.id).sort(byName)]);
+}
 
 /* ================= toast ================= */
 let toastFn = () => {};
@@ -1393,13 +1566,21 @@ const Mouse = ({ side }) => html`<svg class="mouse" viewBox="0 0 14 20" aria-hid
   <line x1="7" y1="1.5" x2="7" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="1.5" y1="8" x2="12.5" y2="8" stroke="currentColor" stroke-width="1.2"/>
   <path d=${side === "R" ? "M7.6 2 a5.4 5.4 0 0 1 4.8 5.4 v0.6 h-4.8 z" : "M6.4 2 a5.4 5.4 0 0 0 -4.8 5.4 v0.6 h4.8 z"} fill="var(--brass)"/></svg>`;
 // What changing a level would mean: cost or refund, and whether it is allowed.
-// raiseBtn / lowerBtn: which mouse button does it ("L" for pips, "R"/"L" for attribute cells).
+// raiseBtn / lowerBtn: which mouse button does it (left raises, right lowers).
 // The current level and ceiling of anything with pips. Free edit lifts an attribute's ceiling to 20.
 const levelState = (c, mode, kind, name) => {
   const L = R.LEVELS[kind];
   return { L, from: L.get(c, name), cap: kind === "attr" && mode === "build" ? 20 : L.cap(c, name), label: kind === "attr" ? R.ATTR_NAME[name] : name };
 };
-function levelTip(c, mode, kind, name, to, raiseBtn = "L", lowerBtn = "L") {
+// Free edit changes levels without spending Karma, so the pool (Karma earned) moves by however much the
+// Karma spent changes. That keeps "pool = unspent + spent" true, so a later refund can never exceed what was earned.
+// (An attribute's starting value moves with it in Free edit, so any points that were bought become natural.)
+function freePoolDelta(c, kind, name, to) {
+  const x = clean(c); R.LEVELS[kind].put(x, name, to); if (kind === "attr") x.attrs[name].base = to;
+  return R.karmaSpent(x).total - R.karmaSpent(c).total;
+}
+const signed = n => (n > 0 ? "+" : "−") + Math.abs(n);
+function levelTip(c, mode, kind, name, to, raiseBtn = "L", lowerBtn = "R") {
   const { L, from, cap, label } = levelState(c, mode, kind, name);
   const have = num(c.karma);
   if (to === from) return { title: `${label} ${to}`, lines: ["Current level"] };
@@ -1412,7 +1593,7 @@ function levelTip(c, mode, kind, name, to, raiseBtn = "L", lowerBtn = "L") {
     return { tone: "blocked", title: "Starting value", lines: [`${label} started at ${R.attrBase(c, name)}. Free edit can lower it further.`] };
   const raise = to > from, delta = R.levelDelta(c, kind, name, from, to);
   const head = html`<${Mouse} side=${raise ? raiseBtn : lowerBtn} /> to ${raise ? "raise" : "lower"} to ${to}`;
-  if (mode === "build") return { tone: raise ? "" : "refund", title: head, lines: ["Free edit · no Karma"] };
+  if (mode === "build") { const dp = freePoolDelta(c, kind, name, to); return { tone: raise ? "" : "refund", title: head, lines: [dp ? html`Free edit · <em>pool ${signed(dp)}</em>` : "Free edit · pool unchanged"] }; }
   return { tone: !raise ? "refund" : delta > have ? "short" : "ok", title: head,
     lines: [html`<em>${raise ? delta : "+" + -delta} Karma</em> · ${have} → ${have - delta}`] };
 }
@@ -1422,12 +1603,15 @@ function Pips({ value, max = 10, cap = max, onSet, label, big, tipFor }) {
   const out = [];
   for (let i = 1; i <= max; i++) {
     const on = i <= value, capped = i > cap && !on, over = on && i > cap;
-    const target = i === value ? i - 1 : i;
+    // Left-click an empty pip to raise to it; right-click (long-press on a phone) a filled pip to lower below it.
+    const target = on ? i - 1 : i;
+    const go = () => { onSet(target); if (tipFor) setTimeout(() => tip.hide(), 0); };
     out.push(html`<button type="button" class=${"pip" + (on ? " on" : "") + (capped ? " capped" : "") + (over ? " over" : "")}
-      aria-label=${`${label} ${i}`} aria-pressed=${on}
+      aria-label=${on ? `${label}: lower to ${i - 1}` : `${label}: raise to ${i}`} aria-pressed=${on}
       onMouseEnter=${e => tipFor && tip.show(e.currentTarget, tipFor(target))} onMouseLeave=${() => tip.hide()}
       onFocus=${e => tipFor && tip.show(e.currentTarget, tipFor(target))} onBlur=${() => tip.hide()}
-      onClick=${() => { onSet(target); if (tipFor) setTimeout(() => tip.hide(), 0); }}></button>`);
+      onClick=${e => { if (!on) go(); else if (e.detail) toast("Right-click (long-press on a phone) to lower."); else go(); }}
+      onContextMenu=${e => { e.preventDefault(); if (on) go(); }}></button>`);
   }
   return html`<span class=${"pips" + (big ? " big" : "")} role="group" aria-label=${label}>${out}</span>`;
 }
@@ -1512,7 +1696,9 @@ function App() {
   });
 
   const all = Object.assign({}, Store.chars, drafts);
-  const list = Object.values(all).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  const list = rosterOrder(Object.values(all));
+  const gm = isGM();
+  if (!gm && view === "gm") setView("chars");
   const current = sel && all[sel] ? norm(all[sel]) : null;
   useEffect(() => { if (!current && list.length) setSel(list[0].id); }, [list.length, !!current]);
   useEffect(() => lsSet("cw-sel", sel), [sel]);
@@ -1529,15 +1715,18 @@ function App() {
   const update = fn => { if (current) updateChar(current.id, fn); };
   const openChar = id => { setSel(id); setView("chars"); setTab("sheet"); window.scrollTo(0, 0); };
 
-  const create = (rolled) => {
+  // A new character belongs to the player who made it. A companion belongs to whoever plays its master.
+  const create = (rolled, master) => {
     if (Store.readOnly) { toast("You can view these characters but not add new ones."); return; }
-    const c = R.blankCharacter(); c.id = rid(); c.name = "New character"; c.ownerId = Store.uid || ""; c.createdAt = Date.now();
+    const c = R.blankCharacter(); c.id = rid(); c.name = master ? "New companion" : "New character"; c.ownerId = Store.uid || ""; c.createdAt = Date.now();
+    if (Store.table) c.players = gm ? (master ? playersOf(master).slice() : []) : [Store.table.uid];
+    if (master) { c.companionOf = master.id; c.campaign = master.campaign || ""; }
     if (rolled) R.ATTRS.forEach(a => { const v = R.rollAttribute(); c.attrs[a.k] = { base: v, value: v }; });
     c._rev = rid();
     lastEdit.current[c.id] = Date.now();
     setDrafts(d => Object.assign({}, d, { [c.id]: c })); setSel(c.id); setTab("sheet");
     Store.flush(c);
-    toast(rolled ? "Rolled 3d8, kept the best two, minimum 6." : "Character created.");
+    toast(master ? `Companion added for ${master.name || "this character"}.` : rolled ? "Rolled 3d8, kept the best two, minimum 6." : "Character created.");
   };
   const remove = async id => { const gone = all[id]; await Store.remove(id);
     if (gone && gone.portraitAsset && Store.assets && Store.assets.remove) Store.assets.remove(gone.portraitAsset); setDrafts(d => { const n = Object.assign({}, d); delete n[id]; return n; }); setSel(null); toast("Character deleted."); };
@@ -1545,11 +1734,11 @@ function App() {
   return html`<div class="wrap">
     <header class="top">
       <div class="brand">Clockwork<small>Companion</small></div>
-      <div class="seg viewseg" role="group" aria-label="View">
+      ${gm && html`<div class="seg viewseg" role="group" aria-label="View">
         <button aria-pressed=${view === "chars"} onClick=${() => setView("chars")}>Characters</button>
-        <button aria-pressed=${view === "gm"} onClick=${() => setView("gm")}>GM table</button></div>
+        <button aria-pressed=${view === "gm"} onClick=${() => setView("gm")}>GM table</button></div>`}
       <${SkinPicker} />
-      <div class="status">${Store.mode === "live" && window.CW_WEB ? html`<i class="dot live"></i>Shared table <button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Leave</button>`
+      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
     </header>
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
@@ -1557,20 +1746,22 @@ function App() {
       : "Shared saving isn't available in this view, so characters are kept in this browser only. Open the published page while signed in to share them with your table."}</div>`}
     ${Store.readOnly && html`<div class="banner">You're viewing these characters read-only. To edit, ask the owner to invite you as an Editor.</div>`}
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
-    ${view === "gm" ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
+    ${view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
     <nav class="roster" aria-label="Characters">
       ${list.map(c => { const d = derive(c); const hpPct = d.max.hp ? R.clamp((d.cur.hp / d.max.hp) * 100, 0, 100) : 0;
-        return html`<button class="chip" aria-current=${c.id === sel} onClick=${() => setSel(c.id)}>
+        return html`<button class=${"chip" + (c.companionOf && all[c.companionOf] ? " comp" : "")} aria-current=${c.id === sel} onClick=${() => setSel(c.id)}>
           <${Thumb} c=${c} />
-          <span class="who"><b>${c.name || "Unnamed"}</b><span>${subtitle(c)}</span>
+          <span class="who"><b>${c.name || "Unnamed"}</b><span>${c.companionOf && all[c.companionOf] ? `Companion of ${all[c.companionOf].name || "Unnamed"}` : subtitle(c)}</span>
           <span class="bar" title=${`HP ${d.cur.hp}/${d.max.hp}`}><i style=${`width:${hpPct}%`}></i></span></span></button>`; })}
       ${list.length > 0 && html`<button class="chip add" onClick=${() => create(true)}>+ New character</button>`}
+      ${current && !current.companionOf && html`<button class="chip add" onClick=${() => create(false, current)}>+ Companion for ${current.name || "this character"}</button>`}
     </nav>
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
       : Store.mode === "loading" ? html`<div class="empty"><p class="muted">Opening the character ledger…</p></div>`
       : html`<div class="empty">
-          <div class="ornate">No characters yet</div>
-          <p>Each player's sheet lives here: attributes, skills, Karma, vitals and gear, with the rulebook math done for you. Send any character onto your Tabletop Simulator sheet with one code.</p>
+          <div class="ornate">${gm ? "No characters yet" : "Welcome to the table"}</div>
+          <p>${gm ? "Each player's sheet lives here: attributes, skills, Karma, vitals and gear, with the rulebook math done for you. Send any character onto your Tabletop Simulator sheet with one code."
+            : "You don't have a character here yet. Roll one up below, or ask your GM to hand you an existing one."}</p>
           <div class="row"><button class="btn primary" onClick=${() => create(true)}>Roll a new character</button>
           <button class="btn" onClick=${() => create(false)}>Start from a blank sheet</button></div>
           <p class="muted">Rolling uses the rulebook method for each attribute: 3d8, keep the best two, minimum 6.</p></div>`}`}
@@ -1581,8 +1772,11 @@ function App() {
 /* ================= character ================= */
 function Character({ c, update, tab, setTab, onDelete }) {
   const d = derive(c);
-  const [mode, setMode] = useState(() => lsGet("cw-mode", "karma"));
-  useEffect(() => lsSet("cw-mode", mode), [mode]);
+  const [chosenMode, setMode] = useState(() => lsGet("cw-mode", "karma"));
+  useEffect(() => lsSet("cw-mode", chosenMode), [chosenMode]);
+  // Free edit is always there for a GM; a player gets it only when the GM switches it on for this sheet.
+  const canFree = isGM() || !!c.freeEdit;
+  const mode = canFree ? chosenMode : "karma";
   const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["gear", "Gear"], ["table", "Tabletop"]];
   const [panel, setPanel] = useState(null);
   const [invested, setInvested] = useState(() => { const v = lsGet("cw-invested2", null); return v && typeof v === "object" ? v : { skills: false, weapons: false, sec: false }; });
@@ -1590,7 +1784,7 @@ function Character({ c, update, tab, setTab, onDelete }) {
   const toggleInv = k => setInvested(x => Object.assign({}, x, { [k]: !x[k] }));
   useEffect(() => setPanel(null), [c.id]);
   return html`
-    <${Header} c=${c} d=${d} update=${update} mode=${mode} setMode=${setMode} />
+    <${Header} c=${c} d=${d} update=${update} mode=${mode} setMode=${setMode} canFree=${canFree} />
     <div class="tabs" role="tablist">${tabs.map(([k, n]) => html`<button role="tab" class=${"tab-" + k} aria-selected=${tab === k} onClick=${() => setTab(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${TAB_ICONS[k]}</svg>${n}</button>`)}</div>
     ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${(kind, name) => setPanel(panel && panel.name === name ? null : { kind, name })} />`}
@@ -1607,7 +1801,7 @@ const TAB_ICONS = {
   gear: html`<path d="M4 7.5h12v9.5H4z M7 7.5V5a3 3 0 0 1 6 0v2.5 M4 11h12" />`,
   table: html`<path d="M10 2.5l6.5 3.75v7.5L10 17.5l-6.5-3.75v-7.5z M10 10l6.5-3.75 M10 10L3.5 6.25 M10 10v7.5" />`,
 };
-function Header({ c, d, update, mode, setMode }) {
+function Header({ c, d, update, mode, setMode, canFree }) {
   const fileRef = useRef(); const [busy, setBusy] = useState(false); const [award, setAward] = useState("");
   const upload = async e => {
     const f = e.target.files && e.target.files[0]; e.target.value = "";
@@ -1618,6 +1812,8 @@ function Header({ c, d, update, mode, setMode }) {
     setBusy(false);
   };
   const id = s => `${s}-${c.id}`;
+  const off = num(c.pool) - num(c.karma) - d.karma.total;   // pool should equal unspent + spent
+  const masters = Object.values(Store.chars).filter(x => x.id !== c.id && !x.companionOf).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   return html`<section class="head" style="position:relative;isolation:isolate"><${Sigils} seed="header" n=${1} lead="gears" side="l" />
     <div class="portrait">${portraitSrc(c) ? html`<img src=${portraitSrc(c)} alt=${`Portrait of ${c.name}`} />` : initials(c.name)}
       ${Store.assets && html`<button class="over" onClick=${() => fileRef.current.click()} disabled=${busy}>${busy ? "Uploading…" : portraitSrc(c) ? "Replace portrait" : "Add portrait"}</button>
@@ -1626,6 +1822,9 @@ function Header({ c, d, update, mode, setMode }) {
       <input id=${id("name")} class="namefield" aria-label="Character name" value=${c.name} onInput=${e => update(x => { x.name = e.target.value; })} />
       <div class="fields">
         <${Field} id=${id("player")} label="Player" value=${c.player} onInput=${v => update(x => { x.player = v; })} />
+        ${(c.companionOf || masters.length > 0) && html`<div class="field"><label for=${id("comp")}>Companion of</label>
+          <select id=${id("comp")} value=${c.companionOf || ""} onChange=${e => update(x => { x.companionOf = e.target.value; })}>
+            <option value="">— Not a companion</option>${masters.map(m => html`<option value=${m.id}>${m.name || "Unnamed"}</option>`)}</select></div>`}
         <div class="field"><label for=${id("camp")}>Campaign</label>
           <select id=${id("camp")} value=${c.campaign} onChange=${e => update(x => { x.campaign = e.target.value; })}>
             <option value="">—</option><option>Tears of Eithos</option><option>Talon Saga</option><option>One-shot</option></select></div>
@@ -1643,10 +1842,13 @@ function Header({ c, d, update, mode, setMode }) {
       <div class="row"><input class="inp" style="width:70px" type="number" min="1" aria-label="Karma to award" placeholder="+0" value=${award} onInput=${e => setAward(e.target.value)} />
         <button class="btn small" disabled=${!(+award > 0)} onClick=${() => { const n = Math.floor(+award); update(x => { x.karma = num(x.karma) + n; x.pool = num(x.pool) + n; addLog(x, `Awarded ${n} Karma`); }); setAward(""); }}>Award</button>
         <span class="muted">Spent ${d.karma.total}</span></div>
-      <div class="seg" role="group" aria-label="Editing mode">
+      ${off !== 0 && html`<div class="poolwarn"><span>The pool is ${Math.abs(off)} ${off > 0 ? "more" : "less"} than unspent + spent (${num(c.karma)} + ${d.karma.total}).</span>
+        ${isGM() && html`<button class="btn small" onClick=${() => update(x => { x.pool = num(x.karma) + R.karmaSpent(x).total; addLog(x, `Pool set to ${num(x.pool)} (unspent + spent)`); })}>Match pool</button>`}</div>`}
+      ${canFree && html`<div class="seg" role="group" aria-label="Editing mode">
         <button aria-pressed=${mode === "karma"} onClick=${() => setMode("karma")}>Spend Karma</button>
-        <button aria-pressed=${mode === "build"} onClick=${() => setMode("build")}>Free edit</button></div>
-      <div class="muted">${mode === "karma" ? "Raising a pip spends Karma; lowering refunds it." : "Character creation and GM fixes: pips change without touching Karma."}</div>
+        <button aria-pressed=${mode === "build"} onClick=${() => setMode("build")}>Free edit</button></div>`}
+      <div class="muted">${mode === "karma" ? html`<${Mouse} side="L" /> Left-click raises and spends Karma. <${Mouse} side="R" /> Right-click lowers and refunds it.` : "Changes cost no Karma. The pool grows or shrinks to match, so it always equals unspent + spent."}</div>
+      ${Store.table && isGM() && html`<label class="row freeallow"><input type="checkbox" checked=${!!c.freeEdit} onChange=${e => update(x => { x.freeEdit = e.target.checked; addLog(x, e.target.checked ? "GM allowed Free edit" : "GM turned off Free edit"); })} />Player may use Free edit</label>`}
     </div></div>
   </section>`;
 }
@@ -1666,9 +1868,11 @@ function setLevel(c, update, mode, kind, name, to) {
   const cost = R.levelDelta(c, kind, name, from, to);
   if (mode === "karma" && cost > num(c.karma)) { toast(`That costs ${cost} Karma. ${c.name || "This character"} has ${num(c.karma)}.`); return; }
   update(x => {
+    const dp = mode === "build" ? freePoolDelta(x, kind, name, to) : 0;
     L.put(x, name, to);
     if (kind === "attr" && mode === "build") x.attrs[name].base = to;
     if (mode === "karma") { x.karma = num(x.karma) - cost; addLog(x, `${label} ${from} → ${to} (${cost > 0 ? "−" + cost : "+" + -cost} Karma)`); }
+    else { x.pool = num(x.pool) + dp; addLog(x, `Free edit: ${label} ${from} → ${to}${dp ? ` (pool ${signed(dp)})` : ""}`); }
   });
 }
 
@@ -1704,17 +1908,17 @@ function AttrRow({ c, a, mode, set }) {
   // One bar of ten cells with a moving 10 marker.
   // Broken (below 10): the 10 sits at the right end and red cells show how far short the attribute is.
   // At 10 or above: the 10 jumps to the left end and the cells fill toward 20.
-  // Right-click a cell to raise the attribute to it; left-click a filled cell to lower it.
+  // Left-click a cell to raise the attribute to it; right-click a filled cell to lower it.
   const v = R.attr(c, a.k), base = R.attrBase(c, a.k), ceiling = R.attrCap(c, a.k), cap = mode === "build" ? 20 : ceiling;
   const diff = v - 10, broken = v < 10;
-  const showTip = (e, to) => tip.show(e.currentTarget, to === null ? { title: `${a.n} ${v}`, lines: [html`<${Mouse} side="R" /> raise · <${Mouse} side="L" /> lower`] } : levelTip(c, mode, "attr", a.k, to, "R", "L"));
+  const showTip = (e, to) => tip.show(e.currentTarget, to === null ? { title: `${a.n} ${v}`, lines: [html`<${Mouse} side="L" /> raise · <${Mouse} side="R" /> lower`] } : levelTip(c, mode, "attr", a.k, to, "L", "R"));
   const cellFor = (val, cls, extra) => {
     const filled = val <= v;
     const raiseTo = val, lowerTo = val - 1;
     return html`<button type="button" class=${"cell " + cls} aria-label=${filled ? `Lower ${a.n} to ${lowerTo}` : `Raise ${a.n} to ${raiseTo}`}
       onMouseEnter=${e => showTip(e, cls.includes("sealed") ? raiseTo : filled ? lowerTo : raiseTo)} onMouseLeave=${() => tip.hide()}
-      onClick=${() => { if (filled) { set(lowerTo); tip.hide(); } else toast("Right-click (long-press on a phone) to raise."); }}
-      onContextMenu=${e => { e.preventDefault(); if (!filled) { set(raiseTo); tip.hide(); } }}
+      onClick=${() => { if (!filled) { set(raiseTo); tip.hide(); } else toast("Right-click (long-press on a phone) to lower."); }}
+      onContextMenu=${e => { e.preventDefault(); if (filled) { set(lowerTo); tip.hide(); } }}
       onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set(filled ? lowerTo : raiseTo); } }}>${extra || ""}</button>`;
   };
   const cells = [];
@@ -1733,7 +1937,7 @@ function AttrRow({ c, a, mode, set }) {
   }
   const mid = html`<button type="button" class=${"mid" + (v === 10 ? " at" : "") + (broken ? " from-l" : " from-r")} aria-label=${`Set ${a.n} to 10`}
     onMouseEnter=${e => showTip(e, v === 10 ? null : 10)} onMouseLeave=${() => tip.hide()}
-    onClick=${() => { if (v > 10) { set(10); tip.hide(); } }} onContextMenu=${e => { e.preventDefault(); if (v < 10) { set(10); tip.hide(); } }}>10</button>`;
+    onClick=${() => { if (v < 10) { set(10); tip.hide(); } }} onContextMenu=${e => { e.preventDefault(); if (v > 10) { set(10); tip.hide(); } }}>10</button>`;
   const state = diff < 0 ? html`<span class="flag bad">Broken ${diff}</span>` : diff > 0 ? html`<span class="flag">+${diff}</span>` : html`<span class="flag">Median</span>`;
   return html`<div class=${"attr" + (broken ? " is-broken" : "")}>
     <span class="nm">${a.n}</span>
@@ -1753,7 +1957,7 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill }) {
     aria-label=${invested[k] ? `Show all ${what}` : `Show only invested ${what}`} onClick=${() => toggleInv(k)}
     onMouseEnter=${e => tip.show(e.currentTarget, { title: invested[k] ? "Invested only" : "All " + what, lines: [invested[k] ? `Click to show all ${what}` : `Click to show only ${what} with points`] })} onMouseLeave=${() => tip.hide()}></button></span>`;
   const set = (kind, name) => to => setLevel(c, update, mode, kind, name, to);
-  const tipFn = (kind, name) => to => levelTip(c, mode, kind, name, to, "L", "L");
+  const tipFn = (kind, name) => to => levelTip(c, mode, kind, name, to, "L", "R");
   const p = d.armor;
   const nameBtn = (kind, n, extra) => html`<button type="button" class="n sname" onClick=${() => openSkill(kind, n)} title=${`What ${n} grants at each level`}>${n}${extra || ""}</button>`;
   const groups = R.SKILL_GROUPS.map(g => ({ g, rows: g.skills.filter(([n]) => !invested.skills || num(c.skills[n]) > 0) })).filter(x => x.rows.length);
@@ -1770,7 +1974,7 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill }) {
         <span class="item"><i class="cell bought"></i><b>Bought</b><small>Points raised with Karma</small></span>
         <span class="item"><i class="cell sealed"></i><b>Sealed</b><small>Karma can never raise a broken attribute past here</small></span>
       </div>
-      <p class="hint"><${Mouse} side="R" /> Right-click a cell to raise to it · <${Mouse} side="L" /> left-click to lower · hover for the Karma cost.${mode === "build" ? " In Free edit, Break turns an attribute into a broken one." : ""}</p>
+      <p class="hint"><${Mouse} side="L" /> Left-click to raise · <${Mouse} side="R" /> right-click to lower (long-press on a phone) · hover for the Karma cost. Skill pips work the same way.${mode === "build" ? " In Free edit, Break turns an attribute into a broken one." : ""}</p>
       <div class="attrs">${R.ATTRS.map(a => html`<${AttrRow} key=${a.k} c=${c} a=${a} mode=${mode} set=${set("attr", a.k)} />`)}</div>
     </section>
 
@@ -1828,7 +2032,7 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
       <button class="iconbtn" aria-label="Close" onClick=${onClose}>×</button>
     </header>
     <div class="spnow">
-      <${Pips} value=${lv} max=${max} cap=${cap} label=${name} onSet=${set} tipFor=${to => levelTip(c, mode, kind, name, to)} />
+      <${Pips} value=${lv} max=${max} cap=${cap} label=${name} onSet=${set} tipFor=${to => levelTip(c, mode, kind, name, to, "L", "R")} />
       <span class="muted">Level ${lv} of ${max}${cap < max ? ` · ${an} ${R.attr(c, at)} allows ${cap}` : ""}</span>
     </div>
     <div class="spbody">
@@ -1939,25 +2143,27 @@ function VitalsTab({ c, d, update }) {
 
 /* ================= gear tab ================= */
 function GearTab({ c, d, update }) {
-  const e = d.enc; const max7 = e.limits[4] || 1;
+  const e = d.enc;
   // needle position: 3 fifths of the bar cover 0→3×unit, then one fifth per tier
   const pos = (() => { const L = e.load, u = e.unit || 1; if (L <= 3 * u) return (L / (3 * u)) * 60; const extra = Math.min(4, (L - 3 * u) / u); return 60 + extra * 10; })();
-  const addItem = () => update(x => { x.items.push({ id: rid(), name: "", qty: 1, per: 1, size: "small", where: "pack" }); });
+  const addItem = () => update(x => { x.items.push({ id: rid(), name: "", qty: 1, size: "small" }); });
   const addWeapon = () => update(x => { x.weapons.push({ id: rid(), name: "", skill: "Slashing", hands: 1, size: "medium", damage: 6, crit: 5, accuracy: 0, dur: 100, durMax: 100, durDie: "d10", clip: 0, clipMax: 0, range: "", props: "", where: "set" }); });
   const addArmor = () => update(x => { x.armor.push({ id: rid(), name: "", type: "light", av: 2, soak: 30, soakMax: 30, worn: !x.armor.some(a => a.worn), where: "set" }); });
+  const addProsthetic = () => update(x => { x.prosthetics.push({ id: rid(), name: "", type: R.PROSTHETIC_TYPES[0], props: "" }); });
   const it = (i, k) => v => update(x => { x.items[i][k] = v; });
   const wp = (i, k) => v => update(x => { x.weapons[i][k] = v; });
   const ar = (i, k) => v => update(x => { x.armor[i][k] = v; });
+  const pr = (i, k) => v => update(x => { x.prosthetics[i][k] = v; });
+  const ef = e.effective;
   return html`<div class="tabpane">
-    <section class="frame load"><${Sigils} seed="load" n=${1} side="r" /><h2 class="h"><span>Load</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Counted in small-item units. Carry ${e.capacity} before slowing down (3 × Strength + 6 × Strong Back).</p>
-      <div class="row" style="justify-content:space-between"><span><b style="font:600 22px var(--f-mono)">${e.load}</b> <span class="muted">units</span></span>
+    <section class="frame load"><${Sigils} seed="load" n=${1} side="r" /><h2 class="h"><span>Load</span><i class="orn" aria-hidden="true"></i></h2>
+      <p class="sub">Everything carried, counted in small-item slots. You slow down past ${e.capacity}.</p>
+      <div class="row" style="justify-content:space-between"><span class="loadnum"><b>${e.load}</b> / ${e.capacity}</span>
         <span><b>${e.tier.name}</b>${e.ignored ? html` <span class="flag good">Strong Back ignores this</span>` : ""}</span></div>
       <div class="loadbar" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><i class="needle" style=${`left:calc(${Math.min(99, pos)}% - 1px)`}></i></div>
       <div class="loadscale"><span>0</span><span>${e.limits[0]}</span><span>${e.limits[1]}</span><span>${e.limits[2]}</span><span>${e.limits[3]}</span></div>
-      <div class="facts">${[["Exploring", e.effective.explore], ["Per day", e.effective.day], ["Defending", e.effective.defend == null ? "Can't defend" : (e.effective.defend || "No") + (e.effective.defend ? "%" : " penalty")], ["Combat move", d.move + " m"], ["Free weapon sets", `${e.setsUsed} / ${e.freeSets}`]].map(([k, val]) => html`<div class="fact"><span>${k}</span><b>${val}</b></div>`)}</div>
-      <div class="row"><div class="mini" style="width:120px"><label for=${"coins-" + c.id}>Coins</label><input id=${"coins-" + c.id} type="number" min="0" value=${c.coins} onInput=${ev => update(x => { x.coins = +ev.target.value || 0; })} /></div>
-        <div class="mini" style="width:120px"><label for=${"pros-" + c.id}>Prosthetics</label><input id=${"pros-" + c.id} type="number" min="0" max="8" value=${c.prosthetics} onInput=${ev => update(x => { x.prosthetics = +ev.target.value || 0; })} /></div>
-        <span class="muted">${num(c.prosthetics) ? `Each prosthetic: Entrada −7%, Stealth −4%, +1 ration a day.` : "100 coins make one small item."}</span></div>
+      <div class="facts">${[["Travel", ef.explore === ef.day ? ef.explore : `${ef.explore} · ${ef.day} a day`], ["Defending", ef.defend == null ? "Can't defend" : ef.defend ? ef.defend + "%" : "No penalty"],
+        ["Combat move", d.move + " m"], ["Weapon sets", `${e.setsUsed} of ${e.freeSets} free`]].map(([k, val]) => html`<div class="fact"><span>${k}</span><b>${val}</b></div>`)}</div>
     </section>
 
     <section class="frame"><h2 class="h"><span>Armor</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Only one suit is worn at a time. Heavy armor counts as a large item, plate as huge.</p>
@@ -1977,6 +2183,18 @@ function GearTab({ c, d, update }) {
           <div class="row" style="justify-content:space-between"><span class="muted">${a.type === "light" ? "Casting −2×AV" : a.type === "medium" ? "Stealth −AV, casting −2×AV" : a.type === "heavy" ? "Dex skills −AV, Stealth disadv., Entrada −2×AV" : "Dex skills and saves −AV, Stealth disadv."}</span>
             <button class="btn small danger" onClick=${() => update(x => { x.armor.splice(i, 1); })}>Remove</button></div></div>`; })}
         <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addArmor}>+ Add armor</button></div></div>
+    </section>
+
+    <section class="frame"><h2 class="h"><span>Prosthetics</span><i class="orn" aria-hidden="true"></i></h2>
+      <p class="sub">Each prosthetic costs 7% Entrada and 4% Stealth, and needs one more ration a day.</p>
+      ${c.prosthetics.length > 0 && html`<div class="tbl-wrap"><table class="ptable">
+        <thead><tr><th>Name</th><th>Type</th><th>Unique properties</th><th></th></tr></thead>
+        <tbody>${c.prosthetics.map((x, i) => html`<tr>
+          <td><input class="inp" aria-label="Prosthetic name" placeholder="Brass forearm" value=${x.name} onInput=${ev => pr(i, "name")(ev.target.value)} /></td>
+          <td><select class="inp" aria-label="Type" value=${x.type} onChange=${ev => pr(i, "type")(ev.target.value)}>${R.PROSTHETIC_TYPES.map(t => html`<option>${t}</option>`)}</select></td>
+          <td class="wide"><input class="inp" aria-label="Unique properties" placeholder="Hidden blade; grip strength +2" value=${x.props} onInput=${ev => pr(i, "props")(ev.target.value)} /></td>
+          <td><button class="iconbtn" aria-label=${`Remove ${x.name || "prosthetic"}`} onClick=${() => update(y => { y.prosthetics.splice(i, 1); })}>×</button></td></tr>`)}</tbody></table></div>`}
+      <div class="row" style="margin-top:10px"><button class="btn" onClick=${addProsthetic}>+ Add prosthetic</button></div>
     </section>
 
     <section class="frame"><${Sigils} seed="weapons" n=${1} side="l" /><h2 class="h"><span>Weapons</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Two one-handed or one two-handed set ride free${e.freeSets > 2 ? ", plus a third from Strong Back" : ""}. Shields always count as large.</p>
@@ -2008,20 +2226,19 @@ function GearTab({ c, d, update }) {
         <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addWeapon}>+ Add weapon</button></div></div>
     </section>
 
-    <section class="frame"><h2 class="h"><span>Inventory</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Medium = 2 small, large = 4, huge = 8. Stack items by how many fit in one slot (50 ammo, 10 bandages, 10 m of rope).</p>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Per slot</th><th>Size</th><th>Where</th><th class="num">Units</th><th></th></tr></thead>
+    <section class="frame"><h2 class="h"><span>Inventory</span><i class="orn" aria-hidden="true"></i></h2>
+      <p class="sub">Medium items take 2 slots, large 4, huge 8. Bundles (bandages, rope) fit 10 to a slot, ammo 50.</p>
+      <div class="tbl-wrap"><table class="itable">
+        <thead><tr><th>Item</th><th class="num">Qty</th><th>Size</th><th></th></tr></thead>
         <tbody>${c.items.map((x, i) => html`<tr>
-          <td style="min-width:160px"><input class="inp" aria-label="Item name" placeholder="Item" value=${x.name} onInput=${ev => it(i, "name")(ev.target.value)} /></td>
-          <td class="num"><input class="inp" style="width:56px;text-align:right" type="number" min="0" aria-label="Quantity" value=${x.qty} onInput=${ev => it(i, "qty")(+ev.target.value || 0)} /></td>
-          <td class="num"><input class="inp" style="width:56px;text-align:right" type="number" min="1" aria-label="How many fit in one slot" value=${x.per} onInput=${ev => it(i, "per")(+ev.target.value || 1)} /></td>
-          <td><select class="inp" aria-label="Size" value=${x.size} onChange=${ev => it(i, "size")(ev.target.value)}>${Object.keys(R.SIZES).map(s => html`<option>${s}</option>`)}</select></td>
-          <td><select class="inp" aria-label="Where it is" value=${x.where} onChange=${ev => it(i, "where")(ev.target.value)}><option value="pack">Pack</option><option value="worn">Worn</option><option value="stash">Stash</option></select></td>
-          <td class="num calc">${x.where === "pack" ? R.itemUnits(x) : "—"}</td>
+          <td class="wide"><input class="inp" aria-label="Item name" placeholder="Item" value=${x.name} onInput=${ev => it(i, "name")(ev.target.value)} /></td>
+          <td class="num"><input class="inp" style="width:60px;text-align:right" type="number" min="0" aria-label="Quantity" value=${x.qty} onInput=${ev => it(i, "qty")(+ev.target.value || 0)} /></td>
+          <td><select class="inp" aria-label="Size" value=${R.ITEM_SIZE[x.size] ? x.size : "small"} onChange=${ev => update(y => { y.items[i].size = ev.target.value; delete y.items[i].per; })}>${R.ITEM_SIZES.map(([k, label]) => html`<option value=${k}>${label}</option>`)}</select></td>
           <td><button class="iconbtn" aria-label=${`Remove ${x.name || "item"}`} onClick=${() => update(y => { y.items.splice(i, 1); })}>×</button></td></tr>`)}
-          ${!c.items.length && html`<tr><td colspan="7" class="muted">Nothing packed yet. Rations, rope, bandages and kits go here.</td></tr>`}</tbody></table></div>
+          ${!c.items.length && html`<tr><td colspan="4" class="muted">Nothing packed yet. Rations, rope, bandages and kits go here.</td></tr>`}</tbody></table></div>
       <div class="row" style="margin-top:10px"><button class="btn" onClick=${addItem}>+ Add item</button>
-        <button class="btn" onClick=${() => update(x => { [["Rations", 6, 1, "small"], ["Bandages", 10, 10, "small"], ["Rope (m)", 20, 10, "small"], ["Camping kit", 1, 1, "large"]].forEach(([n, q, p, s]) => x.items.push({ id: rid(), name: n, qty: q, per: p, size: s, where: "pack" })); })}>+ Adventuring basics</button></div>
+        <button class="btn" onClick=${() => update(x => { [["Rations", 6, "small"], ["Bandages", 10, "bundle"], ["Rope (m)", 20, "bundle"], ["Camping kit", 1, "large"]].forEach(([n, q, sz]) => x.items.push({ id: rid(), name: n, qty: q, size: sz })); })}>+ Adventuring basics</button>
+        <span class="coins"><label for=${"coins-" + c.id}>Coins</label><input id=${"coins-" + c.id} class="inp" type="number" min="0" value=${c.coins} onInput=${ev => update(x => { x.coins = +ev.target.value || 0; })} /><small class="muted">100 weigh one slot</small></span></div>
     </section>
   </div>`;
 }
@@ -2163,11 +2380,12 @@ function LiteStats({ c, updateChar, compact }) {
   </div>`;
 }
 
+const playedBy = c => { const names = playersOf(c).map(u => (Store.members.find(m => m.uid === u) || {}).name).filter(Boolean); return names.length ? ` · played by ${names.join(", ")}` : ""; };
 function PartyCard({ c, inDeck, onAdd, updateChar, openChar }) {
   return html`<article class="pcard">
     <header class="row">
       <${Thumb} c=${c} lg />
-      <span class="who" style="flex:1;min-width:0"><b>${c.name || "Unnamed"}</b><span class="muted">${subtitle(c)}</span></span>
+      <span class="who" style="flex:1;min-width:0"><b>${c.name || "Unnamed"}</b><span class="muted">${subtitle(c)}${playedBy(c)}</span></span>
       <button class="btn small" onClick=${() => openChar(c.id)}>Sheet</button>
       <button class=${"btn small" + (inDeck ? "" : " primary")} disabled=${inDeck} onClick=${onAdd}>${inDeck ? "In deck" : "Add to deck"}</button>
     </header>
@@ -2240,6 +2458,33 @@ function AddPanel({ e, party, charMap, act }) {
         <button class="btn primary" type="submit">Add ${kind === "enemy" ? "enemy" : "effect"}${kind === "enemy" && +f.dex > 15 ? " · 2 cards" : ""}</button>
       </form>`}
   </div>`;
+}
+
+/* ---------- who is at the table (website only): roles and which characters each player sees ---------- */
+function MembersPanel({ chars, updateChar }) {
+  const [confirm, setConfirm] = useState(null);
+  const me = Store.table.uid;
+  const members = Store.members.slice().sort((a, b) => (a.role === b.role ? (a.name || "").localeCompare(b.name || "") : a.role === "gm" ? -1 : 1));
+  const give = (cid, uid) => updateChar(cid, x => { x.players = [...new Set([...playersOf(x), uid])]; });
+  const take = (cid, uid) => updateChar(cid, x => { x.players = playersOf(x).filter(u => u !== uid); });
+  const act = p => p.catch(() => toast("Couldn't change that just now. Try again."));
+  const nobody = chars.filter(c => !playersOf(c).length);
+  return html`<section class="frame"><${Sigils} seed="players" n=${1} lead="note" side="r" />
+    <h2 class="h"><span>Players at the table</span><i class="orn" aria-hidden="true"></i></h2>
+    <p class="sub">Players see only the characters you give them. GMs see everyone and run the deck.</p>
+    <div class="members">${members.map(m => { const mine = chars.filter(c => playersOf(c).includes(m.uid));
+      return html`<div class="member">
+        <div class="mhead"><b>${m.name}</b><span class=${"flag" + (m.role === "gm" ? " brass" : "")}>${m.role === "gm" ? "GM" : "Player"}</span>${m.uid === me && html`<span class="muted">you</span>`}
+          ${m.uid !== me && html`<span class="mact">${confirm === m.uid
+            ? html`<span class="muted">Remove ${m.name}?</span><button class="btn small danger" onClick=${() => { act(Store.table.remove(m.uid)); setConfirm(null); }}>Remove</button><button class="btn small" onClick=${() => setConfirm(null)}>Keep</button>`
+            : html`<button class="btn small" onClick=${() => act(Store.table.setRole(m.uid, m.role === "gm" ? "player" : "gm"))}>${m.role === "gm" ? "Make player" : "Make GM"}</button>
+              <button class="btn small danger" onClick=${() => setConfirm(m.uid)}>Remove</button>`}</span>`}</div>
+        <div class="chips">${mine.map(c => html`<span class="cond">${c.name || "Unnamed"}<button aria-label=${`Take ${c.name || "this character"} from ${m.name}`} onClick=${() => take(c.id, m.uid)}>×</button></span>`)}
+          <select class="inp give" aria-label=${`Give ${m.name} a character`} value="" onChange=${e => { const v = e.target.value; e.target.value = ""; if (v) give(v, m.uid); }}>
+            <option value="">+ Give a character…</option>${chars.filter(c => !playersOf(c).includes(m.uid)).map(c => html`<option value=${c.id}>${c.name || "Unnamed"}${c.companionOf ? " (companion)" : ""}</option>`)}</select></div>
+      </div>`; })}</div>
+    ${nobody.length > 0 && html`<p class="muted">Not given to anyone yet: ${nobody.map(c => c.name || "Unnamed").join(", ")}.</p>`}
+  </section>`;
 }
 
 /* ---------- backup and restore: every character (with portraits) in one file ---------- */
@@ -2320,6 +2565,7 @@ function GMView({ chars, updateChar, openChar }) {
       <span class="lbl">Campaign</span>
       ${[["all", "All"], ...CAMPAIGNS.map(x => [x, x]), ["none", "No campaign"]].map(([k, n]) => html`<button class=${"btn small" + (camp === k ? " primary" : "")} aria-pressed=${camp === k} onClick=${() => setCamp(k)}>${n}</button>`)}
     </div>
+    ${Store.table && html`<${MembersPanel} chars=${chars} updateChar=${updateChar} />`}
     <div class="gmgrid">
       <section class="frame"><${Sigils} seed="initiative deck" n=${1} lead="skill" side="r" />
         <h2 class="h"><span>Initiative deck</span><i class="orn" aria-hidden="true"></i></h2>
