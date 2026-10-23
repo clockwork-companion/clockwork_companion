@@ -1,0 +1,42 @@
+# Publishes the site: main at the root, Dev at /dev/ (marked with a DEV ribbon), onto the gh-pages branch.
+# Set Settings → Pages → Deploy from a branch → gh-pages / (root) to serve it.
+name: Publish site
+on:
+  push:
+    branches: [main, Dev]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: publish-site
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, path: site-main }
+      - uses: actions/checkout@v4
+        with: { ref: Dev, path: site-dev }
+      - name: Assemble main at / and Dev at /dev/
+        run: |
+          mkdir -p out/dev
+          rsync -a --exclude .git --exclude .github --exclude src site-main/ out/
+          if [ -f site-dev/src/build.py ]; then
+            cp site-dev/firebase-config.js out/dev/ 2>/dev/null || cp out/firebase-config.js out/dev/
+            python3 site-dev/src/build.py --web out/dev --dev
+          else
+            rsync -a --exclude .git --exclude .github --exclude src site-dev/ out/dev/
+            sed -i 's#<div id="app"></div>#<div style="position:fixed;z-index:999;top:10px;left:-34px;transform:rotate(-45deg);width:130px;padding:3px 0;background:\#c0392b;color:\#fff;font:700 11px system-ui;letter-spacing:.2em;text-align:center;pointer-events:none">DEV</div><div id="app"></div>#' out/dev/index.html
+          fi
+          [ -f out/dev/firebase-config.js ] || cp out/firebase-config.js out/dev/
+          touch out/.nojekyll
+      - name: Push to gh-pages
+        run: |
+          cd out
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish main and Dev (${GITHUB_REF_NAME} ${GITHUB_SHA::7})"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
