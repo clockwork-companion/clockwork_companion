@@ -3254,3 +3254,148 @@ function GMView({ chars, updateChar, openChar }) {
 
 render(html`<${App} />`, document.getElementById("app"));
 </script>
+
+<style>
+#cw-egg { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgb(8 6 4 / .82); backdrop-filter: blur(3px); }
+#cw-egg .box { position: relative; width: min(720px, calc(100vw - 32px)); aspect-ratio: 3 / 2; max-height: calc(100vh - 32px); border: 2px solid #b88a3c; box-shadow: 0 0 0 4px #1b130b, 0 0 0 5px #6b4a1c, 0 20px 60px #000; background: #120d08; }
+#cw-egg canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: pointer; }
+#cw-egg .x { position: absolute; top: 6px; right: 8px; width: 32px; height: 32px; border: 1px solid #6b4a1c; background: #1b130b; color: #e9c27a; font: 20px/1 serif; cursor: pointer; }
+#cw-egg .x:hover { border-color: #e9c27a; }
+</style>
+<script>
+/* Easter egg: "Skyward Boiler". Opened by clicking "Companion" in the header five times quickly,
+   or by typing "steam" anywhere outside a text box. Self-contained; touches nothing in the app. */
+(() => {
+  const W = 720, H = 480;
+  let open = false, raf = 0;
+  const store = { get() { try { return +localStorage.getItem("cw-egg-best") || 0; } catch { return 0; } },
+                  set(v) { try { localStorage.setItem("cw-egg-best", v); } catch {} } };
+
+  function launch() {
+    if (open) return; open = true;
+    const wrap = document.createElement("div"); wrap.id = "cw-egg";
+    wrap.innerHTML = `<div class="box" role="dialog" aria-label="Skyward Boiler, a hidden game"><canvas width="${W}" height="${H}"></canvas><button class="x" aria-label="Close">×</button></div>`;
+    document.body.appendChild(wrap);
+    const cv = wrap.querySelector("canvas"), g = cv.getContext("2d");
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let s, best = store.get();
+    const reset = () => s = { state: "ready", y: H / 2, vy: 0, t: 0, score: 0, stacks: [], cogs: [], puffs: [], spawn: 0, speed: 3, shake: 0 };
+    reset();
+    const stars = Array.from({ length: 50 }, (_, i) => ({ x: (i * 137) % W, y: (i * 89) % (H * .6), r: (i % 3) * .5 + .5 }));
+    const hills = Array.from({ length: 12 }, (_, i) => ({ x: i * 80, h: 40 + ((i * 53) % 60) }));
+
+    const flap = () => {
+      if (s.state === "over") { if (s.t > 30) reset(); return; }
+      if (s.state === "ready") s.state = "fly";
+      s.vy = -6.2;
+      for (let i = 0; i < 4; i++) s.puffs.push({ x: 150, y: s.y + 14, vx: -1 - Math.random() * 2, vy: 1 + Math.random(), r: 4, a: .7 });
+    };
+    const close = () => { cancelAnimationFrame(raf); wrap.remove(); removeEventListener("keydown", key, true); open = false; };
+    const key = e => {
+      if (e.key === "Escape") { e.preventDefault(); close(); }
+      else if (e.key === " " || e.key === "ArrowUp" || e.key === "w") { e.preventDefault(); e.stopPropagation(); flap(); }
+    };
+    addEventListener("keydown", key, true);
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); flap(); });
+    wrap.querySelector(".x").addEventListener("click", close);
+    wrap.addEventListener("pointerdown", e => { if (e.target === wrap) close(); });
+
+    const gear = (x, y, r, teeth, rot, fill) => {
+      g.save(); g.translate(x, y); g.rotate(rot); g.beginPath();
+      for (let i = 0; i < teeth * 2; i++) { const a = (i / (teeth * 2)) * Math.PI * 2, rr = i % 2 ? r : r * 1.25; g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+      g.closePath(); g.fillStyle = fill; g.fill(); g.beginPath(); g.arc(0, 0, r * .4, 0, 7); g.fillStyle = "#120d08"; g.fill(); g.restore();
+    };
+
+    const crash = () => { if (s.state !== "fly") return; s.state = "over"; s.t = 0; s.shake = reduced ? 0 : 14; if (s.score > best) { best = s.score; store.set(best); } };
+    const step = () => {
+      s.t++;
+      if (s.state === "fly") {
+        s.vy = Math.min(s.vy + .32, 9); s.y += s.vy;
+        s.speed = 3 + Math.min(3, s.score / 12);
+        if (--s.spawn <= 0) {
+          const gap = Math.max(130, 175 - s.score * 1.5), top = 60 + Math.random() * (H - 170 - gap);
+          s.stacks.push({ x: W + 40, top, gap, passed: false });
+          if (Math.random() < .6) s.cogs.push({ x: W + 40 + 120, y: 70 + Math.random() * (H - 180), got: false });
+          s.spawn = Math.round(240 / s.speed * 1.6);
+        }
+        for (const p of s.stacks) {
+          p.x -= s.speed;
+          if (!p.passed && p.x + 30 < 130) { p.passed = true; s.score++; }
+          const hitX = 112 < p.x + 32 && 168 > p.x - 32, hitY = s.y - 14 < p.top || s.y + 14 > p.top + p.gap;
+          if (hitX && hitY) crash();
+        }
+        for (const c of s.cogs) { c.x -= s.speed; if (!c.got && Math.hypot(c.x - 140, c.y - s.y) < 26) { c.got = true; s.score += 3; } }
+        s.stacks = s.stacks.filter(p => p.x > -60); s.cogs = s.cogs.filter(c => c.x > -30 && !c.got);
+        if (s.y > H - 40 || s.y < 10) crash();
+      } else if (s.state === "ready") s.y = H / 2 + Math.sin(s.t / 20) * 8;
+      for (const p of s.puffs) { p.x += p.vx - (s.state === "fly" ? s.speed * .5 : 0); p.y += p.vy; p.r += .4; p.a -= .015; }
+      s.puffs = s.puffs.filter(p => p.a > 0);
+      if (s.shake) s.shake--;
+    };
+
+    const draw = () => {
+      g.save();
+      if (s.shake) g.translate((Math.random() - .5) * s.shake, (Math.random() - .5) * s.shake);
+      const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, "#1a1020"); sky.addColorStop(.6, "#4a2a1a"); sky.addColorStop(1, "#a85a22");
+      g.fillStyle = sky; g.fillRect(-20, -20, W + 40, H + 40);
+      g.fillStyle = "#f3d9a4"; for (const st of stars) { g.globalAlpha = .3 + .3 * Math.sin((s.t + st.x) / 30); g.fillRect(st.x, st.y, st.r, st.r); } g.globalAlpha = 1;
+      gear(W - 110, 120, 50, 12, s.t / 300, "#3a2414"); gear(W - 40, 70, 26, 8, -s.t / 160, "#2c1b10");
+      const off = (s.t * (s.state === "fly" ? s.speed * .3 : .5)) % 80;
+      g.fillStyle = "#24160d"; g.beginPath(); g.moveTo(0, H);
+      for (const h of hills) { g.lineTo(h.x - off, H - 30 - h.h); g.lineTo(h.x - off + 40, H - 30 - h.h); }
+      g.lineTo(W + 80, H); g.fill();
+      for (const p of s.stacks) {
+        for (const [y0, y1] of [[0, p.top], [p.top + p.gap, H]]) {
+          const gr = g.createLinearGradient(p.x - 30, 0, p.x + 30, 0); gr.addColorStop(0, "#5a3a18"); gr.addColorStop(.4, "#c99a4a"); gr.addColorStop(1, "#4a2e12");
+          g.fillStyle = gr; g.fillRect(p.x - 26, y0, 52, y1 - y0);
+          const lip = y0 === 0 ? y1 - 16 : y0; g.fillStyle = "#e0b462"; g.fillRect(p.x - 32, lip, 64, 16);
+          g.fillStyle = "#3a2410"; for (let ry = y0 + 20; ry < y1 - 10; ry += 40) { g.beginPath(); g.arc(p.x - 18, ry, 2.5, 0, 7); g.arc(p.x + 18, ry, 2.5, 0, 7); g.fill(); }
+        }
+      }
+      for (const c of s.cogs) gear(c.x, c.y, 10, 8, s.t / 15, "#ffd27a");
+      for (const p of s.puffs) { g.globalAlpha = p.a; g.fillStyle = "#e8e2d6"; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); } g.globalAlpha = 1;
+      // the airship
+      g.save(); g.translate(140, s.y); g.rotate(Math.max(-.4, Math.min(.6, s.vy / 14)));
+      g.fillStyle = "#8a2e1c"; g.beginPath(); g.ellipse(0, -8, 30, 13, 0, 0, 7); g.fill();
+      g.strokeStyle = "#e0b462"; g.lineWidth = 2; for (const dx of [-15, 0, 15]) { g.beginPath(); g.moveTo(dx, -20); g.lineTo(dx, 4); g.stroke(); }
+      g.fillStyle = "#c99a4a"; g.fillRect(-14, 8, 26, 9); g.fillStyle = "#3a2410"; g.fillRect(-10, 11, 4, 4); g.fillRect(2, 11, 4, 4);
+      gear(-32, -6, 6, 6, s.t / 4, "#e0b462"); g.restore();
+      // text
+      g.textAlign = "center"; g.fillStyle = "#ffe2a8"; g.font = "bold 34px Georgia, serif";
+      if (s.state !== "ready") g.fillText(s.score, W / 2, 50);
+      g.font = "13px Georgia, serif"; g.textAlign = "right"; g.fillStyle = "#c9a56a"; g.fillText(`best ${best}`, W - 52, 26); g.textAlign = "center";
+      if (s.state === "ready") {
+        g.font = "bold 40px Georgia, serif"; g.fillStyle = "#ffe2a8"; g.fillText("Skyward Boiler", W / 2, 150);
+        g.font = "16px Georgia, serif"; g.fillStyle = "#e9c27a";
+        g.fillText("Click, tap or press Space to vent steam and rise.", W / 2, 186);
+        g.fillText("Thread the smokestacks. Golden cogs are worth 3.", W / 2, 210);
+      } else if (s.state === "over") {
+        g.fillStyle = "rgb(10 6 3 / .6)"; g.fillRect(W / 2 - 180, 150, 360, 130);
+        g.font = "bold 30px Georgia, serif"; g.fillStyle = "#ff9a6a"; g.fillText("Boiler burst!", W / 2, 195);
+        g.font = "16px Georgia, serif"; g.fillStyle = "#e9c27a";
+        g.fillText(`Score ${s.score} · best ${best}`, W / 2, 228); g.fillText("Click to fly again · Esc to leave", W / 2, 256);
+      }
+      g.restore();
+    };
+    const loop = () => { step(); draw(); raf = requestAnimationFrame(loop); };
+    loop();
+  }
+
+  // Trigger 1: five quick clicks on "Companion" in the header.
+  let clicks = [];
+  document.addEventListener("click", e => {
+    if (!e.target.closest || !e.target.closest(".brand small")) return;
+    const now = Date.now(); clicks = clicks.filter(t => now - t < 2500); clicks.push(now);
+    if (clicks.length >= 5) { clicks = []; launch(); }
+  });
+  // Trigger 2: type "steam" while not in a text box.
+  let typed = "";
+  document.addEventListener("keydown", e => {
+    if (open || (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]"))) return;
+    if (e.key.length !== 1) return;
+    typed = (typed + e.key.toLowerCase()).slice(-5);
+    if (typed === "steam") { typed = ""; launch(); }
+  });
+})();
+</script>
