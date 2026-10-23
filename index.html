@@ -3976,6 +3976,11 @@ render(html`<${App} />`, document.getElementById("app"));
 #cw-egg canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: pointer; }
 #cw-egg .x { position: absolute; top: 6px; right: 8px; width: 32px; height: 32px; border: 1px solid #6b4a1c; background: #1b130b; color: #e9c27a; font: 20px/1 serif; cursor: pointer; }
 #cw-egg .x:hover { border-color: #e9c27a; }
+#cw-egg form { position: absolute; left: 50%; top: 72%; transform: translateX(-50%); display: flex; gap: 6px; align-items: center; padding: 8px; background: #1b130b; border: 1px solid #b88a3c; }
+#cw-egg form[hidden] { display: none; }
+#cw-egg input { width: 150px; padding: 6px 8px; border: 1px solid #6b4a1c; background: #0d0905; color: #ffe2a8; font: 16px Georgia, serif; }
+#cw-egg form button { padding: 6px 12px; border: 1px solid #e0b462; background: #8a2e1c; color: #ffe2a8; font: bold 14px Georgia, serif; cursor: pointer; }
+#cw-egg form button:disabled { opacity: .5; cursor: default; }
 </style>
 <script>
 /* Easter egg: "Skyward Boiler". Opened by clicking "Companion" in the header five times quickly,
@@ -3983,31 +3988,55 @@ render(html`<${App} />`, document.getElementById("app"));
 (() => {
   const W = 720, H = 480;
   let open = false, raf = 0;
-  const store = { get() { try { return +localStorage.getItem("cw-egg-best") || 0; } catch { return 0; } },
-                  set(v) { try { localStorage.setItem("cw-egg-best", v); } catch {} } };
+  const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+                  set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+  // Shared top-3 board in the site's Firestore (arcade/skyward-boiler/scores), same for every visitor.
+  const scoresRef = () => {
+    try { if (window.firebase && firebase.apps && firebase.apps.length) return firebase.firestore().collection("arcade").doc("skyward-boiler").collection("scores"); } catch {}
+    return null;
+  };
 
   function launch() {
     if (open) return; open = true;
     const wrap = document.createElement("div"); wrap.id = "cw-egg";
-    wrap.innerHTML = `<div class="box" role="dialog" aria-label="Skyward Boiler, a hidden game"><canvas width="${W}" height="${H}"></canvas><button class="x" aria-label="Close">×</button></div>`;
+    wrap.innerHTML = `<div class="box" role="dialog" aria-label="Skyward Boiler, a hidden game"><canvas width="${W}" height="${H}"></canvas><button class="x" aria-label="Close">×</button>
+      <form hidden><input maxlength="16" placeholder="Your name" aria-label="Your name for the high scores" autocomplete="nickname" /><button type="submit">Save</button></form></div>`;
     document.body.appendChild(wrap);
     const cv = wrap.querySelector("canvas"), g = cv.getContext("2d");
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    let s, best = store.get();
+    let s, best = +store.get("cw-egg-best", 0) || 0;
+    const form = wrap.querySelector("form"), nameBox = form.querySelector("input"), saveBtn = form.querySelector("button");
+    const ref = scoresRef();
+    let top = [], board = ref ? "loading" : "offline", pending = 0, note = "";
+    const unsub = ref ? ref.orderBy("score", "desc").limit(3).onSnapshot(
+      q => { top = q.docs.map(d => d.data()).map(x => ({ name: String(x.name || "?").slice(0, 16), score: +x.score || 0 })); board = "live"; },
+      () => { board = "offline"; }) : null;
+    const hideForm = () => { form.hidden = true; pending = 0; cv.focus(); };
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const name = nameBox.value.trim().slice(0, 16);
+      if (!name || !pending || !ref) return;
+      saveBtn.disabled = true; note = "Saving…"; store.set("cw-egg-name", name);
+      ref.add({ name, score: pending, at: firebase.firestore.FieldValue.serverTimestamp() })
+        .then(() => { note = "Saved to the high scores."; hideForm(); })
+        .catch(() => { note = "Couldn't save the score just now."; hideForm(); })
+        .finally(() => { saveBtn.disabled = false; });
+    });
     const reset = () => s = { state: "ready", y: H / 2, vy: 0, t: 0, score: 0, stacks: [], cogs: [], puffs: [], spawn: 0, speed: 3, shake: 0 };
     reset();
     const stars = Array.from({ length: 50 }, (_, i) => ({ x: (i * 137) % W, y: (i * 89) % (H * .6), r: (i % 3) * .5 + .5 }));
     const hills = Array.from({ length: 12 }, (_, i) => ({ x: i * 80, h: 40 + ((i * 53) % 60) }));
 
     const flap = () => {
-      if (s.state === "over") { if (s.t > 30) reset(); return; }
+      if (s.state === "over") { if (s.t > 30 && form.hidden) { reset(); note = ""; } return; }
       if (s.state === "ready") s.state = "fly";
       s.vy = -6.2;
       for (let i = 0; i < 4; i++) s.puffs.push({ x: 150, y: s.y + 14, vx: -1 - Math.random() * 2, vy: 1 + Math.random(), r: 4, a: .7 });
     };
-    const close = () => { cancelAnimationFrame(raf); wrap.remove(); removeEventListener("keydown", key, true); open = false; };
+    const close = () => { cancelAnimationFrame(raf); if (unsub) unsub(); wrap.remove(); removeEventListener("keydown", key, true); open = false; };
     const key = e => {
+      if (e.target === nameBox) { if (e.key === "Escape") { e.preventDefault(); hideForm(); } return; }
       if (e.key === "Escape") { e.preventDefault(); close(); }
       else if (e.key === " " || e.key === "ArrowUp" || e.key === "w") { e.preventDefault(); e.stopPropagation(); flap(); }
     };
@@ -4022,7 +4051,10 @@ render(html`<${App} />`, document.getElementById("app"));
       g.closePath(); g.fillStyle = fill; g.fill(); g.beginPath(); g.arc(0, 0, r * .4, 0, 7); g.fillStyle = "#120d08"; g.fill(); g.restore();
     };
 
-    const crash = () => { if (s.state !== "fly") return; s.state = "over"; s.t = 0; s.shake = reduced ? 0 : 14; if (s.score > best) { best = s.score; store.set(best); } };
+    const crash = () => { if (s.state !== "fly") return; s.state = "over"; s.t = 0; s.shake = reduced ? 0 : 14; if (s.score > best) { best = s.score; store.set("cw-egg-best", best); }
+      if (board === "live" && s.score > 0 && (top.length < 3 || s.score > top[top.length - 1].score)) {
+        pending = s.score; form.hidden = false; nameBox.value = store.get("cw-egg-name", ""); setTimeout(() => nameBox.focus(), 0);
+      } };
     const step = () => {
       s.t++;
       if (s.state === "fly") {
@@ -4085,14 +4117,32 @@ render(html`<${App} />`, document.getElementById("app"));
         g.font = "16px Georgia, serif"; g.fillStyle = "#e9c27a";
         g.fillText("Click, tap or press Space to vent steam and rise.", W / 2, 186);
         g.fillText("Thread the smokestacks. Golden cogs are worth 3.", W / 2, 210);
+        drawBoard(262);
       } else if (s.state === "over") {
-        g.fillStyle = "rgb(10 6 3 / .6)"; g.fillRect(W / 2 - 180, 150, 360, 130);
-        g.font = "bold 30px Georgia, serif"; g.fillStyle = "#ff9a6a"; g.fillText("Boiler burst!", W / 2, 195);
+        g.fillStyle = "rgb(10 6 3 / .72)"; g.fillRect(W / 2 - 190, 118, 380, 260);
+        g.font = "bold 30px Georgia, serif"; g.fillStyle = "#ff9a6a"; g.fillText("Boiler burst!", W / 2, 158);
         g.font = "16px Georgia, serif"; g.fillStyle = "#e9c27a";
-        g.fillText(`Score ${s.score} · best ${best}`, W / 2, 228); g.fillText("Click to fly again · Esc to leave", W / 2, 256);
+        g.fillText(`Score ${s.score} · your best ${best}`, W / 2, 186);
+        drawBoard(218);
+        g.font = "15px Georgia, serif"; g.fillStyle = "#e9c27a";
+        if (!form.hidden) g.fillText("A top-three flight! Enter your name:", W / 2, 336);
+        else g.fillText(note ? `${note} Click to fly again.` : "Click to fly again · Esc to leave", W / 2, 360);
       }
       g.restore();
     };
+    function drawBoard(y) {
+      g.textAlign = "center"; g.font = "bold 15px Georgia, serif"; g.fillStyle = "#ffd27a";
+      g.fillText("Top captains", W / 2, y);
+      g.font = "15px Georgia, serif";
+      if (board !== "live") { g.fillStyle = "#c9a56a"; g.fillText(board === "loading" ? "Fetching the ledger…" : "High scores need the shared site connection.", W / 2, y + 24); return; }
+      if (!top.length) { g.fillStyle = "#c9a56a"; g.fillText("No flights logged yet. Be the first!", W / 2, y + 24); return; }
+      top.forEach((r, i) => {
+        g.fillStyle = ["#ffd27a", "#d9dde2", "#d08a52"][i];
+        g.textAlign = "right"; g.fillText(`${i + 1}.  ${r.name}`, W / 2 + 40, y + 24 + i * 22);
+        g.textAlign = "left"; g.fillText(String(r.score), W / 2 + 60, y + 24 + i * 22);
+      });
+      g.textAlign = "center";
+    }
     const loop = () => { step(); draw(); raf = requestAnimationFrame(loop); };
     loop();
   }
