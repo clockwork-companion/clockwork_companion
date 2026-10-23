@@ -1,0 +1,118 @@
+/* The rules behind each section heading, shown in the side panel when a heading is clicked.
+   Condensed from the Clockwork Rulebook 2020.1 plus the table's house rules. Items in a topic's body:
+   "text" = a paragraph, { h } = a sub-heading, { ul: [...] } = a list, { t: { cols, rows } } = a table,
+   { note } = a muted aside (used for the app's own readings of unclear rules). */
+const RULES_INFO = {
+  attributes: { kicker: "Character basics", title: "Attributes", body: [
+    "Seven attributes describe what a character is made of. They run from 0 to 20. Ten is the measure of common folk; below ten an attribute is broken.",
+    { t: { cols: ["Attribute", "Covers"], rows: [["Strength", "Brute power: carrying, pushing, lifting, most melee weapons"], ["Dexterity", "Nimbleness and speed: stealth, thievery, accuracy, most ranged weapons"],
+      ["Endurance", "Toughness: how much punishment you can take"], ["Mind", "Raw brain power: learning, invention, critical thinking"], ["Willpower", "Mental resolve: resisting the mind and some schools of magic"],
+      ["Wisdom", "Knowledge and patience: fitting into places, learned crafts"], ["Presence", "Force of personality: leading, persuading, holding attention"]] } },
+    { h: "Rolling them" }, { ul: ["Roll 3d8 for each attribute, set the lowest die aside and add the other two.", "Nothing rolls lower than 6."] },
+    { h: "Raising them (house rule)" }, { ul: ["Each level costs its number above ten: 16 → 17 costs 7 Karma.",
+      "An attribute that started broken counts from its starting value instead, and tops out ten above it (a starting 6 stops at 16).",
+      "Skills can hold one point for each point their attribute has above a true 10."] } ] },
+
+  skills: { kicker: "Character basics", title: "Skills", body: [
+    "Clockwork is classless: what a character can do comes from the skills they learn, and there's no limit to how many.",
+    { ul: ["Skills run from 0 to 10. Level n costs n Karma, so 0 → 10 costs 55 in all.", "A skill can hold one point for each point its attribute has above 10 (house rule).",
+      "Most skills give a 3% modifier per point. Chance skills (Maim, Bash, Cleave, Parry, Pierce, Precision, Evasion, Shield Mastery) give 1% per point."] },
+    { h: "Perks" }, "From level 3, each level unlocks a perk. Click a skill's name to see them all; unlocked ones also appear in Skills & Talents.",
+    { ul: ["Active ability: a limited-use move, declared before the attack.", "Empowerment: a buff you switch on for a set time, usually paid for afterwards (often in Stamina).", "Passive: always on."] },
+    { h: "Durability damage" }, "When an Active ability says durability damage is inflicted, the weapon loses durability by type (one-handed / two-handed):",
+    { t: { cols: ["Weapon type", "Durability damage"], rows: [["Slashing", "20 / 30"], ["Piercing", "15 / 30"], ["Bludgeoning", "12 / 20"], ["Ranged", "30 / 40"], ["Limb (a part of you)", "3 HP damage"]] } } ] },
+
+  weaponry: { kicker: "Combat", title: "Weapon skills", body: [
+    "Every kind of weapon is its own skill, governed by Strength or Dexterity. One weapon can count under different skills depending on how it's used: a warhammer's spike is Piercing, a thrown longsword Improvised.",
+    { t: { cols: ["Level", "Proficiency", "What it gives"], rows: [["0–2", "Inexperienced", "No accuracy bonus"], ["3", "Competent", "Weapon skill + Precision added to accuracy"], ["5", "Proficient", "Durability damage to the weapon is reduced"], ["7", "Adept", "The weapon's Adept property unlocks"], ["10", "Master", "The weapon's Mastery property unlocks"]] } },
+    { h: "Weapon types" }, { t: { cols: ["Skill", "Examples"], rows: [["Slashing", "Sword, axe, katana"], ["Piercing", "Spear, dagger, sai"], ["Bludgeoning", "Warhammer, maul, mace"], ["Unarmed", "Fist, feet, knuckleduster"],
+      ["Motorized", "Chainsword, powerfist"], ["Improvised", "Broken bottle, table, stool"], ["Finesse", "Rapier, dagger, whip"], ["Rifles", "Arquebus, flintlock"], ["Pistols", "Pepper-box, Peacemaker"], ["Shotguns", "Coach-gun, blunderbuss"],
+      ["Sniper Rifles", "Long guns"], ["Explosives", "Bombs and potions"], ["Stringed", "Bow, crossbow"], ["Throwing", "Knives, axes, needles"], ["Heavy", "Machinegun, mortar, minigun"]] } },
+    "Costs are the same as skills: level n costs n Karma." ] },
+
+  secondary: { kicker: "Character basics", title: "Secondary skills", body: [
+    { ul: ["Three levels, each worth 7%.", "With the attribute below 10 you can learn level 1; below 14, level 2; at 14 or more, all three.",
+      "Untrained, with the attribute below 10, you roll with disadvantage. At 10 or above you roll a plain d100."] },
+    { h: "Granted by a primary skill" }, { ul: ["Some primary skills grant a secondary one. With only the primary, use that skill's modifier.", "With both, the bonus is 7% per level plus 2 × the primary's points."] },
+    "Armor penalties and prosthetics also apply to the matching secondary skills, such as Stealth and Entrada." ] },
+
+  hp: { kicker: "Vitals", title: "Hit points", body: [
+    { ul: ["2 HP per point of Endurance (counted 0–20), plus 4 per point of Durability.", "A long rest restores 2 HP, plus Metabolism.", "Exhaustion 7 halves the maximum."] },
+    { h: "Dropping to 0" }, "At 0 HP you fall unconscious and are On Death's Door. If the damage left over after reaching 0 equals or beats your HP maximum, you die outright.",
+    { h: "Death saves" }, { ul: ["At the start of each of your turns at 0 HP, roll d100. 50 or lower succeeds.", "A failure adds 2 Stamina stacks lost (Exhaustion), which stay even after healing.",
+      "Five successes and you're stable; five failures and you die.", "Above 95 counts as two failures. Below 5 stabilises you at once.", "Taking damage at 0 HP is a failure, two from a critical."] },
+    { h: "Stabilising" }, "A successful First Aid check stabilises someone On Death's Door. A stable character gains 1 HP." ] },
+
+  blood: { kicker: "Vitals", title: "Blood points", body: [
+    "Blood points aren't the body's total blood: they're how much can be lost before death.",
+    { ul: ["200 Blood points, plus 20 per point of Bleed Resistance (the app caps this at 400).", "A long rest restores 10, plus 3 per point of Bleed Resistance.",
+      "At 100 Blood you lose a Stamina stack, and another for every 20 lost after that (80, 60, 40, 20)."] },
+    "Wounds drain Blood every turn in combat, and every minute outside it. See Wounds." ] },
+
+  dp: { kicker: "Vitals", title: "Deprivation", body: [
+    { ul: ["4 points per point of Endurance, plus 12 per point of the Deprivation skill.", "A Ration is a meal's worth of food. You can eat 2 per meal.",
+      "You lose a Stamina stack at 25, 20, 15, 10 and 5 points.", "At 0 you starve to death."] },
+    "Each prosthetic needs one extra ration a day." ] },
+
+  tox: { kicker: "Vitals", title: "Toxicity", body: [
+    "Potions and other volatile brews have side effects, counted as Toxicity.",
+    { ul: ["Threshold: your Endurance, plus 2 per point of Belly.", "Cleansing dice: 1d6 (the app adds 1d4 for every 2 points of Belly), rolled after each long rest."] },
+    { h: "Over the threshold" }, { ul: ["You start puking uncontrollably and lose every potion effect.", "Each turn spent puking cleanses half your cleansing dice and costs a Stamina stack.",
+      "You can't generate AP until you're back down to the threshold."] } ] },
+
+  stamina: { kicker: "Vitals", title: "Stamina & Exhaustion", body: [
+    "Stamina is physical effort. Each stack lost is a level of Exhaustion, and the effects build up: at 3 you suffer levels 1, 2 and 3.",
+    "Stacks are lost to abilities and Empowerments, death saves, blood loss, hunger, puking, extreme heat or cold, long climbs and swims, and heavy loads.",
+    { t: { cols: ["Lost", "Effect"], rows: [["1", "The GM can botch your rolls"], ["2", "No reactions"], ["3", "Disadvantage on secondary skill checks and saving throws"], ["4", "Critical fumble chance doubles"],
+      ["5", "Disadvantage on ability checks and attack rolls"], ["6", "You can't critically succeed"], ["7", "Hit point maximum halved"], ["8", "No Active abilities or Empowerments"], ["9", "Vital loss rolled on dice takes the maximum"], ["10", "Death"]] } },
+    { h: "Botching" }, "Whenever you roll a check, the GM can roll too and make you use their roll: once a round in combat, once every 5 checks outside it.",
+    { h: "Getting it back" }, { ul: ["Short rest: 1 stack (2 with Conditioning 6).", "Long rest: 2 stacks (4 with Conditioning 7).", "Stacks from failed death saves stay even after you're healed above 0 HP."] },
+    { h: "Conditioning" }, { ul: ["5: the first 2 stacks have no effect; effects start at the 3rd.", "9: Stamina loss can't kill you; each stack past 10 costs 5 HP instead."] },
+    { note: "The book's own Stamina table is still to be written. This app reads Stamina loss and Exhaustion as one track, so the Exhaustion table gives each stack's effect." } ] },
+
+  wounds: { kicker: "Vitals", title: "Wounds", body: [
+    "A hit hard enough, after armor, opens a wound. Wounds bleed every turn in combat and every minute outside it. You can carry several of the same kind.",
+    { t: { cols: ["Wound", "Damage", "Bleeds", "Fix", "Takes", "Needs"], rows: [["Light", "6+", "8", "Dressing", "5 AP", "Bandages"], ["Moderate", "8+", "14", "Stitches", "1 minute", "Medical kit"], ["Mortal", "12+", "20", "Surgery", "1 short rest", "Surgery kit"]] } },
+    { ul: ["Treating a wound takes a First Aid or Medicine check and the right kit.", "A wound doesn't bleed while it's being treated. If the treatment fails, each remaining wound bleeds once.", "Durability 7 adds 2 to every damage threshold."] } ] },
+
+  rest: { kicker: "Vitals", title: "Resting", body: [
+    { h: "Short rest · about an hour" }, { ul: ["Recover 1 Stamina stack.", "Abilities that recharge on a short rest come back.", "Many skill effects trigger on a short rest."] },
+    { h: "Long rest · about eight hours" }, { ul: ["Recover HP and Blood.", "Roll your cleansing dice to clear Toxicity.", "Recover 2 Stamina stacks.", "Every Active ability recharges."] },
+    "Sleeping outdoors without a camping kit, a long rest recovers everything except Stamina, and you lose a stack instead." ] },
+
+  load: { kicker: "Gear", title: "Load", body: [
+    "Everything carried is counted in small-item slots. Medium items take 2, large 4, huge 8.",
+    { ul: ["100 coins, 50 rounds of ammo, 1 ration, 10 stackables (bandages, paper) or 10 m of rope each take one slot. Half stacks round up.",
+      "Worn things (a cloak, a backpack) don't count. Armor doesn't count, except heavy armor (large) and plate (huge).",
+      "Two weapon sets ride free: two one-handed weapons or one two-handed. Strong Back 3 adds a third. Shields always count as large."] },
+    { h: "How much is too much" }, "The tier unit is Strength + 2 × Strong Back. Carry capacity is 3 units.",
+    { t: { cols: ["Load up to", "Tier", "Travel", "Defending", "Move"], rows: [["3 units", "Unencumbered", "10 km/h · 40 km a day", "—", "—"], ["4 units", "Lightly", "5 km/h · 20 km", "−10", "−2 m"], ["5 units", "Heavily", "2 km/h · 10 km", "−20", "−4 m"], ["6 units", "Severely", "1 km/h · 5 km", "−40", "−8 m"], ["More", "Over encumbered", "Can't travel", "Can't defend", "—"]] } },
+    { note: "The app reads Strong Back 5, 7 and 9 as removing the Lightly, Heavily and Severely penalties." } ] },
+
+  armor: { kicker: "Gear", title: "Armor", body: [
+    { ul: ["Armor Value (AV): taken off every hit.", "Soak pool: each hit drains soak, up to the AV. Damage past the AV goes to HP.", "At 0 soak the armor breaks, and only a skilled craftsman can mend it."] },
+    { t: { cols: ["Type", "AV", "Needs", "Penalties"], rows: [["Light", "1–4", "—", "Casting −2×AV"], ["Medium", "5–7", "STR 10", "Stealth −AV, casting −2×AV"], ["Heavy", "8–11", "STR 13, Armor Mastery 3", "Dex skills −AV, Stealth disadv., casting and Entrada −2×AV"], ["Plate", "12–15", "STR 15, Armor Mastery 5", "Dex skills and STR/DEX saves −AV, Stealth disadv., casting −2×AV, travel checks −2×AV"]] } },
+    { ul: ["Casting skills are Sangromancy, Warding, Occult: Daemonology, Alchemy and Dreamwalking. Armor Mastery eases their penalty at 5, 7 and 10, and from 4 adds 3 soak per point.",
+      "Repairs cost 50 g × AV (light), 70 (medium), 100 (heavy) or 150 (plate) in materials, and an hour per Armor Maintenance attempt.", "Powered armor counts as a machine, not armor."] } ] },
+
+  prosthetics: { kicker: "Gear", title: "Prosthetics", body: [
+    "Every prosthetic costs 7% Entrada and 4% Stealth, and its wearer needs one more ration a day.",
+    { t: { cols: ["Type", "What it is", "Needs"], rows: [["Basic", "Replaces a lost limb with the same function; anything extra must be worked by hand", "Prosthetic Operation"], ["Expansive", "Adds functions triggered by thought; each use needs a Prosthetic Operation check", "Expansive Prosthetic Operation"], ["Transformative", "Changes shape (spider legs, say), and must keep a human-like resting state; a check on each use", "Transformative Prosthetic Operation"]] } } ] },
+
+  weapons: { kicker: "Gear", title: "Weapons", body: [
+    "Every weapon has a flat Damage value, a critical chance, a durability pool and die, and its own Properties and Flaws.",
+    { h: "Attacking" }, { ul: ["Roll d100 (the attack roll) and the durability die, and subtract your accuracy.", "A hit deals the weapon's Damage. Under the crit chance (plus your own crit bonus) it's a Critical.",
+      "Hit or miss, the weapon loses the durability rolled; a ranged weapon also spends the shot from its clip.", "At 0 durability the weapon gains a Flaw, which a weaponsmith can remove for a fee."] },
+    { h: "Melee and ranged" }, { ul: ["Melee weapons reach 2 m.", "Ranged weapons have a clip that costs AP to reload, and may Attack more than once a turn.", "Closer than the optimal range, or past it but inside the maximum, the shot is at disadvantage. Past the maximum it misses."] },
+    { h: "Properties" }, { t: { cols: ["Property", "Effect"], rows: [["Defensive (R)", "+R% to parry"], ["Durable (R)", "Loses R less durability"], ["Fast", "May attack first in the round"], ["Finesse", "Can use the Finesse skill"], ["Gore", "Crits on doubles"], ["Impact", "Adds the d10 result as damage"], ["Impale", "Crits on multiples of 10"], ["Penetrating (R)", "Ignores R armor"], ["Reliable (R)", "Deals R damage on a miss"],
+      ["Bladebreaker (R) · melee", "Parrying it costs the parrier R% durability"], ["Entangle · melee", "Target is Entangled; Athletics resists"], ["Hack · melee", "Extra damage to armor"], ["Light · melee", "With 1 AP left and no attack taken, deals its damage at round's end"], ["Pummel (R) · melee", "+R% to bash"], ["Reach · melee", "+2 m range"], ["Shield (R) · melee", "+R AV while defending"],
+      ["Accurate (R) · ranged", "+R% to attack"], ["Blast (R) · ranged", "Everyone within R m takes half damage and its conditions"], ["Overbearing (R) · ranged", "+R% against a defending target"], ["Pistol · ranged", "No disadvantage in close combat"], ["Precise (R) · ranged", "+R m to both ranges"]] } },
+    { h: "Flaws" }, { t: { cols: ["Flaw", "Effect"], rows: [["Brittle (R)", "Loses R more durability"], ["Impotent", "Can never crit"], ["Slow", "Always attacks last; misses if the target moved"], ["Unwieldy", "Every attack at disadvantage"], ["Poorly Weighed · melee", "Misses on doubles"], ["Undamaging · melee", "Armor counts double against it"], ["Inaccurate (R) · ranged", "−R% to attack"], ["Experimental · ranged", "Malfunctions on a high fail; 3 AP to fix"]] } } ] },
+
+  talents: { kicker: "Skills & Talents", title: "Perks and talents", body: [
+    "This tab gathers every perk your skills have unlocked, and any talents of your own.",
+    { ul: ["Passive: always on.", "Active: limited uses, declared before the attack. Tick a box each time you use one.", "Empowerment: switched on for a number of turns, usually paid for afterwards."] },
+    { h: "Reading a perk card" }, { icons: true },
+    "Rests recharge spent uses for you: a short rest brings back abilities marked S, a long rest brings back everything.",
+    { h: "Talents" }, "Talents are for what the rules don't cover: a runic tattoo, a blessing, a family heirloom's trick. Write what it does and how often; once it's done, the card works like a perk." ] },
+};

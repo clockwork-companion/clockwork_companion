@@ -37,6 +37,11 @@
 body { background: var(--paper); color: var(--ink); font: 15px/1.45 var(--f-body); }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
 button, input, select, textarea { font: inherit; color: inherit; }
+/* Drop-down lists: the open menu draws its own panel, so give it a solid themed background and full-strength text. */
+select { color: var(--ink); background-color: transparent; accent-color: var(--brass); }
+select option, select optgroup { background-color: var(--menu-bg, var(--card)); color: var(--menu-ink, var(--ink)); }
+select option:checked { background-color: var(--brass); color: var(--brass-ink); }
+select:disabled { color: var(--ink-3); }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 .wrap { overflow-x: clip; max-width: 1180px; margin: 0 auto; padding-block: 14px 64px;
@@ -160,6 +165,9 @@ button { cursor: pointer; }
 .karma .big { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .stat { background: var(--sunk); padding: 8px 10px; display: grid; }
 .stat b { font: 600 26px/1.1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.stat.editing { box-shadow: inset 0 0 0 1.5px var(--brass); }
+.statin { width: 100%; min-width: 0; border: 0; border-bottom: 1.5px dashed var(--brass); background: transparent; color: var(--ink); padding: 0; font: 600 26px/1.1 var(--f-mono); font-variant-numeric: tabular-nums; }
+.statin:focus { outline: none; border-bottom-style: solid; }
 .stat span { font: 600 11px/1.2 var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
 .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1.5px solid var(--rule); }
 .seg button { border: 0; background: transparent; padding: 6px 4px; font: 600 12px/1.2 var(--f-head); letter-spacing: .08em; text-transform: uppercase; }
@@ -185,6 +193,7 @@ button { cursor: pointer; }
   background: color-mix(in srgb, var(--ts) 45%, var(--sunk)); color: var(--ink-2); box-shadow: inset 0 3px 0 color-mix(in srgb, var(--tc) 55%, transparent);
   font: 700 15px/1 var(--f-head); letter-spacing: .1em; text-transform: uppercase; }
 .tabs .tab-vitals { --tc: var(--blood); --ts: var(--blood-soft); }
+.tabs .tab-talents { --tc: var(--tox); --ts: var(--tox-soft); }
 .tabs .tab-gear { --tc: var(--hunger); --ts: var(--hunger-soft); }
 .tabs .tab-table { --tc: var(--life); --ts: var(--life-soft); }
 .tabs button:hover { background: color-mix(in srgb, var(--ts) 75%, var(--sunk)); color: var(--ink); }
@@ -289,18 +298,34 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .meter .ctl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .meter .ctl input { width: 64px; border: 1.5px solid var(--hair); background: var(--paper); padding: 3px 6px; font-family: var(--f-mono); }
 .meter .note { font-size: 12.5px; color: var(--ink-2); }
-/* exhaustion: every level and its effect; levels in force are tinted, the current one marked */
-.exlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(6, auto); grid-auto-flow: column; gap: 5px 18px; }
+/* stamina lost: an attribute-style bar of ten under the vitals; the tenth cell is a skull */
+.stambar { margin-top: -32px; }
+.stambar .scale.stam { max-width: none; }
+.stambar .t { color: var(--ink-2); }
+.stambar.lost .t, .stambar.lost .v { color: var(--bad); }
+.stambar .cell { height: 26px; position: relative; }
+.stambar .cell.ignored:not(.miss) { border-style: dashed; }
+.stambar .cell.ignored.miss { opacity: .55; }
+.skullcell { display: grid; place-items: center; overflow: hidden; }
+.skull { width: 16px; height: 16px; color: var(--ink-3); --sk-eye: var(--card); }
+.skullcell.miss .skull { color: var(--paper); --sk-eye: var(--bad); }
+.stambar.dead { border-color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+/* exhaustion: only the levels in force are listed, building up from the first */
+.exlist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 6px 14px; }
 .exrow { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: center; text-align: left; padding: 5px 10px 5px 5px;
-  border: 1.5px solid var(--hair); background: var(--card); min-width: 0; }
-.exrow:hover { border-color: var(--ink-2); }
+  border: 1.5px solid var(--hair); background: var(--card); min-width: 0; animation: exIn .25s ease-out; }
+@keyframes exIn { from { opacity: 0; transform: translateY(-4px); } }
 .exn { width: 28px; height: 28px; display: grid; place-items: center; font: 600 14px var(--f-mono); border: 1.5px solid var(--hair); }
 .ext { font-size: 13.5px; line-height: 1.3; color: var(--ink-2); }
+.exrow.rested { border-color: color-mix(in srgb, var(--good) 50%, var(--hair)); box-shadow: inset 4px 0 0 var(--good); }
+.exrow.rested .exn { border-color: var(--good); color: var(--good); }
 .exrow.active { background: color-mix(in srgb, var(--blood-soft) 55%, var(--card)); border-color: color-mix(in srgb, var(--bad) 45%, var(--hair)); }
 .exrow.active .ext { color: var(--ink); }
 .exrow.active .exn { background: var(--bad); border-color: var(--bad); color: var(--paper); }
 .exrow.now { border-color: var(--bad); box-shadow: inset 4px 0 0 var(--bad); }
-.exrow.now:first-child { border-color: var(--good); box-shadow: inset 4px 0 0 var(--good); }
+.exrow.ignored { opacity: .6; } .exrow.ignored .ext { text-decoration: line-through; text-decoration-thickness: 1px; }
+.exrow.ignored .flag { text-decoration: none; display: inline-block; }
+.exrow .skull { color: var(--paper); --sk-eye: var(--bad); width: 18px; height: 18px; }
 .exrow.death .ext { color: var(--bad); font-weight: 600; }
 .wounds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .wound { border: 1.5px solid var(--hair); padding: 10px; display: grid; gap: 6px; background: var(--card); }
@@ -324,11 +349,33 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .loadbar span:nth-child(5) { background: color-mix(in srgb, var(--blood-soft) 50%, var(--bad)); border-right: 0; }
 .loadbar .needle { position: absolute; top: -5px; bottom: -5px; width: 3px; background: var(--rule); transition: left .2s; }
 .loadscale { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr 1fr; font: 12px var(--f-mono); color: var(--ink-3); }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 14px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 14px; align-items: start; }
 .wcard { background: var(--card); border: 1.5px solid var(--hair); padding: 12px; display: grid; gap: 8px; min-width: 0; }
 .wcard.worn { border-color: var(--rule); box-shadow: inset 4px 0 0 var(--brass); }
 .wcard .title { display: flex; gap: 8px; align-items: center; }
 .wcard .title input { font: 700 17px var(--f-head); letter-spacing: .03em; border: 0; border-bottom: 1.5px solid var(--hair); background: transparent; flex: 1; min-width: 0; }
+/* weapon cards: editing vs finished */
+.wcard.editing { border-style: dashed; border-color: var(--brass); }
+.wcard.editing .title .flag { background: var(--brass-soft); color: var(--brass); }
+.wgroup { display: grid; gap: 4px; }
+.wgroup > .lbl { font-size: 10.5px; border-bottom: 1px solid var(--hair); padding-bottom: 2px; }
+.wnote { margin: 0; font-size: 12.5px; }
+.wcard.final { gap: 10px; padding: 12px 14px; }
+.wcard.final .title { align-items: center; }
+.wcard.final .wname { flex: 1; min-width: 0; font: 700 18px var(--f-head); letter-spacing: .03em; text-transform: uppercase; overflow-wrap: anywhere; }
+.wcard.final.kind-ranged { box-shadow: inset 4px 0 0 var(--life); } .wcard.final.kind-melee { box-shadow: inset 4px 0 0 var(--blood); } .wcard.final.kind-shield { box-shadow: inset 4px 0 0 var(--ink-2); }
+.wsub { margin-top: -6px; font-size: 12.5px; color: var(--ink-3); }
+.wstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 0; border-top: 2px solid var(--rule); border-bottom: 1px solid var(--hair); }
+.wstats > div { display: grid; gap: 1px; padding: 6px 8px 6px 0; }
+.wstats span { font: 600 10.5px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.wstats b { font: 600 16px var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wdur { display: grid; gap: 6px; }
+.wdur .row { flex-wrap: nowrap; }
+.durin { width: 72px !important; text-align: center; font-family: var(--f-mono); border: 1.5px solid var(--hair) !important; padding: 3px 4px !important; }
+.wprops { margin: 0; font-size: 13.5px; color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+/* growing text boxes */
+.autotext { display: block; width: 100%; min-width: 0; resize: none; overflow: hidden; border: 0; border-bottom: 1.5px solid var(--hair); background: transparent; padding: 3px 0; line-height: 1.4; font-family: var(--f-body); font-size: 14px; }
+.autotext:focus { outline: none; border-bottom-color: var(--brass); }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px 10px; }
 .mini { display: grid; gap: 1px; min-width: 0; }
 .mini label { font: 600 10.5px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
@@ -395,7 +442,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   .cell { height: 18px; } .half { gap: 3px; } .mid { width: 32px; } .scale { gap: 6px; }
   .pips.big { --pip: 18px; gap: 4px; }
   .wounds { grid-template-columns: minmax(0, 1fr); }
-  .tabs { gap: 4px; } .tabs button { flex: 1 1 0; justify-content: center; padding: 10px 6px 9px; font-size: 13px; letter-spacing: .05em; gap: 6px; }
+  .tabs { gap: 4px; flex-wrap: wrap; overflow: visible; } .tabs button { flex: 1 1 auto; justify-content: center; padding: 10px 6px 9px; font-size: 13px; letter-spacing: .05em; gap: 6px; }
   .tabs .tabicon { display: none; }
   .brand { font-size: 24px; }
 }
@@ -520,13 +567,276 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .ptype { font: 600 10.5px/1 var(--f-head); letter-spacing: .1em; text-transform: uppercase; padding: 3px 6px; background: var(--sunk); color: var(--ink-2); display: inline-block; }
 .ptype.t-A { background: var(--brass-soft); color: var(--brass); }
 .ptype.t-E { background: var(--life-soft); color: var(--life); }
-.uchips { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; vertical-align: 1px; }
-.uchips span { font-size: 11.5px; padding: 1px 6px; border: 1px solid var(--hair); color: var(--ink-2); white-space: nowrap; }
+/* the rulebook's usage icons: recharge, AP, uses, Stamina, turns */
+.uline { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; margin-left: 8px; vertical-align: 1px; font: 600 12.5px var(--f-mono); color: var(--ink-2); }
+.uline > span { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; cursor: help; }
+.uicon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; color: var(--ink-3); }
+.ulegend { display: grid; gap: 6px; font-size: 13.5px; }
+.ulegend span { display: flex; align-items: center; gap: 8px; } .ulegend .uicon { width: 18px; height: 18px; color: var(--ink); }
+/* rules panel and the headings that open it */
+.hlink { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: .3em; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; text-decoration-thickness: 2px; }
+.hlink:hover, .hlink:focus-visible { text-decoration-color: var(--brass); }
+.hlink:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+.hbook { width: .62em; height: .62em; flex: 0 0 auto; opacity: .45; transition: opacity .15s; }
+.hlink:hover .hbook, .hlink:focus-visible .hbook { opacity: 1; }
+.meter .t.hlink { font: 700 14px/1 var(--f-head); letter-spacing: .12em; text-transform: uppercase; }
+.rulebody { gap: 12px; font-size: 14.5px; }
+.rulebody p { margin: 0; }
+.rulebody h3 { margin: 6px 0 -4px; font: 400 19px/1.2 var(--f-display); border-bottom: 2px solid var(--rule); padding-bottom: 3px; }
+.rulebody table { font-size: 13px; } .rulebody th { font-size: 10.5px; padding: 3px 6px; } .rulebody td { padding: 4px 6px; vertical-align: top; }
+.rulebody td.k { font-weight: 600; color: var(--ink); white-space: nowrap; }
+.rnote { font-size: 13px; border-left: 3px solid var(--hair); padding-left: 10px; }
+/* skills & talents: perk cards after the rulebook's perk boxes */
+.perkbar { justify-content: space-between; margin-bottom: 6px; }
+.perkbar .seg { grid-template-columns: repeat(4, auto); }
+.perkbar .seg button { padding: 6px 12px; }
+@media (max-width: 560px) { .perkbar .seg { grid-template-columns: repeat(2, auto); } }
+.perkbar .seg small { opacity: .65; font-size: .85em; }
+.perkgroup { margin-top: 16px; }
+.perkgroup h3 { margin: 0 0 8px; font: 400 21px/1.2 var(--f-display); border-bottom: 2px solid var(--rule); padding-bottom: 3px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.perkgroup h3 small { font: 600 11.5px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.perkcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap: 10px; align-items: start; }
+.perkcard { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 10px 12px 10px 10px; background: var(--card); border: 1.5px solid var(--hair); min-width: 0; }
+.pbox { display: grid; place-content: center; justify-items: center; gap: 2px; align-self: start; min-height: 64px; background: var(--paper); border: 1.5px solid var(--hair); box-shadow: 2px 2px 0 color-mix(in srgb, var(--ink) 12%, transparent); }
+.pbox b { font: 700 24px/1 var(--f-display); color: var(--blood); }
+.pbox small { font: 600 9.5px/1 var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); font-variant: small-caps; }
+.pbox .tstar { width: 22px; height: 22px; fill: none; stroke: var(--blood); stroke-width: 1.5; stroke-linejoin: round; }
+.perkcard.t-A .pbox, .perkcard.t-M .pbox { border-color: var(--brass); }
+.perkcard.t-E .pbox { border-color: var(--life); } .perkcard.t-E .pbox b, .perkcard.t-E .tstar { color: var(--life); stroke: var(--life); }
+.pmain { min-width: 0; display: grid; gap: 4px; align-content: start; }
+.phead { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 0; }
+.phead .uline { margin-left: auto; padding-left: 10px; }
+.phead .editbtn { margin-left: 8px; }
+.perkcard p { margin: 0; font-size: 14px; line-height: 1.4; }
+.psource { font-size: 12.5px; color: var(--ink-3); }
+.usebox { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--hair); }
+.usetick { width: 18px; height: 18px; padding: 0; border: 1.5px solid var(--ink-2); background: var(--paper); cursor: pointer; position: relative; }
+.usetick:hover { border-color: var(--brass); }
+.usetick.spent { background: var(--ink-2); }
+.usetick.spent::after { content: ""; position: absolute; inset: 3px; background: linear-gradient(45deg, transparent 44%, var(--paper) 44% 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, var(--paper) 44% 56%, transparent 56%); }
+.talentedit { align-content: start; }
 @media (max-width: 560px) {
   .spanel { top: auto; height: 82vh; width: 100vw; border-left: 0; border-top: 5px solid var(--bracket); animation: spUp .22s ease-out; }
 }
 @keyframes spUp { from { transform: translateY(40px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+/* ----- Fantasy (candlelit): the parchment theme by night: dark leather, gold-leaf rules, red rubrics ----- */
+:root[data-skin="fantasy-dark"] {
+  --paper: #15100b; --card: #1f1811; --sunk: #2a2117; --ink: #ecdcb8; --ink-2: #cdb78e; --ink-3: #9a8562;
+  --rule: #d4b06a; --bracket: #a8843f; --hair: #4b3c28; --brass: #d0543f; --brass-ink: #1a0f08; --brass-soft: #3d1c14;
+  --seal: #0a0705; --seal-2: #4b3c28; --blood: #e06a55; --blood-soft: #3f1a14; --tox: #9cba5c; --tox-soft: #263018;
+  --hunger: #d8a548; --hunger-soft: #3a2c15; --life: #7fb0cf; --life-soft: #1a2a33; --warn: #e0a548; --bad: #ec6b5a; --good: #9cba5c;
+  --f-display: "IM Fell English SC", "Palatino Linotype", serif; --f-head: "Cinzel", "Trajan Pro", Georgia, serif; --f-body: "EB Garamond", Garamond, Georgia, serif; --f-mono: "EB Garamond", Garamond, Georgia, serif;
+  color-scheme: dark;
+}
+[data-skin="fantasy-dark"] body { font-size: 16.5px; background:
+  radial-gradient(700px 520px at 50% -6%, rgb(255 190 90 / .16), transparent 70%),
+  radial-gradient(500px 420px at 8% 70%, rgb(255 150 60 / .06), transparent 70%), radial-gradient(500px 420px at 94% 40%, rgb(255 150 60 / .05), transparent 70%),
+  radial-gradient(1400px 900px at 50% 50%, transparent 50%, rgb(0 0 0 / .55) 100%), var(--paper); background-attachment: fixed; }
+:root[data-skin="fantasy-dark"] .frame { background: rgb(31 24 17 / .7); box-shadow: inset 0 0 0 4px var(--paper), inset 0 0 0 5px var(--rule), 0 10px 30px rgb(0 0 0 / .35); }
+:root[data-skin="fantasy-dark"] .frame::before { color: var(--rule); text-shadow: 0 0 10px rgb(255 190 90 / .5); }
+:root[data-skin="fantasy-dark"] .h > span:not(.orn)::first-letter { color: var(--brass); text-shadow: 0 0 8px rgb(208 84 63 / .45); }
+:root[data-skin="fantasy-dark"] .brand, :root[data-skin="fantasy-dark"] .gx-title, :root[data-skin="fantasy-dark"] .ornate { color: var(--rule); text-shadow: 0 0 14px rgb(255 190 90 / .25); }
+:root[data-skin="fantasy-dark"] .pip.on { background: var(--rule); border-color: var(--rule); box-shadow: inset 0 0 0 2px var(--paper), 0 0 6px rgb(255 190 90 / .4); }
+:root[data-skin="fantasy-dark"] .cell.up { background: var(--ink-2); border-color: var(--ink-2); }
+:root[data-skin="fantasy-dark"] .portrait img { filter: sepia(.4) contrast(1.05) brightness(.92); }
+:root[data-skin="fantasy-dark"] .hovercard { background: #0c0805; color: var(--ink); border-top-color: var(--brass); }
+:root[data-skin="fantasy-dark"] .sigil { opacity: calc(var(--o) * 1.8); }
+
+/* ----- Cairn-style gothic (extended): black ink on white paper, blackletter, ribbon banners, a sword and branches ----- */
+:root[data-skin="cairn"] {
+  --paper: #f4f1ea; --card: #fbf9f4; --sunk: #e8e3d7; --ink: #121110; --ink-2: #2f2c28; --ink-3: #625d55;
+  --rule: #121110; --bracket: #121110; --hair: #b9b2a4; --brass: #121110; --brass-ink: #fbf9f4; --brass-soft: #e2dccf;
+  --seal: #121110; --seal-2: #6d675e; --blood: #7a1414; --blood-soft: #ead7d2; --tox: #2f4a22; --tox-soft: #dfe3d4;
+  --hunger: #5b4513; --hunger-soft: #ebe2cc; --life: #24394a; --life-soft: #d9dfe3; --warn: #5b4513; --bad: #7a1414; --good: #2f4a22;
+  --f-display: "UnifrakturCook", "UnifrakturMaguntia", "Old English Text MT", serif; --f-black: "UnifrakturMaguntia", "UnifrakturCook", serif;
+  --f-head: "IM Fell English SC", Georgia, serif; --f-body: "IM Fell English", Georgia, serif; --f-mono: "Grenze", "IM Fell English", Georgia, serif;
+  --ribbon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'%3E%3Cpath d='M1 3 L199 3 L186 20 L199 37 L1 37 L14 20 Z' fill='%23fbf9f4' stroke='%23121110' stroke-width='2.4' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M16 8 L184 8 M16 32 L184 32' stroke='%23121110' stroke-width='.8' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+  --pennant: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60' preserveAspectRatio='none'%3E%3Cpath d='M2 1 L98 1 L98 58 L50 46 L2 58 Z' fill='%23fbf9f4' stroke='%23121110' stroke-width='2.2' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --pennant-on: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60' preserveAspectRatio='none'%3E%3Cpath d='M2 1 L98 1 L98 58 L50 46 L2 58 Z' fill='%23121110' stroke='%23121110' stroke-width='2.2' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --thorns: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 14'%3E%3Cpath d='M0 7 Q10 2 20 7 T40 7' fill='none' stroke='%23121110' stroke-width='1.6'/%3E%3Cpath d='M9 4.6 L11 0.5 L12.4 4.4 M29 9.4 L31 13.5 L32.4 9.6' fill='none' stroke='%23121110' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E");
+  color-scheme: light;
+}
+[data-skin="cairn"] body { font-size: 16px; background:
+  radial-gradient(circle at 20% 30%, rgb(0 0 0 / .035) 0 1px, transparent 1.5px) 0 0 / 23px 29px,
+  radial-gradient(circle at 70% 60%, rgb(0 0 0 / .03) 0 1px, transparent 1.5px) 0 0 / 31px 37px,
+  radial-gradient(1500px 1000px at 50% 40%, transparent 55%, rgb(60 50 35 / .14) 100%), var(--paper); background-attachment: fixed; }
+:root[data-skin="cairn"] :is(.brand, .namefield, .attr .nm, .sgroup h3, .spgroup h3, .gx-title, .gx-an b, .ornate, .gx-face b) { font-family: var(--f-black); font-weight: 400; text-transform: none; letter-spacing: .01em; }
+:root[data-skin="cairn"] .brand { font-family: var(--f-display); font-size: 40px; }
+:root[data-skin="cairn"] .brand small { font-family: var(--f-head); }
+:root[data-skin="cairn"] .namefield { font-size: 40px; border-bottom: 2px solid var(--ink); }
+:root[data-skin="cairn"] .top { border-bottom: 2px solid var(--ink); box-shadow: 0 4px 0 -2px var(--paper), 0 5px 0 -2px var(--ink); }
+/* headings ride on notched ribbon banners; the rule after them is a thorned vine */
+:root[data-skin="cairn"] .h { font-family: var(--f-black); font-weight: 400; text-transform: none; letter-spacing: .02em; font-size: 30px; }
+:root[data-skin="cairn"] .h > span:not(.orn) { display: inline-block; padding: 6px 34px 8px; background: var(--ribbon) center / 100% 100% no-repeat; line-height: 1; }
+:root[data-skin="cairn"] .orn::before { border: 0; height: 14px; top: 0; background: var(--thorns) left center / 40px 14px repeat-x; }
+:root[data-skin="cairn"] .orn::after, :root[data-skin="cairn"] .diamond::before { background: var(--card); border-color: var(--ink); }
+:root[data-skin="cairn"] .diamond.on::before { background: var(--ink); }
+:root[data-skin="cairn"] .sub { font-style: italic; color: var(--ink-2); }
+/* frames: hand-inked panels with a hairline inside */
+:root[data-skin="cairn"] .frame { background: var(--card); border: 2px solid var(--ink); border-radius: 3px 7px 4px 6px; padding: 22px 24px 24px;
+  box-shadow: inset 0 0 0 4px var(--card), inset 0 0 0 5px var(--ink), 3px 4px 0 rgb(0 0 0 / .08); }
+:root[data-skin="cairn"] .frame::before, :root[data-skin="cairn"] .frame::after { display: none; }
+:root[data-skin="cairn"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel, .member, .gx-attr, .gx-road, .gx-pick, .gx-choose) {
+  border: 1.8px solid var(--ink); border-radius: 2px 6px 3px 5px; background: var(--card); box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 4px var(--hair); }
+:root[data-skin="cairn"] .rnow { box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 4px var(--ink); }
+/* tabs hang like pennants from a black crossguard studded with rivets */
+:root[data-skin="cairn"] .tabs { border-bottom: 0; gap: 10px; padding: 0 6px 22px; margin-top: 14px;
+  background: radial-gradient(circle, var(--card) 0 3.2px, transparent 3.8px) 0 calc(100% - 4px) / 26px 16px repeat-x, linear-gradient(var(--ink), var(--ink)) 0 calc(100% - 4px) / 100% 16px no-repeat;
+  overflow: visible; }
+:root[data-skin="cairn"] .tabs button { border: 0; border-radius: 0; box-shadow: none; padding: 12px 22px 26px; margin-bottom: -18px; background: var(--pennant) center top / 100% 100% no-repeat;
+  font: 400 21px var(--f-black); text-transform: none; letter-spacing: .02em; color: var(--ink); }
+:root[data-skin="cairn"] .tabs button:hover { transform: translateY(2px); }
+:root[data-skin="cairn"] .tabs button[aria-selected="true"] { background-image: var(--pennant-on); color: var(--card); }
+:root[data-skin="cairn"] .tabicon { stroke: currentColor; }
+/* portrait: an oval mirror frame */
+:root[data-skin="cairn"] .portrait { border-radius: 50% / 50%; aspect-ratio: 4 / 5; border: 3px solid var(--ink); outline: 1.5px solid var(--ink); outline-offset: 4px; background: var(--card); }
+:root[data-skin="cairn"] .portrait img { filter: grayscale(1) contrast(1.15); }
+:root[data-skin="cairn"] .portrait .over { border-radius: 0 0 50% 50% / 0 0 40% 40%; }
+:root[data-skin="cairn"] .thumb { border-radius: 50%; } :root[data-skin="cairn"] .thumb img { filter: grayscale(1) contrast(1.1); }
+/* ink controls */
+:root[data-skin="cairn"] .btn { border: 1.8px solid var(--ink); border-radius: 2px 5px 2px 5px; font: 400 15px var(--f-head); letter-spacing: .04em; text-transform: none; }
+:root[data-skin="cairn"] .btn.primary, :root[data-skin="cairn"] .seg button[aria-pressed="true"] { background: var(--ink); color: var(--card); border-color: var(--ink); }
+:root[data-skin="cairn"] .seg { border: 1.8px solid var(--ink); }
+:root[data-skin="cairn"] .seg button { font: 400 14px var(--f-head); text-transform: none; letter-spacing: .03em; }
+:root[data-skin="cairn"] :is(.lbl, .field label, .mini label, .stat span, .fact span, .wstats span, .legend b, .meter .t, th) { font-family: var(--f-head); font-weight: 400; text-transform: none; letter-spacing: .04em; font-size: 14px; }
+:root[data-skin="cairn"] :is(.attr .val, .stat b, .meter .v, .fact b, .wound .cnt, .exn, .mid, .mbar b, .srow .m, .calc, .wstats b, .loadnum b, .gx-sum b, .gx-slot b, .gx-av b) { font-family: var(--f-mono); font-weight: 600; }
+:root[data-skin="cairn"] .attr .val { font-size: 30px; }
+:root[data-skin="cairn"] .attr .nm { font-size: 25px; }
+:root[data-skin="cairn"] .pip { border-width: 1.8px; } :root[data-skin="cairn"] .pip.on { background: var(--ink); box-shadow: inset 0 0 0 2.5px var(--card); }
+:root[data-skin="cairn"] .cell { border: 1.6px solid var(--ink); border-radius: 1px 3px 1px 2px; }
+:root[data-skin="cairn"] .cell.up { background: repeating-linear-gradient(135deg, var(--ink) 0 1.5px, var(--card) 1.5px 4px); }
+:root[data-skin="cairn"] .cell.bought { background: var(--ink); }
+:root[data-skin="cairn"] .cell.miss { background: repeating-linear-gradient(45deg, var(--bad) 0 1.5px, transparent 1.5px 5px); border-color: var(--bad); }
+:root[data-skin="cairn"] .mid { border-radius: 50%; width: 38px; height: 38px; border-width: 2px; }
+:root[data-skin="cairn"] .mid.at { background: var(--ink); color: var(--card); }
+:root[data-skin="cairn"] .track, :root[data-skin="cairn"] .mtrack { border: 1.5px solid var(--ink); background: var(--card) !important; }
+:root[data-skin="cairn"] .sgroup h3 { font-size: 26px; border-bottom: 2px solid var(--ink); box-shadow: 0 3px 0 -1px var(--card), 0 4px 0 -1px var(--ink); }
+:root[data-skin="cairn"] .hovercard { background: var(--card); color: var(--ink); border: 2px solid var(--ink); border-top-width: 4px; box-shadow: 4px 5px 0 rgb(0 0 0 / .15); }
+:root[data-skin="cairn"] .hovercard em { color: var(--ink); }
+:root[data-skin="cairn"] .hovercard.short em, :root[data-skin="cairn"] .hovercard.sealed { color: var(--bad); }
+:root[data-skin="cairn"] .d8::before { background: linear-gradient(160deg, #fbf9f4 0%, #d9d3c6 55%, #8f897f 100%); outline: 2px solid #121110; }
+:root[data-skin="cairn"] .d8 span { color: var(--ink); }
+:root[data-skin="cairn"] .sigil { opacity: calc(var(--o) * 1.4); }
+@media (max-width: 700px) { [data-skin="cairn"] .h { font-size: 24px; } [data-skin="cairn"] .tabs button { font-size: 16px; padding: 10px 8px 22px; } [data-skin="cairn"] .namefield { font-size: 30px; } }
+
+/* ----- Power armour: a high-tech exosuit HUD. Graphite and brushed steel, copper accents and conduits,
+   clean digital type, glowing copper lamps and nixie-tube readouts ----- */
+:root[data-skin="armour"] {
+  --paper: #111417; --card: #1c2126; --sunk: #0b0d0f; --ink: #e9eef2; --ink-2: #b9c2ca; --ink-3: #7d8891;
+  --rule: #d07a45; --bracket: #9aa3ab; --hair: #34404a; --brass: #f0915a; --brass-ink: #1a0c04; --brass-soft: #3a2014;
+  --seal: #090b0d; --seal-2: #5a2a18; --blood: #ff5f4a; --blood-soft: #3a1612; --tox: #8fd889; --tox-soft: #172a1a;
+  --hunger: #f2b25c; --hunger-soft: #35260f; --life: #5fd0e6; --life-soft: #112a31; --warn: #f2b25c; --bad: #ff5f4a; --good: #8fd889;
+  --f-display: "Orbitron", "Eurostile", sans-serif; --f-plate: "Chakra Petch", "Arial Narrow", sans-serif;
+  --f-head: "Chakra Petch", "Arial Narrow", sans-serif; --f-body: "Exo 2", "Segoe UI", sans-serif;
+  --f-mono: "Chakra Petch", "Consolas", monospace; --f-nixie: "Nixie One", "Courier New", monospace;
+  --copper: #d07a45; --copper-hi: #f3b58c;
+  --brushed: repeating-linear-gradient(0deg, rgb(255 255 255 / .05) 0 1px, transparent 1px 2px, rgb(0 0 0 / .05) 2px 3px), linear-gradient(180deg, #d9dee2 0%, #a3abb2 45%, #7b848c 55%, #c3c9ce 100%);
+  --copperbar: linear-gradient(180deg, #f6c39f 0%, #d07a45 45%, #8a4422 60%, #e0915f 100%);
+  --panel: repeating-linear-gradient(0deg, rgb(255 255 255 / .012) 0 1px, transparent 1px 3px), linear-gradient(180deg, #20262c 0%, #171b1f 100%);
+  --bolt: radial-gradient(circle, #e7ecef 0 1.1px, #7d8891 1.7px, #0b0d0f 2.4px, transparent 2.9px);
+  color-scheme: dark;
+}
+[data-skin="armour"] body { font-size: 15.5px; background:
+  linear-gradient(rgb(95 208 230 / .025) 1px, transparent 1px) 0 0 / 28px 28px,
+  linear-gradient(90deg, rgb(95 208 230 / .025) 1px, transparent 1px) 0 0 / 28px 28px,
+  radial-gradient(1200px 700px at 50% -10%, rgb(208 122 69 / .1), transparent 65%),
+  radial-gradient(1400px 900px at 50% 45%, transparent 50%, rgb(0 0 0 / .6) 100%), #111417; background-attachment: fixed; }
+:root[data-skin="armour"] .sigil { display: none; }
+:root[data-skin="armour"] .top { border-bottom: 0; padding-bottom: 16px; box-shadow: 0 2px 0 #7b848c, 0 3px 0 #0b0d0f, 0 5px 0 var(--copper); }
+:root[data-skin="armour"] .brand { font: 800 28px/1 var(--f-display); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
+:root[data-skin="armour"] .brand small { font-family: var(--f-head); color: var(--copper); letter-spacing: .3em; }
+:root[data-skin="armour"] .namefield { font: 700 30px var(--f-display); letter-spacing: .08em; text-transform: uppercase; border-bottom: 2px solid var(--copper); }
+:root[data-skin="armour"] :is(.lbl, .field label, .mini label, .stat span, .fact span, .wstats span, .legend b, th, .seg button, .btn, .pbox small) { font-family: var(--f-head); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+:root[data-skin="armour"] :is(.attr .nm, .sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3, .gx-title, .ornate, .gx-an b, .sphead h2) { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+:root[data-skin="armour"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3) { font-size: 16px; border-bottom-color: var(--copper); }
+:root[data-skin="armour"] .attr .nm { font-size: 14px; }
+:root[data-skin="armour"] .meter .t { font: 700 15px var(--f-head); letter-spacing: .12em; }
+/* headings: a brushed-steel plate with angled corners, then a thin copper conduit ending in a lit node */
+:root[data-skin="armour"] .h { font: 700 18px var(--f-display); letter-spacing: .14em; }
+:root[data-skin="armour"] .h > span:not(.orn) { padding: 7px 24px 6px 18px; color: #12171b; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  background: var(--brushed); box-shadow: inset 4px 0 0 var(--copper); }
+:root[data-skin="armour"] .h .hbook { opacity: .55; }
+:root[data-skin="armour"] .orn::before { border: 0; height: 2px; top: 6px; right: 22px; background: linear-gradient(90deg, var(--copper), rgb(208 122 69 / .25)); box-shadow: 0 0 6px rgb(208 122 69 / .5); }
+:root[data-skin="armour"] .orn::after { width: 10px; height: 10px; border-radius: 50%; transform: none; top: 2px; right: 6px; border: 2px solid #0b0d0f;
+  background: radial-gradient(circle at 40% 35%, #ffe2cc, #f0915a 45%, #7a3410); box-shadow: 0 0 0 2px #7b848c, 0 0 12px 2px rgb(240 145 90 / .6); }
+:root[data-skin="armour"] .diamond::before { transform: none; border-radius: 50%; border: 2px solid #0b0d0f; inset: 1px; background: radial-gradient(circle at 40% 35%, #3d454c, #111417); box-shadow: 0 0 0 2px #7b848c; }
+:root[data-skin="armour"] .diamond.on::before { background: radial-gradient(circle at 40% 35%, #ffe2cc, #f0915a 45%, #7a3410); box-shadow: 0 0 0 2px #7b848c, 0 0 12px 3px rgb(240 145 90 / .6); }
+/* frames: graphite modules edged in brushed steel, bolted at the corners, with a copper conduit along the top and a unit code */
+:root[data-skin="armour"] .tabpane { counter-reset: unit; }
+:root[data-skin="armour"] .frame { counter-increment: unit; border: 1px solid #0b0d0f; border-radius: 3px; padding: 24px 22px 22px;
+  background: var(--bolt) 7px 7px / 8px 8px no-repeat, var(--bolt) calc(100% - 7px) 7px / 8px 8px no-repeat, var(--bolt) 7px calc(100% - 7px) / 8px 8px no-repeat, var(--bolt) calc(100% - 7px) calc(100% - 7px) / 8px 8px no-repeat, var(--panel);
+  box-shadow: inset 0 0 0 1px #59636c, inset 0 0 0 2px #0b0d0f, 0 8px 22px rgb(0 0 0 / .5); }
+:root[data-skin="armour"] .frame::before { content: "MOD-" counter(unit, decimal-leading-zero); left: auto; right: 22px; top: 7px; width: auto; height: auto; background: none; border: 0;
+  font: 600 10.5px/1 var(--f-head); letter-spacing: .24em; color: var(--copper); opacity: .85; }
+:root[data-skin="armour"] .frame::after { left: 20px; right: 120px; top: 11px; bottom: auto; width: auto; height: 2px; background: linear-gradient(90deg, var(--copper), transparent); opacity: .55; border: 0; }
+:root[data-skin="armour"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel, .member, .gx-attr, .gx-road, .gx-pick, .gx-choose, .chip) {
+  border: 1px solid #0b0d0f; border-radius: 4px; background: var(--panel); box-shadow: inset 0 0 0 1px #3f4a54, inset 0 2px 0 rgb(255 255 255 / .04), 0 3px 8px rgb(0 0 0 / .4); }
+/* tabs: brushed-steel keys in a recessed rail; the active key glows copper */
+:root[data-skin="armour"] .tabs { border-bottom: 0; gap: 8px; padding: 8px; border-radius: 6px; width: max-content; max-width: 100%;
+  background: #0b0d0f; box-shadow: inset 0 2px 6px rgb(0 0 0 / .9), 0 0 0 1px #59636c; }
+:root[data-skin="armour"] .tabs button { border: 1px solid #0b0d0f; border-radius: 3px; padding: 10px 16px 9px 28px; position: relative; color: #1a2026;
+  background: var(--brushed); box-shadow: 0 3px 0 #0b0d0f, inset 0 1px 0 rgb(255 255 255 / .6);
+  font: 700 13px var(--f-display); letter-spacing: .12em; text-transform: uppercase; transition: transform .08s, box-shadow .08s; }
+:root[data-skin="armour"] .tabs button::before { content: ""; position: absolute; left: 11px; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #59636c, #1a2026); box-shadow: inset 0 1px 2px #000; }
+:root[data-skin="armour"] .tabs button:hover { color: #000; }
+:root[data-skin="armour"] .tabs button[aria-selected="true"] { transform: translateY(2px); color: #fff; background: var(--copperbar); box-shadow: 0 1px 0 #0b0d0f, 0 0 14px rgb(240 145 90 / .45), inset 0 1px 0 rgb(255 255 255 / .4); text-shadow: 0 1px 0 rgb(0 0 0 / .35); }
+:root[data-skin="armour"] .tabs button[aria-selected="true"]::before { background: radial-gradient(circle at 40% 35%, #fff, #ffe2cc 45%, #f0915a); box-shadow: 0 0 8px 2px rgb(255 226 204 / .8); }
+:root[data-skin="armour"] .tabicon { display: none; }
+/* nixie tubes for the numbers that matter */
+:root[data-skin="armour"] :is(.attr .val, .stat b, .meter .v, .loadnum b, .wound .cnt, .gx-sum b, .gx-slot b, .gx-av b, .gx-fa b, .wstats b, .statin, .pbox b) {
+  font-family: var(--f-nixie); font-weight: 400; color: #ffb88a; width: fit-content; padding: 3px 9px 1px; border-radius: 12px 12px 5px 5px;
+  text-shadow: 0 0 2px #fff1e6, 0 0 6px #ff8a4a, 0 0 14px #ff5a1a; border: 1px solid #3f4a54;
+  background: radial-gradient(ellipse at 50% 25%, rgb(255 140 80 / .14), transparent 70%), repeating-linear-gradient(60deg, rgb(255 255 255 / .05) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(-60deg, rgb(255 255 255 / .05) 0 1px, transparent 1px 4px), #120905;
+  box-shadow: inset 0 0 10px rgb(0 0 0 / .9), inset 0 6px 8px rgb(255 255 255 / .06); }
+:root[data-skin="armour"] .meter .v small, :root[data-skin="armour"] .loadnum { color: var(--ink-3); text-shadow: none; }
+:root[data-skin="armour"] .attr .val { font-size: 26px; min-width: 2.2ch; text-align: center; }
+:root[data-skin="armour"] .stat { background: transparent; }
+/* attribute cells and pips are indicator lamps: steel for natural, copper for bought, red for broken */
+:root[data-skin="armour"] .cell { border-radius: 2px; border: 1px solid #000; background: linear-gradient(180deg, #1d2329, #0e1114); box-shadow: inset 0 1px 2px #000, 0 0 0 1px #2f3941; }
+:root[data-skin="armour"] .cell.up { background: var(--brushed); box-shadow: 0 0 0 1px #2f3941; }
+:root[data-skin="armour"] .cell.bought { background: radial-gradient(circle at 50% 35%, #ffe2cc, #f0915a 45%, #9a4a1c); box-shadow: 0 0 10px 1px rgb(240 145 90 / .55); }
+:root[data-skin="armour"] .cell.miss { background: radial-gradient(circle at 50% 35%, #ffc4b8, #e0442e 50%, #5a120a); box-shadow: 0 0 8px rgb(255 80 50 / .5); border-color: #000; }
+:root[data-skin="armour"] .cell.have { background: linear-gradient(180deg, #8a939b, #4d565e); }
+:root[data-skin="armour"] .cell.sealed { background: repeating-linear-gradient(-45deg, #5a2a18 0 4px, #24120a 4px 8px); }
+:root[data-skin="armour"] .mid { border-radius: 50%; width: 38px; height: 38px; border: 2px solid #0b0d0f; color: #12171b; font: 700 12px var(--f-display); background: var(--brushed); box-shadow: 0 0 0 1px #59636c, 0 2px 0 #000; }
+:root[data-skin="armour"] .mid.at { box-shadow: 0 0 0 2px var(--copper), 0 0 10px 2px rgb(240 145 90 / .45); }
+:root[data-skin="armour"] .pip { border: 1.5px solid #59636c; background: radial-gradient(circle at 40% 35%, #2a3138, #0e1114); }
+:root[data-skin="armour"] .pip.on { border-color: #f0915a; background: radial-gradient(circle at 40% 35%, #ffe2cc, #f0915a 45%, #9a4a1c); box-shadow: 0 0 7px rgb(240 145 90 / .6); }
+:root[data-skin="armour"] .pip.capped { border-color: #2a333b; }
+:root[data-skin="armour"] .skull { color: #7d8891; --sk-eye: #0e1114; }
+:root[data-skin="armour"] .skullcell.miss .skull { color: #fff0e8; --sk-eye: #6a140a; }
+/* meters: segmented bars in a steel-edged window */
+:root[data-skin="armour"] .track, :root[data-skin="armour"] .mtrack { background: #0b0d0f !important; border: 1px solid #000; border-radius: 2px; box-shadow: inset 0 1px 3px #000, 0 0 0 1px #59636c; }
+:root[data-skin="armour"] .track i, :root[data-skin="armour"] .mtrack i { -webkit-mask: repeating-linear-gradient(90deg, #000 0 7px, transparent 7px 9px); mask: repeating-linear-gradient(90deg, #000 0 7px, transparent 7px 9px); filter: drop-shadow(0 0 4px currentColor) brightness(1.15); }
+/* perk cards: the level box is a nixie readout in a steel bezel */
+:root[data-skin="armour"] .pbox { background: #0b0d0f; border: 1px solid #000; border-radius: 3px; box-shadow: 0 0 0 2px #7b848c, inset 0 2px 6px #000; }
+:root[data-skin="armour"] .pbox b { font-size: 24px; padding: 2px 6px 0; }
+:root[data-skin="armour"] .usetick { border-radius: 50%; border-color: #7b848c; background: radial-gradient(circle at 40% 35%, #ffe2cc, #f0915a 45%, #9a4a1c); box-shadow: 0 0 6px rgb(240 145 90 / .5); }
+:root[data-skin="armour"] .usetick.spent { background: radial-gradient(circle at 40% 35%, #2a3138, #0e1114); box-shadow: none; }
+:root[data-skin="armour"] .usetick.spent::after { display: none; }
+/* controls */
+:root[data-skin="armour"] .btn { border: 1px solid #0b0d0f; border-radius: 3px; background: linear-gradient(180deg, #3a434b, #232a30); box-shadow: 0 2px 0 #0b0d0f, inset 0 1px 0 rgb(255 255 255 / .12); color: var(--ink); }
+:root[data-skin="armour"] .btn:active { transform: translateY(2px); box-shadow: 0 0 0 #0b0d0f; }
+:root[data-skin="armour"] .btn.primary, :root[data-skin="armour"] .seg button[aria-pressed="true"] { background: var(--copperbar); color: #fff; border-color: #0b0d0f; text-shadow: 0 1px 0 rgb(0 0 0 / .35); }
+:root[data-skin="armour"] .btn.danger { background: linear-gradient(180deg, #7a2418, #4a120b); color: #ffe0d6; }
+:root[data-skin="armour"] .seg { border: 1px solid #59636c; border-radius: 3px; overflow: hidden; background: #0b0d0f; }
+:root[data-skin="armour"] :is(.field input, .field select, .mini input, .mini select, .inp, .autotext, .field textarea) { background: #0b0d0f; border-color: #3f4a54; color: #eef2f5; }
+:root[data-skin="armour"] .portrait { border: 4px solid #0b0d0f; border-radius: 6px; outline: 2px solid #9aa3ab; outline-offset: -6px; box-shadow: 0 0 0 2px var(--copper), 0 8px 20px rgb(0 0 0 / .5); }
+:root[data-skin="armour"] .portrait img { filter: saturate(.85) contrast(1.08); }
+:root[data-skin="armour"] .hovercard { background: #0b0d0f; color: #e9eef2; border: 1px solid #3f4a54; border-top: 3px solid var(--copper); font-family: var(--f-head); }
+:root[data-skin="armour"] .hovercard em { font-family: var(--f-nixie); color: #ffb88a; text-shadow: 0 0 6px #ff8a4a; }
+:root[data-skin="armour"] .d8::before { background: linear-gradient(160deg, #f6c39f 0%, #d07a45 45%, #5a2a14 100%); }
+:root[data-skin="armour"] .banner { background: #2a1a10; border-left: 4px solid var(--copper); color: var(--ink); }
+:root[data-skin="armour"] .spanel { border-left: 4px solid var(--copper); background: var(--panel); }
+@media (max-width: 560px) {
+  [data-skin="armour"] .tabs { width: auto; } [data-skin="armour"] .tabs button { padding: 9px 7px 8px 20px; font-size: 10.5px; letter-spacing: .06em; }
+  [data-skin="armour"] .tabs button::before { left: 7px; width: 7px; height: 7px; margin-top: -3.5px; }
+  [data-skin="armour"] .frame { padding: 24px 14px 20px; } [data-skin="armour"] .frame::before { right: 14px; } [data-skin="armour"] .frame::after { right: 90px; left: 14px; }
+}
+
 /* ---------- website build: players panel, companions ---------- */
 .members { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 12px; }
 .member { background: var(--card); border: 1.5px solid var(--hair); padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
@@ -686,7 +996,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .gx-custom input { width: 34px; height: 28px; padding: 0; border: 1.5px solid var(--hair); background: none; }
 
 /* fate: dice */
-.gx-tray { display: flex; justify-content: center; align-items: center; gap: 18px; min-height: 150px; flex-wrap: wrap; }
+.gx-tray { display: grid; justify-items: center; align-content: center; gap: 10px; min-height: 190px; }
+.gx-dice { display: flex; justify-content: center; align-items: center; gap: 18px; }
 .d8 { width: 76px; height: 86px; position: relative; display: grid; place-items: center; transition: opacity .3s, filter .3s, transform .3s; }
 .d8::before { content: ""; position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 38%, 100% 62%, 50% 100%, 0 62%, 0 38%);
   background: linear-gradient(160deg, color-mix(in srgb, var(--brass) 55%, #fff) 0%, var(--brass) 45%, color-mix(in srgb, var(--brass) 55%, #000) 100%); }
@@ -697,7 +1008,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @keyframes tumble { 0% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-14px) rotate(25deg); } 50% { transform: translateY(0) rotate(-12deg) scale(.95); } 75% { transform: translateY(-8px) rotate(-30deg); } 100% { transform: translateY(0) rotate(0); } }
 .d8.low { opacity: .3; filter: grayscale(1); transform: scale(.86); }
 .d8.low span::after { content: ""; position: absolute; left: -6px; right: -6px; top: 50%; height: 3px; background: var(--bad); transform: rotate(-20deg); }
-.gx-sum { min-width: 110px; display: grid; justify-items: center; opacity: 0; transform: scale(.6); transition: opacity .25s, transform .35s cubic-bezier(.2, 1.6, .4, 1); }
+.gx-sum { min-height: 72px; display: grid; justify-items: center; align-content: start; opacity: 0; transform: scale(.6); transition: opacity .25s, transform .35s cubic-bezier(.2, 1.6, .4, 1); }
 .gx-sum.show { opacity: 1; transform: none; }
 .gx-sum b { font: 700 58px/1 var(--f-mono); }
 .gx-sum b.hi { color: var(--brass); text-shadow: 0 0 22px color-mix(in srgb, var(--brass) 60%, transparent); }
@@ -756,7 +1067,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   .gx-two, .gx-sets { grid-template-columns: minmax(0, 1fr); }
   .gx-facegrid { grid-template-columns: minmax(0, 1fr); }
   .gx-sigils { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .d8 { width: 60px; height: 68px; } .d8 span { font-size: 24px; } .gx-tray { gap: 10px; min-height: 120px; } .gx-sum b { font-size: 46px; }
+  .d8 { width: 60px; height: 68px; } .d8 span { font-size: 24px; } .gx-dice { gap: 12px; } .gx-tray { min-height: 160px; } .gx-sum b { font-size: 46px; } .gx-sum { min-height: 62px; }
   .gx-slots { gap: 4px; } .gx-slot b { font-size: 19px; }
   .gx-attr { grid-template-columns: minmax(0, 1fr) 96px; padding: 10px; } .gx-an small { font-size: 12px; }
   .gx-chip { width: 46px; height: 46px; font-size: 19px; }
@@ -790,7 +1101,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 [data-skin="steam"] .frame { border-left: 6px solid transparent; border-image: linear-gradient(#e6ad55, #8a5a22 50%, #e6ad55) 1; }
 [data-skin="steam"] .frame::before, [data-skin="steam"] .frame::after { height: 10px; width: 54px; left: -6px; border-radius: 0 3px 3px 0;
   background: var(--rivet) 4px 50%/10px 10px no-repeat, var(--rivet) 40px 50%/10px 10px no-repeat, linear-gradient(#f0c470, #9b6a2c); box-shadow: 0 1px 0 #000; }
-[data-skin="steam"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .spbox, .sptable) {
+[data-skin="steam"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable) {
   background: var(--rivet) 3px 3px/10px 10px no-repeat, var(--rivet) calc(100% - 3px) 3px/10px 10px no-repeat,
     var(--rivet) 3px calc(100% - 3px)/10px 10px no-repeat, var(--rivet) calc(100% - 3px) calc(100% - 3px)/10px 10px no-repeat,
     linear-gradient(180deg, #33241a, #241811);
@@ -826,7 +1137,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 [data-skin="light"] .frame::before, [data-skin="light"] .frame::after { display: none; }
 [data-skin="light"] .h { letter-spacing: .02em; font-size: 20px; }
 [data-skin="light"] .top, [data-skin="light"] .namefield { border-bottom-width: 1.5px; }
-[data-skin="light"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .spbox, .sptable, .rnow, .rcard, .rpanel) { border-radius: 10px; border-width: 1px; }
+[data-skin="light"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel) { border-radius: 10px; border-width: 1px; }
 [data-skin="light"] :is(.btn, .iconbtn, .seg, .skinpick select) { border-radius: 8px; border-width: 1px; }
 [data-skin="light"] .seg { overflow: hidden; border-color: var(--hair); }
 [data-skin="light"] .seg button[aria-pressed="true"] { background: var(--ink); }
@@ -858,7 +1169,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 [data-skin="retro"] .brand { font-size: 38px; } [data-skin="retro"] .namefield { font-size: 44px; font-weight: 400; }
 [data-skin="retro"] .frame { border-left: 2px dashed var(--bracket); }
 [data-skin="retro"] .frame::before, [data-skin="retro"] .frame::after { height: 2px; left: -2px; background: repeating-linear-gradient(90deg, var(--bracket) 0 6px, transparent 6px 10px); }
-[data-skin="retro"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .spbox, .sptable, .rnow, .rcard, .rpanel) { border: 1px solid var(--ink-3); border-radius: 0; background: rgb(255 184 77 / .03); }
+[data-skin="retro"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel) { border: 1px solid var(--ink-3); border-radius: 0; background: rgb(255 184 77 / .03); }
 [data-skin="retro"] :is(.btn, .tabs button, .seg button, .stat span, .fact span, .lbl, .field label, .mini label, .legend b, .flag, .ptype, .pname, .meter .t, .skinpick select, .chip.add, .brand small, .spbox summary, .sptable h4, th) { font-family: var(--f-head); font-size: 17px; font-weight: 400; }
 [data-skin="retro"] .btn:hover, [data-skin="retro"] .iconbtn:hover { background: var(--ink); color: var(--paper); text-shadow: none; }
 [data-skin="retro"] .tabs { border-bottom: 4px double var(--rule); }
@@ -883,7 +1194,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   --seal: #0a0b18; --seal-2: #2a2d4a; --blood: #ff6b81; --blood-soft: rgb(255 107 129 / .2); --tox: #6ff0a6; --tox-soft: rgb(111 240 166 / .18);
   --hunger: #ffd166; --hunger-soft: rgb(255 209 102 / .18); --life: #6fd3ff; --life-soft: rgb(111 211 255 / .18); --warn: #ffd166; --bad: #ff6b81; --good: #6ff0a6;
   --f-display: "Inter", -apple-system, system-ui, sans-serif; --f-head: "Inter", -apple-system, system-ui, sans-serif; --f-body: "Inter", -apple-system, system-ui, sans-serif; --f-mono: "Inter", -apple-system, system-ui, sans-serif;
-  --glass: blur(28px) saturate(170%);
+  --glass: blur(28px) saturate(170%); --menu-bg: #1d2040; --menu-ink: #f6f7ff;
   color-scheme: dark;
 }
 [data-skin="glass"] body { background: radial-gradient(1100px 760px at 8% -8%, #5865ff 0, transparent 62%), radial-gradient(900px 700px at 105% 12%, #ff5fa8 0, transparent 58%),
@@ -898,7 +1209,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   border: 1px solid rgb(255 255 255 / .18); border-radius: 26px; padding: 22px 24px 24px; box-shadow: inset 0 1px 0 rgb(255 255 255 / .22), 0 20px 50px rgb(0 0 0 / .25); }
 [data-skin="glass"] .head { padding: 22px; margin-top: 12px; }
 [data-skin="glass"] .frame::before, [data-skin="glass"] .frame::after { display: none; }
-[data-skin="glass"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .spbox, .sptable, .chip, .stat) { border: 1px solid rgb(255 255 255 / .14); border-radius: 16px; background: rgb(255 255 255 / .07); box-shadow: inset 0 1px 0 rgb(255 255 255 / .12); }
+[data-skin="glass"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .chip, .stat) { border: 1px solid rgb(255 255 255 / .14); border-radius: 16px; background: rgb(255 255 255 / .07); box-shadow: inset 0 1px 0 rgb(255 255 255 / .12); }
 [data-skin="glass"] .exn, [data-skin="glass"] .plv { border-radius: 50%; }
 [data-skin="glass"] :is(.btn, .iconbtn, .skinpick select, .seg) { border-radius: 999px; border: 1px solid rgb(255 255 255 / .22); background: rgb(255 255 255 / .1); }
 [data-skin="glass"] .btn.primary { background: var(--brass); color: var(--brass-ink); border-color: transparent; }
@@ -935,32 +1246,32 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 [data-skin="fantasy"] body { font-size: 16.5px; background:
   radial-gradient(600px 400px at 12% 18%, rgb(150 110 50 / .12), transparent 70%), radial-gradient(500px 420px at 88% 64%, rgb(140 95 40 / .1), transparent 70%),
   radial-gradient(1400px 900px at 50% 50%, transparent 55%, rgb(110 70 25 / .22) 100%), var(--paper); background-attachment: fixed; }
-[data-skin="fantasy"] .h { font-weight: 700; letter-spacing: .08em; }
-[data-skin="fantasy"] .h > span:not(.orn) { display: inline-block; }
-[data-skin="fantasy"] .h > span:not(.orn)::first-letter { color: var(--brass); font-size: 1.25em; }
-[data-skin="fantasy"] .frame { border: 2px solid var(--rule); border-radius: 12px; padding: 24px 24px 24px;
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .h { font-weight: 700; letter-spacing: .08em; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .h > span:not(.orn) { display: inline-block; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .h > span:not(.orn)::first-letter { color: var(--brass); font-size: 1.25em; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .frame { border: 2px solid var(--rule); border-radius: 12px; padding: 24px 24px 24px;
   box-shadow: inset 0 0 0 4px var(--paper), inset 0 0 0 5px var(--rule); background: rgb(246 236 210 / .55); }
-[data-skin="fantasy"] .frame::before { content: "❦"; left: 50%; top: -15px; width: auto; height: auto; padding: 0 10px; transform: translateX(-50%); background: var(--paper); color: var(--brass); font-size: 22px; line-height: 1; }
-[data-skin="fantasy"] .frame::after { display: none; }
-[data-skin="fantasy"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .spbox, .sptable) { border: 1.5px solid var(--rule); border-radius: 8px; box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 4px var(--hair); }
-[data-skin="fantasy"] .exrow.active { box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--blood-soft) 55%, var(--card)), inset 0 0 0 4px var(--bad); }
-[data-skin="fantasy"] :is(.attr .val, .stat b, .meter .v, .fact b, .wound .cnt, .exn, .mid, .mbar b, .srow .m, .calc) { font-weight: 600; font-feature-settings: "lnum", "tnum"; }
-[data-skin="fantasy"] .attr .val { font-size: 28px; }
-[data-skin="fantasy"] .btn { border-radius: 3px; font-weight: 600; }
-[data-skin="fantasy"] .btn.primary, [data-skin="fantasy"] .seg button[aria-pressed="true"] { background: var(--brass); border-color: var(--brass); color: var(--brass-ink); }
-[data-skin="fantasy"] .tabs { border-bottom: 5px double var(--rule); }
-[data-skin="fantasy"] .tabs button { border-color: var(--rule); border-radius: 10px 10px 0 0; font-size: 15px; }
-[data-skin="fantasy"] .tabs button[aria-selected="true"] { background: var(--brass); border-color: var(--brass); color: var(--brass-ink); box-shadow: none; }
-[data-skin="fantasy"] .tabs button[aria-selected="true"] .tabicon { stroke: var(--brass-ink); }
-[data-skin="fantasy"] .portrait { border: 3px double var(--rule); border-radius: 50%; }
-[data-skin="fantasy"] .portrait img { filter: sepia(.35) contrast(1.05); }
-[data-skin="fantasy"] .pip.on { background: var(--ink); }
-[data-skin="fantasy"] .cell.bought { background: var(--brass); border-color: var(--brass); }
-[data-skin="fantasy"] .mid { border-radius: 50%; width: 36px; height: 36px; }
-[data-skin="fantasy"] .sgroup h3 { border-bottom: 3px double var(--rule); }
-[data-skin="fantasy"] .sigil { opacity: calc(var(--o) * 1.5); }
-[data-skin="fantasy"] .hovercard { background: #2b1c0f; color: #f6ecd2; border-top-color: #c9483c; }
-[data-skin="fantasy"] .hovercard em { color: #f0c7a8; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .frame::before { content: "❦"; left: 50%; top: -15px; width: auto; height: auto; padding: 0 10px; transform: translateX(-50%); background: var(--paper); color: var(--brass); font-size: 22px; line-height: 1; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .frame::after { display: none; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable) { border: 1.5px solid var(--rule); border-radius: 8px; box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 4px var(--hair); }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .exrow.active { box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--blood-soft) 55%, var(--card)), inset 0 0 0 4px var(--bad); }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) :is(.attr .val, .stat b, .meter .v, .fact b, .wound .cnt, .exn, .mid, .mbar b, .srow .m, .calc) { font-weight: 600; font-feature-settings: "lnum", "tnum"; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .attr .val { font-size: 28px; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .btn { border-radius: 3px; font-weight: 600; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .btn.primary, :is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .seg button[aria-pressed="true"] { background: var(--brass); border-color: var(--brass); color: var(--brass-ink); }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .tabs { border-bottom: 5px double var(--rule); }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .tabs button { border-color: var(--rule); border-radius: 10px 10px 0 0; font-size: 15px; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .tabs button[aria-selected="true"] { background: var(--brass); border-color: var(--brass); color: var(--brass-ink); box-shadow: none; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .tabs button[aria-selected="true"] .tabicon { stroke: var(--brass-ink); }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .portrait { border: 3px double var(--rule); border-radius: 50%; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .portrait img { filter: sepia(.35) contrast(1.05); }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .pip.on { background: var(--ink); }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .cell.bought { background: var(--brass); border-color: var(--brass); }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .mid { border-radius: 50%; width: 36px; height: 36px; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .sgroup h3 { border-bottom: 3px double var(--rule); }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .sigil { opacity: calc(var(--o) * 1.5); }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .hovercard { background: #2b1c0f; color: #f6ecd2; border-top-color: #c9483c; }
+:is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .hovercard em { color: #f0c7a8; }
 </style>
 <div id="app"></div>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
@@ -1270,6 +1581,10 @@ const CW = (() => {
     ["Stringed", "DEX"], ["Throwing", "DEX"], ["Finesse", "DEX"], ["Heavy", "DEX"],
   ];
   const WEAPON_ATTR = Object.fromEntries(WEAPON_TYPES);
+  // Rulebook: every ranged weapon has a Clip, an optimal and maximum range and a reload cost; melee weapons reach 2 m.
+  const RANGED_WEAPONS = ["Rifles", "Pistols", "Sniper Rifles", "Shotguns", "Explosives", "Stringed", "Throwing", "Heavy"];
+  // A shield is picked from the same weapon skill list ("Shield"); older sheets marked it with a checkbox.
+  const weaponKind = w => (w.shield || w.skill === "Shield" ? "shield" : RANGED_WEAPONS.includes(w.skill) ? "ranged" : "melee");
 
   // [name, attribute, connected primary skill, primary level that grants proficiency, karma cost of levels 1/2/3]
   const SECONDARY = [
@@ -1365,6 +1680,7 @@ const CW = (() => {
                 wounds: { light: 0, moderate: 0, mortal: 0 }, conditions: [] },
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
+      talents: [], uses: {},
     };
   }
 
@@ -1379,7 +1695,12 @@ const CW = (() => {
     out.secondary = Object.assign({}, b.secondary, c && c.secondary);
     out.vitals = Object.assign({}, b.vitals, c && c.vitals);
     out.vitals.wounds = Object.assign({}, b.vitals.wounds, c && c.vitals && c.vitals.wounds);
-    ["items", "weapons", "armor", "log"].forEach(k => (out[k] = Array.isArray(out[k]) ? out[k] : []));
+    ["items", "weapons", "armor", "log", "talents"].forEach(k => (out[k] = Array.isArray(out[k]) ? out[k] : []));
+    out.uses = out.uses && typeof out.uses === "object" ? out.uses : {};
+    // Stamina lost and Exhaustion are one track: each Stamina stack lost is a level of Exhaustion.
+    // Older sheets kept them apart, so take the higher of the two. staminaLost stays as a mirror for the Tabletop sheet.
+    out.vitals.exhaustion = clamp(Math.max(num(out.vitals.exhaustion), num(out.vitals.staminaLost)), 0, 10);
+    out.vitals.staminaLost = out.vitals.exhaustion;
     if (!Array.isArray(out.vitals.conditions)) out.vitals.conditions = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
@@ -1568,7 +1889,7 @@ const CW = (() => {
     let setsUsed = 0;
     c.weapons.forEach(w => {
       if (w.where === "stash") return;
-      if (w.shield) { load += 4; lines.push([w.name || "Shield", 4]); return; }
+      if (w.shield || w.skill === "Shield") { load += 4; lines.push([w.name || "Shield", 4]); return; }
       const slots = num(w.hands) === 2 ? 1 : 0.5;
       if (w.where !== "pack" && setsUsed + slots <= freeSets) { setsUsed += slots; return; }
       const u = SIZES[w.size] || 2; load += u; lines.push([w.name || "Weapon", u]);
@@ -1599,10 +1920,26 @@ const CW = (() => {
 
   // ---------- rests ----------
   function rollDie(sides) { return 1 + Math.floor(Math.random() * sides); }
+  // Stamina stacks (Exhaustion levels): set both fields so the Tabletop sheet's two counters stay in step.
+  function setStamina(c, n) { c.vitals.exhaustion = c.vitals.staminaLost = clamp(Math.round(num(n)), 0, 10); }
+  // Uses spent on Active abilities and talents live in c.uses, keyed "p:<skill>:<level>" or "t:<talent id>".
+  function useRecharge(c, key) {
+    if (key.startsWith("t:")) { const t = (c.talents || []).find(x => "t:" + x.id === key); return t ? t.recharge || "" : ""; }
+    const [, skill, lv] = key.split(":"); const sd = typeof SKILL_DATA !== "undefined" && SKILL_DATA.skills[skill];
+    const pk = sd && sd.gs.flatMap(g => g.p).find(p => String(p.l) === lv);
+    return pk && pk.u ? pk.u.recharge || "" : "";
+  }
+  function refreshUses(c, short) {
+    const u = c.uses || {}; let n = 0;
+    Object.keys(u).forEach(k => { if (num(u[k]) && (!short || useRecharge(c, k) === "Short rest")) { delete u[k]; n++; } });
+    c.uses = u; return n;
+  }
   function shortRest(c) {
     const v = c.vitals; const lines = [];
-    if (num(v.staminaLost) > 0) { v.staminaLost = Math.max(0, num(v.staminaLost) - 1 - (sk(c, "Conditioning") >= 6 ? 1 : 0)); lines.push("Recovered Stamina"); }
-    return lines.join(" · ") || "Short rest";
+    const st = Math.max(0, num(v.exhaustion) - 1 - (sk(c, "Conditioning") >= 6 ? 1 : 0));
+    if (st !== num(v.exhaustion)) lines.push(`Stamina recovered (${num(v.exhaustion)} → ${st} lost)`); setStamina(c, st);
+    if (refreshUses(c, true)) lines.push("Short-rest abilities recharged");
+    return lines.length ? "Short rest: " + lines.join(" · ") : "Short rest";
   }
   function longRest(c) {
     const d = derived(c); const v = c.vitals; const parts = [];
@@ -1610,7 +1947,9 @@ const CW = (() => {
     const bp = Math.min(d.max.bp, d.cur.bp + d.bpRegen); parts.push(`Blood +${bp - d.cur.bp}`); v.bp = bp;
     let roll = rollDie(6); for (let i = 0; i < d.cleanseDice.d4; i++) roll += rollDie(4);
     const tox = Math.max(0, d.cur.tox - roll); parts.push(`Toxicity −${d.cur.tox - tox} (rolled ${roll})`); v.tox = tox;
-    const st = Math.max(0, num(v.staminaLost) - 2 - (sk(c, "Conditioning") >= 7 ? 2 : 0)); if (st !== num(v.staminaLost)) parts.push("Stamina recovered"); v.staminaLost = st;
+    const st = Math.max(0, num(v.exhaustion) - 2 - (sk(c, "Conditioning") >= 7 ? 2 : 0));
+    if (st !== num(v.exhaustion)) parts.push(`Stamina ${num(v.exhaustion)} → ${st} lost`); setStamina(c, st);
+    if (refreshUses(c, false)) parts.push("abilities recharged");
     return "Long rest: " + parts.join(" · ");
   }
 
@@ -1664,17 +2003,21 @@ const CW = (() => {
     if (Array.isArray(t.secondary)) t.secondary.forEach(([s, l]) => { if (s in n.secondary && Number.isFinite(l)) n.secondary[s] = l; });
     if (t.vitals) {
       const v = t.vitals;
-      ["hp", "bp", "dp", "tox", "exhaustion", "staminaLost"].forEach(k => { if (Number.isFinite(v[k])) n.vitals[k] = v[k]; });
+      ["hp", "bp", "dp", "tox"].forEach(k => { if (Number.isFinite(v[k])) n.vitals[k] = v[k]; });
+      // The Tabletop sheet still has two counters for the one track: take whichever was changed there.
+      const was = num(n.vitals.exhaustion), a = v.exhaustion, b = v.staminaLost;
+      const pick = Number.isFinite(a) && a !== was ? a : Number.isFinite(b) && b !== was ? b : was;
+      setStamina(n, pick);
       if (v.wounds) ["light", "moderate", "mortal"].forEach(k => { if (Number.isFinite(v.wounds[k])) n.vitals.wounds[k] = v.wounds[k]; });
     }
     return n;
   }
 
-  return { ATTRS, ATTR_NAME, SKILL_GROUPS, SKILLS, CASTING, WEAPON_TYPES, WEAPON_ATTR, SECONDARY, SECONDARY_BY_NAME, SIZES, ITEM_SIZES, ITEM_SIZE, PROSTHETIC_TYPES, ARMOR,
+  return { ATTRS, ATTR_NAME, SKILL_GROUPS, SKILLS, CASTING, WEAPON_TYPES, WEAPON_ATTR, RANGED_WEAPONS, weaponKind, SECONDARY, SECONDARY_BY_NAME, SIZES, ITEM_SIZES, ITEM_SIZE, PROSTHETIC_TYPES, ARMOR,
            ENCUMBRANCE, WOUNDS, EXHAUSTION, LEVELS, clamp, num, tri, karmaBetween, levelDelta, blankCharacter, normalize,
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
-           encumbrance, itemUnits, weaponLine, shortRest, longRest, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop };
+           encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop };
 })();
 if (typeof module !== "undefined") module.exports = CW;
 /* Skill descriptions and perks from the Clockwork Rulebook 2020.1.
@@ -1747,6 +2090,124 @@ const SKILL_TABLES = {
       ["80 or above", "Failure to transfer attribute"], ["below 80", "No positive attributes"], ["below 60", "1 positive attribute"], ["below 50", "2 positive attributes"],
       ["below 30", "3 positive attributes"], ["below 20", "4 positive attributes"], ["below 10", "5 positive attributes"], ["below 0", "6 positive attributes"],
       ["below −10", "7 positive attributes"], ["below −20", "8 positive attributes"], ["below −30", "9 positive attributes"]] }],
+};
+/* The rules behind each section heading, shown in the side panel when a heading is clicked.
+   Condensed from the Clockwork Rulebook 2020.1 plus the table's house rules. Items in a topic's body:
+   "text" = a paragraph, { h } = a sub-heading, { ul: [...] } = a list, { t: { cols, rows } } = a table,
+   { note } = a muted aside (used for the app's own readings of unclear rules). */
+const RULES_INFO = {
+  attributes: { kicker: "Character basics", title: "Attributes", body: [
+    "Seven attributes describe what a character is made of. They run from 0 to 20. Ten is the measure of common folk; below ten an attribute is broken.",
+    { t: { cols: ["Attribute", "Covers"], rows: [["Strength", "Brute power: carrying, pushing, lifting, most melee weapons"], ["Dexterity", "Nimbleness and speed: stealth, thievery, accuracy, most ranged weapons"],
+      ["Endurance", "Toughness: how much punishment you can take"], ["Mind", "Raw brain power: learning, invention, critical thinking"], ["Willpower", "Mental resolve: resisting the mind and some schools of magic"],
+      ["Wisdom", "Knowledge and patience: fitting into places, learned crafts"], ["Presence", "Force of personality: leading, persuading, holding attention"]] } },
+    { h: "Rolling them" }, { ul: ["Roll 3d8 for each attribute, set the lowest die aside and add the other two.", "Nothing rolls lower than 6."] },
+    { h: "Raising them (house rule)" }, { ul: ["Each level costs its number above ten: 16 → 17 costs 7 Karma.",
+      "An attribute that started broken counts from its starting value instead, and tops out ten above it (a starting 6 stops at 16).",
+      "Skills can hold one point for each point their attribute has above a true 10."] } ] },
+
+  skills: { kicker: "Character basics", title: "Skills", body: [
+    "Clockwork is classless: what a character can do comes from the skills they learn, and there's no limit to how many.",
+    { ul: ["Skills run from 0 to 10. Level n costs n Karma, so 0 → 10 costs 55 in all.", "A skill can hold one point for each point its attribute has above 10 (house rule).",
+      "Most skills give a 3% modifier per point. Chance skills (Maim, Bash, Cleave, Parry, Pierce, Precision, Evasion, Shield Mastery) give 1% per point."] },
+    { h: "Perks" }, "From level 3, each level unlocks a perk. Click a skill's name to see them all; unlocked ones also appear in Skills & Talents.",
+    { ul: ["Active ability: a limited-use move, declared before the attack.", "Empowerment: a buff you switch on for a set time, usually paid for afterwards (often in Stamina).", "Passive: always on."] },
+    { h: "Durability damage" }, "When an Active ability says durability damage is inflicted, the weapon loses durability by type (one-handed / two-handed):",
+    { t: { cols: ["Weapon type", "Durability damage"], rows: [["Slashing", "20 / 30"], ["Piercing", "15 / 30"], ["Bludgeoning", "12 / 20"], ["Ranged", "30 / 40"], ["Limb (a part of you)", "3 HP damage"]] } } ] },
+
+  weaponry: { kicker: "Combat", title: "Weapon skills", body: [
+    "Every kind of weapon is its own skill, governed by Strength or Dexterity. One weapon can count under different skills depending on how it's used: a warhammer's spike is Piercing, a thrown longsword Improvised.",
+    { t: { cols: ["Level", "Proficiency", "What it gives"], rows: [["0–2", "Inexperienced", "No accuracy bonus"], ["3", "Competent", "Weapon skill + Precision added to accuracy"], ["5", "Proficient", "Durability damage to the weapon is reduced"], ["7", "Adept", "The weapon's Adept property unlocks"], ["10", "Master", "The weapon's Mastery property unlocks"]] } },
+    { h: "Weapon types" }, { t: { cols: ["Skill", "Examples"], rows: [["Slashing", "Sword, axe, katana"], ["Piercing", "Spear, dagger, sai"], ["Bludgeoning", "Warhammer, maul, mace"], ["Unarmed", "Fist, feet, knuckleduster"],
+      ["Motorized", "Chainsword, powerfist"], ["Improvised", "Broken bottle, table, stool"], ["Finesse", "Rapier, dagger, whip"], ["Rifles", "Arquebus, flintlock"], ["Pistols", "Pepper-box, Peacemaker"], ["Shotguns", "Coach-gun, blunderbuss"],
+      ["Sniper Rifles", "Long guns"], ["Explosives", "Bombs and potions"], ["Stringed", "Bow, crossbow"], ["Throwing", "Knives, axes, needles"], ["Heavy", "Machinegun, mortar, minigun"]] } },
+    "Costs are the same as skills: level n costs n Karma." ] },
+
+  secondary: { kicker: "Character basics", title: "Secondary skills", body: [
+    { ul: ["Three levels, each worth 7%.", "With the attribute below 10 you can learn level 1; below 14, level 2; at 14 or more, all three.",
+      "Untrained, with the attribute below 10, you roll with disadvantage. At 10 or above you roll a plain d100."] },
+    { h: "Granted by a primary skill" }, { ul: ["Some primary skills grant a secondary one. With only the primary, use that skill's modifier.", "With both, the bonus is 7% per level plus 2 × the primary's points."] },
+    "Armor penalties and prosthetics also apply to the matching secondary skills, such as Stealth and Entrada." ] },
+
+  hp: { kicker: "Vitals", title: "Hit points", body: [
+    { ul: ["2 HP per point of Endurance (counted 0–20), plus 4 per point of Durability.", "A long rest restores 2 HP, plus Metabolism.", "Exhaustion 7 halves the maximum."] },
+    { h: "Dropping to 0" }, "At 0 HP you fall unconscious and are On Death's Door. If the damage left over after reaching 0 equals or beats your HP maximum, you die outright.",
+    { h: "Death saves" }, { ul: ["At the start of each of your turns at 0 HP, roll d100. 50 or lower succeeds.", "A failure adds 2 Stamina stacks lost (Exhaustion), which stay even after healing.",
+      "Five successes and you're stable; five failures and you die.", "Above 95 counts as two failures. Below 5 stabilises you at once.", "Taking damage at 0 HP is a failure, two from a critical."] },
+    { h: "Stabilising" }, "A successful First Aid check stabilises someone On Death's Door. A stable character gains 1 HP." ] },
+
+  blood: { kicker: "Vitals", title: "Blood points", body: [
+    "Blood points aren't the body's total blood: they're how much can be lost before death.",
+    { ul: ["200 Blood points, plus 20 per point of Bleed Resistance (the app caps this at 400).", "A long rest restores 10, plus 3 per point of Bleed Resistance.",
+      "At 100 Blood you lose a Stamina stack, and another for every 20 lost after that (80, 60, 40, 20)."] },
+    "Wounds drain Blood every turn in combat, and every minute outside it. See Wounds." ] },
+
+  dp: { kicker: "Vitals", title: "Deprivation", body: [
+    { ul: ["4 points per point of Endurance, plus 12 per point of the Deprivation skill.", "A Ration is a meal's worth of food. You can eat 2 per meal.",
+      "You lose a Stamina stack at 25, 20, 15, 10 and 5 points.", "At 0 you starve to death."] },
+    "Each prosthetic needs one extra ration a day." ] },
+
+  tox: { kicker: "Vitals", title: "Toxicity", body: [
+    "Potions and other volatile brews have side effects, counted as Toxicity.",
+    { ul: ["Threshold: your Endurance, plus 2 per point of Belly.", "Cleansing dice: 1d6 (the app adds 1d4 for every 2 points of Belly), rolled after each long rest."] },
+    { h: "Over the threshold" }, { ul: ["You start puking uncontrollably and lose every potion effect.", "Each turn spent puking cleanses half your cleansing dice and costs a Stamina stack.",
+      "You can't generate AP until you're back down to the threshold."] } ] },
+
+  stamina: { kicker: "Vitals", title: "Stamina & Exhaustion", body: [
+    "Stamina is physical effort. Each stack lost is a level of Exhaustion, and the effects build up: at 3 you suffer levels 1, 2 and 3.",
+    "Stacks are lost to abilities and Empowerments, death saves, blood loss, hunger, puking, extreme heat or cold, long climbs and swims, and heavy loads.",
+    { t: { cols: ["Lost", "Effect"], rows: [["1", "The GM can botch your rolls"], ["2", "No reactions"], ["3", "Disadvantage on secondary skill checks and saving throws"], ["4", "Critical fumble chance doubles"],
+      ["5", "Disadvantage on ability checks and attack rolls"], ["6", "You can't critically succeed"], ["7", "Hit point maximum halved"], ["8", "No Active abilities or Empowerments"], ["9", "Vital loss rolled on dice takes the maximum"], ["10", "Death"]] } },
+    { h: "Botching" }, "Whenever you roll a check, the GM can roll too and make you use their roll: once a round in combat, once every 5 checks outside it.",
+    { h: "Getting it back" }, { ul: ["Short rest: 1 stack (2 with Conditioning 6).", "Long rest: 2 stacks (4 with Conditioning 7).", "Stacks from failed death saves stay even after you're healed above 0 HP."] },
+    { h: "Conditioning" }, { ul: ["5: the first 2 stacks have no effect; effects start at the 3rd.", "9: Stamina loss can't kill you; each stack past 10 costs 5 HP instead."] },
+    { note: "The book's own Stamina table is still to be written. This app reads Stamina loss and Exhaustion as one track, so the Exhaustion table gives each stack's effect." } ] },
+
+  wounds: { kicker: "Vitals", title: "Wounds", body: [
+    "A hit hard enough, after armor, opens a wound. Wounds bleed every turn in combat and every minute outside it. You can carry several of the same kind.",
+    { t: { cols: ["Wound", "Damage", "Bleeds", "Fix", "Takes", "Needs"], rows: [["Light", "6+", "8", "Dressing", "5 AP", "Bandages"], ["Moderate", "8+", "14", "Stitches", "1 minute", "Medical kit"], ["Mortal", "12+", "20", "Surgery", "1 short rest", "Surgery kit"]] } },
+    { ul: ["Treating a wound takes a First Aid or Medicine check and the right kit.", "A wound doesn't bleed while it's being treated. If the treatment fails, each remaining wound bleeds once.", "Durability 7 adds 2 to every damage threshold."] } ] },
+
+  rest: { kicker: "Vitals", title: "Resting", body: [
+    { h: "Short rest · about an hour" }, { ul: ["Recover 1 Stamina stack.", "Abilities that recharge on a short rest come back.", "Many skill effects trigger on a short rest."] },
+    { h: "Long rest · about eight hours" }, { ul: ["Recover HP and Blood.", "Roll your cleansing dice to clear Toxicity.", "Recover 2 Stamina stacks.", "Every Active ability recharges."] },
+    "Sleeping outdoors without a camping kit, a long rest recovers everything except Stamina, and you lose a stack instead." ] },
+
+  load: { kicker: "Gear", title: "Load", body: [
+    "Everything carried is counted in small-item slots. Medium items take 2, large 4, huge 8.",
+    { ul: ["100 coins, 50 rounds of ammo, 1 ration, 10 stackables (bandages, paper) or 10 m of rope each take one slot. Half stacks round up.",
+      "Worn things (a cloak, a backpack) don't count. Armor doesn't count, except heavy armor (large) and plate (huge).",
+      "Two weapon sets ride free: two one-handed weapons or one two-handed. Strong Back 3 adds a third. Shields always count as large."] },
+    { h: "How much is too much" }, "The tier unit is Strength + 2 × Strong Back. Carry capacity is 3 units.",
+    { t: { cols: ["Load up to", "Tier", "Travel", "Defending", "Move"], rows: [["3 units", "Unencumbered", "10 km/h · 40 km a day", "—", "—"], ["4 units", "Lightly", "5 km/h · 20 km", "−10", "−2 m"], ["5 units", "Heavily", "2 km/h · 10 km", "−20", "−4 m"], ["6 units", "Severely", "1 km/h · 5 km", "−40", "−8 m"], ["More", "Over encumbered", "Can't travel", "Can't defend", "—"]] } },
+    { note: "The app reads Strong Back 5, 7 and 9 as removing the Lightly, Heavily and Severely penalties." } ] },
+
+  armor: { kicker: "Gear", title: "Armor", body: [
+    { ul: ["Armor Value (AV): taken off every hit.", "Soak pool: each hit drains soak, up to the AV. Damage past the AV goes to HP.", "At 0 soak the armor breaks, and only a skilled craftsman can mend it."] },
+    { t: { cols: ["Type", "AV", "Needs", "Penalties"], rows: [["Light", "1–4", "—", "Casting −2×AV"], ["Medium", "5–7", "STR 10", "Stealth −AV, casting −2×AV"], ["Heavy", "8–11", "STR 13, Armor Mastery 3", "Dex skills −AV, Stealth disadv., casting and Entrada −2×AV"], ["Plate", "12–15", "STR 15, Armor Mastery 5", "Dex skills and STR/DEX saves −AV, Stealth disadv., casting −2×AV, travel checks −2×AV"]] } },
+    { ul: ["Casting skills are Sangromancy, Warding, Occult: Daemonology, Alchemy and Dreamwalking. Armor Mastery eases their penalty at 5, 7 and 10, and from 4 adds 3 soak per point.",
+      "Repairs cost 50 g × AV (light), 70 (medium), 100 (heavy) or 150 (plate) in materials, and an hour per Armor Maintenance attempt.", "Powered armor counts as a machine, not armor."] } ] },
+
+  prosthetics: { kicker: "Gear", title: "Prosthetics", body: [
+    "Every prosthetic costs 7% Entrada and 4% Stealth, and its wearer needs one more ration a day.",
+    { t: { cols: ["Type", "What it is", "Needs"], rows: [["Basic", "Replaces a lost limb with the same function; anything extra must be worked by hand", "Prosthetic Operation"], ["Expansive", "Adds functions triggered by thought; each use needs a Prosthetic Operation check", "Expansive Prosthetic Operation"], ["Transformative", "Changes shape (spider legs, say), and must keep a human-like resting state; a check on each use", "Transformative Prosthetic Operation"]] } } ] },
+
+  weapons: { kicker: "Gear", title: "Weapons", body: [
+    "Every weapon has a flat Damage value, a critical chance, a durability pool and die, and its own Properties and Flaws.",
+    { h: "Attacking" }, { ul: ["Roll d100 (the attack roll) and the durability die, and subtract your accuracy.", "A hit deals the weapon's Damage. Under the crit chance (plus your own crit bonus) it's a Critical.",
+      "Hit or miss, the weapon loses the durability rolled; a ranged weapon also spends the shot from its clip.", "At 0 durability the weapon gains a Flaw, which a weaponsmith can remove for a fee."] },
+    { h: "Melee and ranged" }, { ul: ["Melee weapons reach 2 m.", "Ranged weapons have a clip that costs AP to reload, and may Attack more than once a turn.", "Closer than the optimal range, or past it but inside the maximum, the shot is at disadvantage. Past the maximum it misses."] },
+    { h: "Properties" }, { t: { cols: ["Property", "Effect"], rows: [["Defensive (R)", "+R% to parry"], ["Durable (R)", "Loses R less durability"], ["Fast", "May attack first in the round"], ["Finesse", "Can use the Finesse skill"], ["Gore", "Crits on doubles"], ["Impact", "Adds the d10 result as damage"], ["Impale", "Crits on multiples of 10"], ["Penetrating (R)", "Ignores R armor"], ["Reliable (R)", "Deals R damage on a miss"],
+      ["Bladebreaker (R) · melee", "Parrying it costs the parrier R% durability"], ["Entangle · melee", "Target is Entangled; Athletics resists"], ["Hack · melee", "Extra damage to armor"], ["Light · melee", "With 1 AP left and no attack taken, deals its damage at round's end"], ["Pummel (R) · melee", "+R% to bash"], ["Reach · melee", "+2 m range"], ["Shield (R) · melee", "+R AV while defending"],
+      ["Accurate (R) · ranged", "+R% to attack"], ["Blast (R) · ranged", "Everyone within R m takes half damage and its conditions"], ["Overbearing (R) · ranged", "+R% against a defending target"], ["Pistol · ranged", "No disadvantage in close combat"], ["Precise (R) · ranged", "+R m to both ranges"]] } },
+    { h: "Flaws" }, { t: { cols: ["Flaw", "Effect"], rows: [["Brittle (R)", "Loses R more durability"], ["Impotent", "Can never crit"], ["Slow", "Always attacks last; misses if the target moved"], ["Unwieldy", "Every attack at disadvantage"], ["Poorly Weighed · melee", "Misses on doubles"], ["Undamaging · melee", "Armor counts double against it"], ["Inaccurate (R) · ranged", "−R% to attack"], ["Experimental · ranged", "Malfunctions on a high fail; 3 AP to fix"]] } } ] },
+
+  talents: { kicker: "Skills & Talents", title: "Perks and talents", body: [
+    "This tab gathers every perk your skills have unlocked, and any talents of your own.",
+    { ul: ["Passive: always on.", "Active: limited uses, declared before the attack. Tick a box each time you use one.", "Empowerment: switched on for a number of turns, usually paid for afterwards."] },
+    { h: "Reading a perk card" }, { icons: true },
+    "Rests recharge spent uses for you: a short rest brings back abilities marked S, a long rest brings back everything.",
+    { h: "Talents" }, "Talents are for what the rules don't cover: a runic tattoo, a blessing, a family heirloom's trick. Write what it does and how often; once it's done, the card works like a perk." ] },
 };
 </script>
 <script>
@@ -1854,6 +2315,54 @@ function Toaster() {
   return msg ? html`<div class="toast" role="status">${msg}</div>` : null;
 }
 
+/* ================= rules side panel ================= */
+// Section headings with a rules write-up (RULES_INFO) open it in the side panel, the same way skill names open their levels.
+let openRuleFn = () => {};
+const BOOK = html`<svg class="hbook" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3.2C4 2.4 6 2.5 8 3.6c2-1.1 4-1.2 6-.4v9.6c-2-.8-4-.7-6 .4-2-1.1-4-1.2-6-.4z M8 3.6v9.6" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+// A section heading. With a topic, its title is a button that opens the rules; tail replaces the plain ornament (e.g. a diamond toggle).
+function Head({ title, topic, tail }) {
+  return html`<h2 class="h"><span>${topic ? html`<button type="button" class="hlink" onClick=${() => openRuleFn(topic)} aria-label=${`${title}: show the rules`}
+    onMouseEnter=${e => tip.show(e.currentTarget, { title: "Rules", lines: [`Click for how ${title.toLowerCase()} work${/s$/.test(title) ? "" : "s"}`] })} onMouseLeave=${() => tip.hide()}>${title}${BOOK}</button>` : title}</span>
+    ${tail || html`<i class="orn" aria-hidden="true"></i>`}</h2>`;
+}
+// The rulebook's perk icons: recharge (a tent: L long rest, S short rest), AP (a dagger), uses (tally marks), Stamina (sleep), duration (an hourglass).
+const UICON = {
+  recharge: html`<path d="M8 2.5L2 13.5h12z M8 2.5v11 M6 13.5L8 9l2 4.5" />`,
+  ap: html`<path d="M13.5 2.5L6 10l-1.5-.2.2 1.5L3 13l.8.8L5.5 12l1.5.2-.2-1.5 7.5-7.5z" />`,
+  uses: html`<path d="M3.5 3v10 M6.5 3v10 M9.5 3v10 M12.5 3v10 M2 11.5L14 5" />`,
+  stamina: html`<path d="M3 4h4L3 9h4 M9 8h3l-3 4h3" />`,
+  turns: html`<path d="M4 2.5h8 M4 13.5h8 M5 2.5c0 3.5 6 3.5 6 5.5s-6 2-6 5.5 M11 2.5c0 3.5-6 3.5-6 5.5s6 2 6 5.5" />`,
+};
+const UNAME = { recharge: "Recharges on", ap: "AP cost", uses: "Uses", stamina: "Stamina cost", turns: "Lasts (turns)" };
+const Uicon = ({ k }) => html`<svg class="uicon" viewBox="0 0 16 16" aria-hidden="true">${UICON[k]}</svg>`;
+// The usage line on a perk, as in the book: icon then value. Recharge shows L or S.
+function UsageLine({ u }) {
+  if (!u) return null;
+  const val = { recharge: u.recharge ? (u.recharge[0] === "S" ? "S" : "L") : "", ap: u.ap ? u.ap.replace("*", "") + (u.ap.includes("*") ? " ⟲" : "") : "", uses: u.uses || "", stamina: u.stamina === "*" ? "var." : u.stamina || "", turns: u.turns || "" };
+  const keys = Object.keys(UICON).filter(k => val[k] !== "");
+  if (!keys.length) return null;
+  return html`<span class="uline">${keys.map(k => html`<span title=${`${UNAME[k]}: ${k === "recharge" ? u.recharge : k === "ap" && u.ap.includes("*") ? val.ap.replace(" ⟲", "") + " (can be a reaction)" : val[k]}`}><${Uicon} k=${k} />${val[k]}</span>`)}</span>`;
+}
+function RuleBlock({ b }) {
+  if (typeof b === "string") return html`<p>${b}</p>`;
+  if (b.h) return html`<h3>${b.h}</h3>`;
+  if (b.ul) return html`<ul class="sprules">${b.ul.map(x => html`<li>${x}</li>`)}</ul>`;
+  if (b.note) return html`<p class="muted rnote">${b.note}</p>`;
+  if (b.icons) return html`<div class="ulegend">${Object.keys(UICON).map(k => html`<span><${Uicon} k=${k} /><b>${UNAME[k]}</b>${k === "recharge" ? " · L long rest, S short rest" : k === "ap" ? " · ⟲ can be a reaction" : ""}</span>`)}</div>`;
+  if (b.t) return html`<div class="tbl-wrap"><table><thead><tr>${b.t.cols.map(x => html`<th>${x}</th>`)}</tr></thead>
+    <tbody>${b.t.rows.map(r => html`<tr>${r.map((x, i) => html`<td class=${i === 0 ? "k" : ""}>${x}</td>`)}</tr>`)}</tbody></table></div>`;
+  return null;
+}
+function RulePanel({ topic, onClose }) {
+  const ref = useRef(); const r = RULES_INFO[topic];
+  useEffect(() => { const k = e => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", k); ref.current && ref.current.focus(); return () => window.removeEventListener("keydown", k); }, [topic]);
+  if (!r) return null;
+  return html`<aside class="spanel rpanel-rules" role="dialog" aria-label=${`${r.title} rules`} tabindex="-1" ref=${ref}>
+    <header class="sphead"><div><span class="lbl">Rules · ${r.kicker}</span><h2>${r.title}</h2></div>
+      <button class="iconbtn" aria-label="Close" onClick=${onClose}>×</button></header>
+    <div class="spbody rulebody">${r.body.map(b => html`<${RuleBlock} b=${b} />`)}</div></aside>`;
+}
+
 /* ================= hover card ================= */
 // A small floating card that explains what clicking a pip or cell would do, and what it costs.
 let tipSet = () => {};
@@ -1928,6 +2437,14 @@ function Pips({ value, max = 10, cap = max, onSet, label, big, tipFor }) {
   }
   return html`<span class=${"pips" + (big ? " big" : "")} role="group" aria-label=${label}>${out}</span>`;
 }
+// A text box that grows with what's typed, instead of a single line that scrolls sideways.
+function AutoText({ id, value, onInput, placeholder, label, cls = "" }) {
+  const ref = useRef();
+  const fit = () => { const el = ref.current; if (!el) return; el.style.height = "auto"; el.style.height = el.scrollHeight + 2 + "px"; };
+  useEffect(fit, [value]);
+  useEffect(() => { window.addEventListener("resize", fit); return () => window.removeEventListener("resize", fit); }, []);
+  return html`<textarea ref=${ref} id=${id} rows="1" class=${"autotext " + cls} aria-label=${label} placeholder=${placeholder} value=${value ?? ""} onInput=${e => { onInput(e.target.value); fit(); }}></textarea>`;
+}
 function Field({ id, label, value, onInput, type = "text", list, placeholder }) {
   return html`<div class="field"><label for=${id}>${label}</label>
     <input id=${id} type=${type} value=${value ?? ""} list=${list} placeholder=${placeholder} onInput=${e => onInput(e.target.value)} /></div>`;
@@ -1971,7 +2488,11 @@ const SKINS = [
   ["light", "Light", GF + "Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600"],
   ["retro", "Retro terminal", GF + "VT323"],
   ["glass", "Glass", GF + "Inter:wght@400;500;600;700"],
-  ["fantasy", "Fantasy", GF + "IM+Fell+English+SC&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400"],
+  ["fantasy", "Fantasy (parchment)", GF + "IM+Fell+English+SC&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400"],
+  ["fantasy-dark", "Fantasy (candlelit)", GF + "IM+Fell+English+SC&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400"],
+  ["armour", "Power armour", GF + "Orbitron:wght@600;700;800&family=Chakra+Petch:wght@500;600;700&family=Exo+2:wght@400;500;600&family=Nixie+One"],
+  // Extended themes: heavier artwork and their own furniture.
+  ["cairn", "Cairn-style gothic", GF + "UnifrakturCook:wght@700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Grenze:wght@500;600;700", "extended"],
 ];
 function applySkin(key) {
   const skin = SKINS.find(x => x[0] === key) || SKINS[0], root = document.documentElement;
@@ -1985,7 +2506,10 @@ function SkinPicker() {
   const [skin, setSkin] = useState(() => lsGet("cw-skin", "ledger"));
   useEffect(() => { applySkin(skin); lsSet("cw-skin", skin); }, [skin]);
   return html`<label class="skinpick"><span class="lbl">Theme</span>
-    <select value=${skin} onChange=${e => setSkin(e.target.value)}>${SKINS.map(([k, n]) => html`<option value=${k}>${n}</option>`)}</select></label>`;
+    <select value=${skin} onChange=${e => setSkin(e.target.value)}>
+      <optgroup label="Themes">${SKINS.filter(x => !x[3]).map(([k, n]) => html`<option value=${k}>${n}</option>`)}</optgroup>
+      <optgroup label="Extended">${SKINS.filter(x => x[3] === "extended").map(([k, n]) => html`<option value=${k}>${n}</option>`)}</optgroup>
+    </select></label>`;
 }
 
 /* ================= app ================= */
@@ -2076,9 +2600,8 @@ function App() {
           <p>${gm ? "Each player's sheet lives here: attributes, skills, Karma, vitals and gear, with the rulebook math done for you. Send any character onto your Tabletop Simulator sheet with one code."
             : "You don't have a character here yet. Roll one up below, or ask your GM to hand you an existing one."}</p>
           <div class="row"><button class="btn primary" onClick=${startNew}>Create a character</button></div>
-          <p class="muted">Walk through creation step by step, or let the dice decide everything at once.</p></div>`}`}
-    ${making === "choose" && html`<${NewChoice} gm=${gm} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")}
-      onAuto=${() => { setMaking(null); create(true); }} onBlank=${() => { setMaking(null); create(false); }} />`}
+          <p class="muted">Walk through creation step by step, or start from a blank sheet.</p></div>`}`}
+    ${making === "choose" && html`<${NewChoice} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")} onBlank=${() => { setMaking(null); create(false); }} />`}
     ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
     <${Toaster} /><${HoverCard} />
   </div>`;
@@ -2144,19 +2667,25 @@ function Character({ c, update, tab, setTab, onDelete }) {
   // Free edit is always there for a GM; a player gets it only when the GM switches it on for this sheet.
   const canFree = isGM() || !!c.freeEdit;
   const mode = canFree ? chosenMode : "karma";
-  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["gear", "Gear"], ["table", "Tabletop"]];
+  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ["table", "Tabletop"]];
   const [panel, setPanel] = useState(null);
   const [invested, setInvested] = useState(() => { const v = lsGet("cw-invested2", null); return v && typeof v === "object" ? v : { skills: false, weapons: false, sec: false }; });
   useEffect(() => lsSet("cw-invested2", invested), [invested]);
   const toggleInv = k => setInvested(x => Object.assign({}, x, { [k]: !x[k] }));
-  useEffect(() => setPanel(null), [c.id]);
+  useEffect(() => setPanel(null), [c.id, tab]);
+  // One side panel at a time: a skill's levels, or the rules behind a section heading. Clicking the same thing again closes it.
+  const openPanel = (kind, name) => setPanel(p => (p && p.kind === kind && p.name === name ? null : { kind, name }));
+  openRuleFn = name => openPanel("rule", name);
+  const skillTabs = tab === "sheet" || tab === "talents";
   return html`
     <${Header} c=${c} d=${d} update=${update} mode=${mode} setMode=${setMode} canFree=${canFree} />
     <div class="tabs" role="tablist">${tabs.map(([k, n]) => html`<button role="tab" class=${"tab-" + k} aria-selected=${tab === k} onClick=${() => setTab(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${TAB_ICONS[k]}</svg>${n}</button>`)}</div>
-    ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${(kind, name) => setPanel(panel && panel.name === name ? null : { kind, name })} />`}
-    ${panel && html`<${SkillPanel} c=${c} kind=${panel.kind} name=${panel.name} mode=${mode} update=${update} onClose=${() => setPanel(null)} />`}
+    ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
+    ${panel && panel.kind === "rule" && html`<${RulePanel} topic=${panel.name} onClose=${() => setPanel(null)} />`}
+    ${panel && panel.kind !== "rule" && skillTabs && html`<${SkillPanel} c=${c} kind=${panel.kind} name=${panel.name} mode=${mode} update=${update} onClose=${() => setPanel(null)} />`}
     ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
+    ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
     ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
     ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}`;
 }
@@ -2165,9 +2694,18 @@ function Character({ c, update, tab, setTab, onDelete }) {
 const TAB_ICONS = {
   sheet: html`<path d="M5 2.5h7l3.5 3.5v11.5H5z M12 2.5V6h3.5 M7.5 9.5h5 M7.5 12.5h5 M7.5 15h3" />`,
   vitals: html`<path d="M10 16.5s-6.5-4-6.5-8.5A3.5 3.5 0 0 1 10 6a3.5 3.5 0 0 1 6.5 2c0 4.5-6.5 8.5-6.5 8.5z" />`,
+  talents: html`<path d="M10 2.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.8l5-.7z" />`,
   gear: html`<path d="M4 7.5h12v9.5H4z M7 7.5V5a3 3 0 0 1 6 0v2.5 M4 11h12" />`,
   table: html`<path d="M10 2.5l6.5 3.75v7.5L10 17.5l-6.5-3.75v-7.5z M10 10l6.5-3.75 M10 10L3.5 6.25 M10 10v7.5" />`,
 };
+// A number that can be typed over in Free edit. It saves when you leave the box or press Enter, not on every keystroke.
+function StatEdit({ id, value, label, onCommit }) {
+  const [v, setV] = useState(String(value));
+  useEffect(() => setV(String(value)), [value]);
+  const commit = () => { const n = Math.max(0, Math.floor(+v || 0)); if (n !== value) onCommit(n); else setV(String(value)); };
+  return html`<input id=${id} class="statin" type="number" min="0" inputmode="numeric" aria-label=${label} value=${v}
+    onInput=${e => setV(e.target.value)} onBlur=${commit} onKeyDown=${e => { if (e.key === "Enter") e.target.blur(); }} />`;
+}
 function Header({ c, d, update, mode, setMode, canFree }) {
   const fileRef = useRef(); const [busy, setBusy] = useState(false); const [award, setAward] = useState("");
   const upload = async e => {
@@ -2205,7 +2743,9 @@ function Header({ c, d, update, mode, setMode, canFree }) {
     </div>
     <div class="karmawrap"><div class="panel karma">
       <div class="h" style="margin:0">Karma</div>
-      <div class="big"><div class="stat"><b>${num(c.karma)}</b><span>Unspent</span></div><div class="stat"><b>${num(c.pool)}</b><span>Pool · earned</span></div></div>
+      <div class="big">${[["karma", "Unspent"], ["pool", "Pool · earned"]].map(([k, label]) => html`<div class=${"stat" + (mode === "build" ? " editing" : "")}>
+        ${mode === "build" ? html`<${StatEdit} id=${id(k)} value=${num(c[k])} label=${label} onCommit=${v => update(x => { addLog(x, `Free edit: ${label.split(" ")[0]} ${num(x[k])} → ${v}`); x[k] = v; })} />` : html`<b>${num(c[k])}</b>`}
+        <span>${label}</span></div>`)}</div>
       <div class="row"><input class="inp" style="width:70px" type="number" min="1" aria-label="Karma to award" placeholder="+0" value=${award} onInput=${e => setAward(e.target.value)} />
         <button class="btn small" disabled=${!(+award > 0)} onClick=${() => { const n = Math.floor(+award); update(x => { x.karma = num(x.karma) + n; x.pool = num(x.pool) + n; addLog(x, `Awarded ${n} Karma`); }); setAward(""); }}>Award</button>
         <span class="muted">Spent ${d.karma.total}</span></div>
@@ -2214,7 +2754,7 @@ function Header({ c, d, update, mode, setMode, canFree }) {
       ${canFree && html`<div class="seg" role="group" aria-label="Editing mode">
         <button aria-pressed=${mode === "karma"} onClick=${() => setMode("karma")}>Spend Karma</button>
         <button aria-pressed=${mode === "build"} onClick=${() => setMode("build")}>Free edit</button></div>`}
-      <div class="muted">${mode === "karma" ? html`<${Mouse} side="L" /> Left-click raises and spends Karma. <${Mouse} side="R" /> Right-click lowers and refunds it.` : "Changes cost no Karma. The pool grows or shrinks to match, so it always equals unspent + spent."}</div>
+      <div class="muted">${mode === "karma" ? html`<${Mouse} side="L" /> Left-click raises and spends Karma. <${Mouse} side="R" /> Right-click lowers and refunds it.` : "Changes cost no Karma. The pool grows or shrinks to match, so it always equals unspent + spent. You can also type over Unspent and the pool."}</div>
       ${Store.table && isGM() && html`<label class="row freeallow"><input type="checkbox" checked=${!!c.freeEdit} onChange=${e => update(x => { x.freeEdit = e.target.checked; addLog(x, e.target.checked ? "GM allowed Free edit" : "GM turned off Free edit"); })} />Player may use Free edit</label>`}
     </div></div>
   </section>`;
@@ -2334,7 +2874,7 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill }) {
   // How many points an attribute allows in its skills, shown beside each group's heading.
   const allowance = at => { const av = R.attr(c, at); return html`<small>${av < 10 ? "broken · no points" : `up to ${R.pointsAbove10(av)}`}</small>`; };
   return html`<div class="tabpane">
-    <section class="frame"><${Sigils} seed="attributes" n=${2} lead="attr" side="r" /><h2 class="h"><span>Attributes</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Ten is the measure of common folk. Fall below it and the attribute is broken.</p>
+    <section class="frame"><${Sigils} seed="attributes" n=${2} lead="attr" side="r" /><${Head} title="Attributes" topic="attributes" /><p class="sub">Ten is the measure of common folk. Fall below it and the attribute is broken.</p>
       <div class="legend">
         <span class="item"><i class="cell miss"></i><b>Broken</b><small>Points below 10 the character is missing</small></span>
         <span class="item"><i class="cell up"></i><b>Natural</b><small>Points above 10 from character creation</small></span>
@@ -2345,44 +2885,34 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill }) {
       <div class="attrs">${R.ATTRS.map(a => html`<${AttrRow} key=${a.k} c=${c} a=${a} mode=${mode} set=${set("attr", a.k)} />`)}</div>
     </section>
 
-    <section class="frame"><${Sigils} seed="skills" n=${1} lead="skill" side="l" /><h2 class="h"><span>Skills</span>${diamond("skills", "skills")}</h2><p class="sub">Modifier shown after armor penalties. Click a skill's name to see what each level grants. ${p.armor ? `Wearing ${p.armor.name || "armor"}: casting −${p.casting}%${p.dexSkills ? `, Dexterity skills −${p.dexSkills}%` : ""}.` : ""}</p>
+    <section class="frame"><${Sigils} seed="skills" n=${1} lead="skill" side="l" /><${Head} title="Skills" topic="skills" tail=${diamond("skills", "skills")} /><p class="sub">Modifier shown after armor penalties. Click a skill's name to see what each level grants. ${p.armor ? `Wearing ${p.armor.name || "armor"}: casting −${p.casting}%${p.dexSkills ? `, Dexterity skills −${p.dexSkills}%` : ""}.` : ""}</p>
       ${groups.length ? html`<div class="skillcols">${groups.map(({ g, rows }) => html`<div class="sgroup"><h3>${R.ATTR_NAME[g.attr]}${allowance(g.attr)}</h3>
           ${rows.map(([n]) => { const lv = num(c.skills[n]); const cap = R.skillCap(c, n); const mod = R.skillModifier(c, n, p);
             return html`<div class=${"srow" + (lv ? "" : " dim")}>${nameBtn("skill", n, html`${lv > cap ? html` <span class="flag bad">over cap</span>` : ""}${R.CASTING.includes(n) && lv && p.casting ? html` <span class="flag warn">armor</span>` : ""}`)}
               <${Pips} value=${lv} cap=${cap} label=${n} onSet=${set("skill", n)} tipFor=${tipFn("skill", n)} /><span class="m">${lv ? pct(mod) : "—"}</span></div>`; })}</div>`)}</div>` : none("skills")}
     </section>
 
-    <section class="frame"><${Sigils} seed="weaponry" n=${1} lead="weap" side="r" /><h2 class="h"><span>Weaponry</span>${diamond("weapons", "weapon skills")}</h2><p class="sub">Proficiency at 3, 5, 7 and 10. Accuracy needs Competent (3) and adds Precision.</p>
+    <section class="frame"><${Sigils} seed="weaponry" n=${1} lead="weap" side="r" /><${Head} title="Weaponry" topic="weaponry" tail=${diamond("weapons", "weapon skills")} /><p class="sub">Proficiency at 3, 5, 7 and 10. Accuracy needs Competent (3) and adds Precision.</p>
       ${weap.length ? html`<div class="skillcols">${weap.map(({ at, rows }) => html`<div class="sgroup"><h3>${R.ATTR_NAME[at]} weapons${allowance(at)}</h3>
         ${rows.map(([w]) => { const lv = num(c.weaponSkills[w]);
           return html`<div class=${"srow" + (lv ? "" : " dim")}>${nameBtn("weapon", w, lv ? html`<em>${R.proficiency(lv)}</em>` : "")}
             <${Pips} value=${lv} cap=${R.weaponCap(c, w)} label=${w} onSet=${set("weapon", w)} tipFor=${tipFn("weapon", w)} /><span class="m">${lv >= 3 ? "+" + pct(lv + num(c.skills.Precision)) : "—"}</span></div>`; })}</div>`)}</div>` : none("weapon skills")}
     </section>
 
-    <section class="frame"><${Sigils} seed="secondary" n=${1} lead="sec" side="l" /><h2 class="h"><span>Secondary skills</span>${diamond("sec", "secondary skills")}</h2><p class="sub">7% per level. Some come free with a primary skill, and then stack with it.</p>
+    <section class="frame"><${Sigils} seed="secondary" n=${1} lead="sec" side="l" /><${Head} title="Secondary skills" topic="secondary" tail=${diamond("sec", "secondary skills")} /><p class="sub">7% per level. Some come free with a primary skill, and then stack with it.</p>
       ${secs.length ? html`<div class="sec">${secs.map(({ sk, b }) => { const lv = num(c.secondary[sk.name]); const cap = R.secondaryCap(c, sk.name);
         return html`<div class=${"srow" + (b.trained ? "" : " dim")}>${nameBtn("sec", sk.name, html`<em>${b.source}</em>${b.disadv ? html` <span class="flag warn">disadv.</span>` : ""}`)}
           <${Pips} value=${lv} max=${3} cap=${cap} label=${sk.name} onSet=${set("sec", sk.name)} tipFor=${tipFn("sec", sk.name)} /><span class="m">${b.trained ? pct(b.bonus) : "—"}</span></div>`; })}</div>` : none("secondary skills")}
     </section>
 
     <section class="frame"><${Sigils} seed="notes" n=${1} lead="note" side="r" /><h2 class="h"><span>Notes</span><i class="orn" aria-hidden="true"></i></h2>
-      <div class="field"><label for=${"notes-" + c.id}>Perks, backstory, anything else</label>
+      <div class="field"><label for=${"notes-" + c.id}>Backstory, anything else</label>
       <textarea id=${"notes-" + c.id} rows="5" value=${c.notes} onInput=${e => update(x => { x.notes = e.target.value; })}></textarea></div></section>
   </div>`;
 }
 
 /* ================= skill side panel ================= */
 const TYPE_NAME = { P: "Passive", A: "Active", E: "Empowerment", M: "Active + passive" };
-function UsageChips({ u }) {
-  if (!u || !Object.keys(u).length) return null;
-  const chips = [];
-  if (u.recharge) chips.push(`Recharges on a ${u.recharge.toLowerCase()}`);
-  if (u.uses) chips.push(`${u.uses} use${u.uses === "1" ? "" : "s"}`);
-  if (u.ap) chips.push(`${u.ap.replace("*", "")} AP${u.ap.includes("*") ? " (reaction)" : ""}`);
-  if (u.stamina) chips.push(u.stamina === "*" ? "Stamina varies" : `${u.stamina} Stamina`);
-  if (u.turns) chips.push(`Lasts ${u.turns} turns`);
-  return html`<div class="uchips">${chips.map(x => html`<span>${x}</span>`)}</div>`;
-}
 const PROFICIENCY_ROWS = [[3, "Competent", "Weapon skill is added to accuracy."], [5, "Proficient", "Durability damage to the weapon is reduced."], [7, "Adept", "The weapon's Adept property unlocks."], [10, "Master", "The weapon's Mastery property unlocks."]];
 function SkillPanel({ c, kind, name, mode, update, onClose }) {
   const ref = useRef();
@@ -2417,7 +2947,7 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
         ${g.n && g.n !== "Perks" && html`<h3>${g.n}</h3>`}${g.f && html`<p class="flavor">${g.f}</p>`}
         ${g.p.map(pk => html`<div class=${"perk" + (lv >= pk.l ? " got" : pk.l > cap ? " locked" : "")}>
           <span class="plv" title=${lv >= pk.l ? "Unlocked" : pk.l > cap ? `Needs ${an} ${10 + pk.l}` : `Unlocks at level ${pk.l}`}>${pk.l}</span>
-          <div><span class=${"ptype t-" + pk.t}>${TYPE_NAME[pk.t]}</span><${UsageChips} u=${pk.u} />
+          <div><span class=${"ptype t-" + pk.t}>${TYPE_NAME[pk.t]}</span><${UsageLine} u=${pk.u} />
             <p>${pk.x || "Not written yet."}</p></div></div>`)}</div>`)}
 
       ${sec && html`<div class="spgroup">
@@ -2434,14 +2964,15 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
 }
 
 /* ================= vitals tab ================= */
-function Meter({ id, label, cur, max, color, soft, onSet, note, marks = [], invert }) {
+function Meter({ id, label, cur, max, color, soft, onSet, note, marks = [], invert, topic }) {
   const [amt, setAmt] = useState("");
   const pctW = max ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0;
+  // The bar itself is the control: left-click adds the amount (1 if blank), right-click removes it.
   const step = () => Math.max(1, Math.floor(+amt || 1));
   const apply = sign => { onSet(cur + sign * step()); setAmt(""); tip.hide(); };
   const stepTip = () => ({ title: `${label} ${cur} / ${max}`, lines: [html`<${Mouse} side="L" /> add ${step()} · <${Mouse} side="R" /> remove ${step()}`] });
   return html`<div class="meter">
-    <div class="top2"><span class="t" style=${`color:${color}`}>${label}</span><span class="v">${cur}<small> / ${max}</small></span></div>
+    <div class="top2">${topic ? html`<button type="button" class="t hlink" style=${`color:${color}`} onClick=${() => openRuleFn(topic)} aria-label=${`${label}: show the rules`}>${label}${BOOK}</button>` : html`<span class="t" style=${`color:${color}`}>${label}</span>`}<span class="v">${cur}<small> / ${max}</small></span></div>
     <button type="button" class="track step" style=${`background:${soft}`} aria-label=${`${label}: left-click adds, right-click removes`}
       onMouseEnter=${e => tip.show(e.currentTarget, stepTip())} onMouseLeave=${() => tip.hide()}
       onClick=${() => apply(1)} onContextMenu=${e => { e.preventDefault(); apply(-1); }}
@@ -2454,33 +2985,66 @@ function Meter({ id, label, cur, max, color, soft, onSet, note, marks = [], inve
     ${note && html`<div class="note">${note}</div>`}</div>`;
 }
 
+// Stamina lost: one bar of ten, read like an attribute bar. Each stack lost is a level of Exhaustion; the tenth is death.
+const SKULL = html`<svg class="skull" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6c-3.4 0-5.6 2.3-5.6 5.3 0 1.8.8 3 2 3.7v2.3c0 .6.4 1 1 1h5.2c.6 0 1-.4 1-1v-2.3c1.2-.7 2-1.9 2-3.7 0-3-2.2-5.3-5.6-5.3z" fill="currentColor"/><circle cx="5.7" cy="7.4" r="1.5" fill="var(--sk-eye, var(--card))"/><circle cx="10.3" cy="7.4" r="1.5" fill="var(--sk-eye, var(--card))"/><path d="M8 9.4l-.9 1.5h1.8z M6.4 12.2v1.8 M8 12.2v1.8 M9.6 12.2v1.8" fill="var(--sk-eye, var(--card))" stroke="var(--sk-eye, var(--card))" stroke-width=".8"/></svg>`;
+const conditioningIgnores = c => (num(c.skills.Conditioning) >= 5 ? 2 : 0);
+function StaminaBar({ c, update }) {
+  const n = num(c.vitals.exhaustion), ign = conditioningIgnores(c), immortal = num(c.skills.Conditioning) >= 9;
+  const set = to => { to = R.clamp(to, 0, 10); if (to === n) return; update(x => { R.setStamina(x, to); addLog(x, `Stamina lost ${n} → ${to}`); }); tip.hide(); };
+  const tipFor = (i, filled) => ({ tone: filled ? "refund" : "short", title: html`<${Mouse} side=${filled ? "R" : "L"} /> ${filled ? `recover to ${i - 1}` : `lose ${i === n + 1 ? "a stack" : "stacks"} to ${i}`}`,
+    lines: [i === 10 && immortal ? "Conditioning 9: no death; each stack past 10 costs 5 HP" : `Exhaustion ${i}: ${R.EXHAUSTION[i]}`, i <= ign ? "Conditioning 5: no effect" : ""] });
+  const cells = [];
+  for (let i = 1; i <= 10; i++) {
+    const filled = i <= n;
+    cells.push(html`<button type="button" class=${"cell" + (filled ? " miss" : "") + (i === 10 ? " skullcell" : "") + (i <= ign ? " ignored" : "")}
+      aria-label=${filled ? `Recover Stamina to ${i - 1} lost` : `Lose Stamina: ${i} lost`}
+      onMouseEnter=${e => tip.show(e.currentTarget, tipFor(i, filled))} onMouseLeave=${() => tip.hide()}
+      onClick=${() => { if (!filled) set(i); else toast("Right-click (long-press on a phone) to recover."); }}
+      onContextMenu=${e => { e.preventDefault(); if (filled) set(i - 1); }}
+      onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set(filled ? i - 1 : i); } }}>${i === 10 ? SKULL : ""}</button>`);
+  }
+  return html`<section class=${"meter stambar" + (n ? " lost" : "") + (n >= 10 ? " dead" : "")}>
+    <div class="top2"><button type="button" class="t hlink" onClick=${() => openRuleFn("stamina")} aria-label="Stamina: show the rules">Stamina lost${BOOK}</button>
+      <span class="v">${n}<small> / 10</small></span></div>
+    <span class="scale stam" role="group" aria-label="Stamina lost"><span class="end">0</span><span class="half">${cells}</span></span>
+    <div class="ctl"><span class="note"><${Mouse} side="L" /> lose a stack · <${Mouse} side="R" /> recover one. Each stack lost is a level of Exhaustion.</span></div>
+  </section>`;
+}
+// The Exhaustion window: just "0, no effect" while rested; each stack lost adds its effect, and they all stay in force together.
+function ExhaustionList({ c, d, update }) {
+  const n = num(c.vitals.exhaustion), ign = conditioningIgnores(c), immortal = num(c.skills.Conditioning) >= 9;
+  const suggested = Math.max(d.exhaustionFromBlood, d.exhaustionFromHunger);
+  const rows = n === 0 ? [0] : Array.from({ length: n }, (_, i) => i + 1);
+  return html`<p class="sub">${n === 0 ? "Rested. Effects are added here as Stamina is lost, and every one stays in force until it's recovered." : `${n} stack${n > 1 ? "s" : ""} lost: ${n - Math.min(n, ign)} effect${n - Math.min(n, ign) === 1 ? "" : "s"} in force.`}</p>
+    ${suggested > n && html`<div class="poolwarn"><span>${d.exhaustionFromBlood >= d.exhaustionFromHunger ? "Blood loss" : "Hunger"} calls for at least ${suggested} stack${suggested > 1 ? "s" : ""} lost.</span>
+      <button class="btn small" onClick=${() => update(x => { R.setStamina(x, suggested); addLog(x, `Stamina lost ${n} → ${suggested} (vitals)`); })}>Set to ${suggested}</button></div>`}
+    <ol class="exlist" aria-live="polite">${rows.map(i => html`<li class=${"exrow" + (i ? " active" : " rested") + (i === n ? " now" : "") + (i === 10 ? " death" : "") + (i && i <= ign ? " ignored" : "")}>
+      <span class="exn">${i === 10 ? SKULL : i}</span>
+      <span class="ext">${i === 10 && immortal ? "Would be death; Conditioning 9 holds it off. Each further stack costs 5 HP." : i === 0 ? "Exhaustion 0 · no effect" : R.EXHAUSTION[i]}${i && i <= ign ? html` <small class="flag">Conditioning 5 ignores this</small>` : ""}</span></li>`)}</ol>`;
+}
+
 function VitalsTab({ c, d, update }) {
   const v = c.vitals; const [cond, setCond] = useState(""); const [confirmLong, setConfirmLong] = useState(false);
   const setV = (k, val, lo, hi) => update(x => { x.vitals[k] = R.clamp(Math.round(val), lo, hi); });
-  const suggested = Math.max(d.exhaustionFromBlood, d.exhaustionFromHunger);
   return html`<div class="tabpane">
     <section class="meters">
-      <${Meter} id=${"hp-" + c.id} label="Hit points" cur=${d.cur.hp} max=${d.max.hp} color="var(--blood)" soft="var(--blood-soft)"
+      <${Meter} id=${"hp-" + c.id} label="Hit points" topic="hp" cur=${d.cur.hp} max=${d.max.hp} color="var(--blood)" soft="var(--blood-soft)"
         onSet=${n => setV("hp", n, 0, d.max.hp)} note=${d.cur.hp === 0 ? "Unconscious: roll death saves (d100, 50 or lower succeeds)." : `${num(v.exhaustion) >= 7 ? "Maximum halved by Exhaustion. " : ""}Long rest restores ${d.hpRegen}.`} />
-      <${Meter} id=${"bp-" + c.id} label="Blood points" cur=${d.cur.bp} max=${d.max.bp} color="var(--life)" soft="var(--life-soft)" marks=${[100, 80, 60, 40, 20].filter(m => m < d.max.bp)}
+      <${Meter} id=${"bp-" + c.id} label="Blood points" topic="bp" cur=${d.cur.bp} max=${d.max.bp} color="var(--life)" soft="var(--life-soft)" marks=${[100, 80, 60, 40, 20].filter(m => m < d.max.bp)}
         onSet=${n => setV("bp", n, 0, d.max.bp)} note=${d.exhaustionFromBlood ? `Blood loss: ${d.exhaustionFromBlood} Exhaustion at this level.` : `Exhaustion starts at 100. Long rest restores ${d.bpRegen}.`} />
-      <${Meter} id=${"dp-" + c.id} label="Deprivation" cur=${d.cur.dp} max=${d.max.dp} color="var(--hunger)" soft="var(--hunger-soft)" marks=${[25, 20, 15, 10, 5].filter(m => m < d.max.dp)}
+      <${Meter} id=${"dp-" + c.id} label="Deprivation" topic="dp" cur=${d.cur.dp} max=${d.max.dp} color="var(--hunger)" soft="var(--hunger-soft)" marks=${[25, 20, 15, 10, 5].filter(m => m < d.max.dp)}
         onSet=${n => setV("dp", n, 0, d.max.dp)} note=${d.exhaustionFromHunger ? `Hunger: ${d.exhaustionFromHunger} Exhaustion at this level.` : `${d.mealsPerDay} meals and ${d.rationsPerDay} rations a day keep this full.`} />
-      <${Meter} id=${"tox-" + c.id} label="Toxicity" cur=${d.cur.tox} max=${d.max.tox} color="var(--tox)" soft="var(--tox-soft)" invert
+      <${Meter} id=${"tox-" + c.id} label="Toxicity" topic="tox" cur=${d.cur.tox} max=${d.max.tox} color="var(--tox)" soft="var(--tox-soft)" invert
         onSet=${n => setV("tox", n, 0, d.max.tox * 3)} note=${d.overToxic ? html`<b style="color:var(--bad)">Over the threshold: puking, potion effects lost, no AP.</b>` : `Threshold ${d.max.tox}. Cleanses ${d.cleanse} per long rest.`} />
     </section>
 
-    <section class="frame"><${Sigils} seed="exhaustion" n=${1} side="r" /><h2 class="h"><span>Exhaustion</span><i class="orn" aria-hidden="true"></i></h2>
-      <p class="sub">Each level adds to the ones before it. Click a level to set it.${suggested > num(v.exhaustion) ? ` Vitals suggest at least ${suggested}.` : ""}</p>
-      <div class="exlist" role="group" aria-label="Exhaustion level">${R.EXHAUSTION.map((eff, i) => { const ex = num(v.exhaustion);
-        return html`<button type="button" class=${"exrow" + (i && i <= ex ? " active" : "") + (i === ex ? " now" : "") + (i === 10 ? " death" : "")} aria-pressed=${i === ex}
-          onClick=${() => update(x => { x.vitals.exhaustion = i; })}><span class="exn">${i}</span><span class="ext">${eff}</span></button>`; })}</div>
-      <div class="row" style="margin-top:12px"><span class="lbl">Stamina lost</span>
-        <${Pips} value=${num(v.staminaLost)} max=${10} label="Stamina lost" onSet=${n => update(x => { x.vitals.staminaLost = n; })} />
-        <span class="muted">${num(v.staminaLost)}/10 · ten lost is death${num(c.skills.Conditioning) >= 5 ? "; Conditioning ignores the first 2" : ""}</span></div>
+    <${StaminaBar} c=${c} update=${update} />
+
+    <section class="frame"><${Sigils} seed="exhaustion" n=${1} side="r" /><${Head} title="Exhaustion" topic="stamina" />
+      <${ExhaustionList} c=${c} d=${d} update=${update} />
     </section>
 
-    <section class="frame"><h2 class="h"><span>Wounds</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Bleeding ${d.bleedPerTurn} Blood per turn in combat, per minute outside it.</p>
+    <section class="frame"><${Head} title="Wounds" topic="wounds" /><p class="sub">Bleeding ${d.bleedPerTurn} Blood per turn in combat, per minute outside it.</p>
       <div class="wounds">${Object.entries(R.WOUNDS).map(([k, w]) => html`<div class="wound">
         <div class="row" style="justify-content:space-between"><span class="lbl">${k} · ${d.woundAt[k]}+ dmg</span><span class="cnt">${num(v.wounds[k])}</span></div>
         <div class="muted">Bleeds ${w.bleed}. ${w.fix}.</div>
@@ -2502,11 +3066,11 @@ function VitalsTab({ c, d, update }) {
           <input class="inp" style="flex:1;min-width:140px" list="cw-conds" placeholder="Stunned, Entangled, Frightened…" aria-label="New condition" value=${cond} onInput=${e => setCond(e.target.value)} />
           <datalist id="cw-conds">${["Stunned", "Entangled", "Frightened", "Blinded", "Prone", "Poisoned", "Charmed", "Paralyzed", "Deafened", "Unconscious", "On Death's Door"].map(o => html`<option value=${o}></option>`)}</datalist>
           <button class="btn small" type="submit">Add</button></form></div>
-      <div class="frame"><${Sigils} seed="rest" n=${1} side="l" /><h2 class="h"><span>Rest</span><i class="orn" aria-hidden="true"></i></h2>
+      <div class="frame"><${Sigils} seed="rest" n=${1} side="l" /><${Head} title="Rest" topic="rest" />
         <div class="row"><button class="btn" onClick=${() => update(x => addLog(x, R.shortRest(x)))}>Short rest</button>
           ${confirmLong ? html`<span class="confirm" style="padding:6px 10px">Roll ${d.cleanse} and apply? <button class="btn small primary" onClick=${() => { update(x => { const m = R.longRest(x); addLog(x, m); toast(m); }); setConfirmLong(false); }}>Long rest</button><button class="btn small" onClick=${() => setConfirmLong(false)}>Cancel</button></span>`
             : html`<button class="btn primary" onClick=${() => setConfirmLong(true)}>Long rest</button>`}</div>
-        <p class="muted">Long rest: +${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover Stamina. Short rest: recover 1 Stamina.</p>
+        <p class="muted">Long rest: +${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${num(c.skills.Conditioning) >= 7 ? 4 : 2} Stamina, recharge every ability. Short rest: recover ${num(c.skills.Conditioning) >= 6 ? 2 : 1} Stamina, recharge short-rest abilities.</p>
         <div class="log">${(c.log || []).slice(0, 12).map(l => html`<div><time>${new Date(l.t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>${l.m}</div>`)}</div></div>
     </section>
 
@@ -2518,22 +3082,114 @@ function VitalsTab({ c, d, update }) {
   </div>`;
 }
 
+/* ================= skills & talents tab ================= */
+// Every perk the character's skills have unlocked, as cards modelled on the rulebook's perk boxes (level and kind on the left,
+// the usage icons above the text), plus talents of the player's own for whatever the rules don't cover.
+const TYPE_SHORT = { P: "Passive", A: "Active", E: "Empow.", M: "Active" };
+function unlockedPerks(c) {
+  const out = [];
+  const add = (name, lv, kind) => {
+    const sd = SKILL_DATA.skills[name]; if (!sd || !lv) return;
+    const got = [];
+    sd.gs.forEach(g => g.p.forEach(p => { if (lv >= p.l) got.push(Object.assign({ key: `p:${name}:${p.l}`, group: g.n && g.n !== "Perks" ? g.n : "", flavor: g.f || "" }, p)); }));
+    if (got.length) out.push({ name, lv, kind, attr: R.LEVELS[kind].attrOf(name), perks: got });
+  };
+  R.SKILL_GROUPS.forEach(g => g.skills.forEach(([n]) => add(n, num(c.skills[n]), "skill")));
+  R.WEAPON_TYPES.forEach(([w]) => add(w, num(c.weaponSkills[w]), "weapon"));
+  return out.sort((a, b) => b.lv - a.lv || a.name.localeCompare(b.name));
+}
+// Tick boxes for an ability's uses. Ticking box i marks i + 1 spent; unticking the last ticked box gives one back.
+function UseBoxes({ c, ukey, uses, recharge, update, label }) {
+  const max = Math.max(0, Math.floor(num(uses))); if (!max) return null;
+  const spent = Math.min(max, num((c.uses || {})[ukey]));
+  const set = n => update(x => { x.uses = x.uses || {}; if (n) x.uses[ukey] = n; else delete x.uses[ukey]; if (n > spent) addLog(x, `Used ${label}`); });
+  return html`<div class="usebox"><span class="lbl">Uses</span>
+    ${Array.from({ length: max }, (_, i) => html`<button type="button" class=${"usetick" + (i < spent ? " spent" : "")} aria-pressed=${i < spent}
+      aria-label=${i < spent ? `Give back use ${i + 1} of ${label}` : `Spend use ${i + 1} of ${label}`} onClick=${() => set(i < spent ? i : i + 1)}></button>`)}
+    <small class="muted">${spent >= max ? "All used · " : `${max - spent} left · `}${recharge ? `back on a ${recharge.toLowerCase()}` : "recharge not set"}</small></div>`;
+}
+function PerkCard({ c, p, update, skill }) {
+  const t = p.t || "P";
+  return html`<article class=${"perkcard t-" + t}>
+    <div class="pbox"><b>${p.l}</b><small>${TYPE_SHORT[t]}</small></div>
+    <div class="pmain"><div class="phead"><b class="pname">${p.group || skill}</b><${UsageLine} u=${p.u} /></div>
+      <p>${p.x || "Not written yet."}</p>
+      ${p.u && p.u.uses && html`<${UseBoxes} c=${c} ukey=${p.key} uses=${p.u.uses} recharge=${p.u.recharge} update=${update} label=${`${skill} ${p.l}`} />`}</div>
+  </article>`;
+}
+const TALENT_TYPES = [["P", "Passive"], ["A", "Active"], ["E", "Empowerment"]];
+function TalentCard({ c, t, i, update }) {
+  const set = k => v => update(x => { x.talents[i][k] = v; });
+  const u = { recharge: t.recharge || "", ap: t.ap === "" || t.ap == null ? "" : String(t.ap), uses: t.uses ? String(t.uses) : "", stamina: t.stamina ? String(t.stamina) : "", turns: t.turns ? String(t.turns) : "" };
+  if (t.final) return html`<article class=${"perkcard talent t-" + (t.type || "P")}>
+    <div class="pbox"><svg class="tstar" viewBox="0 0 20 20" aria-hidden="true">${TAB_ICONS.talents}</svg><small>${TYPE_SHORT[t.type || "P"]}</small></div>
+    <div class="pmain"><div class="phead"><b class="pname">${t.name || "Unnamed talent"}</b><${UsageLine} u=${u} />
+        <button type="button" class="iconbtn editbtn" aria-label=${`Edit ${t.name || "talent"}`} onClick=${() => update(x => { x.talents[i].final = false; })}>${PENCIL}</button></div>
+      ${t.source && html`<i class="psource">${t.source}</i>`}
+      <p>${t.text || "No description yet."}</p>
+      ${t.uses > 0 && html`<${UseBoxes} c=${c} ukey=${"t:" + t.id} uses=${t.uses} recharge=${t.recharge} update=${update} label=${t.name || "talent"} />`}</div>
+  </article>`;
+  const id = k => `tl-${k}-${t.id}`;
+  return html`<div class="wcard editing talentedit">
+    <div class="title"><input aria-label="Talent name" placeholder="Talent name" value=${t.name} onInput=${e => set("name")(e.target.value)} /><span class="flag">Editing</span></div>
+    <div class="grid2">
+      <div class="mini"><label for=${id("type")}>Kind</label><select id=${id("type")} value=${t.type || "P"} onChange=${e => set("type")(e.target.value)}>${TALENT_TYPES.map(([k, n]) => html`<option value=${k}>${n}</option>`)}</select></div>
+      <div class="mini"><label for=${id("src")}>Comes from</label><input id=${id("src")} placeholder="Runic tattoo" value=${t.source || ""} onInput=${e => set("source")(e.target.value)} /></div>
+      ${t.type !== "P" && html`<${Mini} id=${id("uses")} label="Uses" min="0" value=${t.uses} onInput=${set("uses")} />
+        <div class="mini"><label for=${id("rc")}>Recharges on</label><select id=${id("rc")} value=${t.recharge || ""} onChange=${e => set("recharge")(e.target.value)}>
+          <option value="">—</option><option>Long rest</option><option>Short rest</option></select></div>
+        <${Mini} id=${id("ap")} label="AP cost" min="0" value=${t.ap} onInput=${set("ap")} />
+        <${Mini} id=${id("st")} label="Stamina cost" min="0" value=${t.stamina} onInput=${set("stamina")} />
+        ${t.type === "E" && html`<${Mini} id=${id("tn")} label="Lasts (turns)" min="0" value=${t.turns} onInput=${set("turns")} />`}`}
+    </div>
+    <${AutoText} id=${id("text")} cls="inp" label="What it does" placeholder="What it does, when it works, and any catch." value=${t.text} onInput=${set("text")} />
+    <div class="row" style="justify-content:space-between"><button class="btn small danger" onClick=${() => update(x => { x.talents.splice(i, 1); if (x.uses) delete x.uses["t:" + t.id]; })}>Remove</button>
+      <button class="btn small primary" onClick=${() => update(x => { x.talents[i].final = true; })}>Done</button></div>
+  </div>`;
+}
+function TalentsTab({ c, update, openSkill }) {
+  const [filter, setFilter] = useState(() => lsGet("cw-perkfilter", "all"));
+  useEffect(() => lsSet("cw-perkfilter", filter), [filter]);
+  const all = unlockedPerks(c);
+  const match = p => filter === "all" || (filter === "A" ? p.t === "A" || p.t === "M" : p.t === filter);
+  const count = f => all.reduce((s, g) => s + g.perks.filter(p => f === "all" || (f === "A" ? p.t === "A" || p.t === "M" : p.t === f)).length, 0);
+  const shown = all.map(g => Object.assign({}, g, { perks: g.perks.filter(match) })).filter(g => g.perks.length);
+  const spentAny = Object.values(c.uses || {}).some(v => num(v));
+  const addTalent = () => update(x => { x.talents.push({ id: rid(), name: "", source: "", type: "A", uses: 1, recharge: "Long rest", ap: "", stamina: "", turns: "", text: "", final: false }); });
+  return html`<div class="tabpane">
+    <section class="frame"><${Sigils} seed="perks" n=${1} lead="skill" side="r" /><${Head} title="Skills" topic="talents" />
+      <p class="sub">Every perk unlocked so far. Tick a use when you spend one; rests recharge them. Click a skill's name for everything it grants.</p>
+      <div class="row perkbar"><div class="seg" role="group" aria-label="Show perks">${[["all", "All"], ["A", "Active"], ["E", "Empowerment"], ["P", "Passive"]].map(([k, n]) => html`<button aria-pressed=${filter === k} onClick=${() => setFilter(k)}>${n} <small>${count(k)}</small></button>`)}</div>
+        ${spentAny && html`<button class="btn small" onClick=${() => update(x => { x.uses = {}; addLog(x, "Recharged every ability by hand"); })}>Recharge all</button>`}</div>
+      ${shown.length ? shown.map(g => html`<div class="perkgroup">
+        <h3><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small></h3>
+        <div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} />`)}</div></div>`)
+      : html`<p class="muted emptyline">${all.length ? "No perks of that kind yet." : "No perks unlocked yet. A skill's first perk comes at level 3."}</p>`}
+    </section>
+
+    <section class="frame"><${Sigils} seed="talents" n=${1} lead="glyphs" side="l" /><${Head} title="Talents" />
+      <p class="sub">Abilities the rules don't cover: a runic tattoo, a blessing, an heirloom's trick. Set one up, then press Done to turn it into a card.</p>
+      <div class="perkcards">${c.talents.map((t, i) => html`<${TalentCard} key=${t.id} c=${c} t=${t} i=${i} update=${update} />`)}</div>
+      <div class="row" style="margin-top:12px"><button class="btn" onClick=${addTalent}>+ Add talent</button></div>
+    </section>
+  </div>`;
+}
+
 /* ================= gear tab ================= */
 function GearTab({ c, d, update }) {
   const e = d.enc;
   // needle position: 3 fifths of the bar cover 0→3×unit, then one fifth per tier
   const pos = (() => { const L = e.load, u = e.unit || 1; if (L <= 3 * u) return (L / (3 * u)) * 60; const extra = Math.min(4, (L - 3 * u) / u); return 60 + extra * 10; })();
   const addItem = () => update(x => { x.items.push({ id: rid(), name: "", qty: 1, size: "small" }); });
-  const addWeapon = () => update(x => { x.weapons.push({ id: rid(), name: "", skill: "Slashing", hands: 1, size: "medium", damage: 6, crit: 5, accuracy: 0, dur: 100, durMax: 100, durDie: "d10", clip: 0, clipMax: 0, range: "", props: "", where: "set" }); });
+  const addWeapon = () => update(x => { x.weapons.push({ id: rid(), name: "", skill: "Slashing", hands: 1, size: "medium", damage: 6, crit: 5, accuracy: 0, dur: 100, durMax: 100, durDie: "d10", clip: 0, clipMax: 0, rangeOpt: 0, rangeMax: 0, reload: 0, props: "", where: "set", final: false }); });
   const addArmor = () => update(x => { x.armor.push({ id: rid(), name: "", type: "light", av: 2, soak: 30, soakMax: 30, worn: !x.armor.some(a => a.worn), where: "set" }); });
   const addProsthetic = () => update(x => { x.prosthetics.push({ id: rid(), name: "", type: R.PROSTHETIC_TYPES[0], props: "" }); });
   const it = (i, k) => v => update(x => { x.items[i][k] = v; });
-  const wp = (i, k) => v => update(x => { x.weapons[i][k] = v; });
   const ar = (i, k) => v => update(x => { x.armor[i][k] = v; });
   const pr = (i, k) => v => update(x => { x.prosthetics[i][k] = v; });
   const ef = e.effective;
   return html`<div class="tabpane">
-    <section class="frame load"><${Sigils} seed="load" n=${1} side="r" /><h2 class="h"><span>Load</span><i class="orn" aria-hidden="true"></i></h2>
+    <section class="frame load"><${Sigils} seed="load" n=${1} side="r" /><${Head} title="Load" topic="load" />
       <p class="sub">Everything carried, counted in small-item slots. You slow down past ${e.capacity}.</p>
       <div class="row" style="justify-content:space-between"><span class="loadnum"><b>${e.load}</b> / ${e.capacity}</span>
         <span><b>${e.tier.name}</b>${e.ignored ? html` <span class="flag good">Strong Back ignores this</span>` : ""}</span></div>
@@ -2543,7 +3199,7 @@ function GearTab({ c, d, update }) {
         ["Combat move", d.move + " m"], ["Weapon sets", `${e.setsUsed} of ${e.freeSets} free`]].map(([k, val]) => html`<div class="fact"><span>${k}</span><b>${val}</b></div>`)}</div>
     </section>
 
-    <section class="frame"><h2 class="h"><span>Armor</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Only one suit is worn at a time. Heavy armor counts as a large item, plate as huge.</p>
+    <section class="frame"><${Head} title="Armor" topic="armor" /><p class="sub">Only one suit is worn at a time. Heavy armor counts as a large item, plate as huge.</p>
       <div class="cards">${c.armor.map((a, i) => { const chk = R.armorCheck(c, a); const t = R.ARMOR[a.type] || R.ARMOR.light;
         return html`<div class=${"wcard" + (a.worn ? " worn" : "")}>
           <div class="title"><input aria-label="Armor name" placeholder="Armor name" value=${a.name} onInput=${ev => ar(i, "name")(ev.target.value)} />
@@ -2562,48 +3218,24 @@ function GearTab({ c, d, update }) {
         <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addArmor}>+ Add armor</button></div></div>
     </section>
 
-    <section class="frame"><h2 class="h"><span>Prosthetics</span><i class="orn" aria-hidden="true"></i></h2>
+    <section class="frame"><${Head} title="Prosthetics" topic="prosthetics" />
       <p class="sub">Each prosthetic costs 7% Entrada and 4% Stealth, and needs one more ration a day.</p>
       ${c.prosthetics.length > 0 && html`<div class="tbl-wrap"><table class="ptable">
         <thead><tr><th>Name</th><th>Type</th><th>Unique properties</th><th></th></tr></thead>
         <tbody>${c.prosthetics.map((x, i) => html`<tr>
           <td><input class="inp" aria-label="Prosthetic name" placeholder="Brass forearm" value=${x.name} onInput=${ev => pr(i, "name")(ev.target.value)} /></td>
           <td><select class="inp" aria-label="Type" value=${x.type} onChange=${ev => pr(i, "type")(ev.target.value)}>${R.PROSTHETIC_TYPES.map(t => html`<option>${t}</option>`)}</select></td>
-          <td class="wide"><input class="inp" aria-label="Unique properties" placeholder="Hidden blade; grip strength +2" value=${x.props} onInput=${ev => pr(i, "props")(ev.target.value)} /></td>
+          <td class="wide"><${AutoText} cls="inp" label="Unique properties" placeholder="Hidden blade; grip strength +2" value=${x.props} onInput=${pr(i, "props")} /></td>
           <td><button class="iconbtn" aria-label=${`Remove ${x.name || "prosthetic"}`} onClick=${() => update(y => { y.prosthetics.splice(i, 1); })}>×</button></td></tr>`)}</tbody></table></div>`}
       <div class="row" style="margin-top:10px"><button class="btn" onClick=${addProsthetic}>+ Add prosthetic</button></div>
     </section>
 
-    <section class="frame"><${Sigils} seed="weapons" n=${1} side="l" /><h2 class="h"><span>Weapons</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Two one-handed or one two-handed set ride free${e.freeSets > 2 ? ", plus a third from Strong Back" : ""}. Shields always count as large.</p>
-      <div class="cards">${c.weapons.map((w, i) => { const wl = R.weaponLine(c, w);
-        return html`<div class="wcard">
-          <div class="title"><input aria-label="Weapon name" placeholder="Weapon name" value=${w.name} onInput=${ev => wp(i, "name")(ev.target.value)} />
-            <span class="flag brass">${w.shield ? "Shield" : wl.proficiency}</span></div>
-          <div class="grid2">
-            <div class="mini"><label for=${"ws-" + w.id}>Skill</label><select id=${"ws-" + w.id} value=${w.skill} onChange=${ev => wp(i, "skill")(ev.target.value)}>${R.WEAPON_TYPES.map(([t]) => html`<option>${t}</option>`)}</select></div>
-            <div class="mini"><label for=${"wh-" + w.id}>Hands</label><select id=${"wh-" + w.id} value=${w.hands} onChange=${ev => wp(i, "hands")(+ev.target.value)}><option value="1">One</option><option value="2">Two</option></select></div>
-            <div class="mini"><label for=${"wz-" + w.id}>Size</label><select id=${"wz-" + w.id} value=${w.size} onChange=${ev => wp(i, "size")(ev.target.value)}>${Object.keys(R.SIZES).map(s => html`<option>${s}</option>`)}</select></div>
-            <div class="mini"><label for=${"ww-" + w.id}>Carried</label><select id=${"ww-" + w.id} value=${w.where || "set"} onChange=${ev => wp(i, "where")(ev.target.value)}><option value="set">In a set</option><option value="pack">In the pack</option><option value="stash">Stashed</option></select></div>
-            <${Mini} id=${"wd-" + w.id} label="Damage" value=${w.damage} onInput=${wp(i, "damage")} />
-            <${Mini} id=${"wc-" + w.id} label="Crit %" value=${w.crit} onInput=${wp(i, "crit")} />
-            <${Mini} id=${"wa-" + w.id} label="Accuracy ±" value=${w.accuracy} onInput=${wp(i, "accuracy")} />
-            <${Mini} id=${"wdu-" + w.id} label="Durability" value=${w.dur} onInput=${wp(i, "dur")} />
-            <${Mini} id=${"wdm-" + w.id} label="Dur. max" value=${w.durMax} onInput=${wp(i, "durMax")} />
-            <${Mini} id=${"wdd-" + w.id} label="Dur. die" type="text" value=${w.durDie} onInput=${wp(i, "durDie")} />
-            <${Mini} id=${"wcl-" + w.id} label="Clip" value=${w.clip} onInput=${wp(i, "clip")} />
-            <${Mini} id=${"wcm-" + w.id} label="Clip size" value=${w.clipMax} onInput=${wp(i, "clipMax")} />
-          </div>
-          <div class="mini"><label for=${"wp-" + w.id}>Properties and flaws</label><input id=${"wp-" + w.id} style="font-family:var(--f-body)" placeholder="Fast, Penetrating (2), Brittle (3)…" value=${w.props} onInput=${ev => wp(i, "props")(ev.target.value)} /></div>
-          <div class="calc">Accuracy +${wl.accuracy}% · crit ${wl.crit}% · ${num(w.clipMax) ? `clip ${num(w.clip)}/${num(w.clipMax)}` : "melee"}${num(w.durMax) && num(w.dur) <= 0 ? " · broken: gains a flaw" : ""}</div>
-          <div class="row" style="justify-content:space-between">
-            <span class="row"><button class="btn small" disabled=${!num(w.clipMax) || !num(w.clip)} onClick=${() => update(x => { x.weapons[i].clip = num(x.weapons[i].clip) - 1; })}>Fire</button>
-              <button class="btn small" disabled=${!num(w.clipMax)} onClick=${() => update(x => { x.weapons[i].clip = num(x.weapons[i].clipMax); })}>Reload</button>
-              <label class="muted row" style="gap:4px"><input type="checkbox" checked=${!!w.shield} onChange=${ev => wp(i, "shield")(ev.target.checked)} />Shield</label></span>
-            <button class="btn small danger" onClick=${() => update(x => { x.weapons.splice(i, 1); })}>Remove</button></div></div>`; })}
+    <section class="frame"><${Sigils} seed="weapons" n=${1} side="l" /><${Head} title="Weapons" topic="weapons" /><p class="sub">Two one-handed or one two-handed set ride free${e.freeSets > 2 ? ", plus a third from Strong Back" : ""}. Shields always count as large.</p>
+      <div class="cards">${c.weapons.map((w, i) => html`<${WeaponCard} key=${w.id} c=${c} w=${w} i=${i} update=${update} />`)}
         <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addWeapon}>+ Add weapon</button></div></div>
     </section>
 
-    <section class="frame"><h2 class="h"><span>Inventory</span><i class="orn" aria-hidden="true"></i></h2>
+    <section class="frame"><${Head} title="Inventory" topic="load" />
       <p class="sub">Medium items take 2 slots, large 4, huge 8. Bundles (bandages, rope) fit 10 to a slot, ammo 50.</p>
       <div class="tbl-wrap"><table class="itable">
         <thead><tr><th>Item</th><th class="num">Qty</th><th>Size</th><th></th></tr></thead>
@@ -2617,6 +3249,90 @@ function GearTab({ c, d, update }) {
         <button class="btn" onClick=${() => update(x => { [["Rations", 6, "small"], ["Bandages", 10, "bundle"], ["Rope (m)", 20, "bundle"], ["Camping kit", 1, "large"]].forEach(([n, q, sz]) => x.items.push({ id: rid(), name: n, qty: q, size: sz })); })}>+ Adventuring basics</button>
         <span class="coins"><label for=${"coins-" + c.id}>Coins</label><input id=${"coins-" + c.id} class="inp" type="number" min="0" value=${c.coins} onInput=${ev => update(x => { x.coins = +ev.target.value || 0; })} /><small class="muted">100 weigh one slot</small></span></div>
     </section>
+  </div>`;
+}
+
+/* ================= weapon cards ================= */
+// A weapon is set up in edit mode, then finalised into a compact card for play where only durability changes.
+// The fields follow the weapon: melee weapons reach 2 m and have no clip; ranged weapons have a clip, ranges and
+// a reload cost (rulebook, Weapon Combat); a shield blocks with Shield Mastery and always counts as large.
+const PENCIL = html`<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M11.5 2.5l2 2L6 12l-3 1 1-3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+function WeaponCard({ c, w, i, update }) {
+  const kind = R.weaponKind(w), wl = R.weaponLine(c, w);
+  const set = (k, v) => update(x => { x.weapons[i][k] = v; });
+  // Picking a skill keeps the card consistent: only ranged weapons keep a clip and ranges; a shield is always large.
+  const setSkill = v => update(x => {
+    const y = x.weapons[i]; y.skill = v; y.shield = v === "Shield";
+    if (!R.RANGED_WEAPONS.includes(v)) Object.assign(y, { clip: 0, clipMax: 0, rangeOpt: 0, rangeMax: 0, reload: 0 });
+    if (y.shield) Object.assign(y, { size: "large", accuracy: 0 });
+  });
+  const clipSize = num(w.clipMax), inClip = num(w.clip);
+  const id = k => `w${k}-${w.id}`;
+  const dur = num(w.dur), durMax = num(w.durMax);
+  const reach = kind === "ranged" ? (num(w.rangeOpt) || num(w.rangeMax) ? `${num(w.rangeOpt)} / ${num(w.rangeMax)} m` : w.range || "—") : kind === "melee" ? "2 m" : "—";
+  // Weapons saved before this existed count as finished once they have a name.
+  if (w.final === true || (w.final === undefined && w.name)) return html`<div class=${"wcard final kind-" + kind}>
+    <div class="title"><b class="wname">${w.name || "Unnamed weapon"}</b>
+      <span class="flag brass">${kind === "shield" ? "Shield" : wl.proficiency}</span>
+      <button class="iconbtn" aria-label=${`Edit ${w.name || "weapon"}`} title="Edit" onClick=${() => set("final", false)}>${PENCIL}</button></div>
+    <div class="wsub">${kind === "shield" ? "Shield · blocks with Shield Mastery" : `${w.skill} · ${kind === "ranged" ? "ranged" : "melee"}`} · ${num(w.hands) === 2 ? "two-handed" : "one-handed"} · ${w.where === "pack" ? "in the pack" : w.where === "stash" ? "stashed" : "in a set"}</div>
+    <div class="wstats">
+      <div><span>Damage</span><b>${num(w.damage)}</b></div>
+      ${kind !== "shield" && html`<div><span>Crit</span><b>${wl.crit}%</b></div><div><span>Accuracy</span><b>${wl.accuracy >= 0 ? "+" : ""}${wl.accuracy}%</b></div>`}
+      <div><span>${kind === "ranged" ? "Range" : "Reach"}</span><b>${reach}</b></div>
+      ${kind === "ranged" && num(w.reload) ? html`<div><span>Reload</span><b>${num(w.reload)} AP</b></div>` : ""}
+    </div>
+    ${kind === "ranged" && html`<div class="wdur"><span class="lbl">Clip</span>
+      <div class="row"><button class="iconbtn" aria-label="Fire one" onClick=${() => set("clip", Math.max(0, inClip - 1))}>−</button>
+        <input class="inp durin" type="number" min="0" max=${clipSize || undefined} aria-label="Rounds in the clip" value=${w.clip} onInput=${ev => set("clip", ev.target.value === "" ? "" : R.clamp(+ev.target.value, 0, clipSize || 999))} />
+        <span class="muted">/ ${clipSize}</span>
+        <button class="iconbtn" aria-label="Add one" onClick=${() => set("clip", Math.min(clipSize || 999, inClip + 1))}>+</button>
+        <button class="btn small" disabled=${!clipSize || inClip >= clipSize} onClick=${() => set("clip", clipSize)}>Reload</button></div></div>`}
+    <div class="wdur">
+      <span class="lbl">Durability</span>
+      <div class="track"><i style=${`width:${durMax ? R.clamp((dur / durMax) * 100, 0, 100) : 0}%;background:${dur <= 0 ? "var(--bad)" : "var(--ink-2)"}`}></i></div>
+      <div class="row"><button class="iconbtn" aria-label="Lose 1 durability" onClick=${() => set("dur", Math.max(0, dur - 1))}>−</button>
+        <input class="inp durin" type="number" min="0" aria-label="Durability" value=${w.dur} onInput=${ev => set("dur", ev.target.value === "" ? "" : Math.max(0, +ev.target.value))} />
+        <span class="muted">/ ${durMax} · die ${w.durDie || "—"}</span>
+        <button class="iconbtn" aria-label="Restore 1 durability" onClick=${() => set("dur", Math.min(durMax || Infinity, dur + 1))}>+</button></div>
+      ${durMax > 0 && dur <= 0 && html`<span class="flag bad">Broken: gains a flaw</span>`}
+    </div>
+    ${w.props && html`<p class="wprops">${w.props}</p>`}
+  </div>`;
+  return html`<div class="wcard editing">
+    <div class="title"><input aria-label="Weapon name" placeholder=${kind === "shield" ? "Shield name" : "Weapon name"} value=${w.name} onInput=${ev => set("name", ev.target.value)} />
+      <span class="flag">Editing</span></div>
+    <div class="grid2">
+      <div class="mini"><label for=${id("s")}>Weapon skill</label><select id=${id("s")} value=${kind === "shield" ? "Shield" : w.skill} onChange=${ev => setSkill(ev.target.value)}>
+        <optgroup label="Melee">${R.WEAPON_TYPES.filter(([t]) => !R.RANGED_WEAPONS.includes(t)).map(([t]) => html`<option>${t}</option>`)}</optgroup>
+        <optgroup label="Ranged">${R.RANGED_WEAPONS.map(t => html`<option>${t}</option>`)}</optgroup>
+        <optgroup label="Other"><option>Shield</option></optgroup></select></div>
+      <div class="mini"><label for=${id("h")}>Hands</label><select id=${id("h")} value=${w.hands} onChange=${ev => set("hands", +ev.target.value)}><option value="1">One</option><option value="2">Two</option></select></div>
+      ${kind !== "shield" && html`<div class="mini"><label for=${id("z")}>Size</label><select id=${id("z")} value=${w.size} onChange=${ev => set("size", ev.target.value)}>${Object.keys(R.SIZES).map(z => html`<option value=${z}>${z[0].toUpperCase() + z.slice(1)}</option>`)}</select></div>`}
+      <div class="mini"><label for=${id("w")}>Carried</label><select id=${id("w")} value=${w.where || "set"} onChange=${ev => set("where", ev.target.value)}><option value="set">In a set</option><option value="pack">In the pack</option><option value="stash">Stashed</option></select></div>
+    </div>
+    <div class="wgroup"><span class="lbl">Combat</span><div class="grid2">
+      <${Mini} id=${id("d")} label="Damage" value=${w.damage} onInput=${v => set("damage", v)} />
+      ${kind !== "shield" && html`<${Mini} id=${id("c")} label="Crit %" value=${w.crit} onInput=${v => set("crit", v)} />
+        <${Mini} id=${id("a")} label="Accuracy ±" value=${w.accuracy} onInput=${v => set("accuracy", v)} />`}
+    </div></div>
+    ${kind === "ranged" && html`<div class="wgroup"><span class="lbl">Ranged</span><div class="grid2">
+      <${Mini} id=${id("cm")} label="Clip size" value=${w.clipMax} min="1" onInput=${v => update(x => { const y = x.weapons[i]; y.clipMax = v; if (num(y.clip) > num(v) || !num(y.clip)) y.clip = v; })} />
+      <${Mini} id=${id("ro")} label="Optimal m" value=${w.rangeOpt} onInput=${v => set("rangeOpt", v)} />
+      <${Mini} id=${id("rm")} label="Max range m" value=${w.rangeMax} onInput=${v => set("rangeMax", v)} />
+      <${Mini} id=${id("rl")} label="Reload AP" value=${w.reload} onInput=${v => set("reload", v)} />
+    </div></div>`}
+    <p class="muted wnote">${kind === "melee" ? "Melee: reaches 2 m and has no clip." : kind === "ranged" ? "Ranged: attacks between the optimal and maximum range roll with disadvantage; beyond the maximum they miss." : "Shield: blocks with Shield Mastery and always counts as a large item."}</p>
+    <div class="wgroup"><span class="lbl">Durability</span><div class="grid2">
+      <${Mini} id=${id("du")} label="Current" value=${w.dur} onInput=${v => set("dur", v)} />
+      <${Mini} id=${id("dm")} label="Maximum" value=${w.durMax} onInput=${v => set("durMax", v)} />
+      <${Mini} id=${id("dd")} label="Die" type="text" value=${w.durDie} onInput=${v => set("durDie", v)} />
+    </div></div>
+    <div class="mini"><label for=${id("p")}>Properties and flaws</label>
+      <${AutoText} id=${id("p")} value=${w.props} placeholder="Fast, Penetrating (2), Brittle (3)…" onInput=${v => set("props", v)} /></div>
+    <div class="row" style="justify-content:space-between">
+      <button class="btn small danger" onClick=${() => update(x => { x.weapons.splice(i, 1); })}>Remove</button>
+      <button class="btn small primary" onClick=${() => set("final", true)}>Done</button></div>
   </div>`;
 }
 
@@ -2674,7 +3390,7 @@ function TableTab({ c, update, onDelete }) {
 /* ================= character creation ================= */
 // "New character" offers two roads: a guided genesis, step by step, or an instant auto-generated sheet.
 
-function NewChoice({ gm, onClose, onGuide, onAuto, onBlank }) {
+function NewChoice({ onClose, onGuide, onBlank }) {
   useEffect(() => { const k = e => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, []);
   const draft = lsGet(GENESIS_KEY, null);
   return html`<div class="gx-veil" onClick=${e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -2686,12 +3402,11 @@ function NewChoice({ gm, onClose, onGuide, onAuto, onBlank }) {
           <i class="emblem sg-astro" aria-hidden="true"></i>
           <b>${draft ? "Continue character creation" : "Character creation"}</b>
           <span>${draft ? `Pick up ${draft.name ? draft.name + "'s" : "your"} creation where you left it.` : "Name them, give them a face, watch the dice decide their nature, then shape it yourself."}</span></button>
-        <button class="gx-road" onClick=${onAuto}>
-          <i class="emblem sg-gears" aria-hidden="true"></i>
-          <b>Auto-generate</b>
-          <span>Roll every attribute in the background and assign them straight away. Fill in the rest on the sheet.</span></button>
+        <button class="gx-road" onClick=${onBlank}>
+          <i class="emblem sg-note" aria-hidden="true"></i>
+          <b>Blank character sheet</b>
+          <span>Every attribute set to 10, nothing else filled in. For copying over an existing character or building one by hand.</span></button>
       </div>
-      ${gm && html`<button class="linkbtn gx-blank" onClick=${onBlank}>or start from a blank sheet</button>`}
     </div>
   </div>`;
 }
@@ -2825,7 +3540,7 @@ function DiceTray({ roll, rolling }) {
   }, [rolling]);
   const faces = rolling ? flick : roll ? roll.dice : [8, 8, 8];
   return html`<div class=${"gx-tray" + (rolling ? " rolling" : "")}>
-    ${faces.map((d, i) => html`<div class=${"d8" + (!rolling && roll && roll.low === i ? " low" : "") + (!roll && !rolling ? " idle" : "")} style=${`--i:${i}`}><span>${d}</span></div>`)}
+    <div class="gx-dice">${faces.map((d, i) => html`<div class=${"d8" + (!rolling && roll && roll.low === i ? " low" : "") + (!roll && !rolling ? " idle" : "")} style=${`--i:${i}`}><span>${d}</span></div>`)}</div>
     <div class=${"gx-sum" + (roll && !rolling ? " show" : "")}>${roll && !rolling ? html`<b class=${roll.total >= 15 ? "hi" : roll.total < 10 ? "lo" : ""}>${roll.total}</b>${roll.sum < 6 ? html`<small>${roll.sum}, raised to 6</small>` : html`<small>${roll.dice.filter((_, i) => i !== roll.low).join(" + ")}</small>`}` : ""}</div>
   </div>`;
 }
