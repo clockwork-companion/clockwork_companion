@@ -74,6 +74,8 @@ if __name__ == "__main__":
         (d / "index.html").write_text(build(CDN, web=True, dev="--dev" in a))
         for f in ["firestore.rules", "README.md"]:
             shutil.copy(HERE / "web" / f, d / f)
+        if (HERE / "web" / "egg").is_dir():   # art and sound for the hidden games
+            shutil.copytree(HERE / "web" / "egg", d / "egg", dirs_exist_ok=True)
         if not (d / "firebase-config.js").exists():
             shutil.copy(HERE / "web" / "firebase-config.js", d / "firebase-config.js")
         out = d / "index.html"
