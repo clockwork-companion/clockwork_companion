@@ -21,12 +21,21 @@ your feature branch ──PR──▶ Dev ──(tested on the Dev page)──PR
   only by a pull request from Dev.
 - **Dev is the shared test branch.** Merge into Dev through a pull request, then check the result on the Dev page.
   Don't force-push Dev.
+- **Never delete Dev**, and never use Dev as the *head* of a pull request, except the release pull request Dev → main
+  (to bring Dev into your branch, merge it locally and push your branch). If Dev is deleted, GitHub silently moves every
+  open pull request aimed at Dev onto another branch, the Dev page stops updating, and the live site's publish fails.
+  On 2026-10-24 that happened once: a "Dev → feature branch" pull request was merged with "Delete branch" ticked, and Dev
+  was then restored from the branch that had absorbed its pull requests.
+- **GitHub enforces this now.** A repository ruleset, "Protect main and Dev", covers both branches: they can't be deleted
+  or force-pushed, and they change only through a pull request whose **check** job (`.github/workflows/checks.yml`)
+  has passed. The Merge button stays grey until it's green. Org owners may bypass it for pull requests only, in an
+  emergency. If a push to Dev or main is refused, that's the ruleset working: open a pull request instead.
 - **Work on a branch of your own**, made from the latest main: a personal branch (`SinanDev`, `BedoDev`) or,
   better, one branch per feature (`sinan/initiative-dock`, `bedo/crafting`). Small branches are easy to review and to drop.
 - **Pull main into your branch before each work session** and before opening a PR. Resolve conflicts on your branch, not on Dev.
 - **Never push to someone else's branch** unless they asked you to.
 - **One PR per feature.** The PR description says, in plain words, what changed for the user and how to test it.
-- When main changes and Dev is behind, bring Dev up to main (a fast-forward or a merge PR) so the Dev page
+- When main changes and Dev is behind, bring Dev up to main (a pull request from main into Dev) so the Dev page
   isn't testing something older than the live site.
 
 ## 2. Publishing (don't break this)
@@ -67,6 +76,7 @@ If an older branch still has it, a merge may report `sw.js` as deleted: keep it 
 | `fx-steppe.js` | The Talon Saga theme's landscape: a realistic central-Mongolian steppe rendered once by a WebGL terrain shader (in strips, then faded in), with a galloping herd, an eagle and ger smoke animated over it on a 2D canvas. Falls back to a painted scene without WebGL. It only runs while that theme is on. |
 | `fx-moss.js` | The Mossheart theme's living ivy: grows ivy (sized to each section), moss clumps and hide patches round the sections, and lets leaves lean a little when the pointer brushes past. Only while that theme is on; without it the CSS vines in `app.css` show instead. |
 | `craft.js` | The Crafting tab: one section per craft, and the Powdertinkering bench (munition drawings with callouts, forge animation, supplies, ledger). |
+| `craft-shop.js` | The workshop: jobs between players. A smith repairs another player's weapon or suit (only a copy of that item travels), or crafts one "made for" them; the owner's app writes the result. Also the table roster that lists smiths. Uses the `roster` and `jobs` collections. |
 | `craft-armor.js` | Crafting → Armor upkeep: the Repair and Craft benches (suit drawings on a stand, hammer and forge animations). |
 | `craft-weapon.js` | Crafting → Weapon upkeep: the Repair and Craft benches (weapon drawings in a rack by type, nicks hammered out, forge with flaws and random properties). |
 | `craft-brew.js` | Crafting → Brewing: a cauldron over a fire with a herb pouch, catalyst vial and flask; recipes (the book's and the GM's), increments, catalysts, Potent Brews; potions go into the inventory with their toxicity. |
@@ -147,5 +157,8 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-24:** Armor repair: the Repair Count is capped at 10 dice. Utku.
 - **2026-10-24:** Armor crafting (not written in the 2020.1 book) follows the book's weapon crafting, with armor extras (+1 AV −10%, +5 Soak −5%); every change is marked in `rules-info.js`. Utku.
 - **2026-10-24:** Mossheart is an Extended theme for Utku's character Batbayar, a young warder who fights the Zhoung, a corrupting darkness, inside himself. Dark and grounded rather than whimsical: realistic ivy (woody stems, five-lobed leaves, moss, black berries) creeping round section corners (grown to fit each section by `fx-moss.js`; leaves lean gently, at most 10°, when the pointer brushes past, then settle), a few moss clumps and the odd stitched hide patch on section edges, carved-stone titles (Marcellus SC), drifting spores. Below rises the Zhoung, a violet-black shadow of roots that breathes and sometimes opens its eyes, held back by a faint line of warding runes. Broken attributes take its violet. Utku.
+- **2026-10-24:** Workshop: a weaponsmith or armorsmith (Maintenance 3+) repairs other players' items through jobs (a copy of one item; the owner's app applies the result) and can craft items "made for" another player. The smith's materials are used. Utku.
+- **2026-10-24:** On the craft benches the base stats (weapon damage, crit, accuracy, durability, die; armor AV and Soak) come from the GM: on a table only a GM can set them. Players raise them through the paid changes/extras. Utku.
 - **2026-10-24:** Dice: a top-bar switch (per browser, like the theme) between "App rolls" and "My own rolls". With own rolls, every roll the app makes (long rest cleansing, creation 3d8, Powdertinkering, Armor repair and craft, Weapon repair and craft, Brewing, Runecrafting) asks for the number rolled at the table, e.g. in Tabletop Simulator; new rolls go through `askRoll()` in `app.js`. Utku.
 - **2026-10-24:** The repo moved to the free `clockwork-companion` organization, with Sinan, Bedo and Utku as owners. The site moved to clockwork-companion.github.io/clockwork_companion/; the old address forwards to it. Sinan.
+- **2026-10-24:** The "Protect main and Dev" ruleset is on: no deleting or force-pushing either branch, changes only by a pull request with a green check. Sinan.

@@ -129,11 +129,11 @@ const CW = (() => {
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
-               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] },
-               brew: { bonus: 0, known: [], recipes: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
-               rune: { bonus: 0, order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
+               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
+               brew: { bonus: 0, known: [], recipes: [], catalysts: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
+               rune: { bonus: 0, effects: [], order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
                        second: null, hoax: false, pay: "hp", hours: 1 }, ledger: [] },
-               weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" } }, ledger: [] } },
+               weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" }, for: "" }, ledger: [] }, jobsDone: [] },
       talents: [], uses: {},
     };
   }
@@ -171,10 +171,11 @@ const CW = (() => {
     if (!Array.isArray(out.craft.weapon.ledger)) out.craft.weapon.ledger = [];
     out.craft.brew = Object.assign({}, b.craft.brew, out.craft.brew);
     out.craft.brew.order = Object.assign({}, b.craft.brew.order, out.craft.brew.order);
-    ["known", "recipes", "ledger"].forEach(k => { if (!Array.isArray(out.craft.brew[k])) out.craft.brew[k] = []; });
+    ["known", "recipes", "catalysts", "ledger"].forEach(k => { if (!Array.isArray(out.craft.brew[k])) out.craft.brew[k] = []; });
     out.craft.rune = Object.assign({}, b.craft.rune, out.craft.rune);
     out.craft.rune.order = Object.assign({}, b.craft.rune.order, out.craft.rune.order);
-    if (!Array.isArray(out.craft.rune.ledger)) out.craft.rune.ledger = [];
+    ["effects", "ledger"].forEach(k => { if (!Array.isArray(out.craft.rune[k])) out.craft.rune[k] = []; });
+    if (!Array.isArray(out.craft.jobsDone)) out.craft.jobsDone = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
     out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
@@ -594,7 +595,8 @@ const CW = (() => {
   // Everything a repair of suit a needs: cost, materials, dice, and why it can't happen yet (if so).
   function repairPlan(c, a) {
     const st = amState(c), t = ARMOR[a.type] || ARMOR.light, chk = armorCheck(c, a);
-    const max = chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
+    // A suit sent by another player carries its wearer's own maximum (their Armor Mastery bonus included).
+    const max = a.jobMax != null ? num(a.jobMax) : chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
     const cost = t.repairPerAV * Math.max(1, num(a.av)) * (broken ? 2 : 1);
     const sides = +String(t.repairDie).slice(1);
     const have = num(c.craft && c.craft.supplies && c.craft.supplies[a.type]);
@@ -716,6 +718,7 @@ const CW = (() => {
     return { lvl, mod: skillModifier(c, "Brewing") + num(b.bonus), bonus: num(b.bonus), brew: lvl >= 3, incs: lvl >= 5, catalysts: lvl >= 5,
              known: lvl >= 10 ? 4 : lvl >= 5 ? Math.max(1, Math.floor(lvl / 3)) : 0, potent: lvl >= 7, potentPlus: lvl >= 9 };
   }
+  const allCatalysts = c => [...CATALYSTS, ...(((c.craft && c.craft.brew && c.craft.brew.catalysts) || []).map(k => Object.assign({ custom: true }, k)))];
   const allBrews = c => [...BREWS, ...(((c.craft && c.craft.brew && c.craft.brew.recipes) || []).map(r => Object.assign({ custom: true }, r)))];
   const findBrew = (c, k) => allBrews(c).find(r => r.k === k) || BREWS[0];
   // One brew's numbers at n increments.
@@ -733,7 +736,7 @@ const CW = (() => {
     const a = brewOne(c, findBrew(c, o.k), inc);
     const p = st.potent && o.potent && o.potent.k ? brewOne(c, findBrew(c, o.potent.k), st.potentPlus ? inc : (st.incs ? clamp(num(o.potent.inc), 0, 10) : 0)) : null;
     const known = (c.craft && c.craft.brew && c.craft.brew.known) || [];
-    const cat = st.catalysts && o.catalyst && known.includes(o.catalyst) ? CATALYSTS.find(x => x.k === o.catalyst) : null;
+    const cat = st.catalysts && o.catalyst && known.includes(o.catalyst) ? allCatalysts(c).find(x => x.k === o.catalyst) || null : null;
     const catDc = cat ? Math.max(0, cat.dc - st.lvl) : 0;
     const need = {}; [a, p].filter(Boolean).forEach(b => (need[b.herb] = (need[b.herb] || 0) + b.grams));
     const have = h => num(c.craft && c.craft.supplies && c.craft.supplies["herb:" + h]);
@@ -782,8 +785,8 @@ const CW = (() => {
     const extra = st.extra && !hoax ? Math.max(0, num(o.extra)) : 0;
     const extraPct = Math.floor(extra / 50);
     const mod = st.mod + extraPct, cost = Math.max(0, num(o.cost));
-    const effects = [{ kind: o.kind === "manifest" ? "manifest" : "enhance", effect: String(o.effect || "").trim(), dc: num(o.dc) }]
-      .concat(second ? [{ kind: second.kind === "manifest" ? "manifest" : "enhance", effect: String(second.effect || "").trim(), dc: num(second.dc) }] : []);
+    const eff = x => ({ kind: x.kind === "manifest" ? "manifest" : "enhance", effect: String(x.effect || "").trim(), dc: num(x.dc), note: String(x.note || "").trim() });
+    const effects = [eff(o)].concat(second ? [eff(second)] : []);
     // Chance to succeed: an enhancing stone holds on d100 − mod below 30, a manifesting stone below the GM's difficulty.
     const chances = effects.map(e => clamp((e.kind === "manifest" ? e.dc : 30) + mod - 1, 0, 100));
     const hours = Math.max(1, Math.floor(num(o.hours)) || 1), pay = HOAX_PAY[o.pay] ? o.pay : "hp";
@@ -851,7 +854,7 @@ const CW = (() => {
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
-           BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allBrews, findBrew, brewOne, brewPlan,
+           BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allCatalysts, allBrews, findBrew, brewOne, brewPlan,
            GEMS, RUNE_TABLE, runePotency, HOAX_PAY, runeState, runePlan };
 })();
 if (typeof module !== "undefined") module.exports = CW;

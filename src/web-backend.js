@@ -30,6 +30,13 @@
       return name === "characters" && me.role !== "gm" ? ref.where("players", "array-contains", me.uid) : ref;
     },
     doc: path => fs.doc(`${root}/${path}`),
+    // Workshop jobs: a GM sees them all; a player sees the ones they sent or that wait on their bench.
+    jobs: (cb, err) => {
+      const docs = s => s.docs.map(d => Object.assign({}, d.data(), { id: d.id })), ref = fs.collection(`${root}/jobs`);
+      if (me.role === "gm") return ref.onSnapshot(s => cb(docs(s)), err);
+      const part = { from: [], to: [] }, out = () => { const m = new Map(); [...part.from, ...part.to].forEach(j => m.set(j.id, j)); cb([...m.values()]); };
+      ["from", "to"].forEach(k => ref.where(`${k}.uids`, "array-contains", me.uid).onSnapshot(s => { part[k] = docs(s); out(); }, err));
+    },
   };
   const assets = {
     async upload(file, previousId) {
