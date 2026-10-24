@@ -75,7 +75,7 @@ def build(libs, web=False, dev=False):
         if libs[k] not in seen:
             seen.add(libs[k]); tags.append(f'<script src="{libs[k]}"></script>')
     DATA = ["rules.js", "skills-data.js", "skill-tables.js", "rules-info.js"]
-    APP = ["app.js", "fx-blackwall.js", "fx-steppe.js", "fx-moss.js", "craft.js", "craft-armor.js", "craft-weapon.js", "craft-brew.js", "genesis.js", "gm.js"]
+    APP = ["app.js", "fx-blackwall.js", "fx-steppe.js", "fx-moss.js", "craft.js", "craft-armor.js", "craft-weapon.js", "craft-brew.js", "craft-rune.js", "genesis.js", "gm.js"]
     # Every script in src/ must be bundled. A file left out of these lists (for example by a merge that kept only one
     # side of this line) builds a page that crashes when its code is needed, so stop here and say which file is missing.
     missing = sorted(f.name for f in HERE.glob("*.js") if f.name not in DATA + APP + ["web-backend.js"])

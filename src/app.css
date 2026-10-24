@@ -1080,6 +1080,47 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @keyframes amrise { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-34px); } }
 @keyframes ampop { 0% { transform: scale(.4); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .ptsparks { display: none; } }
+/* ----- Runecrafting: a gem over a ritual slab in a ring of runes ----- */
+.rnmun .rn-glyph { fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: stroke .3s, filter .3s; }
+.rnmun .rn-glyph.on { filter: drop-shadow(0 0 3px rgba(255, 240, 200, .85)); stroke-width: 1.9; }
+.rnmun .rn-circle { opacity: .35; transition: opacity .5s; }
+.rnmun.ritual .rn-circle, .rnmun.rolling .rn-circle, .rnmun.bound .rn-circle { opacity: .9; animation: rnspin 9s linear infinite; }
+.rnmun .rn-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: brflick 1.3s var(--d) ease-in-out infinite alternate; }
+.rnmun.ritual .rn-flame, .rnmun.rolling .rn-flame { animation-duration: .5s; transform: scale(1.25); }
+.rnmun.failed .rn-flame, .rnmun.shatter .rn-flame { opacity: .15; animation: none; }
+.rnmun .rn-halo { opacity: .25; transition: opacity .6s; }
+.rnmun.ritual .rn-halo, .rnmun.rolling .rn-halo { opacity: .7; animation: rnpulse 1.4s ease-in-out infinite alternate; }
+.rnmun.bound .rn-halo { opacity: 1; }
+.rnmun.failed .rn-halo, .rnmun.shatter .rn-halo { opacity: 0; }
+.rnmun .rn-gem { transition: transform .9s ease-in-out, filter .6s; }
+.rnmun.ritual .rn-gem, .rnmun.rolling .rn-gem { transform: translateY(-16px); animation: rnhover 2.2s ease-in-out infinite alternate; }
+.rnmun.bound .rn-gem { transform: translateY(-8px); filter: drop-shadow(0 0 10px #fff6c8); }
+.rnmun.failed .rn-gem { filter: grayscale(.6) brightness(.75); }
+.rnmun .rn-carve { fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; opacity: 0; }
+.rnmun.bound .rn-carve { opacity: 1; animation: rncarve 1s .2s ease-out forwards; filter: drop-shadow(0 0 3px #fff6c8); }
+.rnmun .rn-cracks { opacity: 0; }
+.rnmun.shatter .rn-gem { animation: rnvanish .5s ease-in forwards; }
+.rnmun.shatter .rn-cracks { opacity: 1; }
+.rnmun .rn-shards polygon { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.rnmun.shatter .rn-shards polygon { animation: rnshard .9s .2s ease-out forwards; }
+.rnmun .rn-motes circle { opacity: 0; }
+.rnmun.ritual .rn-motes circle, .rnmun.rolling .rn-motes circle { animation: rnmote 1.3s var(--d) ease-in infinite; }
+.rnmun .rn-smoke circle { fill: #3a3631; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.rnmun.failed .rn-smoke circle, .rnmun.shatter .rn-smoke circle { animation: brsmoke 2.4s var(--d) ease-out infinite; }
+.rnalso { margin: 12px 0 0; font-size: 13px; }
+.rneff { display: grid; gap: 8px; }
+.rneff .ammode { margin: 0; }
+.rnpay { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
+.rnchoose { gap: 8px; margin-top: 10px; align-items: center; }
+.rnchoose .muted { flex: 1 1 220px; font-size: 13px; }
+@keyframes rnspin { to { stroke-dashoffset: -80; } }
+@keyframes rnpulse { from { opacity: .45; } to { opacity: .85; } }
+@keyframes rnhover { from { transform: translateY(-14px); } to { transform: translateY(-22px); } }
+@keyframes rncarve { 0% { stroke-dashoffset: 40; } 100% { stroke-dashoffset: 0; } }
+@keyframes rnvanish { 0% { opacity: 1; transform: none; } 60% { opacity: 1; transform: translate(2px, 1px); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes rnshard { 0% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translate(var(--x), calc(var(--y) + 40px)) rotate(200deg); } }
+@keyframes rnmote { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(104px, -118px) scale(.5); } }
+@media (prefers-reduced-motion: reduce) { .rnmun .rn-motes, .rnmun .rn-shards { display: none; } .rnmun.bound .rn-carve { stroke-dashoffset: 0; } }
 /* ----- Brewing: cauldron, herbs, catalyst vial, flask ----- */
 .brmun .br-fire path { transform-box: fill-box; transform-origin: 50% 100%; animation: brflick 1.1s var(--d) ease-in-out infinite alternate; }
 .brmun .br-glow { opacity: .55; transition: opacity .6s; }

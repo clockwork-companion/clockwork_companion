@@ -23,8 +23,8 @@ function CraftTab({ c, update }) {
   return html`<div class="tabpane">
     <nav class="craftnav" aria-label="Crafts">${CRAFTS.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} class=${"cn-" + k} onClick=${() => setSub(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${CRAFT_ICONS[k]}</svg><span>${n}</span>
-      <small>${num(c.skills[skill]) ? `${skill} ${num(c.skills[skill])}` : ["powder", "brew", "armor", "weapon"].includes(k) ? "" : "soon"}</small></button>`)}</nav>
-    ${sub === "powder" ? html`<${Powdertinkering} c=${c} update=${update} />` : sub === "brew" ? html`<${Brewing} c=${c} update=${update} />` : sub === "armor" ? html`<${ArmorUpkeep} c=${c} update=${update} />` : sub === "weapon" ? html`<${WeaponUpkeep} c=${c} update=${update} />` : html`<${UnderConstruction} c=${c} craft=${cur} />`}
+      <small>${num(c.skills[skill]) ? `${skill} ${num(c.skills[skill])}` : ""}</small></button>`)}</nav>
+    ${sub === "powder" ? html`<${Powdertinkering} c=${c} update=${update} />` : sub === "brew" ? html`<${Brewing} c=${c} update=${update} />` : sub === "rune" ? html`<${Runecrafting} c=${c} update=${update} />` : sub === "armor" ? html`<${ArmorUpkeep} c=${c} update=${update} />` : sub === "weapon" ? html`<${WeaponUpkeep} c=${c} update=${update} />` : html`<${UnderConstruction} c=${c} craft=${cur} />`}
   </div>`;
 }
 
