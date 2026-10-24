@@ -1265,6 +1265,10 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-skin="moss"] .frame:nth-of-type(even)::before { left: auto; right: -26px; transform: scaleX(-1); }
 :root[data-skin="moss"] .frame:nth-of-type(even)::after { right: auto; left: -26px; transform: scaleY(-1); }
 :root[data-skin="moss"] .frame:nth-of-type(3n)::after { display: none; }
+/* the living ivy (fx-moss.js) grows its own longer vines, moss and hide patches; the CSS vines above are its stand-in */
+.mh-ivy-layer { position: absolute; left: 0; top: 0; z-index: 2; overflow: hidden; pointer-events: none; }
+.mh-ivy { position: absolute; overflow: visible; pointer-events: none; }
+:root.has-ivy[data-skin="moss"] .frame::before, :root.has-ivy[data-skin="moss"] .frame::after { display: none; }
 
 :root[data-skin="moss"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel, .member, .gx-attr, .gx-road, .gx-pick, .ptread, .pled, .ptopt, .ptel, .ptstage, .ptlabel) {
   border-radius: var(--leafy-s); }
