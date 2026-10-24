@@ -3486,7 +3486,7 @@ const RULES_INFO = {
     "Armor Maintenance 3 lets you mend a suit's Soak Pool. You need a blacksmithing kit; heavy and plate armor also need a forge.",
     { t: { cols: ["Type", "Materials per attempt", "Repair Die"], rows: [["Light", "50 g × AV", "d6"], ["Medium", "70 g × AV", "d8"], ["Heavy", "100 g × AV", "d10"], ["Plate", "150 g × AV", "d12"]] } },
     { h: "How a repair goes" }, { ul: ["Roll an Armor Maintenance check: d100 minus your modifier (3% × Armor Maintenance).", "Repair Count = 10 − check ÷ 10, rounded down. A check of 32 gives 6.", "Roll the Repair Die that many times. The total goes back into the Soak Pool.", "Each attempt takes an hour."] },
-    { h: "Working for other players" }, { ul: ["A player picks their item on the Repair bench and sends it to a smith at the table (Maintenance 3 or more). The item stays in their Gear.", "The smith sees only that item, under \"Jobs from other players\", and repairs it with their own roll and materials. They can also send it back.", "The result lands on the owner's item the next time the owner's app is open.", "On the Craft bench, \"Made for\" sends a finished piece straight to another player's Gear."] },
+    { h: "Working for other players" }, { ul: ["A player picks their item on the Repair bench and sends it to a smith in the same campaign (Maintenance 3 or more). The item stays in their Gear.", "The smith sees only that item, under \"Jobs from other players\", and repairs it with their own roll and materials. They can also send it back.", "The result lands on the owner's item the next time the owner's app is open.", "On the Craft bench, \"Made for\" sends a finished piece straight to another player's Gear (same campaign only)."] },
     { note: "The app's readings: the Repair Count never goes above 10 dice (Utku). A suit repaired for someone else fills up to its wearer's own Soak maximum. A broken suit (Soak 0) needs a skilled craftsman; the app counts Armor Maintenance 5 as skilled and charges double materials to rebuild it. This last one is a draft to confirm." } ] },
   armorCraft: { kicker: "Crafting", title: "Crafting armor", body: [
     "Armor Maintenance 4 lets you make mundane suits; 8 adds Artisan properties. The 2020.1 book names armor crafting but doesn't give its steps yet, so the app follows the book's weapon crafting.",
@@ -3497,7 +3497,7 @@ const RULES_INFO = {
     "Weapon Maintenance 3 lets you craft, repair and salvage mundane weapons. You need a blacksmithing kit or a forge.",
     { t: { cols: ["Weapon", "Materials per attempt"], rows: [["One-handed", "400 g"], ["Two-handed", "800 g"], ["Unwieldy", "+400 g"]] } },
     { h: "How a repair goes" }, { ul: ["Roll a Weapon Maintenance check: d100 minus your modifier (3% × Weapon Maintenance).", "Repair Count = 10 − check ÷ 10, rounded down. A check of 32 gives 6.", "Roll a d10 that many times. The total goes back into the weapon's Durability.", "Each attempt takes an hour."] },
-    { h: "Working for other players" }, { ul: ["A player picks their item on the Repair bench and sends it to a smith at the table (Maintenance 3 or more). The item stays in their Gear.", "The smith sees only that item, under \"Jobs from other players\", and repairs it with their own roll and materials. They can also send it back.", "The result lands on the owner's item the next time the owner's app is open.", "On the Craft bench, \"Made for\" sends a finished piece straight to another player's Gear."] },
+    { h: "Working for other players" }, { ul: ["A player picks their item on the Repair bench and sends it to a smith in the same campaign (Maintenance 3 or more). The item stays in their Gear.", "The smith sees only that item, under \"Jobs from other players\", and repairs it with their own roll and materials. They can also send it back.", "The result lands on the owner's item the next time the owner's app is open.", "On the Craft bench, \"Made for\" sends a finished piece straight to another player's Gear (same campaign only)."] },
     { note: "The app's readings: the Repair Count never goes above 10 dice, as for armor (Utku). A weapon at 0 durability can be repaired like any other; the flaw it gained for breaking stays until a weaponsmith removes it." } ] },
   weaponCraft: { kicker: "Crafting", title: "Crafting weapons", body: [
     "Weapon Maintenance 3 lets you craft mundane weapons; 5 adds exotic materials; 7 a second chosen property and one more failure.",
@@ -6230,7 +6230,10 @@ const Shop = {
     const u = uids || [];
     return u.includes(this.me()) || (u.length === 0 && Store.table.role === "gm");
   },
-  cardOf(c) { const n = norm(c); return { name: n.name || "Unnamed", uids: playersOf(n), weapon: R.wmState(n).lvl, armor: R.amState(n).lvl }; },
+  cardOf(c) { const n = norm(c); return { name: n.name || "Unnamed", uids: playersOf(n), campaign: String(n.campaign || "").trim(), weapon: R.wmState(n).lvl, armor: R.amState(n).lvl }; },
+  // Jobs only go between characters of the same campaign; a character with no campaign set has nobody to send to.
+  camp(x) { return String((x && x.campaign) || "").trim().toLowerCase(); },
+  same(c, r) { const k = this.camp(c); return !!k && k === this.camp(r); },
   // Everyone at the table (characters, not companions).
   list() {
     const local = Object.values(Store.chars).filter(c => !c.companionOf).map(c => Object.assign(this.cardOf(c), { id: c.id }));
@@ -6239,7 +6242,7 @@ const Shop = {
     local.forEach(r => (byId[r.id] = r));   // what this app can see is fresher than the cards
     return Object.values(byId).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   },
-  smiths(kind, notId) { return this.list().filter(r => r.id !== notId && num(r[kind]) >= SHOP_MIN); },
+  smiths(kind, c) { return this.list().filter(r => r.id !== c.id && num(r[kind]) >= SHOP_MIN && this.same(c, r)); },
   card(id) { return this.list().find(r => r.id === id) || null; },
   // Keep this app's characters on the roster (only when something changed).
   publish() {
@@ -6247,7 +6250,7 @@ const Shop = {
     Object.values(Store.chars).forEach(c => {
       if (c.companionOf || !(!Store.table || Store.table.role === "gm" || playersOf(c).includes(this.me()))) return;
       const card = this.cardOf(c), key = JSON.stringify(card), have = this.roster.find(r => r.id === c.id);
-      if (this.cards[c.id] === key || (have && JSON.stringify({ name: have.name, uids: have.uids, weapon: have.weapon, armor: have.armor }) === key)) { this.cards[c.id] = key; return; }
+      if (this.cards[c.id] === key || (have && JSON.stringify({ name: have.name, uids: have.uids, campaign: have.campaign || "", weapon: have.weapon, armor: have.armor }) === key)) { this.cards[c.id] = key; return; }
       this.cards[c.id] = key;
       Store.db.doc("roster/" + c.id).set(card).catch(() => this.fail());
     });
@@ -6333,13 +6336,14 @@ function useShop() {
 function ShopSend({ c, kind, item, busy }) {
   useShop();
   if (!item) return null;
-  const out = Shop.outgoing(c, kind, item.id), smiths = Shop.smiths(kind, c.id), skill = SHOP_SKILL[kind];
+  const out = Shop.outgoing(c, kind, item.id), smiths = Shop.smiths(kind, c), skill = SHOP_SKILL[kind], camp = String(c.campaign || "").trim();
   return html`<div class="shopsend">
     <h3 class="lbl">Or send it to a ${kind === "weapon" ? "weaponsmith" : "armorsmith"}</h3>
     ${Shop.err ? html`<p class="muted ptrule">${Shop.err}</p>`
       : out ? html`<div class="row shopaway"><span><span class="flag brass">At ${out.to.name}'s bench</span> Waiting for them to repair it. It stays in your Gear meanwhile.</span>
           <button class="btn small" disabled=${busy} onClick=${() => Shop.del(out.id)}>Take it back</button></div>`
-      : smiths.length === 0 ? html`<p class="muted ptrule">Nobody else at the table has ${skill} ${SHOP_MIN} or more.</p>`
+      : !camp ? html`<p class="muted ptrule">Set this character's campaign on the Sheet first: you can only send things to smiths in the same campaign.</p>`
+      : smiths.length === 0 ? html`<p class="muted ptrule">Nobody else in ${camp} has ${skill} ${SHOP_MIN} or more.</p>`
       : html`<p class="muted ptrule">They see only this ${kind === "weapon" ? "weapon" : "suit"}, repair it with their own roll and materials, and it comes back here.</p>
         <div class="ptopts brchips">${smiths.map(s => html`<button type="button" class="ptopt" disabled=${busy} onClick=${() => { Shop.send(kind, c, item, s); toast(`Sent to ${s.name}.`); }}>
           <b>Send to ${s.name}</b><span>${skill} ${s[kind]}</span></button>`)}</div>`}
@@ -6365,7 +6369,7 @@ function ShopJobs({ c, kind, selId, pick, busy }) {
 // On a craft bench: who the finished piece is for.
 function MadeFor({ c, value, onSet, busy }) {
   useShop();
-  const others = Shop.list().filter(r => r.id !== c.id);
+  const others = Shop.list().filter(r => r.id !== c.id && Shop.same(c, r));   // only characters in the same campaign
   if (!others.length) return null;
   return html`<div class="row ptbatch"><label for=${"mf-" + c.id}>Made for</label>
     <select id=${"mf-" + c.id} class="inp" value=${value || ""} disabled=${busy} onChange=${e => onSet(e.target.value)}>
