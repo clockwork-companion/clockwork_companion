@@ -14,6 +14,9 @@ before are kept on the device, and changes made offline are sent when you're bac
   It only shows when your browser can install the site.
 - **Android (Chrome):** menu ⋮ → **Install app** (or **Add to Home screen**).
 - **iPhone / iPad (Safari):** Share → **Add to Home Screen**.
+- **Firefox on Windows (143 or newer):** the **web apps** button at the right end of the address bar.
+  Firefox on Android: menu ⋮ → **Add app to Home screen**. Firefox on Mac or Linux can't install sites.
+- **Safari on a Mac:** File → **Add to Dock**.
 - **Computer (Chrome or Edge):** the install icon at the right end of the address bar.
 
 When a new version is published, the app shows "A new version of the app is ready" with a **Reload** button.
