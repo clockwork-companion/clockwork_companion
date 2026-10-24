@@ -61,6 +61,7 @@ python3 src/build.py                  # src/clockwork-companion.html, the claude
 | `fx-moss.js` | The Mossheart theme's living ivy: grows ivy (sized to each section), moss clumps and hide patches round the sections, and lets leaves lean a little when the pointer brushes past. Only while that theme is on; without it the CSS vines in `app.css` show instead. |
 | `craft.js` | The Crafting tab: one section per craft, and the Powdertinkering bench (munition drawings with callouts, forge animation, supplies, ledger). |
 | `craft-armor.js` | Crafting → Armor upkeep: the Repair and Craft benches (suit drawings on a stand, hammer and forge animations). |
+| `craft-weapon.js` | Crafting → Weapon upkeep: the Repair and Craft benches (weapon drawings in a rack by type, nicks hammered out, forge with flaws and random properties). |
 | `genesis.js` | Guided character creation. |
 | `gm.js` | GM table: players and roles, backups, the initiative deck. |
 | `web-backend.js`, `web/` | Website-only parts: sign-in, Firestore storage, the rules file, the README template. |
