@@ -19,6 +19,8 @@ const CRAFT_ICONS = {
 function CraftTab({ c, update }) {
   const [sub, setSub] = useState(() => lsGet("cw-craft-sub", "powder"));
   useEffect(() => lsSet("cw-craft-sub", sub), [sub]);
+  const shop = useShop();   // the "new job" notice can send the smith to the Weapon or Armor upkeep bench
+  useEffect(() => { const f = shop.focus; if (f && f.char === c.id) setSub(f.kind); }, [shop.focusSeq, c.id]);
   const cur = CRAFTS.find(x => x[0] === sub) || CRAFTS[0];
   return html`<div class="tabpane">
     <nav class="craftnav" aria-label="Crafts">${CRAFTS.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} class=${"cn-" + k} onClick=${() => setSub(k)}>

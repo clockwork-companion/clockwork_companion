@@ -531,6 +531,7 @@ function App() {
     ${making === "choose" && html`<${NewChoice} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")} onBlank=${() => { setMaking(null); create(false); }} />`}
     ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
     <${Toaster} /><${HoverCard} /><${DiceAsk} />
+    <${ShopNotice} go=${id => { setSel(id); setView("chars"); setSettings(false); setTab("craft"); window.scrollTo(0, 0); }} />
   </div>`;
 }
 
@@ -1182,6 +1183,7 @@ function GearTab({ c, d, update }) {
           <div class="track" style="background:var(--sunk)"><i style=${`width:${chk.soakMax ? Math.min(100, (num(a.soak) / chk.soakMax) * 100) : 0}%;background:var(--ink-2)`}></i></div>
           <div class="calc">Soak ${num(a.soak)}/${chk.soakMax}${chk.soakBonus ? ` (incl. +${chk.soakBonus} Armor Mastery)` : ""} · repair ${chk.repairCost} g, ${chk.repairDie}</div>
           ${!chk.ok && html`<div class="chips">${chk.problems.map(p => html`<span class="flag bad">${p}</span>`)}</div>`}
+          <${ShopGear} c=${c} kind="armor" item=${a} update=${update} />
           <div class="row" style="justify-content:space-between"><span class="muted">${a.type === "light" ? "Casting −2×AV" : a.type === "medium" ? "Stealth −AV, casting −2×AV" : a.type === "heavy" ? "Dex skills −AV, Stealth disadv., Entrada −2×AV" : "Dex skills and saves −AV, Stealth disadv."}</span>
             <button class="btn small danger" onClick=${() => update(x => { x.armor.splice(i, 1); })}>Remove</button></div></div>`; })}
         <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addArmor}>+ Add armor</button></div></div>
@@ -1272,6 +1274,7 @@ function WeaponCard({ c, w, i, update }) {
       ${durMax > 0 && dur <= 0 && html`<span class="flag bad">Broken: gains a flaw</span>`}
     </div>
     ${w.props && html`<p class="wprops">${w.props}</p>`}
+    <${ShopGear} c=${c} kind="weapon" item=${w} update=${update} />
   </div>`;
   return html`<div ref=${card} class="wcard editing">
     <div class="title"><input aria-label="Weapon name" placeholder=${kind === "shield" ? "Shield name" : "Weapon name"} value=${w.name} onInput=${ev => set("name", ev.target.value)} />
