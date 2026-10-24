@@ -58,7 +58,7 @@ python3 src/build.py                  # src/clockwork-companion.html, the claude
 | `rules-info.js` | The plain-language rules shown when a section heading is clicked (`RULES_INFO`). |
 | `app.js` | The UI (Preact + htm, no build step): sheet, vitals, Skills & Talents, gear, tabletop, themes. |
 | `fx-blackwall.js` | The Cyberpunk theme's animated Blackwall: a WebGL shader on a canvas behind the page. It only runs while that theme is on; without WebGL the CSS stand-in in `app.css` shows instead. |
-| `fx-steppe.js` | The Talon Saga theme's living landscape: central Mongolian steppe, gers, ancestral stones, a galloping herd and an eagle at random intervals, drawn on a 2D canvas behind the page. It only runs while that theme is on. |
+| `fx-steppe.js` | The Talon Saga theme's landscape: a realistic central-Mongolian steppe rendered once by a WebGL terrain shader (in strips, then faded in), with a galloping herd, an eagle and ger smoke animated over it on a 2D canvas. Falls back to a painted scene without WebGL. It only runs while that theme is on. |
 | `fx-moss.js` | The Mossheart theme's living ivy: grows ivy (sized to each section), moss clumps and hide patches round the sections, and lets leaves lean a little when the pointer brushes past. Only while that theme is on; without it the CSS vines in `app.css` show instead. |
 | `craft.js` | The Crafting tab: one section per craft, and the Powdertinkering bench (munition drawings with callouts, forge animation, supplies, ledger). |
 | `craft-armor.js` | Crafting → Armor upkeep: the Repair and Craft benches (suit drawings on a stand, hammer and forge animations). |
