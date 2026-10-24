@@ -131,3 +131,4 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-24:** Crafting is its own tab with one section per craft; each bench is an illustrated item with callout labels and an animated button under it. Utku.
 - **2026-10-24:** Armor repair: the Repair Count is capped at 10 dice. Utku.
 - **2026-10-24:** Armor crafting (not written in the 2020.1 book) follows the book's weapon crafting, with armor extras (+1 AV −10%, +5 Soak −5%); every change is marked in `rules-info.js`. Utku.
+- **2026-10-24:** Dice: a top-bar switch (per browser, like the theme) between "App rolls" and "My own rolls". With own rolls, every roll the app makes (long rest cleansing, creation 3d8, Powdertinkering, Armor repair and craft) asks for the number rolled at the table, e.g. in Tabletop Simulator; new rolls go through `askRoll()` in `app.js`. Utku.

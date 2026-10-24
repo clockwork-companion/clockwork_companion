@@ -121,9 +121,12 @@ function Powdertinkering({ c, update }) {
     }
     const have = num(cr.supplies[s.mat]) - num(f.spent[s.mat]);
     if (have < R.PT_GRAMS) { patch({ idx, phase: "short", roll: null }); return; }
-    patch(g => ({ idx, phase: "rolling", roll: null, spent: Object.assign({}, g.spent, { [s.mat]: num(g.spent[s.mat]) + R.PT_GRAMS }) }));
+    patch({ idx, phase: "asking", roll: null });
+    askRoll({ title: s.label, dice: [{ n: 1, sides: 100 }], note: `Powdertinkering: d100 − ${f.mod}, under ${s.dc} and it holds.` }).then(([r]) => {
+    if (!fRef.current) return;
+    patch(g => ({ phase: "rolling", spent: Object.assign({}, g.spent, { [s.mat]: num(g.spent[s.mat]) + R.PT_GRAMS }) }));
     later(() => {
-      const r = R.rollDie(100), total = r - f.mod, ok = total < s.dc;
+      const total = r - f.mod, ok = total < s.dc;
       patch(g => {
         const det = g.det + (ok ? 0 : 1);
         const roll = { key: s.key, label: s.label, r, total, dc: s.dc, ok };
@@ -133,7 +136,8 @@ function Powdertinkering({ c, update }) {
       const g = fRef.current;
       if (ok) later(() => next(idx), 750);
       else if (g.phase === "scrapping") later(() => finish(true), 1100);
-    }, 1050);
+    }, Dice.mode === "own" ? 600 : 1050);
+    });
   };
   const next = idx => { const f = fRef.current; if (!f) return; if (idx + 1 >= f.steps.length) finish(false); else { patch({ idx: idx + 1, phase: "next" }); later(() => attempt(idx + 1), 350); } };
   const skip = () => { const f = fRef.current; patch(g => ({ res: Object.assign({}, g.res, { [f.steps[f.idx].key]: g.res[f.steps[f.idx].key] === "fail" ? "fail" : "skip" }) })); next(f.idx); };
@@ -275,7 +279,7 @@ function ForgeReadout({ f, st, matName, supplies, onRetry, onSkip, onKeep, onIgn
     <div class="ptstep"><span class="lbl">Step ${f.idx + 1} of ${f.steps.length}</span><b>${f.phase === "intro" ? "Firing up the bench…" : s.label}</b>${pips}</div>
     ${f.phase !== "intro" && f.phase !== "short" && html`<div class=${"ptdice" + (f.phase === "rolling" ? " rolling" : r ? (r.ok ? " ok" : " fail") : "")}>
       <span class="d100">${shown}</span>
-      <span class="ptmath">${f.phase === "rolling" ? html`d100 − ${f.mod} · under ${s.dc}` : r && html`${r.r} − ${f.mod} = <b>${r.total}</b> ${r.ok ? "<" : "≥"} ${s.dc} · ${r.ok ? "it holds" : "a Detriment"}`}</span></div>`}
+      <span class="ptmath">${f.phase === "rolling" || f.phase === "asking" ? html`d100 − ${f.mod} · under ${s.dc}` : r && html`${r.r} − ${f.mod} = <b>${r.total}</b> ${r.ok ? "<" : "≥"} ${s.dc} · ${r.ok ? "it holds" : "a Detriment"}`}</span></div>`}
     ${f.phase === "short" && html`<p class="flag bad">Out of ${matName(s.mat)}: ${Math.max(0, num(supplies[s.mat]) - num(f.spent[s.mat]))} g left, 200 g needed.</p>`}
     ${(f.phase === "choice" || f.phase === "short") && html`<div class="row ptchoices">
       ${f.phase === "choice" && html`<button class="btn primary" onClick=${onRetry}>Try again · 200 g</button>`}
