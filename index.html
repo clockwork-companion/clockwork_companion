@@ -841,7 +841,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .tabs .tab-craft { --tc: var(--forge, #b4532a); --ts: var(--forge-soft, #f0d6c4); }
 :root { --forge: #a8461f; --forge-soft: #f0d6c4; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --forge: #e48553; --forge-soft: #47271a; } }
-.craftnav { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); gap: 6px; margin-top: -8px; }
+.craftnav { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 6px; margin-top: -8px; }
 .craftnav button { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; padding: 8px 12px; border: 1.5px solid var(--hair); background: transparent; color: var(--ink-2); border-radius: 2px; min-width: 0; }
 .craftnav button .tabicon { grid-row: span 2; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
 .craftnav button span { font: 600 13px/1.15 var(--f-head); letter-spacing: .07em; text-transform: uppercase; }
@@ -849,6 +849,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .craftnav button:hover { border-color: var(--rule); color: var(--ink); }
 .craftnav button[aria-pressed="true"] { border-color: var(--rule); background: var(--rule); color: var(--paper); box-shadow: inset 0 -4px 0 var(--forge); }
 .craftnav button[aria-pressed="true"] small { color: color-mix(in srgb, var(--paper) 70%, transparent); }
+@media (max-width: 560px) { .craftnav button { padding: 7px 8px; column-gap: 6px; } .craftnav button span { font-size: 12px; letter-spacing: .03em; overflow-wrap: anywhere; } }
 .construct { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; padding: 14px 0 4px; }
 .construct-gears { width: 120px; height: 80px; flex: none; }
 .construct-gears path, .construct-gears circle { fill: none; stroke: var(--brass); stroke-width: 2; }
@@ -977,113 +978,161 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .ptledger { display: grid; gap: 8px; }
 .pled { display: grid; gap: 4px; border-left: 4px solid var(--good); background: var(--card); padding: 8px 10px; min-width: 0; }
 .pled.scrap { border-left-color: var(--bad); } .pled b { overflow-wrap: anywhere; }
+/* armor upkeep bench */
+.ammode { display: grid; grid-template-columns: 1fr 1fr; max-width: 280px; margin: 0 0 14px; }
+.ammun .am-suit, .ammun .am-layer { transition: opacity .35s, filter .35s; }
+.ammun.ghost .am-suit { opacity: .2; filter: grayscale(1); }
+.ammun.ghost .am-suit path { stroke-dasharray: 5 4; }
+.am-suit.assemble .am-layer { animation: amin .55s ease-out backwards; }
+.am-suit.assemble .am-l2 { animation-delay: .25s; } .am-suit.assemble .am-l3 { animation-delay: .5s; }
+.am-glow { opacity: 0; transition: opacity .5s; } .am-glow.on { opacity: 1; animation: amfire .8s ease-in-out infinite alternate; }
+.am-swing { transform-box: view-box; transform-origin: 0 0; transform: rotate(72deg); }
+.am-swing.go { animation: amswing .55s ease-in; }
+.ammun.ghost .am-swing.go { animation-iteration-count: infinite; }
+.am-plus { font: 700 22px var(--f-mono); fill: #ffd27a; stroke: #3a2410; stroke-width: 3px; paint-order: stroke; animation: amrise .55s ease-out forwards; }
+.am-break { fill: none; stroke: #e0403a; stroke-width: 3; stroke-linejoin: round; }
+.ammun.broken .am-suit { filter: saturate(.35) brightness(.8); }
+.am-glintbar { opacity: 0; transform: translateX(-100px) skewX(-14deg); }
+.ammun.made .am-glintbar, .ammun.mended .am-glintbar { animation: ptglint 1.1s .8s ease-out forwards; }
+.ammun.lost .am-suit { opacity: .45; filter: grayscale(1) brightness(.6); animation: ptshake .45s 2; }
+.am-flaw path { fill: none; stroke: #e0403a; stroke-width: 3; stroke-dasharray: 200; stroke-dashoffset: 200; animation: ptcrack .5s ease-out forwards; }
+.amsoak { max-width: 470px; height: 8px; margin: 10px auto 0; background: var(--sunk); border: 1px solid var(--hair); }
+.amsoak i { display: block; height: 100%; background: var(--ink-2); transition: width .25s; }
+.amdice { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.amdie { width: 32px; height: 32px; display: grid; place-items: center; border: 1.5px dashed var(--hair); font: 700 15px var(--f-mono); color: var(--ink); }
+.amdie.on { border: 1.5px solid var(--brass); background: var(--brass-soft); animation: ampop .3s ease-out; }
+.amsum { margin-left: auto; font: 700 18px var(--f-mono); color: var(--good); }
+.amsuit .amtrack { display: block; height: 5px; margin-top: 5px; background: var(--sunk); }
+.amsuit .amtrack i { display: block; height: 100%; background: var(--ink-2); }
+.amforge { display: flex; gap: 8px; align-items: center; margin-top: 14px; font-weight: 600; flex-wrap: wrap; }
+.amempty { padding: 60px 10px; text-align: center; }
+@keyframes amin { from { opacity: 0; transform: translateY(-14px); } }
+@keyframes amfire { from { opacity: .65; } to { opacity: 1; } }
+@keyframes amswing { 0% { transform: rotate(72deg); } 48% { transform: rotate(30deg); } 62% { transform: rotate(36deg); } 100% { transform: rotate(72deg); } }
+@keyframes amrise { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-34px); } }
+@keyframes ampop { 0% { transform: scale(.4); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .ptsparks { display: none; } }
-/* ----- Cyberpunk: a street-level netrunner rig. Near-black with neon yellow, cyan and magenta, cut corners,
-   scanlines, glitch-split headings and monospace readouts ----- */
+/* ----- Cyberpunk (extended): Olympus on the net. A clean, future-city interface where the old gods run as AIs:
+   gold Greek-key (meander) trims, temple-column tabs, Greek-letter module tags, cyan holo light, and the Blackwall,
+   the red firewall at the edge of the net, smouldering along the bottom of the screen ----- */
 :root[data-skin="cyber"] {
-  --paper: #07080d; --card: #0f111a; --sunk: #05060a; --ink: #e6f7ff; --ink-2: #a9c2cf; --ink-3: #6a7f8c;
-  --rule: #fcee0a; --bracket: #00e5ff; --hair: #24303d; --brass: #fcee0a; --brass-ink: #07080d; --brass-soft: #2c2a08;
-  --seal: #05060a; --seal-2: #ff2a6d; --blood: #ff2a6d; --blood-soft: #3a0f20; --tox: #39ff88; --tox-soft: #0c2a1a;
-  --hunger: #ffb000; --hunger-soft: #33240a; --life: #00e5ff; --life-soft: #062a33; --warn: #ffb000; --bad: #ff2a6d; --good: #39ff88; --forge: #ff2a6d;
-  --cyan: #00e5ff; --magenta: #ff2a6d; --yellow: #fcee0a;
-  --f-display: "Rajdhani", "Arial Narrow", sans-serif; --f-head: "Rajdhani", "Arial Narrow", sans-serif; --f-body: "Rajdhani", "Segoe UI", sans-serif;
-  --f-mono: "Share Tech Mono", "Consolas", monospace;
-  --cut: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  --paper: #04060c; --card: #0b0f19; --sunk: #03050a; --ink: #e8f6ff; --ink-2: #a8bccb; --ink-3: #6a7d8c;
+  --rule: #e8c66a; --bracket: #00f0ff; --hair: #1d2a38; --brass: #e8c66a; --brass-ink: #04060c; --brass-soft: #2a2412;
+  --seal: #03050a; --seal-2: #ff2a4d; --blood: #ff2a4d; --blood-soft: #3a0c16; --tox: #3dffa2; --tox-soft: #0b2a1d;
+  --hunger: #ffb547; --hunger-soft: #33240c; --life: #00f0ff; --life-soft: #062a33; --warn: #ffb547; --bad: #ff2a4d; --good: #3dffa2; --forge: #ff2a4d;
+  --cyan: #00f0ff; --gold: #e8c66a; --wall: #ff1f3d;
+  --f-display: "Michroma", "Eurostile", sans-serif; --f-head: "Oxanium", "Segoe UI", sans-serif; --f-body: "Oxanium", "Segoe UI", sans-serif; --f-mono: "Oxanium", "Consolas", monospace;
+  --meander-gold: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='12'%3E%3Cpath d='M0 11.5H14M2.5 11.5V.5H12.5V8.5H6V4H9.5' fill='none' stroke='%23e8c66a' stroke-width='1'/%3E%3C/svg%3E"); --meander-cyan: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='12'%3E%3Cpath d='M0 11.5H14M2.5 11.5V.5H12.5V8.5H6V4H9.5' fill='none' stroke='%2300f0ff' stroke-width='1'/%3E%3C/svg%3E");
+  --cut: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
   --cut-s: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
-  --menu-bg: #0f111a; --menu-ink: #e6f7ff;
+  --holo: linear-gradient(115deg, rgb(0 240 255 / .07), transparent 35%, transparent 65%, rgb(232 198 106 / .06));
+  --menu-bg: #0b0f19; --menu-ink: #e8f6ff;
   color-scheme: dark;
 }
-[data-skin="cyber"] body { font-size: 16.5px; font-weight: 500; background:
-  linear-gradient(rgb(0 229 255 / .04) 1px, transparent 1px) 0 0 / 100% 32px,
-  linear-gradient(90deg, rgb(0 229 255 / .04) 1px, transparent 1px) 0 0 / 32px 100%,
-  radial-gradient(900px 500px at 85% -10%, rgb(255 42 109 / .16), transparent 70%),
-  radial-gradient(900px 600px at 0% 110%, rgb(0 229 255 / .12), transparent 70%), #07080d; background-attachment: fixed; }
-[data-skin="cyber"] body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
-  background: repeating-linear-gradient(0deg, rgb(0 0 0 / .14) 0 1px, transparent 1px 3px); }
+[data-skin="cyber"] body { font-size: 16px; background:
+  linear-gradient(rgb(0 240 255 / .035) 1px, transparent 1px) 0 0 / 100% 32px,
+  linear-gradient(90deg, rgb(0 240 255 / .035) 1px, transparent 1px) 0 0 / 32px 100%,
+  radial-gradient(900px 500px at 85% -10%, rgb(0 240 255 / .12), transparent 70%),
+  radial-gradient(1200px 420px at 50% 115%, rgb(255 31 61 / .30), transparent 70%), #04060c; background-attachment: fixed; }
+/* the Blackwall: a red wall of drifting data along the bottom edge, fading upward */
+[data-skin="cyber"] body::after { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 42vh; z-index: -1; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 7px, rgb(255 31 61 / .55) 7px 8px, transparent 8px 19px, rgb(255 31 61 / .28) 19px 21px, transparent 21px 34px),
+    repeating-linear-gradient(90deg, transparent 0 53px, rgb(255 120 135 / .6) 53px 54px, transparent 54px 97px),
+    repeating-linear-gradient(0deg, transparent 0 22px, rgb(255 31 61 / .25) 22px 23px, transparent 23px 61px),
+    linear-gradient(0deg, rgb(255 31 61 / .28), transparent 75%);
+  -webkit-mask: linear-gradient(0deg, #000, rgb(0 0 0 / .5) 35%, transparent), repeating-linear-gradient(0deg, #000 0 15px, rgb(0 0 0 / .35) 15px 18px, #000 18px 44px, transparent 44px 47px);
+  -webkit-mask-composite: source-in;
+  mask: linear-gradient(0deg, #000, rgb(0 0 0 / .5) 35%, transparent), repeating-linear-gradient(0deg, #000 0 15px, rgb(0 0 0 / .35) 15px 18px, #000 18px 44px, transparent 44px 47px);
+  mask-composite: intersect; animation: cyWall 24s linear infinite; }
+@keyframes cyWall { to { background-position: 340px 0, -485px 0, 0 -183px, 0 0; } }
 :root[data-skin="cyber"] .sigil { display: none; }
-:root[data-skin="cyber"] .top { border-bottom: 2px solid var(--yellow); box-shadow: 0 1px 0 var(--magenta), 0 6px 18px -8px rgb(252 238 10 / .5); }
-:root[data-skin="cyber"] .brand { font: 700 32px/1 var(--f-display); letter-spacing: .12em; text-transform: uppercase; color: var(--yellow);
-  text-shadow: 2px 0 0 var(--magenta), -2px 0 0 var(--cyan); }
-:root[data-skin="cyber"] .brand:hover { animation: cyGlitch .5s steps(2) 2; }
-@keyframes cyGlitch { 0% { text-shadow: 3px 0 var(--magenta), -3px 0 var(--cyan); transform: translateX(0); } 50% { text-shadow: -3px 1px var(--magenta), 3px -1px var(--cyan); transform: translateX(1px); } 100% { text-shadow: 2px 0 var(--magenta), -2px 0 var(--cyan); transform: none; } }
-:root[data-skin="cyber"] .brand small { font: 600 13px var(--f-mono); color: var(--cyan); letter-spacing: .2em; text-shadow: none; }
-:root[data-skin="cyber"] .namefield { font: 700 34px var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); border-bottom: 2px solid var(--cyan); }
-:root[data-skin="cyber"] :is(.lbl, .field label, .mini label, .stat span, .fact span, .wstats span, .legend b, th, .seg button, .btn, .pbox small) { font-family: var(--f-mono); font-weight: 400; letter-spacing: .1em; text-transform: uppercase; }
+:root[data-skin="cyber"] .top { border-bottom: 0; padding-bottom: 18px; background: var(--meander-gold) 0 100% / 14px 12px repeat-x; }
+:root[data-skin="cyber"] .brand { font: 400 26px/1 var(--f-display); letter-spacing: .16em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 14px rgb(0 240 255 / .55); }
+:root[data-skin="cyber"] .brand small { font: 600 12px var(--f-head); color: var(--gold); letter-spacing: .3em; text-shadow: none; }
+:root[data-skin="cyber"] .brand small::after { content: " · ΟΛΥΜΠΟΣ"; color: var(--cyan); }
+:root[data-skin="cyber"] .namefield { font: 400 28px var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid var(--cyan); box-shadow: 0 1px 0 rgb(0 240 255 / .4); }
+:root[data-skin="cyber"] :is(.lbl, .field label, .mini label, .stat span, .fact span, .wstats span, .legend b, th, .seg button, .btn, .pbox small) { font-family: var(--f-head); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
 :root[data-skin="cyber"] :is(.field label, .mini label, .fact span, .stat span, th) { color: var(--cyan); }
-:root[data-skin="cyber"] :is(.attr .nm, .sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3, .gx-title, .ornate, .gx-an b, .sphead h2, .meter .t) { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
-:root[data-skin="cyber"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3) { border-bottom: 1px solid var(--magenta); box-shadow: 0 1px 0 rgb(255 42 109 / .35); }
-:root[data-skin="cyber"] .attr .nm { font-size: 18px; }
-:root[data-skin="cyber"] .meter .t { font-size: 16px; }
-/* headings: a neon-yellow tag with a cut corner and a magenta "//" prefix; the rule is a cyan data line ending in a magenta node */
-:root[data-skin="cyber"] .h { font: 700 24px var(--f-display); letter-spacing: .1em; }
-:root[data-skin="cyber"] .h > span:not(.orn) { padding: 4px 22px 3px 12px; background: var(--yellow); color: #07080d; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%); }
-:root[data-skin="cyber"] .h > span:not(.orn)::before { content: "//"; color: var(--magenta); margin-right: 8px; font-family: var(--f-mono); font-size: .8em; }
-:root[data-skin="cyber"] .orn::before { border: 0; height: 1px; top: 7px; right: 22px; background: linear-gradient(90deg, var(--cyan) 0 60%, transparent 60% 64%, var(--cyan) 64% 70%, transparent 70% 74%, var(--cyan) 74%); box-shadow: 0 0 6px var(--cyan); }
-:root[data-skin="cyber"] .orn::after { width: 9px; height: 9px; transform: rotate(45deg); top: 3px; right: 6px; border: 0; background: var(--magenta); box-shadow: 0 0 10px var(--magenta); }
-:root[data-skin="cyber"] .diamond::before { transform: rotate(45deg); border: 1.5px solid var(--magenta); background: transparent; inset: 3px; }
-:root[data-skin="cyber"] .diamond.on::before { background: var(--magenta); box-shadow: 0 0 10px var(--magenta); }
-/* frames: cut-corner panels with cyan brackets top-left and magenta brackets bottom-right */
-:root[data-skin="cyber"] .frame { border: 1px solid rgb(0 229 255 / .28); padding: 22px 22px 22px; clip-path: var(--cut);
-  background: linear-gradient(180deg, rgb(15 17 26 / .92), rgb(10 11 18 / .92)); box-shadow: inset 0 0 40px rgb(0 229 255 / .04); }
-:root[data-skin="cyber"] .frame::before { left: 0; top: 0; width: 46px; height: 46px; background: none; border-left: 3px solid var(--cyan); border-top: 3px solid var(--cyan); filter: drop-shadow(0 0 4px var(--cyan)); }
-:root[data-skin="cyber"] .frame::after { left: auto; right: 0; bottom: 0; width: 46px; height: 46px; background: none; border-right: 3px solid var(--magenta); border-bottom: 3px solid var(--magenta); filter: drop-shadow(0 0 4px var(--magenta)); }
+:root[data-skin="cyber"] :is(.attr .nm, .gx-title, .ornate, .gx-an b, .sphead h2) { font-family: var(--f-display); font-weight: 400; text-transform: uppercase; letter-spacing: .1em; }
+:root[data-skin="cyber"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3, .meter .t) { font-family: var(--f-head); font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
+:root[data-skin="cyber"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3) { border-bottom: 0; padding-bottom: 8px; background: var(--meander-gold) 0 100% / 9.33px 8px repeat-x; }
+:root[data-skin="cyber"] .attr .nm { font-size: 14px; }
+:root[data-skin="cyber"] .meter .t { font-size: 15px; }
+/* headings: a gold temple-front plate (chamfered like a pediment) marked with Ω, then a cyan Greek-key line */
+:root[data-skin="cyber"] .h { font: 400 17px var(--f-display); letter-spacing: .14em; }
+:root[data-skin="cyber"] .h > span:not(.orn) { padding: 8px 22px 6px 16px; color: #04060c; background: linear-gradient(180deg, #f6dd94, #e8c66a 55%, #b8963c);
+  clip-path: polygon(0 100%, 0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% 100%); box-shadow: 0 0 18px rgb(232 198 106 / .35); }
+:root[data-skin="cyber"] .h > span:not(.orn)::before { content: "Ω"; margin-right: 10px; font: 700 .95em var(--f-head); color: #6a1020; }
+:root[data-skin="cyber"] .orn::before { border: 0; height: 8px; top: 3px; right: 22px; background: var(--meander-cyan) 0 0 / 9.33px 8px repeat-x; opacity: .7; filter: drop-shadow(0 0 3px var(--cyan)); }
+:root[data-skin="cyber"] .orn::after { width: 9px; height: 9px; transform: rotate(45deg); top: 2px; right: 6px; border: 0; background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+:root[data-skin="cyber"] .diamond::before { transform: rotate(45deg); border: 1.5px solid var(--gold); background: transparent; inset: 3px; }
+:root[data-skin="cyber"] .diamond.on::before { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+/* frames: holo-glass modules with cut corners, a gold Greek-key cornice, and a Greek-letter module tag (α, β, γ…) */
+:root[data-skin="cyber"] .tabpane { counter-reset: unit; }
+:root[data-skin="cyber"] .frame { counter-increment: unit; border: 1px solid rgb(0 240 255 / .25); padding: 30px 22px 22px; clip-path: var(--cut);
+  background: var(--holo), linear-gradient(180deg, rgb(11 15 25 / .9), rgb(6 9 16 / .9)); box-shadow: inset 0 0 40px rgb(0 240 255 / .04); }
+:root[data-skin="cyber"] .frame::before { left: 18px; right: 18px; top: 7px; width: auto; height: 12px; background: var(--meander-gold) 0 0 / 14px 12px repeat-x; opacity: .55; border: 0; }
+:root[data-skin="cyber"] .frame::after { content: "ΣΥΣ·" counter(unit, lower-greek); left: auto; right: 22px; top: auto; bottom: 6px; width: auto; height: auto; background: none; border: 0;
+  font: 600 11px/1 var(--f-head); letter-spacing: .2em; color: var(--cyan); opacity: .7; }
 :root[data-skin="cyber"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel, .member, .gx-attr, .gx-road, .gx-pick, .gx-choose, .chip) {
-  border: 1px solid var(--hair); border-radius: 0; background: rgb(15 17 26 / .9); clip-path: var(--cut-s); box-shadow: inset 2px 0 0 var(--cyan); }
-/* tabs: slanted neon keys; the open one is solid yellow */
-:root[data-skin="cyber"] .tabs { border-bottom: 2px solid var(--yellow); gap: 4px; box-shadow: 0 2px 10px -4px rgb(252 238 10 / .6); }
-:root[data-skin="cyber"] .tabs button { border: 0; padding: 10px 22px 9px; color: var(--cyan); background: rgb(0 229 255 / .08);
-  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%); font: 700 16px var(--f-display); letter-spacing: .12em; text-transform: uppercase; box-shadow: none; }
-:root[data-skin="cyber"] .tabs button:hover { background: rgb(0 229 255 / .18); color: #fff; }
-:root[data-skin="cyber"] .tabs button[aria-selected="true"] { background: var(--yellow); color: #07080d; box-shadow: none; }
+  border: 1px solid var(--hair); border-radius: 0; background: var(--holo), rgb(11 15 25 / .92); clip-path: var(--cut-s); box-shadow: inset 0 1px 0 rgb(0 240 255 / .35); }
+/* tabs: temple columns: fluted shafts under a gold capital; the open one lights up cyan */
+:root[data-skin="cyber"] .tabs { border-bottom: 1px solid var(--gold); gap: 6px; box-shadow: 0 1px 0 rgb(232 198 106 / .25), 0 6px 14px -8px rgb(232 198 106 / .6); }
+:root[data-skin="cyber"] .tabs button { border: 0; border-top: 3px solid var(--gold); padding: 10px 18px 9px; color: var(--ink-2); border-radius: 0;
+  background: repeating-linear-gradient(90deg, rgb(255 255 255 / .045) 0 2px, transparent 2px 7px), rgb(11 15 25 / .9);
+  font: 400 12.5px var(--f-display); letter-spacing: .14em; text-transform: uppercase; box-shadow: inset 0 3px 0 rgb(0 0 0 / .4); }
+:root[data-skin="cyber"] .tabs button:hover { color: #fff; background: repeating-linear-gradient(90deg, rgb(0 240 255 / .08) 0 2px, transparent 2px 7px), rgb(11 15 25 / .9); }
+:root[data-skin="cyber"] .tabs button[aria-selected="true"] { color: #04060c; border-top-color: #f6dd94; background: linear-gradient(180deg, #7ff8ff, var(--cyan)); box-shadow: 0 0 18px rgb(0 240 255 / .45); }
 :root[data-skin="cyber"] .tabicon { stroke: currentColor; }
-/* numbers: monospace readouts in cyan */
-:root[data-skin="cyber"] :is(.attr .val, .stat b, .meter .v, .loadnum b, .wound .cnt, .gx-sum b, .gx-slot b, .gx-av b, .gx-fa b, .wstats b, .statin, .fact b, .srow .m) { font-family: var(--f-mono); font-weight: 400; color: var(--cyan); text-shadow: 0 0 8px rgb(0 229 255 / .55); }
+/* numbers: clean holo readouts */
+:root[data-skin="cyber"] :is(.attr .val, .stat b, .meter .v, .loadnum b, .wound .cnt, .gx-sum b, .gx-slot b, .gx-av b, .gx-fa b, .wstats b, .statin, .fact b, .srow .m) { font-family: var(--f-head); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--cyan); text-shadow: 0 0 10px rgb(0 240 255 / .5); }
 :root[data-skin="cyber"] .meter .v small { color: var(--ink-3); text-shadow: none; }
-:root[data-skin="cyber"] .stat { background: rgb(0 229 255 / .05); border: 1px solid var(--hair); }
-:root[data-skin="cyber"] .pbox { background: #05060a; border: 1px solid var(--cyan); clip-path: var(--cut-s); box-shadow: none; }
-:root[data-skin="cyber"] .pbox b { font-family: var(--f-mono); color: var(--yellow); text-shadow: 0 0 8px rgb(252 238 10 / .5); }
-:root[data-skin="cyber"] .perkcard.t-E .pbox b { color: var(--cyan); }
-/* attribute cells and pips */
-:root[data-skin="cyber"] .cell { border: 1px solid #1f2a36; background: #090b12; border-radius: 0; transform: skewX(-12deg); }
-:root[data-skin="cyber"] .cell.up { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 8px rgb(0 229 255 / .55); }
-:root[data-skin="cyber"] .cell.bought { background: var(--yellow); border-color: var(--yellow); box-shadow: 0 0 10px rgb(252 238 10 / .6); }
-:root[data-skin="cyber"] .cell.miss { background: var(--magenta); border-color: var(--magenta); box-shadow: 0 0 10px rgb(255 42 109 / .6); }
-:root[data-skin="cyber"] .cell.have { background: #2c3b48; }
-:root[data-skin="cyber"] .cell.sealed { background: repeating-linear-gradient(45deg, rgb(255 42 109 / .7) 0 2px, transparent 2px 6px), #090b12; border-color: var(--magenta); }
-:root[data-skin="cyber"] .skullcell { transform: none; } :root[data-skin="cyber"] .skull { color: var(--magenta); --sk-eye: #090b12; }
-:root[data-skin="cyber"] .skullcell.miss .skull { color: #07080d; --sk-eye: var(--magenta); }
-:root[data-skin="cyber"] .mid { border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); width: 38px; height: 38px; border: 0; background: var(--cyan); color: #07080d; font: 400 13px var(--f-mono); }
-:root[data-skin="cyber"] .mid.at { background: var(--yellow); }
-:root[data-skin="cyber"] .pip { border-radius: 0; border: 1.5px solid #2c3b48; background: transparent; transform: rotate(45deg) scale(.85); }
-:root[data-skin="cyber"] .pip.on { background: var(--yellow); border-color: var(--yellow); box-shadow: 0 0 7px rgb(252 238 10 / .6); }
-:root[data-skin="cyber"] .pip.capped { border-color: #151c25; }
-:root[data-skin="cyber"] .usetick { border-color: var(--cyan); background: transparent; transform: rotate(45deg) scale(.85); }
-:root[data-skin="cyber"] .usetick.spent { background: var(--magenta); border-color: var(--magenta); } :root[data-skin="cyber"] .usetick.spent::after { display: none; }
-/* meters: neon bars with a scanning sheen */
-:root[data-skin="cyber"] .track, :root[data-skin="cyber"] .mtrack { background: #05060a !important; border: 1px solid #1f2a36; border-radius: 0; }
-:root[data-skin="cyber"] .track i, :root[data-skin="cyber"] .mtrack i { box-shadow: 0 0 10px currentColor; filter: saturate(1.4) brightness(1.15); }
+:root[data-skin="cyber"] .stat { background: rgb(0 240 255 / .05); border: 1px solid var(--hair); }
+:root[data-skin="cyber"] .pbox { background: #03050a; border: 1px solid var(--gold); clip-path: var(--cut-s); box-shadow: inset 0 0 12px rgb(232 198 106 / .15); }
+:root[data-skin="cyber"] .pbox b { font-family: var(--f-display); font-weight: 400; color: var(--gold); text-shadow: 0 0 8px rgb(232 198 106 / .5); }
+:root[data-skin="cyber"] .perkcard.t-E .pbox { border-color: var(--cyan); } :root[data-skin="cyber"] .perkcard.t-E .pbox b { color: var(--cyan); }
+/* attribute cells and pips: light bars; natural cyan, bought gold, broken Blackwall red */
+:root[data-skin="cyber"] .cell { border: 1px solid #1a2634; background: #070a12; border-radius: 1px; }
+:root[data-skin="cyber"] .cell.up { background: linear-gradient(180deg, #7ff8ff, var(--cyan)); border-color: var(--cyan); box-shadow: 0 0 8px rgb(0 240 255 / .5); }
+:root[data-skin="cyber"] .cell.bought { background: linear-gradient(180deg, #f6dd94, var(--gold)); border-color: var(--gold); box-shadow: 0 0 10px rgb(232 198 106 / .55); }
+:root[data-skin="cyber"] .cell.miss { background: linear-gradient(180deg, #ff6a7f, var(--wall)); border-color: var(--wall); box-shadow: 0 0 10px rgb(255 31 61 / .6); }
+:root[data-skin="cyber"] .cell.have { background: #2a3a4a; }
+:root[data-skin="cyber"] .cell.sealed { background: repeating-linear-gradient(90deg, rgb(255 31 61 / .65) 0 1px, transparent 1px 4px), #070a12; border-color: var(--wall); }
+:root[data-skin="cyber"] .skull { color: var(--wall); --sk-eye: #070a12; }
+:root[data-skin="cyber"] .skullcell.miss .skull { color: #04060c; --sk-eye: #ff8a9a; }
+:root[data-skin="cyber"] .mid { border-radius: 50%; width: 38px; height: 38px; border: 1px solid var(--gold); background: radial-gradient(circle, #0b0f19 55%, rgb(232 198 106 / .25)); color: var(--gold); font: 400 11px var(--f-display); box-shadow: 0 0 10px rgb(232 198 106 / .25); }
+:root[data-skin="cyber"] .mid.at { background: var(--gold); color: #04060c; }
+:root[data-skin="cyber"] .pip { border-radius: 0; border: 1.5px solid #2a3a4a; background: transparent; transform: rotate(45deg) scale(.8); }
+:root[data-skin="cyber"] .pip.on { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 7px rgb(232 198 106 / .6); }
+:root[data-skin="cyber"] .pip.capped { border-color: #141d27; }
+:root[data-skin="cyber"] .usetick { border-color: var(--cyan); background: transparent; transform: rotate(45deg) scale(.8); }
+:root[data-skin="cyber"] .usetick.spent { background: var(--wall); border-color: var(--wall); } :root[data-skin="cyber"] .usetick.spent::after { display: none; }
+/* meters */
+:root[data-skin="cyber"] .track, :root[data-skin="cyber"] .mtrack { background: #03050a !important; border: 1px solid #1a2634; border-radius: 0; }
+:root[data-skin="cyber"] .track i, :root[data-skin="cyber"] .mtrack i { box-shadow: 0 0 10px currentColor; filter: saturate(1.3) brightness(1.1); }
 /* controls */
-:root[data-skin="cyber"] .btn { border: 1px solid var(--cyan); border-radius: 0; background: transparent; color: var(--cyan); clip-path: var(--cut-s); }
-:root[data-skin="cyber"] .btn:hover { background: rgb(0 229 255 / .15); color: #fff; }
-:root[data-skin="cyber"] .btn.primary, :root[data-skin="cyber"] .seg button[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: #07080d; }
-:root[data-skin="cyber"] .btn.danger { border-color: var(--magenta); color: var(--magenta); }
-:root[data-skin="cyber"] .btn.danger:hover { background: var(--magenta); color: #07080d; }
-:root[data-skin="cyber"] .seg { border: 1px solid var(--cyan); border-radius: 0; }
+:root[data-skin="cyber"] .btn { border: 1px solid rgb(0 240 255 / .6); border-radius: 0; background: rgb(0 240 255 / .05); color: var(--cyan); clip-path: var(--cut-s); }
+:root[data-skin="cyber"] .btn:hover { background: rgb(0 240 255 / .16); color: #fff; }
+:root[data-skin="cyber"] .btn.primary, :root[data-skin="cyber"] .seg button[aria-pressed="true"] { background: linear-gradient(180deg, #f6dd94, var(--gold)); border-color: var(--gold); color: #04060c; }
+:root[data-skin="cyber"] .btn.danger { border-color: var(--wall); color: #ff6a7f; }
+:root[data-skin="cyber"] .btn.danger:hover { background: var(--wall); color: #fff; }
+:root[data-skin="cyber"] .seg { border: 1px solid rgb(0 240 255 / .6); border-radius: 0; }
 :root[data-skin="cyber"] .seg button { color: var(--cyan); }
-:root[data-skin="cyber"] :is(.field input, .field select, .mini input, .mini select, .inp, .autotext, .field textarea) { background: #05060a; border: 0; border-bottom: 1px solid var(--cyan); border-radius: 0; color: var(--ink); font-family: var(--f-body); }
-:root[data-skin="cyber"] :is(.field input, .mini input, .inp, .autotext, .field textarea):focus { outline: none; border-bottom-color: var(--yellow); box-shadow: 0 1px 0 var(--yellow); }
-:root[data-skin="cyber"] .portrait { border: 2px solid var(--cyan); border-radius: 0; clip-path: var(--cut); box-shadow: none; background: #05060a; }
-:root[data-skin="cyber"] .portrait img { filter: contrast(1.1) saturate(1.2) hue-rotate(-8deg); }
-:root[data-skin="cyber"] .hovercard { background: #05060a; color: var(--ink); border: 1px solid var(--cyan); border-left: 3px solid var(--yellow); border-radius: 0; font-family: var(--f-body); }
-:root[data-skin="cyber"] .hovercard em { font-family: var(--f-mono); color: var(--yellow); }
-:root[data-skin="cyber"] .d8::before { background: linear-gradient(160deg, var(--yellow) 0%, #b8a800 55%, #4a4400 100%); }
-:root[data-skin="cyber"] .banner { background: rgb(255 42 109 / .1); border-left: 3px solid var(--magenta); color: var(--ink); }
-:root[data-skin="cyber"] .spanel { border-left: 3px solid var(--yellow); background: #07080d; box-shadow: -12px 0 40px rgb(0 229 255 / .12); }
+:root[data-skin="cyber"] :is(.field input, .field select, .mini input, .mini select, .inp, .autotext, .field textarea) { background: rgb(3 5 10 / .85); border: 0; border-bottom: 1px solid rgb(0 240 255 / .55); border-radius: 0; color: var(--ink); font-family: var(--f-body); }
+:root[data-skin="cyber"] :is(.field input, .mini input, .inp, .autotext, .field textarea):focus { outline: none; border-bottom-color: var(--gold); box-shadow: 0 1px 0 var(--gold); }
+:root[data-skin="cyber"] .portrait { border: 1px solid var(--cyan); border-radius: 0; clip-path: var(--cut); background: var(--meander-gold) 0 0 / 11.67px 10px repeat-x, var(--meander-gold) 0 100% / 11.67px 10px repeat-x, #03050a; box-shadow: inset 0 0 24px rgb(0 240 255 / .15); }
+:root[data-skin="cyber"] .portrait img { filter: contrast(1.08) saturate(1.1); }
+:root[data-skin="cyber"] .hovercard { background: #03050a; color: var(--ink); border: 1px solid rgb(0 240 255 / .6); border-top: 2px solid var(--gold); border-radius: 0; font-family: var(--f-body); }
+:root[data-skin="cyber"] .hovercard em { color: var(--gold); }
+:root[data-skin="cyber"] .d8::before { background: linear-gradient(160deg, #f6dd94 0%, #e8c66a 50%, #6a5420 100%); }
+:root[data-skin="cyber"] .banner { background: rgb(255 31 61 / .08); border-left: 2px solid var(--wall); color: var(--ink); }
+:root[data-skin="cyber"] .spanel { border-left: 2px solid var(--gold); background: var(--holo), #04060c; box-shadow: -12px 0 40px rgb(0 240 255 / .12); }
 :root[data-skin="cyber"] .craftnav button { border-radius: 0; clip-path: var(--cut-s); border-color: var(--hair); color: var(--cyan); }
-:root[data-skin="cyber"] .craftnav button[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: #07080d; box-shadow: inset 0 -3px 0 var(--magenta); }
+:root[data-skin="cyber"] .craftnav button[aria-pressed="true"] { background: linear-gradient(180deg, #f6dd94, var(--gold)); border-color: var(--gold); color: #04060c; box-shadow: none; }
 @media (max-width: 560px) {
-  [data-skin="cyber"] .tabs button { padding: 9px 12px 8px; font-size: 13px; letter-spacing: .06em; }
-  [data-skin="cyber"] .h { font-size: 20px; } [data-skin="cyber"] .frame { padding: 22px 14px 20px; }
+  [data-skin="cyber"] .tabs button { padding: 9px 8px 8px; font-size: 10px; letter-spacing: .06em; }
+  [data-skin="cyber"] .h { font-size: 14px; } [data-skin="cyber"] .frame { padding: 28px 14px 22px; } [data-skin="cyber"] .namefield { font-size: 22px; }
 }
 
 /* ---------- website build: players panel, companions ---------- */
@@ -1929,7 +1978,8 @@ const CW = (() => {
                 wounds: { light: 0, moderate: 0, mortal: 0 }, conditions: [] },
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
-      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [] },
+      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
+               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] } },
       talents: [], uses: {},
     };
   }
@@ -1956,6 +2006,9 @@ const CW = (() => {
     ["supplies", "batch"].forEach(k => (out.craft[k] = Object.assign({}, b.craft[k], out.craft[k])));
     out.craft.recipe = Object.assign({ type: "rifle" }, out.craft.recipe);
     if (!Array.isArray(out.craft.ledger)) out.craft.ledger = [];
+    out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
+    out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
+    if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
     out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
@@ -2354,6 +2407,54 @@ const CW = (() => {
     return [m.n, ...bits].join(" · ");
   }
 
+  // ---------- Armor Maintenance (rulebook 16.5 and the Armor chapter) ----------
+  // Repair (book): cost = the type's grams × Armor Value; roll an Armor Maintenance check (d100 − modifier);
+  // Repair Count = 10 − check ÷ 10, rounded down; roll the type's Repair Die that many times and add it to the Soak Pool.
+  // Our readings: the Repair Count is capped at 10 (Utku); a broken suit (Soak 0) needs a skilled craftsman,
+  // which we read as Armor Maintenance 5 and double materials (draft, to confirm).
+  // Crafting: the 2020.1 book names it but gives no procedure, so it follows the book's weapon crafting (our reading):
+  // 5 × the repair materials, difficulty 70%, the GM gives type, AV and Soak; a failure adds a flaw and rolls again;
+  // a second failure loses everything. Optional extras mirror the weapon table: +1 AV = −10%, +5 Soak = −5%.
+  const AM_CRAFT_DC = 70;
+  const AM_FORGE = ["heavy", "plate"];          // heavy and plate armor need smelting: a forge
+  function amState(c) {
+    const lvl = sk(c, "Armor Maintenance"), a = (c.craft && c.craft.armor) || {};
+    return { lvl, mod: skillModifier(c, "Armor Maintenance") + num(a.bonus), bonus: num(a.bonus),
+             repair: lvl >= 3, craft: lvl >= 4, restore: lvl >= 5, artisan: lvl >= 8, forge: !!a.forge };
+  }
+  const repairCount = check => clamp(Math.floor(10 - check / 10), 0, 10);
+  // Everything a repair of suit a needs: cost, materials, dice, and why it can't happen yet (if so).
+  function repairPlan(c, a) {
+    const st = amState(c), t = ARMOR[a.type] || ARMOR.light, chk = armorCheck(c, a);
+    const max = chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
+    const cost = t.repairPerAV * Math.max(1, num(a.av)) * (broken ? 2 : 1);
+    const sides = +String(t.repairDie).slice(1);
+    const have = num(c.craft && c.craft.supplies && c.craft.supplies[a.type]);
+    let block = "";
+    if (!st.repair) block = `Repairing armor needs Armor Maintenance 3 ("Is that a dent?"). This character has ${st.lvl}.`;
+    else if (soak >= max) block = "This suit's Soak Pool is already full.";
+    else if (broken && !st.restore) block = "It's broken (Soak 0). Rebuilding it needs a skilled craftsman: Armor Maintenance 5.";
+    else if (AM_FORGE.includes(a.type) && !st.forge) block = `${t.label} armor needs a forge. Tick "At a forge" under Supplies.`;
+    else if (have < cost) block = `Needs ${cost} g of ${t.label.toLowerCase()} armor materials (have ${have}).`;
+    return { cost, mat: a.type, die: t.repairDie, sides, soak, max, broken, missing: max - soak, block, st };
+  }
+  // A crafting order: { type, av, soak, plusAV, plusSoak, name } → final stats, difficulty, cost.
+  function craftPlan(c, r) {
+    const st = amState(c), t = ARMOR[r.type] || ARMOR.medium;
+    const av = clamp(num(r.av) || t.av[0], t.av[0], t.av[1]);
+    const plusAV = clamp(num(r.plusAV), 0, t.av[1] - av);
+    const soak = Math.max(5, num(r.soak) || 10 * av), plusSoak = clamp(num(r.plusSoak), 0, 10);
+    const finalAV = av + plusAV, finalSoak = soak + 5 * plusSoak;
+    const dc = Math.max(5, AM_CRAFT_DC - 10 * plusAV - 5 * plusSoak);
+    const cost = 5 * t.repairPerAV * finalAV;
+    const have = num(c.craft && c.craft.supplies && c.craft.supplies[r.type]);
+    let block = "";
+    if (!st.craft) block = `Crafting armor needs Armor Maintenance 4. This character has ${st.lvl}.`;
+    else if (AM_FORGE.includes(r.type) && !st.forge) block = `${t.label} armor needs a forge. Tick "At a forge" under Supplies.`;
+    else if (have < cost) block = `Needs ${cost} g of ${t.label.toLowerCase()} armor materials (have ${have}).`;
+    return { type: r.type in ARMOR ? r.type : "medium", av, plusAV, soak, plusSoak, finalAV, finalSoak, dc, cost, chance: clamp(dc + st.mod - 1, 0, 100), block, st, t };
+  }
+
   // ---------- Tabletop Simulator export ----------
   function toTabletop(c) {
     const d = derived(c);
@@ -2400,7 +2501,8 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie };
+           PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
+           AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan };
 })();
 if (typeof module !== "undefined") module.exports = CW;
 /* Skill descriptions and perks from the Clockwork Rulebook 2020.1.
@@ -2591,6 +2693,23 @@ const RULES_INFO = {
     { h: "Reading a perk card" }, { icons: true },
     "Rests recharge spent uses for you: a short rest brings back abilities marked S, a long rest brings back everything.",
     { h: "Talents" }, "Talents are for what the rules don't cover: a runic tattoo, a blessing, a family heirloom's trick. Write what it does and how often; once it's done, the card works like a perk." ] },
+  powdertinkering: { kicker: "Crafting", title: "Powdertinkering", body: [
+    "Custom ammunition, explosives and weapon oils, built one part at a time. You need a Powdertinker kit.",
+    { h: "Each part is one roll" }, { ul: ["Modifier = 3% × Powdertinker, plus any item bonus.", "Roll d100 and subtract the modifier. Under the part's difficulty, it holds.", "Each attempt uses 200 g: container materials for Coats, Tips and Areas; element solution for Cores and Status."] },
+    { t: { cols: ["Part", "Difficulty", "Rating"], rows: [["Coat (always first)", "60%", "—"], ["Tip (several)", "40%, −5% per step above base", "Powdertinker"], ["Area (one)", "30%", "Powdertinker"], ["Core (one element)", "40%, −10% per step above base", "Powdertinker ÷ 2"], ["Status (match the Core)", "40%", "Powdertinker ÷ 2"]] } },
+    { h: "Failures" }, { ul: ["A failed roll loses its materials and gives the batch a Detriment (the GM decides what). You may try the same part again.", "Powdertinker 3 lets you fail once; Powdertinker 6, twice. One more scraps the batch and everything in it."] },
+    { h: "Unlocks" }, { ul: ["3: proficient, custom Coats.", "4: Tips and Cores.", "5: keep a failed property as well as its Detriment (once per long rest).", "7: Area and Status.", "8: half a batch more per unused failure.", "9: a whole batch more.", "10: ignore one Detriment (once per long rest)."] },
+    { note: "The app's readings: the Component Access table (which munition takes which part) is garbled in our copy of the book and is our best guess; bombs keep a free Sphere; grenades and oils roll their base layer at 60%; both perk abilities are once per long rest." } ] },
+  armorRepair: { kicker: "Crafting", title: "Repairing armor", body: [
+    "Armor Maintenance 3 lets you mend a suit's Soak Pool. You need a blacksmithing kit; heavy and plate armor also need a forge.",
+    { t: { cols: ["Type", "Materials per attempt", "Repair Die"], rows: [["Light", "50 g × AV", "d6"], ["Medium", "70 g × AV", "d8"], ["Heavy", "100 g × AV", "d10"], ["Plate", "150 g × AV", "d12"]] } },
+    { h: "How a repair goes" }, { ul: ["Roll an Armor Maintenance check: d100 minus your modifier (3% × Armor Maintenance).", "Repair Count = 10 − check ÷ 10, rounded down. A check of 32 gives 6.", "Roll the Repair Die that many times. The total goes back into the Soak Pool.", "Each attempt takes an hour."] },
+    { note: "The app's readings: the Repair Count never goes above 10 dice (Utku). A broken suit (Soak 0) needs a skilled craftsman; the app counts Armor Maintenance 5 as skilled and charges double materials to rebuild it. This last one is a draft to confirm." } ] },
+  armorCraft: { kicker: "Crafting", title: "Crafting armor", body: [
+    "Armor Maintenance 4 lets you make mundane suits; 8 adds Artisan properties. The 2020.1 book names armor crafting but doesn't give its steps yet, so the app follows the book's weapon crafting.",
+    { h: "How a craft goes (our reading)" }, { ul: ["The GM gives the suit's type, Armor Value and Soak Pool.", "Materials: 5 × the suit's repair cost, of its type.", "Difficulty 70%. Roll d100 minus your modifier; under 70, the suit is made.", "A failure gives the suit a flaw (the GM decides it) and you roll again. A second failure loses the suit and every material.", "Crafting takes 8 hours. Heavy and plate need a forge."] },
+    { h: "Extras (our reading)" }, { t: { cols: ["Extra", "Difficulty"], rows: [["Armor Value +1 (within the type's range)", "−10%"], ["Soak Pool +5", "−5%"]] } },
+    { note: "Changed from weapon crafting: the stat extras use armor's two numbers in place of the weapon table; the 'two random positive properties' step is left out because armor has no property list; a new suit's Soak Pool defaults to 10 × AV, from the book's chain-mail example. Artisan properties (level 8) aren't written in the book yet." } ] }
 };
 </script>
 <script>
@@ -2874,9 +2993,9 @@ const SKINS = [
   ["fantasy", "Fantasy (parchment)", GF + "IM+Fell+English+SC&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400"],
   ["fantasy-dark", "Fantasy (candlelit)", GF + "IM+Fell+English+SC&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400"],
   ["armour", "Power armour", GF + "Orbitron:wght@600;700;800&family=Chakra+Petch:wght@500;600;700&family=Exo+2:wght@400;500;600&family=Nixie+One"],
-  ["cyber", "Cyberpunk", GF + "Rajdhani:wght@500;600;700&family=Share+Tech+Mono"],
   // Extended themes: heavier artwork and their own furniture.
   ["cairn", "Cairn-style gothic", GF + "UnifrakturCook:wght@700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Grenze:wght@500;600;700", "extended"],
+  ["cyber", "Cyberpunk", GF + "Michroma&family=Oxanium:wght@400;500;600;700;800", "extended"],
 ];
 function applySkin(key) {
   const skin = SKINS.find(x => x[0] === key) || SKINS[0], root = document.documentElement;
@@ -3781,7 +3900,7 @@ const CRAFTS = [
   ["brew", "Brewing", "Brewing", "Potions, catalysts, increments and potent brews."],
   ["rune", "Runecrafting", "Runecrafting", "Runestones bound to a vessel through ritual."],
   ["weapon", "Weapon upkeep", "Weapon Maintenance", "Repairing, crafting and masterworking weapons."],
-  ["armor", "Armor upkeep", "Armor Maintenance", "Repairing soak and tuning armor."],
+  ["armor", "Armor upkeep", "Armor Maintenance", "Repairing and crafting suits of armor."],
 ];
 const CRAFT_ICONS = {
   powder: html`<path d="M10 2.5c1.6 1.4 2.4 3.4 2.4 5.6V15H7.6V8.1c0-2.2.8-4.2 2.4-5.6z M7.6 15h4.8v2.5H7.6z M7.6 10.5h4.8" />`,
@@ -3798,8 +3917,8 @@ function CraftTab({ c, update }) {
   return html`<div class="tabpane">
     <nav class="craftnav" aria-label="Crafts">${CRAFTS.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} class=${"cn-" + k} onClick=${() => setSub(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${CRAFT_ICONS[k]}</svg><span>${n}</span>
-      <small>${num(c.skills[skill]) ? `${skill} ${num(c.skills[skill])}` : k === "powder" ? "" : "soon"}</small></button>`)}</nav>
-    ${sub === "powder" ? html`<${Powdertinkering} c=${c} update=${update} />` : html`<${UnderConstruction} c=${c} craft=${cur} />`}
+      <small>${num(c.skills[skill]) ? `${skill} ${num(c.skills[skill])}` : ["powder", "armor"].includes(k) ? "" : "soon"}</small></button>`)}</nav>
+    ${sub === "powder" ? html`<${Powdertinkering} c=${c} update=${update} />` : sub === "armor" ? html`<${ArmorUpkeep} c=${c} update=${update} />` : html`<${UnderConstruction} c=${c} craft=${cur} />`}
   </div>`;
 }
 
@@ -3956,7 +4075,7 @@ function Powdertinkering({ c, update }) {
 
   return html`
     <section class="frame ptbench">
-      <h2 class="h"><span>Powdertinkering</span><i class="orn" aria-hidden="true"></i></h2>
+      <${Head} title="Powdertinkering" topic="powdertinkering" />
       <p class="sub">Pick a munition, click a part of it to choose what goes there, then forge. Each part is one roll: d100 minus your modifier, under the difficulty.</p>
       <div class="facts ptfacts">${[
         ["Powdertinker", `${st.lvl}${st.lvl < 3 ? " · not proficient" : ""}`],
@@ -4328,6 +4447,333 @@ function Munition({ m, rc, sum, st, focus, partState, forging, phase, onPick }) 
         style=${`top:${(ly / 460) * 100}%`} disabled=${forging} aria-pressed=${focus === p} onClick=${() => onPick(p)}>
         <span class="k">${PT_LABEL[p]}${locked ? html` <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 7V5a4 4 0 0 1 8 0v2 M3 7h10v7H3z" /></svg>` : ""}</span>
         <span class="v">${!s.access ? "Not on this munition" : locked ? `Powdertinker ${st.unlockAt[p]}` : s.value || (p === "status" && !(rc.core && rc.core.el) ? "Needs a core" : "None")}</span></button>`; })}
+  </div>`;
+}
+/* ================= crafting: armor upkeep (Armor Maintenance) ================= */
+// Two benches in one: Repair (the book's procedure) and Craft (our reading, built on the book's weapon crafting).
+// The suit stands on a mannequin. Repair hammers out its dents one Repair Die at a time; crafting forges it from a ghost outline.
+const AM_TORSO = "M150 98 Q180 122 210 98 L250 104 Q268 116 266 150 L246 214 L242 300 L250 352 L240 376 L120 376 L110 352 L118 300 L114 214 L94 150 Q92 116 110 104 Z";
+const AM_SLEEVE = "M112 104 Q86 110 76 140 L64 194 L92 202 L100 156 Z";
+const AM_BREAST = "M126 108 Q180 132 234 108 Q256 150 246 220 Q240 268 236 300 L124 300 Q120 268 114 220 Q104 150 126 108 Z";
+const AM_PAULDRON = "M126 102 Q88 98 72 134 Q68 154 78 168 Q98 150 124 148 Z";
+const AM_SKIRT = "M118 296 L242 296 L250 352 L240 376 L120 376 L110 352 Z";
+// Mirror an absolute path left ↔ right across the stand (x = 180).
+const amMirror = d => d.replace(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g, (m, x, y) => `${360 - +x} ${y}`);
+// Where dents and tears sit, in the order they are hammered out.
+const AM_SPOTS = [[150, 164], [214, 184], [166, 240], [226, 262], [142, 308], [204, 336]];
+const AM_LABELS = { type: ["l", 140], soak: ["l", 330], av: ["r", 170], extra: ["r", 290] };
+const AM_ANCHOR = { type: [96, 156], soak: [124, 340], av: [206, 176], extra: [238, 304] };
+const AM_NAME = { type: "Type", av: "Armor Value", soak: "Soak Pool", extra: "Extras" };
+const amMarks = (soak, max) => (max <= 0 || soak >= max ? 0 : Math.max(1, Math.round((6 * (max - soak)) / max)));
+
+// The suit itself, drawn by type. cls: extra classes on the layers (ghost, assemble, broken).
+function SuitArt({ type }) {
+  const quilt = [];
+  for (let k = -14; k <= 22; k++) quilt.push(`M${60 + k * 16} 90 l220 300 M${300 - k * 16} 90 l-220 300`);
+  if (type === "light") return html`
+    <g class="am-layer am-l1"><path d=${AM_SLEEVE} fill="url(#am-cloth)" stroke="#6b4f2a" stroke-width="1.4" /><path d=${amMirror(AM_SLEEVE)} fill="url(#am-cloth)" stroke="#6b4f2a" stroke-width="1.4" />
+      <path d=${AM_TORSO} fill="url(#am-cloth)" stroke="#6b4f2a" stroke-width="1.6" /></g>
+    <g class="am-layer am-l2"><path d=${quilt.join(" ")} clip-path="url(#am-clip)" stroke="#4a3218" stroke-opacity=".3" stroke-width="1.2" stroke-dasharray="4 3" fill="none" />
+      <path d="M150 98 Q180 122 210 98" stroke="#6b4f2a" stroke-width="7" fill="none" stroke-linecap="round" />
+      <path d="M116 356 L244 356" stroke="#6b4f2a" stroke-width="2" /></g>
+    <g class="am-layer am-l3">${[132, 156, 180, 204, 228, 252, 276].map(y => html`<path d=${`M174 ${y} l12 10 M186 ${y} l-12 10`} stroke="#3c2810" stroke-width="1.7" />`)}</g>`;
+  if (type === "medium") {
+    const plates = [];
+    [126, 156, 186, 216, 246, 318, 346].forEach(y => [110, 140, 170, 200, 230].forEach(x => plates.push([x, y])));
+    return html`
+    <g class="am-layer am-l1"><path d=${AM_TORSO} fill="url(#am-leather)" stroke="#2c1708" stroke-width="1.6" /></g>
+    <g class="am-layer am-l2" clip-path="url(#am-clip)">${plates.map(([x, y]) => html`<rect x=${x} y=${y} width="27" height="27" rx="3" fill="#000" fill-opacity=".1" stroke="#1d0f05" stroke-opacity=".5" />`)}</g>
+    <g class="am-layer am-l3"><g clip-path="url(#am-clip)">${plates.map(([x, y]) => html`<circle cx=${x + 5} cy=${y + 5} r="1.9" fill="#e0b25a" /><circle cx=${x + 22} cy=${y + 5} r="1.9" fill="#e0b25a" />`)}</g>
+      <rect x="112" y="290" width="136" height="16" fill="#2a170a" /><rect x="170" y="286" width="20" height="24" rx="2" fill="none" stroke="#e0b25a" stroke-width="3" /></g>`;
+  }
+  if (type === "heavy") return html`
+    <g class="am-layer am-l1"><path d=${AM_SLEEVE} fill="url(#am-steel)" stroke="#2b2f34" /><path d=${amMirror(AM_SLEEVE)} fill="url(#am-steel)" stroke="#2b2f34" />
+      <path d=${AM_TORSO} fill="url(#am-steel)" stroke="#2b2f34" stroke-width="1.6" /></g>
+    <g class="am-layer am-l2"><path d=${AM_SLEEVE} fill="url(#am-rings)" /><path d=${amMirror(AM_SLEEVE)} fill="url(#am-rings)" /><path d=${AM_TORSO} fill="url(#am-rings)" />
+      <path d="M150 98 Q180 122 210 98" stroke="url(#am-cloth)" stroke-width="9" fill="none" stroke-linecap="round" /></g>
+    <g class="am-layer am-l3"><rect x="114" y="288" width="132" height="14" fill="#3a2414" /><rect x="172" y="285" width="16" height="20" rx="2" fill="none" stroke="#b9bec4" stroke-width="3" /></g>`;
+  return html`
+    <g class="am-layer am-l1"><path d=${AM_SKIRT} fill="url(#am-steel)" /><path d=${AM_SKIRT} fill="url(#am-rings)" stroke="#2b2f34" /></g>
+    <g class="am-layer am-l2">${[0, 1, 2].map(i => html`<path d=${`M${124 - i * 3} ${300 + i * 16} L${236 + i * 3} ${300 + i * 16} L${239 + i * 3} ${315 + i * 16} L${121 - i * 3} ${315 + i * 16} Z`} fill="url(#am-plate)" stroke="#23272b" />`)}
+      <path d=${AM_BREAST} fill="url(#am-plate)" stroke="#23272b" stroke-width="1.8" />
+      <path d="M180 126 Q183 212 180 296" stroke="#fff" stroke-opacity=".55" stroke-width="2.4" fill="none" /><path d="M184 128 Q187 212 184 296" stroke="#000" stroke-opacity=".25" stroke-width="1.5" fill="none" />
+      <path d="M138 106 Q180 128 222 106" stroke="#d6dbe0" stroke-width="5" fill="none" stroke-linecap="round" /></g>
+    <g class="am-layer am-l3"><path d=${AM_PAULDRON} fill="url(#am-plate)" stroke="#23272b" stroke-width="1.6" /><path d=${amMirror(AM_PAULDRON)} fill="url(#am-plate)" stroke="#23272b" stroke-width="1.6" />
+      <path d="M78 150 Q98 134 122 136 M75 140 Q96 120 118 122" stroke="#23272b" stroke-width="1.3" fill="none" /><path d=${amMirror("M78 150 Q98 134 122 136 M75 140 Q96 120 118 122")} stroke="#23272b" stroke-width="1.3" fill="none" />
+      ${[[132, 122], [228, 122], [122, 200], [238, 200], [128, 286], [232, 286]].map(([x, y]) => html`<circle cx=${x} cy=${y} r="2.6" fill="#e8ecef" stroke="#555" stroke-width=".8" />`)}</g>`;
+}
+
+function ArmorFigure({ type, marks, broken, mode, run, labels, focus, onPick, st }) {
+  const names = mode === "repair" ? Object.assign({}, AM_NAME, { type: "Suit", extra: "Repair" }) : AM_NAME;
+  const ph = run && run.phase;
+  const ghost = mode === "craft" && (!run || ["heat", "rolling", "flaw", "lost"].includes(ph));
+  const made = mode === "craft" && ph === "made";
+  const hammering = run && (ph === "strike" || (mode === "craft" && ph === "rolling"));
+  return html`<div class=${"ptmun ammun" + (ghost ? " ghost" : "") + (made ? " made" : "") + (ph === "lost" ? " lost" : "") + (broken && mode === "repair" ? " broken" : "") + (run && run.done && mode === "repair" ? " mended" : "")}>
+    <svg class="ptsvg" viewBox="0 0 360 460" role="img" aria-label=${`${(R.ARMOR[type] || R.ARMOR.light).label} armor on a stand${marks ? `, ${marks} dents` : ""}`}>
+      <defs>
+        <linearGradient id="am-cloth" x1="0" x2="1"><stop offset="0" stop-color="#8f6a3b" /><stop offset=".4" stop-color="#d9b67e" /><stop offset="1" stop-color="#8a6436" /></linearGradient>
+        <linearGradient id="am-leather" x1="0" x2="1"><stop offset="0" stop-color="#3f2410" /><stop offset=".4" stop-color="#8a5530" /><stop offset="1" stop-color="#3a200d" /></linearGradient>
+        <linearGradient id="am-steel" x1="0" x2="1"><stop offset="0" stop-color="#3f454b" /><stop offset=".45" stop-color="#9aa2aa" /><stop offset="1" stop-color="#3a3f45" /></linearGradient>
+        <linearGradient id="am-plate" x1="0" x2="1"><stop offset="0" stop-color="#5a6168" /><stop offset=".38" stop-color="#f1f4f6" /><stop offset=".62" stop-color="#aab3bb" /><stop offset="1" stop-color="#4b5258" /></linearGradient>
+        <linearGradient id="am-wood" x1="0" x2="1"><stop offset="0" stop-color="#4f2e14" /><stop offset=".45" stop-color="#a87442" /><stop offset="1" stop-color="#4a2b12" /></linearGradient>
+        <radialGradient id="am-fire" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd27a" stop-opacity=".95" /><stop offset=".45" stop-color="#ff7a2a" stop-opacity=".55" /><stop offset="1" stop-color="#ff4a1a" stop-opacity="0" /></radialGradient>
+        <pattern id="am-rings" width="9" height="8" patternUnits="userSpaceOnUse">
+          ${[[0, 0], [9, 0], [4.5, 4], [0, 8], [9, 8]].map(([x, y]) => html`<circle cx=${x} cy=${y} r="3.2" fill="none" stroke="#1f2327" stroke-opacity=".75" stroke-width="1.2" />`)}</pattern>
+        <clipPath id="am-clip"><path d=${AM_TORSO} /></clipPath>
+        <linearGradient id="am-glint" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0" /><stop offset=".5" stop-color="#fff" stop-opacity=".8" /><stop offset="1" stop-color="#fff" stop-opacity="0" /></linearGradient>
+      </defs>
+      ${mode === "craft" && html`<ellipse class=${"am-glow" + (run && ["heat", "rolling", "flaw"].includes(ph) ? " on" : "")} cx="180" cy="420" rx="150" ry="46" fill="url(#am-fire)" />`}
+      <g class="am-stand"><rect x="175" y="370" width="10" height="58" fill="url(#am-wood)" /><ellipse cx="180" cy="432" rx="58" ry="10" fill="url(#am-wood)" />
+        <rect x="172" y="80" width="16" height="26" fill="url(#am-wood)" /><circle cx="180" cy="62" r="22" fill="url(#am-wood)" /></g>
+      ${labels && html`<g class="ptlines">${Object.keys(AM_LABELS).map(p => { const [side, ly] = AM_LABELS[p], [ax, ay] = AM_ANCHOR[p], lx = side === "l" ? 112 : 248;
+        return html`<g class=${"ptline" + (focus === p ? " on" : "")}><path d=${`M${lx} ${ly} H${side === "l" ? lx + 12 : lx - 12} L${ax} ${ay}`} /><circle cx=${ax} cy=${ay} r="3.6" /></g>`; })}</g>`}
+      <g class=${"am-suit" + (made ? " assemble" : "")}><${SuitArt} type=${type} /></g>
+      ${mode === "craft" && run && run.flaws > 0 && html`<g class="am-flaw"><path d="M200 150 l-14 22 10 6 -16 28" /><path d="M150 250 l12 16 -8 6 14 18" style=${run.flaws > 1 ? "" : "display:none"} /></g>`}
+      <g class="am-marks">${AM_SPOTS.slice(0, mode === "repair" ? marks : 0).map(([x, y], i) => html`<g class="am-dent" key=${i}>
+        <ellipse cx=${x} cy=${y} rx="12" ry="7" fill="#000" fill-opacity=".3" /><path d=${`M${x - 10} ${y - 1} l5 4 l4 -6 l5 7 l4 -4`} stroke="#141414" stroke-width="1.7" fill="none" />
+        <path d=${`M${x - 8} ${y + 5} q8 4 16 0`} stroke="#fff" stroke-opacity=".35" stroke-width="1.5" fill="none" /></g>`)}</g>
+      ${broken && mode === "repair" && html`<path class="am-break" d="M196 112 l-18 40 14 10 -22 46 12 8 -16 52 10 30" />`}
+      <g clip-path="url(#am-clip)"><rect class="am-glintbar" x="-60" y="60" width="70" height="340" fill="url(#am-glint)" /></g>
+      ${hammering && html`<g transform="translate(318 250)"><g class="am-swing go" key=${run.strike != null ? "s" + run.strike : "r" + (run.flaws || 0)}>
+        <rect x="-104" y="-4" width="104" height="8" rx="3" fill="url(#am-wood)" /><rect x="-124" y="-17" width="26" height="34" rx="3" fill="url(#am-steel)" stroke="#1d2024" /><rect x="-102" y="-6" width="7" height="12" fill="#3d4146" /></g></g>
+        <g class="ptsparks burst" transform="translate(222 195)" key=${"sp" + (run.strike != null ? run.strike : run.flaws)}>${Array.from({ length: 9 }, (_, i) => html`<line x1="0" y1="0" x2="0" y2="-9" style=${`--a:${i * 40 + 10}deg;--d:220ms`} />`)}</g>`}
+      ${run && ph === "strike" && run.dice[run.strike] != null && html`<text class="am-plus" key=${"t" + run.strike} x="236" y="182">+${run.dice[run.strike]}</text>`}
+      ${(made || (run && run.done && mode === "repair")) && html`<g class="ptsteam">${[0, 1, 2, 3].map(i => html`<circle cx=${140 + i * 26} cy="380" r=${12 + (i % 2) * 5} style=${`--d:${i * 150}ms`} />`)}</g>`}
+    </svg>
+    ${labels && Object.keys(AM_LABELS).map(p => { const [side, ly] = AM_LABELS[p];
+      return html`<button type="button" class=${"ptlabel " + side + (focus === p ? " on" : "")} style=${`top:${(ly / 460) * 100}%`} disabled=${!!run || !onPick} aria-pressed=${focus === p} onClick=${() => onPick && onPick(p)}>
+        <span class="k">${names[p]}</span><span class="v">${labels[p]}</span></button>`; })}
+  </div>`;
+}
+
+function ArmorUpkeep({ c, update }) {
+  const st = R.amState(c);
+  const ca = c.craft.armor;
+  const [mode, setMode] = useState(() => lsGet("cw-am-mode", "repair"));
+  useEffect(() => lsSet("cw-am-mode", mode), [mode]);
+  const [selId, setSel] = useState("");
+  const [focus, setFocus] = useState("type");
+  const [run, setRunState] = useState(null);
+  const runRef = useRef(null), timers = useRef([]);
+  const setRun = r => { runRef.current = r; setRunState(r); };
+  const patch = p => { const r = runRef.current; if (r) setRun(Object.assign({}, r, typeof p === "function" ? p(r) : p)); };
+  const later = (fn, ms) => timers.current.push(setTimeout(fn, reduceMotion() ? Math.min(ms, 90) : ms));
+  const stop = () => { timers.current.forEach(clearTimeout); timers.current = []; };
+  useEffect(() => () => stop(), []);
+  useEffect(() => { stop(); setRun(null); setSel(""); }, [c.id]);
+  const busy = !!run && !run.done;
+  // The suit to repair: the one picked, else the most damaged.
+  const suits = c.armor;
+  const byNeed = [...suits].sort((a, b) => R.repairPlan(c, b).missing - R.repairPlan(c, a).missing);
+  const suit = suits.find(a => a.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
+  const rp = suit ? R.repairPlan(c, suit) : null;
+  const rc = ca.recipe, cp = R.craftPlan(c, rc);
+  const setRc = fn => update(x => fn(x.craft.armor.recipe));
+  const T = R.ARMOR;
+  const addLedger = (x, e) => { x.craft.armor.ledger = [Object.assign({ id: rid(), t: Date.now(), note: "" }, e), ...x.craft.armor.ledger].slice(0, 20); };
+
+  /* ---------- repair: one check, then one hammer strike per Repair Die ---------- */
+  const startRepair = () => {
+    if (!suit || rp.block) return;
+    const plan = rp, id = suit.id; setSel(id);
+    setRun({ kind: "repair", phase: "rolling", id, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod });
+    later(() => {
+      const r = R.rollDie(100), check = r - st.mod, count = R.repairCount(check);
+      const dice = Array.from({ length: count }, () => R.rollDie(plan.sides));
+      patch({ phase: "counted", r, check, count, dice });
+      const strike = i => {
+        if (i >= count) return later(() => finishRepair(), 450);
+        patch({ phase: "strike", strike: i });
+        later(() => patch(g => ({ shown: i + 1, gained: Math.min(plan.missing, g.gained + dice[i]) })), 230);
+        later(() => strike(i + 1), 560);
+      };
+      later(() => strike(0), 1100);
+    }, 1100);
+  };
+  const finishRepair = () => {
+    const f = runRef.current; if (!f) return;
+    const total = f.dice.reduce((s, x) => s + x, 0), gained = Math.min(f.plan.missing, total);
+    update(x => {
+      const a = x.armor.find(y => y.id === f.id); if (!a) return;
+      a.soak = num(a.soak) + gained;
+      x.craft.supplies[f.plan.mat] = Math.max(0, num(x.craft.supplies[f.plan.mat]) - f.plan.cost);
+      const txt = `${a.name || T[a.type].label + " armor"}: Soak ${f.plan.soak} → ${f.plan.soak + gained}`;
+      addLedger(x, { kind: "repair", name: f.plan.broken ? `Rebuilt ${txt}` : `Repaired ${txt}`, rolls: [`check ${f.r}−${f.mod}=${f.check} → ${f.count} × ${f.plan.die}${f.count ? ": " + f.dice.join(" + ") + " = " + total : ""}`] });
+      addLog(x, `Armor repair: ${txt} (${f.plan.cost} g ${f.plan.mat} materials, ${f.count}${f.plan.die})`);
+    });
+    patch({ done: true, phase: "done", total, gainedFinal: gained });
+  };
+
+  /* ---------- craft: up to two rolls; a failure leaves a flaw, a second loses the suit ---------- */
+  const startCraft = () => {
+    if (cp.block) return;
+    const plan = cp, name = (rc.name || "").trim() || `${plan.t.label} armor`;
+    setRun({ kind: "craft", phase: "heat", plan, name, rolls: [], flaws: 0, mod: st.mod });
+    const roll = n => {
+      patch({ phase: "rolling", roll: null });
+      later(() => {
+        const r = R.rollDie(100), ok = r - st.mod < plan.dc;
+        patch(g => ({ roll: { r, total: r - st.mod, ok }, rolls: [...g.rolls, { r, total: r - st.mod, ok }] }));
+        if (ok) later(() => finishCraft(true), 500);
+        else if (n === 0) later(() => { patch(g => ({ phase: "flaw", flaws: g.flaws + 1 })); later(() => roll(1), 1500); }, 600);
+        else later(() => finishCraft(false), 700);
+      }, 1400);
+    };
+    later(() => roll(0), 900);
+  };
+  const finishCraft = ok => {
+    const f = runRef.current; if (!f) return;
+    const nm = f.name + (f.flaws ? ` · ${f.flaws} flaw` : "");
+    update(x => {
+      x.craft.supplies[f.plan.type] = Math.max(0, num(x.craft.supplies[f.plan.type]) - f.plan.cost);
+      if (ok) x.armor.push({ id: rid(), name: nm, type: f.plan.type, av: f.plan.finalAV, soak: f.plan.finalSoak, soakMax: f.plan.finalSoak, worn: false, where: "pack" });
+      addLedger(x, { kind: "craft", name: ok ? `Crafted ${nm} (AV ${f.plan.finalAV}, Soak ${f.plan.finalSoak})` : `Lost ${f.name} in the forge`, scrap: !ok, det: ok ? f.flaws : 0,
+        rolls: f.rolls.map(r => `${r.r}−${f.mod}=${r.total} vs ${f.plan.dc} ${r.ok ? "✓" : "✗"}`) });
+      addLog(x, ok ? `Armor crafting: made ${nm} (${f.plan.cost} g ${f.plan.type} materials)` : `Armor crafting: the suit was lost (${f.plan.cost} g ${f.plan.type} materials)`);
+    });
+    patch({ done: true, phase: ok ? "made" : "lost" });
+  };
+  const close = () => { stop(); setRun(null); };
+
+  const repairLabels = suit && { type: `${T[suit.type].label} · ${suit.name || "unnamed"}`, av: String(num(suit.av)), soak: `${run && run.kind === "repair" ? run.plan.soak + run.gained : rp.soak} / ${rp.max}`, extra: `${rp.die} · ${rp.cost} g` };
+  const craftLabels = { type: cp.t.label, av: `${cp.finalAV}${cp.plusAV ? ` (+${cp.plusAV})` : ""}`, soak: `${cp.finalSoak}${cp.plusSoak ? ` (+${5 * cp.plusSoak})` : ""}`, extra: cp.plusAV || cp.plusSoak ? `${cp.dc}% to beat` : "None" };
+  const shownType = mode === "repair" ? (suit ? suit.type : "medium") : cp.type;
+  const shownSoak = run && run.kind === "repair" ? run.plan.soak + run.gained : rp ? rp.soak : 0;
+
+  return html`
+    <section class="frame ambench">
+      <${Head} title=${mode === "repair" ? "Repairing armor" : "Crafting armor"} topic=${mode === "repair" ? "armorRepair" : "armorCraft"} />
+      <p class="sub">${mode === "repair" ? "Pick a damaged suit and repair it. One check sets how many Repair Dice you roll; each die goes back into the Soak Pool." : "Set the suit the GM agreed on, then forge it. One roll against the difficulty; a failure leaves a flaw and you roll once more."}</p>
+      <div class="seg two ammode" role="group" aria-label="Repair or craft">${[["repair", "Repair"], ["craft", "Craft"]].map(([k, n]) => html`<button aria-pressed=${mode === k} disabled=${busy} onClick=${() => { close(); setMode(k); }}>${n}</button>`)}</div>
+      <div class="facts ptfacts">${[["Armor Maintenance", `${st.lvl}`], ["Modifier", `${st.mod}%`],
+        ["Repair", st.repair ? (st.restore ? "Yes, broken suits too" : "Yes") : "From level 3"], ["Craft", st.craft ? (st.artisan ? "Mundane and Artisan" : "Mundane suits") : "From level 4"]].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>
+
+      <div class="ptgrid">
+        <div class="ptstage amstage">
+          ${mode === "repair" && !suit ? html`<p class="muted amempty">No armor yet. Add a suit on the Gear tab, or craft one.</p>` : html`
+          <${ArmorFigure} type=${shownType} mode=${mode} run=${run} st=${st} focus=${mode === "craft" ? focus : null} onPick=${mode === "craft" ? setFocus : null}
+            labels=${mode === "repair" ? repairLabels : craftLabels} broken=${rp && (run && run.kind === "repair" ? run.plan.broken && !run.gained : rp.broken)} marks=${mode === "repair" && rp ? amMarks(shownSoak, rp.max) : 0} />`}
+          ${mode === "repair" && rp && html`<div class="amsoak" aria-hidden="true"><i style=${`width:${rp.max ? Math.min(100, (shownSoak / rp.max) * 100) : 0}%`}></i></div>`}
+          <div class="ptforge">
+            ${!run && mode === "repair" && suit && html`<button class="btn primary big forgebtn" disabled=${!!rp.block} onClick=${startRepair}>${HAMMER}${rp.broken ? "Rebuild" : "Repair"} · ${rp.cost} g</button>
+              ${rp.block && html`<p class="muted ptwhy">${rp.block}</p>`}`}
+            ${!run && mode === "craft" && html`<button class="btn primary big forgebtn" disabled=${!!cp.block} onClick=${startCraft}>${HAMMER}Forge the suit · ${cp.cost} g</button>
+              ${cp.block && html`<p class="muted ptwhy">${cp.block}</p>`}`}
+            ${run && html`<${AmReadout} run=${run} onClose=${close} />`}
+          </div>
+        </div>
+        <div class="ptside">${mode === "repair" ? html`<${RepairSide} c=${c} suits=${suits} suit=${suit} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
+          : html`<${CraftSide} c=${c} rc=${rc} cp=${cp} st=${st} focus=${focus} setFocus=${setFocus} setRc=${setRc} busy=${busy} />`}</div>
+      </div>
+    </section>
+
+    <section class="frame"><h2 class="h"><span>Supplies</span><i class="orn" aria-hidden="true"></i></h2>
+      <p class="sub">Armor materials are kept by the type of armor they mend. You also need a blacksmithing kit; heavy and plate armor need a forge, which most smiths will rent you.</p>
+      <div class="ptsupplies">${Object.entries(T).map(([k, t]) => html`<div class="mini ptsup"><label for=${"am-" + k + c.id}>${t.label} materials (g)</label>
+          <input id=${"am-" + k + c.id} type="number" min="0" step="100" value=${c.craft.supplies[k] ?? 0} onInput=${e => update(x => { x.craft.supplies[k] = Math.max(0, +e.target.value || 0); })} /></div>`)}
+        <div class="mini ptsup"><label for=${"am-b" + c.id}>Other bonus (%)</label>
+          <input id=${"am-b" + c.id} type="number" step="1" value=${ca.bonus ?? 0} onInput=${e => update(x => { x.craft.armor.bonus = +e.target.value || 0; })} /></div></div>
+      <label class="amforge"><input type="checkbox" checked=${!!ca.forge} onChange=${e => update(x => { x.craft.armor.forge = e.target.checked; })} /> At a forge <span class="muted">(needed for heavy and plate)</span></label>
+    </section>
+
+    <section class="frame"><h2 class="h"><span>Ledger</span><i class="orn" aria-hidden="true"></i></h2>
+      <p class="sub">Repairs and crafted suits, newest first. A crafted suit's flaws are the GM's to decide; note them here.</p>
+      ${ca.ledger.length === 0 ? html`<p class="muted">No repairs or crafts yet.</p>` : html`<div class="ptledger">${ca.ledger.map((e, i) => html`<div class=${"pled" + (e.scrap ? " scrap" : "")}>
+        <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${e.name}</b>
+          <button class="iconbtn" aria-label="Remove this entry" onClick=${() => update(x => { x.craft.armor.ledger.splice(i, 1); })}>×</button></div>
+        <span class="muted">${new Date(e.t).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}${e.rolls && e.rolls.length ? " · " + e.rolls.join(" · ") : ""}</span>
+        ${e.det > 0 && html`<input class="inp" aria-label="Flaws" placeholder="What the flaw does (the GM decides)" value=${e.note} onInput=${ev => update(x => { x.craft.armor.ledger[i].note = ev.target.value; })} />`}</div>`)}</div>`}
+    </section>`;
+}
+const HAMMER = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6.5l5-3 2.5 4-5 3z M8.8 8.3l7.7 8.2" /></svg>`;
+
+function AmReadout({ run, onClose }) {
+  const [spin, setSpin] = useState(0);
+  useEffect(() => {
+    if (run.phase !== "rolling" || reduceMotion()) return;
+    const t = setInterval(() => setSpin(1 + Math.floor(Math.random() * 100)), 55);
+    return () => clearInterval(t);
+  }, [run.phase, (run.rolls || []).length]);
+  if (run.kind === "repair") {
+    const p = run.plan;
+    if (run.done) return html`<div class=${"ptread end " + (run.gainedFinal ? "done" : "nothing")} role="status">
+      <p class="ptbig">${run.gainedFinal ? `+${run.gainedFinal} Soak` : "No soak recovered"}</p>
+      <p>${run.count ? `${run.count} × ${p.die}: ${run.dice.join(" + ")} = ${run.total}${run.total > run.gainedFinal ? ` (the suit was full at ${p.max})` : ""}` : "The check was too high for even one Repair Die."}</p>
+      <p class="muted">${p.cost} g of ${p.mat} materials used · an hour's work.</p>
+      <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
+    return html`<div class="ptread" role="status" aria-live="polite">
+      <div class="ptstep"><span class="lbl">${run.phase === "rolling" ? "Armor Maintenance check" : "Repair Dice"}</span>
+        <b>${run.phase === "rolling" ? "Inspecting the damage…" : `${run.count} × ${p.die}`}</b></div>
+      ${run.phase === "rolling" ? html`<div class="ptdice rolling"><span class="d100">${spin || "··"}</span><span class="ptmath">d100 − ${run.mod} · lower is better</span></div>`
+        : html`<div class="ptdice ok"><span class="d100">${run.r}</span><span class="ptmath">${run.r} − ${run.mod} = <b>${run.check}</b> · Repair Count 10 − ${run.check} ÷ 10 → <b>${run.count}</b></span></div>`}
+      ${run.count > 0 && run.phase !== "rolling" && html`<div class="amdice">${run.dice.map((v, i) => html`<span class=${"amdie" + (i < run.shown ? " on" : "")}>${i < run.shown ? v : ""}</span>`)}
+        <b class="amsum">+${run.gained}</b></div>`}
+    </div>`;
+  }
+  const p = run.plan, r = run.roll;
+  if (run.done) return html`<div class=${"ptread end " + (run.phase === "made" ? "done" : "scrap")} role="status">
+    <p class="ptbig">${run.phase === "made" ? "Forged" : "Lost in the forge"}</p>
+    <p>${run.phase === "made" ? `${run.name}: ${p.t.label}, AV ${p.finalAV}, Soak ${p.finalSoak}${run.flaws ? ", with a flaw for the GM to decide" : ""}.` : "Two failures: the suit and every material in it are gone."}</p>
+    ${run.phase === "made" && html`<p class="muted">Added to Armor on the Gear tab. Eight hours at the anvil.</p>`}
+    <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
+  return html`<div class="ptread" role="status" aria-live="polite">
+    <div class="ptstep"><span class="lbl">Roll ${Math.min(2, (run.rolls || []).length + ((run.phase === "rolling" && !r) || run.phase === "flaw" ? 1 : 0)) || 1} of 2 at most</span>
+      <b>${run.phase === "heat" ? "Heating the forge…" : run.phase === "flaw" ? "A flaw. One more try…" : `Under ${p.dc}%`}</b>
+      <span class="ptdet">${[0, 1].map(i => html`<i class=${(i < run.flaws ? "on" : "") + (i === 1 ? " last" : "")}></i>`)}</span></div>
+    ${run.phase !== "heat" && html`<div class=${"ptdice" + (run.phase === "rolling" && !r ? " rolling" : r ? (r.ok ? " ok" : " fail") : "")}>
+      <span class="d100">${run.phase === "rolling" && !r ? spin || "··" : r ? r.r : "··"}</span>
+      <span class="ptmath">${run.phase === "rolling" && !r ? html`d100 − ${run.mod} · under ${p.dc}` : r && html`${r.r} − ${run.mod} = <b>${r.total}</b> ${r.ok ? "<" : "≥"} ${p.dc}`}</span></div>`}
+  </div>`;
+}
+
+function RepairSide({ c, suits, suit, rp, st, busy, pick }) {
+  return html`<div class="ptpick">
+    <h3 class="ptpickh"><span>Suits</span></h3>
+    ${suits.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${suits.map(a => { const p = R.repairPlan(c, a);
+      return html`<button type="button" class="ptopt amsuit" aria-pressed=${suit && suit.id === a.id} disabled=${busy} onClick=${() => pick(a.id)}>
+        <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}</b>
+        <span>${R.ARMOR[a.type].label} · AV ${num(a.av)} · Soak ${p.soak}/${p.max}</span>
+        <i class="amtrack"><i style=${`width:${p.max ? (p.soak / p.max) * 100 : 0}%`}></i></i></button>`; })}</div>`}
+    ${suit && html`<div class="ptplan"><h3 class="lbl">The repair</h3><ol>
+      <li><span>Materials: ${rp.cost} g of ${R.ARMOR[suit.type].label.toLowerCase()} materials</span><span class="muted">${R.ARMOR[suit.type].repairPerAV} g × AV ${num(suit.av)}${rp.broken ? " × 2 to rebuild a broken suit (draft rule)" : ""}</span></li>
+      <li><span>Check: d100 − ${st.mod}</span><span class="muted">Repair Count = 10 − check ÷ 10, rounded down, at most 10</span></li>
+      <li><span>Roll ${rp.die} that many times</span><span class="muted">The total goes back into the Soak Pool (up to ${rp.max}). An hour per attempt.</span></li></ol>
+      <p class="ptdc">Check 0 or less: 10 × ${rp.die} · check 40: 6 × ${rp.die} · check 90: 1 × ${rp.die}</p></div>`}
+  </div>`;
+}
+
+function CraftSide({ c, rc, cp, st, focus, setFocus, setRc, busy }) {
+  const T = R.ARMOR, t = cp.t;
+  const Step = ({ label, value, min, max, onSet }) => html`<span class="ptstepper"><button class="iconbtn" aria-label=${`Lower ${label}`} disabled=${busy || value <= min} onClick=${() => onSet(value - 1)}>−</button>
+    <button class="iconbtn" aria-label=${`Raise ${label}`} disabled=${busy || value >= max} onClick=${() => onSet(value + 1)}>+</button></span>`;
+  let body;
+  if (focus === "type") body = html`<p class="muted ptrule">The GM tells you what kind of suit can be made here.</p><div class="ptopts">${Object.entries(T).map(([k, x]) => html`<button type="button" class="ptopt" aria-pressed=${cp.type === k} disabled=${busy}
+      onClick=${() => setRc(r => { r.type = k; r.av = x.av[0]; r.soak = 10 * x.av[0]; r.plusAV = 0; })}><b>${x.label} · AV ${x.av[0]}–${x.av[1]}</b>
+      <span>${5 * x.repairPerAV} g × AV of ${x.label.toLowerCase()} materials${R.AM_FORGE.includes(k) ? " · needs a forge" : ""}</span></button>`)}</div>`;
+  else if (focus === "av" || focus === "soak") body = html`<p class="muted ptrule">The suit's base numbers, from the GM.</p>
+    <div class="row ptrate"><span><b>Armor Value ${cp.av}</b> · ${t.label} runs ${t.av[0]}–${t.av[1]}</span>
+      <${Step} label="Armor Value" value=${cp.av} min=${t.av[0]} max=${t.av[1]} onSet=${v => setRc(r => { r.av = v; r.plusAV = Math.min(num(r.plusAV), t.av[1] - v); })} /></div>
+    <div class="row ptrate"><span><b>Soak Pool ${cp.soak}</b> · usually 10 × AV</span>
+      <span class="ptstepper"><button class="iconbtn" aria-label="Lower Soak Pool" disabled=${busy || cp.soak <= 5} onClick=${() => setRc(r => { r.soak = Math.max(5, cp.soak - 5); })}>−</button>
+        <button class="iconbtn" aria-label="Raise Soak Pool" disabled=${busy} onClick=${() => setRc(r => { r.soak = cp.soak + 5; })}>+</button></span></div>
+    <button type="button" class="btn small" style="margin-top:8px" disabled=${busy || cp.soak === 10 * cp.av} onClick=${() => setRc(r => { r.soak = 10 * cp.av; })}>Soak = 10 × AV</button>`;
+  else body = html`<p class="muted ptrule">Optional. Each extra makes the roll harder, like the book's weapon table. Our reading.</p>
+    <div class="ptopts">
+      <div class=${"ptopt row-opt" + (cp.plusAV ? " on" : "")}><span class="ptcheck"><b>Armor Value +1 · −10% each</b><span>${cp.plusAV ? `+${cp.plusAV}: AV ${cp.finalAV}` : `Up to ${t.av[1]} for ${t.label.toLowerCase()} armor`}</span></span>
+        <div class="ptrate"><${Step} label="extra Armor Value" value=${cp.plusAV} min=${0} max=${t.av[1] - cp.av} onSet=${v => setRc(r => { r.plusAV = v; })} /></div></div>
+      <div class=${"ptopt row-opt" + (cp.plusSoak ? " on" : "")}><span class="ptcheck"><b>Soak Pool +5 · −5% each</b><span>${cp.plusSoak ? `+${5 * cp.plusSoak}: Soak ${cp.finalSoak}` : "Up to +50"}</span></span>
+        <div class="ptrate"><${Step} label="extra Soak Pool" value=${cp.plusSoak} min=${0} max=${10} onSet=${v => setRc(r => { r.plusSoak = v; })} /></div></div></div>
+    ${st.artisan ? html`<p class="ptlocked">Artisan properties (Armor Maintenance 8) aren't written in the book yet.</p>` : ""}`;
+  return html`<div class="ptpick">
+    <h3 class="ptpickh"><span>${AM_NAME[focus] || "Type"}</span><small>${focus === "type" ? t.label : focus === "extra" ? `${cp.dc}%` : focus === "av" ? `AV ${cp.finalAV}` : `Soak ${cp.finalSoak}`}</small></h3>
+    ${body}
+    <div class="ptplan"><h3 class="lbl">The craft</h3><ol>
+      <li><span>Materials: ${cp.cost} g of ${t.label.toLowerCase()} materials</span><span class="muted">5 × repair cost (${t.repairPerAV} g × AV ${cp.finalAV})</span></li>
+      <li><span>Roll under ${cp.dc}%</span><span class="muted">${cp.chance}% to land · a failure leaves a flaw and you roll again; two failures lose it all</span></li>
+      <li><span>Eight hours${R.AM_FORGE.includes(cp.type) ? " at a forge" : ""}</span><span class="muted">The suit joins your Armor on the Gear tab.</span></li></ol>
+      <div class="row ptbatch"><label for=${"amn-" + c.id}>Name</label>
+        <input id=${"amn-" + c.id} class="inp" placeholder=${`${t.label} armor`} value=${rc.name || ""} disabled=${busy} onInput=${e => setRc(r => { r.name = e.target.value; })} /></div></div>
   </div>`;
 }
 /* ================= character creation ================= */

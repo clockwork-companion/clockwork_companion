@@ -57,6 +57,8 @@ python3 src/build.py                  # src/clockwork-companion.html, the claude
 | `skills-data.js`, `skill-tables.js` | Every skill, perk and table extracted from the rulebook. |
 | `rules-info.js` | The plain-language rules shown when a section heading is clicked (`RULES_INFO`). |
 | `app.js` | The UI (Preact + htm, no build step): sheet, vitals, Skills & Talents, gear, tabletop, themes. |
+| `craft.js` | The Crafting tab: one section per craft, and the Powdertinkering bench (munition drawings with callouts, forge animation, supplies, ledger). |
+| `craft-armor.js` | Crafting → Armor upkeep: the Repair and Craft benches (suit drawings on a stand, hammer and forge animations). |
 | `genesis.js` | Guided character creation. |
 | `gm.js` | GM table: players and roles, backups, the initiative deck. |
 | `web-backend.js`, `web/` | Website-only parts: sign-in, Firestore storage, the rules file, the README template. |
@@ -125,3 +127,7 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-24:** Stamina lost and Exhaustion are one track (10 = death; the Conditioning 5 reading is still to confirm). Sinan.
 - **2026-10-24:** Power armour theme is a high-tech HUD: brushed steel and copper, digital type, nixie numbers. No brass, no margin art. Sinan.
 - **2026-10-24:** main changes only through a PR from Dev. Dev is tested on `/dev/`. Sinan.
+- **2026-10-24:** Cyberpunk is an Extended theme: futuristic, not retro (no CRT scanlines). Its design language is Greek mythology (gold Greek-key trims, temple-column tabs, Ω and Greek-letter tags) with the Blackwall glowing red along the bottom. Sinan.
+- **2026-10-24:** Crafting is its own tab with one section per craft; each bench is an illustrated item with callout labels and an animated button under it. Utku.
+- **2026-10-24:** Armor repair: the Repair Count is capped at 10 dice. Utku.
+- **2026-10-24:** Armor crafting (not written in the 2020.1 book) follows the book's weapon crafting, with armor extras (+1 AV −10%, +5 Soak −5%); every change is marked in `rules-info.js`. Utku.

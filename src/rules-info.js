@@ -115,4 +115,21 @@ const RULES_INFO = {
     { h: "Reading a perk card" }, { icons: true },
     "Rests recharge spent uses for you: a short rest brings back abilities marked S, a long rest brings back everything.",
     { h: "Talents" }, "Talents are for what the rules don't cover: a runic tattoo, a blessing, a family heirloom's trick. Write what it does and how often; once it's done, the card works like a perk." ] },
+  powdertinkering: { kicker: "Crafting", title: "Powdertinkering", body: [
+    "Custom ammunition, explosives and weapon oils, built one part at a time. You need a Powdertinker kit.",
+    { h: "Each part is one roll" }, { ul: ["Modifier = 3% × Powdertinker, plus any item bonus.", "Roll d100 and subtract the modifier. Under the part's difficulty, it holds.", "Each attempt uses 200 g: container materials for Coats, Tips and Areas; element solution for Cores and Status."] },
+    { t: { cols: ["Part", "Difficulty", "Rating"], rows: [["Coat (always first)", "60%", "—"], ["Tip (several)", "40%, −5% per step above base", "Powdertinker"], ["Area (one)", "30%", "Powdertinker"], ["Core (one element)", "40%, −10% per step above base", "Powdertinker ÷ 2"], ["Status (match the Core)", "40%", "Powdertinker ÷ 2"]] } },
+    { h: "Failures" }, { ul: ["A failed roll loses its materials and gives the batch a Detriment (the GM decides what). You may try the same part again.", "Powdertinker 3 lets you fail once; Powdertinker 6, twice. One more scraps the batch and everything in it."] },
+    { h: "Unlocks" }, { ul: ["3: proficient, custom Coats.", "4: Tips and Cores.", "5: keep a failed property as well as its Detriment (once per long rest).", "7: Area and Status.", "8: half a batch more per unused failure.", "9: a whole batch more.", "10: ignore one Detriment (once per long rest)."] },
+    { note: "The app's readings: the Component Access table (which munition takes which part) is garbled in our copy of the book and is our best guess; bombs keep a free Sphere; grenades and oils roll their base layer at 60%; both perk abilities are once per long rest." } ] },
+  armorRepair: { kicker: "Crafting", title: "Repairing armor", body: [
+    "Armor Maintenance 3 lets you mend a suit's Soak Pool. You need a blacksmithing kit; heavy and plate armor also need a forge.",
+    { t: { cols: ["Type", "Materials per attempt", "Repair Die"], rows: [["Light", "50 g × AV", "d6"], ["Medium", "70 g × AV", "d8"], ["Heavy", "100 g × AV", "d10"], ["Plate", "150 g × AV", "d12"]] } },
+    { h: "How a repair goes" }, { ul: ["Roll an Armor Maintenance check: d100 minus your modifier (3% × Armor Maintenance).", "Repair Count = 10 − check ÷ 10, rounded down. A check of 32 gives 6.", "Roll the Repair Die that many times. The total goes back into the Soak Pool.", "Each attempt takes an hour."] },
+    { note: "The app's readings: the Repair Count never goes above 10 dice (Utku). A broken suit (Soak 0) needs a skilled craftsman; the app counts Armor Maintenance 5 as skilled and charges double materials to rebuild it. This last one is a draft to confirm." } ] },
+  armorCraft: { kicker: "Crafting", title: "Crafting armor", body: [
+    "Armor Maintenance 4 lets you make mundane suits; 8 adds Artisan properties. The 2020.1 book names armor crafting but doesn't give its steps yet, so the app follows the book's weapon crafting.",
+    { h: "How a craft goes (our reading)" }, { ul: ["The GM gives the suit's type, Armor Value and Soak Pool.", "Materials: 5 × the suit's repair cost, of its type.", "Difficulty 70%. Roll d100 minus your modifier; under 70, the suit is made.", "A failure gives the suit a flaw (the GM decides it) and you roll again. A second failure loses the suit and every material.", "Crafting takes 8 hours. Heavy and plate need a forge."] },
+    { h: "Extras (our reading)" }, { t: { cols: ["Extra", "Difficulty"], rows: [["Armor Value +1 (within the type's range)", "−10%"], ["Soak Pool +5", "−5%"]] } },
+    { note: "Changed from weapon crafting: the stat extras use armor's two numbers in place of the weapon table; the 'two random positive properties' step is left out because armor has no property list; a new suit's Soak Pool defaults to 10 × AV, from the book's chain-mail example. Artisan properties (level 8) aren't written in the book yet." } ] }
 };

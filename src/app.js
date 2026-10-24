@@ -278,9 +278,9 @@ const SKINS = [
   ["fantasy", "Fantasy (parchment)", GF + "IM+Fell+English+SC&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400"],
   ["fantasy-dark", "Fantasy (candlelit)", GF + "IM+Fell+English+SC&family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400"],
   ["armour", "Power armour", GF + "Orbitron:wght@600;700;800&family=Chakra+Petch:wght@500;600;700&family=Exo+2:wght@400;500;600&family=Nixie+One"],
-  ["cyber", "Cyberpunk", GF + "Rajdhani:wght@500;600;700&family=Share+Tech+Mono"],
   // Extended themes: heavier artwork and their own furniture.
   ["cairn", "Cairn-style gothic", GF + "UnifrakturCook:wght@700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Grenze:wght@500;600;700", "extended"],
+  ["cyber", "Cyberpunk", GF + "Michroma&family=Oxanium:wght@400;500;600;700;800", "extended"],
 ];
 function applySkin(key) {
   const skin = SKINS.find(x => x[0] === key) || SKINS[0], root = document.documentElement;

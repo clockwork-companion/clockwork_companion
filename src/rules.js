@@ -128,7 +128,8 @@ const CW = (() => {
                 wounds: { light: 0, moderate: 0, mortal: 0 }, conditions: [] },
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
-      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [] },
+      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
+               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] } },
       talents: [], uses: {},
     };
   }
@@ -155,6 +156,9 @@ const CW = (() => {
     ["supplies", "batch"].forEach(k => (out.craft[k] = Object.assign({}, b.craft[k], out.craft[k])));
     out.craft.recipe = Object.assign({ type: "rifle" }, out.craft.recipe);
     if (!Array.isArray(out.craft.ledger)) out.craft.ledger = [];
+    out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
+    out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
+    if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
     out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
@@ -553,6 +557,54 @@ const CW = (() => {
     return [m.n, ...bits].join(" · ");
   }
 
+  // ---------- Armor Maintenance (rulebook 16.5 and the Armor chapter) ----------
+  // Repair (book): cost = the type's grams × Armor Value; roll an Armor Maintenance check (d100 − modifier);
+  // Repair Count = 10 − check ÷ 10, rounded down; roll the type's Repair Die that many times and add it to the Soak Pool.
+  // Our readings: the Repair Count is capped at 10 (Utku); a broken suit (Soak 0) needs a skilled craftsman,
+  // which we read as Armor Maintenance 5 and double materials (draft, to confirm).
+  // Crafting: the 2020.1 book names it but gives no procedure, so it follows the book's weapon crafting (our reading):
+  // 5 × the repair materials, difficulty 70%, the GM gives type, AV and Soak; a failure adds a flaw and rolls again;
+  // a second failure loses everything. Optional extras mirror the weapon table: +1 AV = −10%, +5 Soak = −5%.
+  const AM_CRAFT_DC = 70;
+  const AM_FORGE = ["heavy", "plate"];          // heavy and plate armor need smelting: a forge
+  function amState(c) {
+    const lvl = sk(c, "Armor Maintenance"), a = (c.craft && c.craft.armor) || {};
+    return { lvl, mod: skillModifier(c, "Armor Maintenance") + num(a.bonus), bonus: num(a.bonus),
+             repair: lvl >= 3, craft: lvl >= 4, restore: lvl >= 5, artisan: lvl >= 8, forge: !!a.forge };
+  }
+  const repairCount = check => clamp(Math.floor(10 - check / 10), 0, 10);
+  // Everything a repair of suit a needs: cost, materials, dice, and why it can't happen yet (if so).
+  function repairPlan(c, a) {
+    const st = amState(c), t = ARMOR[a.type] || ARMOR.light, chk = armorCheck(c, a);
+    const max = chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
+    const cost = t.repairPerAV * Math.max(1, num(a.av)) * (broken ? 2 : 1);
+    const sides = +String(t.repairDie).slice(1);
+    const have = num(c.craft && c.craft.supplies && c.craft.supplies[a.type]);
+    let block = "";
+    if (!st.repair) block = `Repairing armor needs Armor Maintenance 3 ("Is that a dent?"). This character has ${st.lvl}.`;
+    else if (soak >= max) block = "This suit's Soak Pool is already full.";
+    else if (broken && !st.restore) block = "It's broken (Soak 0). Rebuilding it needs a skilled craftsman: Armor Maintenance 5.";
+    else if (AM_FORGE.includes(a.type) && !st.forge) block = `${t.label} armor needs a forge. Tick "At a forge" under Supplies.`;
+    else if (have < cost) block = `Needs ${cost} g of ${t.label.toLowerCase()} armor materials (have ${have}).`;
+    return { cost, mat: a.type, die: t.repairDie, sides, soak, max, broken, missing: max - soak, block, st };
+  }
+  // A crafting order: { type, av, soak, plusAV, plusSoak, name } → final stats, difficulty, cost.
+  function craftPlan(c, r) {
+    const st = amState(c), t = ARMOR[r.type] || ARMOR.medium;
+    const av = clamp(num(r.av) || t.av[0], t.av[0], t.av[1]);
+    const plusAV = clamp(num(r.plusAV), 0, t.av[1] - av);
+    const soak = Math.max(5, num(r.soak) || 10 * av), plusSoak = clamp(num(r.plusSoak), 0, 10);
+    const finalAV = av + plusAV, finalSoak = soak + 5 * plusSoak;
+    const dc = Math.max(5, AM_CRAFT_DC - 10 * plusAV - 5 * plusSoak);
+    const cost = 5 * t.repairPerAV * finalAV;
+    const have = num(c.craft && c.craft.supplies && c.craft.supplies[r.type]);
+    let block = "";
+    if (!st.craft) block = `Crafting armor needs Armor Maintenance 4. This character has ${st.lvl}.`;
+    else if (AM_FORGE.includes(r.type) && !st.forge) block = `${t.label} armor needs a forge. Tick "At a forge" under Supplies.`;
+    else if (have < cost) block = `Needs ${cost} g of ${t.label.toLowerCase()} armor materials (have ${have}).`;
+    return { type: r.type in ARMOR ? r.type : "medium", av, plusAV, soak, plusSoak, finalAV, finalSoak, dc, cost, chance: clamp(dc + st.mod - 1, 0, 100), block, st, t };
+  }
+
   // ---------- Tabletop Simulator export ----------
   function toTabletop(c) {
     const d = derived(c);
@@ -599,6 +651,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie };
+           PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
+           AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan };
 })();
 if (typeof module !== "undefined") module.exports = CW;
