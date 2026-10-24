@@ -358,7 +358,6 @@ function GMView({ chars, updateChar, openChar }) {
           ${!party.length && html`<p class="muted">No characters here yet. Set a character's campaign on their sheet.</p>`}</div>
       </section>
     </div>
-    <${BackupPanel} chars=${chars} />
   </div>`;
 }
 
