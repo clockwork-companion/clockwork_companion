@@ -30,7 +30,7 @@ your feature branch ──PR──▶ Dev ──(tested on the Dev page)──PR
 ## 2. Publishing (don't break this)
 
 - `.github/workflows/pages.yml` runs on every push to **main** or **Dev**.
-  - It copies main to the site root.
+  - It builds main from `src/` into the site root (the committed `index.html` is not what gets published).
   - It builds Dev from `src/` with `--dev` into `/dev/`.
   - It force-pushes the result to the **`gh-pages`** branch, which GitHub Pages serves.
 - **Never edit `gh-pages` by hand.** It is rebuilt from scratch on every run.
