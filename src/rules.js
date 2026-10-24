@@ -129,7 +129,11 @@ const CW = (() => {
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
-               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] } },
+               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] },
+               brew: { bonus: 0, known: [], recipes: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
+               rune: { bonus: 0, order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
+                       second: null, hoax: false, pay: "hp", hours: 1 }, ledger: [] },
+               weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" } }, ledger: [] } },
       talents: [], uses: {},
     };
   }
@@ -159,6 +163,18 @@ const CW = (() => {
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
+    out.craft.weapon = Object.assign({}, b.craft.weapon, out.craft.weapon);
+    out.craft.weapon.recipe = Object.assign({}, b.craft.weapon.recipe, out.craft.weapon.recipe);
+    const wr = out.craft.weapon.recipe;
+    wr.plus = Object.assign({}, wr.plus); wr.exotic = Object.assign({ name: "", dc: 0, note: "" }, wr.exotic);
+    if (!Array.isArray(wr.props)) wr.props = [];
+    if (!Array.isArray(out.craft.weapon.ledger)) out.craft.weapon.ledger = [];
+    out.craft.brew = Object.assign({}, b.craft.brew, out.craft.brew);
+    out.craft.brew.order = Object.assign({}, b.craft.brew.order, out.craft.brew.order);
+    ["known", "recipes", "ledger"].forEach(k => { if (!Array.isArray(out.craft.brew[k])) out.craft.brew[k] = []; });
+    out.craft.rune = Object.assign({}, b.craft.rune, out.craft.rune);
+    out.craft.rune.order = Object.assign({}, b.craft.rune.order, out.craft.rune.order);
+    if (!Array.isArray(out.craft.rune.ledger)) out.craft.rune.ledger = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
     out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
@@ -398,11 +414,12 @@ const CW = (() => {
     if (refreshUses(c, true)) lines.push("Short-rest abilities recharged");
     return lines.length ? "Short rest: " + lines.join(" · ") : "Short rest";
   }
-  function longRest(c) {
+  // cleanse: the cleansing dice total when it was rolled at the table; rolled here when left out.
+  function longRest(c, cleanse) {
     const d = derived(c); const v = c.vitals; const parts = [];
     const hp = Math.min(d.max.hp, d.cur.hp + d.hpRegen); parts.push(`HP +${hp - d.cur.hp}`); v.hp = hp;
     const bp = Math.min(d.max.bp, d.cur.bp + d.bpRegen); parts.push(`Blood +${bp - d.cur.bp}`); v.bp = bp;
-    let roll = rollDie(6); for (let i = 0; i < d.cleanseDice.d4; i++) roll += rollDie(4);
+    let roll = num(cleanse); if (cleanse == null) { roll = rollDie(6); for (let i = 0; i < d.cleanseDice.d4; i++) roll += rollDie(4); }
     const tox = Math.max(0, d.cur.tox - roll); parts.push(`Toxicity −${d.cur.tox - tox} (rolled ${roll})`); v.tox = tox;
     const st = Math.max(0, num(v.exhaustion) - 2 - (sk(c, "Conditioning") >= 7 ? 2 : 0));
     if (st !== num(v.exhaustion)) parts.push(`Stamina ${num(v.exhaustion)} → ${st} lost`); setStamina(c, st);
@@ -411,8 +428,9 @@ const CW = (() => {
   }
 
   // The rulebook roll for one attribute: 3d8, set the lowest die aside, add the other two; never below 6.
-  function rollAttributeDetail() {
-    const dice = [rollDie(8), rollDie(8), rollDie(8)];
+  // dice: three d8 results rolled at the table; rolled here when left out.
+  function rollAttributeDetail(given) {
+    const dice = given && given.length === 3 ? given.slice() : [rollDie(8), rollDie(8), rollDie(8)];
     const low = dice.indexOf(Math.min(...dice));
     const sum = dice.reduce((s, d, i) => (i === low ? s : s + d), 0);
     return { dice, low, sum, total: Math.max(6, sum) };
@@ -605,6 +623,185 @@ const CW = (() => {
     return { type: r.type in ARMOR ? r.type : "medium", av, plusAV, soak, plusSoak, finalAV, finalSoak, dc, cost, chance: clamp(dc + st.mod - 1, 0, 100), block, st, t };
   }
 
+  // ---------- Weapon Maintenance (rulebook 16.4) ----------
+  // Repair: 400 g (one-handed) or 800 g (two-handed), +400 g if Unwieldy; roll a check; Repair Count = 10 − check ÷ 10
+  // (rounded down, capped at 10 like armor); roll that many d10 and add it to Durability. An hour per attempt.
+  // Craft: 5 × the repair materials; difficulty 70%; the GM gives the base stats; optional changes from the book's
+  // Weapons Modification Table; exotic materials (Weapon Maintenance 5) move the difficulty as the GM says.
+  // A failure adds a random flaw and rolls again; a second failure (third from level 7) loses everything.
+  // On a success, a weapon with fewer than 2 properties gets 2 random positive ones. Eight hours.
+  // [name, has a Rating, melee | ranged | both]
+  const WEAPON_PROPS = [["Defensive", 1, "both"], ["Durable", 1, "both"], ["Fast", 0, "both"], ["Finesse", 0, "both"], ["Gore", 0, "both"], ["Impact", 0, "both"],
+    ["Impale", 0, "both"], ["Penetrating", 1, "both"], ["Reliable", 1, "both"], ["Bladebreaker", 1, "melee"], ["Entangle", 0, "melee"], ["Hack", 0, "melee"],
+    ["Light", 0, "melee"], ["Pummel", 1, "melee"], ["Reach", 0, "melee"], ["Shield", 1, "melee"], ["Accurate", 1, "ranged"], ["Blast", 1, "ranged"],
+    ["Overbearing", 1, "ranged"], ["Pistol", 0, "ranged"], ["Precise", 1, "ranged"]];
+  const WEAPON_FLAWS = [["Brittle", 1, "both"], ["Impotent", 0, "both"], ["Slow", 0, "both"], ["Unwieldy", 0, "both"], ["Poorly Weighed", 0, "melee"],
+    ["Undamaging", 0, "melee"], ["Inaccurate", 1, "ranged"], ["Experimental", 0, "ranged"]];
+  const DUR_DICE = ["d4", "d6", "d8", "d10", "d12", "d20"];
+  // [key, label, difficulty change per step, step size]
+  const WEAPON_MODS = [["damage", "Damage +1", 10, 1], ["accuracy", "Accuracy +1%", 2, 1], ["crit", "Critical chance +1%", 2, 1], ["dur", "Durability +1", 1, 1], ["die", "Higher durability die", 5, 1]];
+  const WM_CRAFT_DC = 70;
+  function wmState(c) {
+    const lvl = sk(c, "Weapon Maintenance"), w = (c.craft && c.craft.weapon) || {};
+    return { lvl, mod: skillModifier(c, "Weapon Maintenance") + num(w.bonus), bonus: num(w.bonus),
+             repair: lvl >= 3, craft: lvl >= 3, exotic: lvl >= 5, props: lvl >= 7 ? 2 : 1, maxFails: lvl >= 7 ? 2 : 1, masterwork: lvl >= 9 };
+  }
+  const isUnwieldy = w => /unwieldy/i.test(String(w.props || "")) || !!w.unwieldy;
+  const weaponRepairCost = w => (num(w.hands) === 2 ? 800 : 400) + (isUnwieldy(w) ? 400 : 0);
+  const fitsKind = (kind, k) => k === "both" || k === kind;
+  function wRepairPlan(c, w) {
+    const st = wmState(c), max = num(w.durMax), dur = clamp(num(w.dur), 0, max), cost = weaponRepairCost(w);
+    const have = num(c.craft && c.craft.supplies && c.craft.supplies.weapon);
+    let block = "";
+    if (!st.repair) block = `Repairing weapons needs Weapon Maintenance 3 ("Is that a dent?"). This character has ${st.lvl}.`;
+    else if (!max) block = "This weapon has no durability set. Give it one on the Gear tab.";
+    else if (dur >= max) block = "This weapon's durability is already full.";
+    else if (have < cost) block = `Needs ${cost} g of weapon materials (have ${have}).`;
+    return { cost, dur, max, missing: max - dur, broken: max > 0 && dur <= 0, die: "d10", sides: 10, block, st };
+  }
+  // A crafting order: { name, skill, hands, unwieldy, damage, crit, accuracy, dur, durDie, plus: {damage, accuracy, crit, dur, die}, props: [], exotic: {name, dc, note} }
+  function wCraftPlan(c, r) {
+    const st = wmState(c), plus = r.plus || {}, kind = weaponKind({ skill: r.skill }) === "ranged" ? "ranged" : "melee";
+    const props = (r.props || []).filter(p => WEAPON_PROPS.some(x => x[0] === p && fitsKind(kind, x[2]))).slice(0, st.props);
+    const di = Math.max(0, DUR_DICE.indexOf(r.durDie || "d10")), dieUp = clamp(num(plus.die), 0, DUR_DICE.length - 1 - di);
+    const ex = st.exotic && r.exotic && String(r.exotic.name || "").trim() ? r.exotic : null;
+    let dc = WM_CRAFT_DC - 10 * num(plus.damage) - 2 * num(plus.accuracy) - 2 * num(plus.crit) - num(plus.dur) - 5 * dieUp - 10 * props.length;
+    if (ex) dc += num(ex.dc);
+    const cost = 5 * weaponRepairCost(r);
+    const have = num(c.craft && c.craft.supplies && c.craft.supplies.weapon);
+    let block = "";
+    if (!st.craft) block = `Crafting weapons needs Weapon Maintenance 3. This character has ${st.lvl}.`;
+    else if (dc <= 0) block = "Those changes make the difficulty 0% or lower: it can't succeed. Take some away.";
+    else if (have < cost) block = `Needs ${cost} g of weapon materials (have ${have}).`;
+    return { kind, props, dieUp, ex, dc, cost, block, st, chance: clamp(dc + st.mod - 1, 0, 100),
+             final: { damage: num(r.damage) + num(plus.damage), accuracy: num(r.accuracy) + num(plus.accuracy), crit: num(r.crit) + num(plus.crit),
+                      durMax: num(r.dur) + num(plus.dur), durDie: DUR_DICE[di + dieUp] } };
+  }
+  // Pick n random entries of a list that fit the weapon and aren't taken yet. A Rating is left for the GM.
+  function randomTraits(list, kind, taken, n) {
+    const pool = list.filter(([k, , t]) => fitsKind(kind, t) && !taken.includes(k) && k !== "Shield"), out = [];
+    while (out.length < n && pool.length) out.push(pool.splice(rollDie(pool.length) - 1, 1)[0]);
+    return out.map(([k, rated]) => (rated ? `${k} (Rating: GM)` : k));
+  }
+
+  // ---------- Brewing (rulebook 16.1 and the Brewing skill) ----------
+  // A recipe: base materials, effect, toxicity die and difficulty, plus the same per increment.
+  // Roll d100 − Brewing modifier under the difficulty; a failure wastes the materials. Then roll toxicity.
+  // The book writes the per-increment difficulty as "%15 − SP": we read it as 15% − Brewing (never below 0) per increment.
+  // Catalysts: declared before the roll; their difficulty "−%10 + SP" we read as harder by 10% − Brewing.
+  // Level 3 brews; 5 increments and catalysts (known: 1 per 3 levels, 4 at 10); 7 Potent Brews (two effects,
+  // both rolls must hold, twice as long); 9 potent toxicity takes the higher roll and increments apply to both.
+  // [key, name, herb, base g, g per increment, base toxicity, toxicity per increment, base difficulty, difficulty per increment (minus Brewing), duration, effect(sp, n), when]
+  const BREWS = [
+    { k: "health", n: "Health Potion", herb: "healing herbs", g: 300, gi: 100, tox: "1d8", toxi: "1d4", dc: 50, dci: 15, dur: "long",
+      eff: (sp, n) => `${2 * sp + 2 * n} hit points`, how: "Over the next long rest, instead of your natural hit point regeneration, you regain hit points equal to its effect." },
+    { k: "skele", n: "Skele-Gro", herb: "bone herbs", g: 400, gi: 150, tox: "1d12", toxi: "1d8", dc: 50, dci: 13, dur: "long",
+      eff: (sp, n) => `bones heal ${3 + n}× faster`, how: "Over the next long rest, bones regenerate that many times faster. Count healing time in days." },
+    { k: "sanguinar", n: "The Sanguinar", herb: "blood herbs", g: 300, gi: 200, tox: "1d10", toxi: "1d4", dc: 40, dci: 13, dur: "long",
+      eff: (sp, n) => `${10 * sp + 3 * sp * n} blood points`, how: "Over the next long rest, instead of your natural blood regeneration, you regain blood points equal to its effect." },
+    { k: "sleep", n: "Sleep Tightener", herb: "exhaustion herbs", g: 500, gi: 500, tox: "1d8", toxi: "1d6", dc: 30, dci: 18, dur: "long",
+      eff: (sp, n) => `${1 + n} Exhaustion point${n ? "s" : ""}`, how: "Over the next long rest, on top of natural recovery, you regain that many Exhaustion points." },
+    { k: "pickme", n: "The Pick Me Up", herb: "exhaustion herbs", g: 200, gi: 100, tox: "1d6", toxi: "1d4", dc: 50, dci: 13, dur: "now",
+      eff: (sp, n) => `${Math.floor(sp / 3) + n} turn${Math.floor(sp / 3) + n === 1 ? "" : "s"}`, how: "Takes effect at once: the side effects of Exhaustion wait that many turns." },
+  ];
+  const CATALYSTS = [
+    { k: "duration", n: "Duration Catalyst", dc: 10, what: "Doubles the brew's active duration (only brews lasting less than an hour). Toxicity ×2." },
+    { k: "toxicity", n: "Toxicity Catalyst", dc: 12, what: "Lowers the brew's toxicity by your Brewing." },
+    { k: "volatile", n: "Volatile Catalyst", dc: 10, what: "Roll a d100: 1–10 five more increments, 11–25 three more, 26–70 nothing, 71–94 it fizzles and turns inert, 95–100 it explodes for 1d20 damage in 2 m." },
+  ];
+  const VOLATILE = [[10, 5, "Five more increments!"], [25, 3, "Three more increments."], [70, 0, "Nothing happens."], [94, -1, "It fizzles and turns inert."], [100, -2, "It explodes: 1d20 damage to everyone within 2 m."]];
+  const parseDie = d => { const m = /^(\d*)d(\d+)$/i.exec(String(d || "").trim()); return m ? { n: +(m[1] || 1), sides: +m[2] } : null; };
+  function brewState(c) {
+    const lvl = sk(c, "Brewing"), b = (c.craft && c.craft.brew) || {};
+    return { lvl, mod: skillModifier(c, "Brewing") + num(b.bonus), bonus: num(b.bonus), brew: lvl >= 3, incs: lvl >= 5, catalysts: lvl >= 5,
+             known: lvl >= 10 ? 4 : lvl >= 5 ? Math.max(1, Math.floor(lvl / 3)) : 0, potent: lvl >= 7, potentPlus: lvl >= 9 };
+  }
+  const allBrews = c => [...BREWS, ...(((c.craft && c.craft.brew && c.craft.brew.recipes) || []).map(r => Object.assign({ custom: true }, r)))];
+  const findBrew = (c, k) => allBrews(c).find(r => r.k === k) || BREWS[0];
+  // One brew's numbers at n increments.
+  function brewOne(c, rec, n) {
+    const st = brewState(c), sp = st.lvl;
+    const dci = Math.max(0, num(rec.dci) - sp);
+    const td = parseDie(rec.tox) || { n: 1, sides: 6 }, ti = parseDie(rec.toxi);
+    const tox = [{ n: td.n, sides: td.sides }]; if (ti && n) tox.push({ n: ti.n * n, sides: ti.sides });
+    const effect = rec.custom ? `${rec.effect || "effect"}${n ? ` + ${n} × ${rec.effecti || "more"}` : ""}` : rec.eff(sp, n);
+    return { rec, n, grams: num(rec.g) + num(rec.gi) * n, herb: rec.herb || "herbs", dc: num(rec.dc) - dci * n, dci, tox, effect };
+  }
+  // A brewing order: { k, inc, catalyst, potent: { k, inc } | null }
+  function brewPlan(c, o) {
+    const st = brewState(c), inc = st.incs ? clamp(num(o.inc), 0, 10) : 0;
+    const a = brewOne(c, findBrew(c, o.k), inc);
+    const p = st.potent && o.potent && o.potent.k ? brewOne(c, findBrew(c, o.potent.k), st.potentPlus ? inc : (st.incs ? clamp(num(o.potent.inc), 0, 10) : 0)) : null;
+    const known = (c.craft && c.craft.brew && c.craft.brew.known) || [];
+    const cat = st.catalysts && o.catalyst && known.includes(o.catalyst) ? CATALYSTS.find(x => x.k === o.catalyst) : null;
+    const catDc = cat ? Math.max(0, cat.dc - st.lvl) : 0;
+    const need = {}; [a, p].filter(Boolean).forEach(b => (need[b.herb] = (need[b.herb] || 0) + b.grams));
+    const have = h => num(c.craft && c.craft.supplies && c.craft.supplies["herb:" + h]);
+    const dcs = [a, p].filter(Boolean).map(b => b.dc - catDc);
+    let block = "";
+    if (!st.brew) block = `Brewing potions needs Brewing 3. This character has ${st.lvl}.`;
+    else if (dcs.some(d => d <= 0)) block = "That many increments makes it impossible (difficulty 0% or lower). Take some away.";
+    else { const short = Object.entries(need).find(([h, g]) => have(h) < g); if (short) block = `Needs ${short[1]} g of ${short[0]} (have ${have(short[0])}).`; }
+    return { st, a, p, cat, catDc, need, dcs, chances: dcs.map(d => clamp(d + st.mod - 1, 0, 100)), hours: p ? 2 : 1, block };
+  }
+
+  // ---------- Runecrafting (Crafting: Runecrafting, and the skill's perks) ----------
+  // Level 3 identify runestones; 4 enchant semi-precious gems; 5 precious gems, and extra materials (+1% per 50 rubles);
+  // 6 Hoaxstones; 7 Potent Runestones (two effects, twice the time); 8 one re-roll per gemstone; 9 extract runes;
+  // 10 move enchantments, merge two runestones. An enchantment takes 8 hours.
+  const GEMS = [
+    { k: "amethyst", n: "Amethyst", hue: "#8a5cd0" }, { k: "garnet", n: "Garnet", hue: "#9e1f2e" }, { k: "topaz", n: "Topaz", hue: "#e3a23a" },
+    { k: "jade", n: "Jade", hue: "#3f9b6a" }, { k: "lapis", n: "Lapis lazuli", hue: "#2c4fa8" }, { k: "moonstone", n: "Moonstone", hue: "#c9d6e6" },
+    { k: "ruby", n: "Ruby", hue: "#d0213f", precious: true }, { k: "sapphire", n: "Sapphire", hue: "#1f55d6", precious: true },
+    { k: "emerald", n: "Emerald", hue: "#14a35a", precious: true }, { k: "diamond", n: "Diamond", hue: "#e8f4ff", precious: true },
+    { k: "other", n: "Other vessel", hue: "#b08a5a" },
+  ];
+  // The Runecrafting Difficulty table: d100 − modifier → the stone's potency. 30 or more fails.
+  const RUNE_TABLE = [[-31, "12"], [-21, "d12"], [-11, "d10"], [-1, "d8"], [9, "d6"], [19, "d4"], [29, "1"]];
+  const POTENCY_RANK = ["1", "d4", "d6", "d8", "d10", "d12", "12"];
+  function runePotency(result, semi) {
+    const row = RUNE_TABLE.find(([hi]) => result <= hi);
+    if (!row) return { pot: null, capped: false };
+    // Semi-precious gems hold power up to d6; anything better counts as d6.
+    if (semi && POTENCY_RANK.indexOf(row[1]) > POTENCY_RANK.indexOf("d6")) return { pot: "d6", capped: row[1] };
+    return { pot: row[1], capped: false };
+  }
+  const HOAX_PAY = { hp: { n: "hit points", per: 2 }, bp: { n: "blood points", per: 10 }, dp: { n: "deprivation points", per: 5 } };
+  function runeState(c) {
+    const lvl = sk(c, "Runecrafting"), b = (c.craft && c.craft.rune) || {};
+    return { lvl, mod: skillModifier(c, "Runecrafting") + num(b.bonus), bonus: num(b.bonus), identify: lvl >= 3, semi: lvl >= 4, precious: lvl >= 5,
+             extra: lvl >= 5, hoax: lvl >= 6, potent: lvl >= 7, reroll: lvl >= 8, extract: lvl >= 9, sage: lvl >= 10 };
+  }
+  // An enchanting order: { gem, gemName, precious, kind: enhance|manifest, effect, dc, cost, extra, second: { kind, effect, dc } | null, hoax, pay, hours }
+  function runePlan(c, o) {
+    const st = runeState(c), g = GEMS.find(x => x.k === o.gem) || GEMS[0];
+    const hoax = st.hoax && !!o.hoax;
+    const precious = !hoax && (g.k === "other" ? !!o.precious : !!g.precious);
+    const semi = !hoax && !precious;
+    const second = st.potent && !hoax && precious && o.second ? o.second : null;
+    const extra = st.extra && !hoax ? Math.max(0, num(o.extra)) : 0;
+    const extraPct = Math.floor(extra / 50);
+    const mod = st.mod + extraPct, cost = Math.max(0, num(o.cost));
+    const effects = [{ kind: o.kind === "manifest" ? "manifest" : "enhance", effect: String(o.effect || "").trim(), dc: num(o.dc) }]
+      .concat(second ? [{ kind: second.kind === "manifest" ? "manifest" : "enhance", effect: String(second.effect || "").trim(), dc: num(second.dc) }] : []);
+    // Chance to succeed: an enhancing stone holds on d100 − mod below 30, a manifesting stone below the GM's difficulty.
+    const chances = effects.map(e => clamp((e.kind === "manifest" ? e.dc : 30) + mod - 1, 0, 100));
+    const hours = Math.max(1, Math.floor(num(o.hours)) || 1), pay = HOAX_PAY[o.pay] ? o.pay : "hp";
+    const life = hoax ? Math.max(1, Math.ceil(cost / 100)) * HOAX_PAY[pay].per * hours : 0;
+    const name = hoax ? (String(o.gemName || "").trim() || "a mundane object") : g.k === "other" ? (String(o.gemName || "").trim() || "a vessel") : g.n;
+    const have = num(c.craft && c.craft.supplies && c.craft.supplies.runemat);
+    const lifeHave = hoax ? derived(c).cur[pay] : 0;
+    let block = "";
+    if (hoax) { if (!st.hoax) block = "Hoaxstones need Runecrafting 6."; else if (life > lifeHave) block = `This Hoaxstone costs ${life} ${HOAX_PAY[pay].n}; you have ${lifeHave}.`; }
+    else if (!st.semi) block = `Enchanting gems needs Runecrafting 4. This character has ${st.lvl}.`;
+    else if (precious && !st.precious) block = "Precious gems need Runecrafting 5. Pick a semi-precious gem.";
+    else if (cost + extra > have) block = `Needs ${cost + extra} rubles' worth of materials (have ${have}).`;
+    if (!block && effects.some(e => !e.effect)) block = "Describe the effect first (what the GM agreed it does).";
+    if (!block && effects.some(e => e.kind === "manifest" && e.dc <= 0)) block = "Set the difficulty the GM gave for the manifesting effect.";
+    return { st, g, name, hoax, precious, semi, second: !!second, effects, extra, extraPct, mod, cost, spend: hoax ? 0 : cost + extra,
+             chances, hours: second ? 16 : 8, lasts: hoax ? hours : 0, life, pay, payName: HOAX_PAY[pay].n, block };
+  }
+
   // ---------- Tabletop Simulator export ----------
   function toTabletop(c) {
     const d = derived(c);
@@ -652,6 +849,9 @@ const CW = (() => {
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
-           AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan };
+           AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
+           WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
+           BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allBrews, findBrew, brewOne, brewPlan,
+           GEMS, RUNE_TABLE, runePotency, HOAX_PAY, runeState, runePlan };
 })();
 if (typeof module !== "undefined") module.exports = CW;

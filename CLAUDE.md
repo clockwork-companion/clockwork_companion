@@ -4,9 +4,11 @@ This repo is the **Clockwork Companion**, a web character sheet and GM tool for 
 a homebrew tabletop RPG. Three people work on it, each with their own Claude. Read this whole file before changing
 anything. When this file and an instruction from your own person disagree, ask them before acting.
 
-- **People:** Sinan (owner of the repo, co-GM), Bedo, and one more collaborator. Address them in plain language.
-- **Live site:** https://vansinan101.github.io/clockwork_companion/
-- **Dev page:** https://vansinan101.github.io/clockwork_companion/dev/ (red DEV ribbon)
+- **People:** Sinan (co-GM), Bedo and Utku. All three are **owners** of the `clockwork-companion` GitHub organization,
+  which owns the repo. Address them in plain language.
+- **Repo:** https://github.com/clockwork-companion/clockwork_companion (moved from `vansinan101` on 2026-10-24; old links forward)
+- **Live site:** https://clockwork-companion.github.io/clockwork_companion/
+- **Dev page:** https://clockwork-companion.github.io/clockwork_companion/dev/ (red DEV ribbon)
 
 ## 1. Branches: how work moves
 
@@ -50,6 +52,10 @@ python3 src/build.py                  # src/clockwork-companion.html, the claude
 
 **If `index.html` conflicts in a merge:** resolve the `src/` files, rebuild, and commit the rebuilt file.
 
+**`sw.js` is never committed** (it's in `.gitignore`). The build writes it with a version code made from the whole page,
+so every build changes it and two branches would always conflict on it. The publish workflow builds a fresh one.
+If an older branch still has it, a merge may report `sw.js` as deleted: keep it deleted (`git rm sw.js`).
+
 | File in `src/` | What it holds |
 | --- | --- |
 | `app.css` | All styles and every theme (keyed on `html[data-skin="…"]`). It begins with the page `<title>`. |
@@ -58,8 +64,13 @@ python3 src/build.py                  # src/clockwork-companion.html, the claude
 | `rules-info.js` | The plain-language rules shown when a section heading is clicked (`RULES_INFO`). |
 | `app.js` | The UI (Preact + htm, no build step): sheet, vitals, Skills & Talents, gear, tabletop, themes. |
 | `fx-blackwall.js` | The Cyberpunk theme's animated Blackwall: a WebGL shader on a canvas behind the page. It only runs while that theme is on; without WebGL the CSS stand-in in `app.css` shows instead. |
+| `fx-steppe.js` | The Talon Saga theme's landscape: a realistic central-Mongolian steppe rendered once by a WebGL terrain shader (in strips, then faded in), with a galloping herd, an eagle and ger smoke animated over it on a 2D canvas. Falls back to a painted scene without WebGL. It only runs while that theme is on. |
+| `fx-moss.js` | The Mossheart theme's living ivy: grows ivy (sized to each section), moss clumps and hide patches round the sections, and lets leaves lean a little when the pointer brushes past. Only while that theme is on; without it the CSS vines in `app.css` show instead. |
 | `craft.js` | The Crafting tab: one section per craft, and the Powdertinkering bench (munition drawings with callouts, forge animation, supplies, ledger). |
 | `craft-armor.js` | Crafting → Armor upkeep: the Repair and Craft benches (suit drawings on a stand, hammer and forge animations). |
+| `craft-weapon.js` | Crafting → Weapon upkeep: the Repair and Craft benches (weapon drawings in a rack by type, nicks hammered out, forge with flaws and random properties). |
+| `craft-brew.js` | Crafting → Brewing: a cauldron over a fire with a herb pouch, catalyst vial and flask; recipes (the book's and the GM's), increments, catalysts, Potent Brews; potions go into the inventory with their toxicity. |
+| `craft-rune.js` | Crafting → Runecrafting: a gem (or a mundane object for a Hoaxstone) over a ritual slab in a ring of runes; enhancing and manifesting stones, potency from the book's table, Potent Runestones, the level 8 re-roll; runestones go into the inventory. |
 | `genesis.js` | Guided character creation. |
 | `gm.js` | GM table: players and roles, backups, the initiative deck. |
 | `web-backend.js`, `web/` | Website-only parts: sign-in, Firestore storage, the rules file, the README template. |
@@ -131,7 +142,10 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-24:** Stamina lost and Exhaustion are one track (10 = death; the Conditioning 5 reading is still to confirm). Sinan.
 - **2026-10-24:** Power armour theme is a high-tech HUD: brushed steel and copper, digital type, nixie numbers. No brass, no margin art. Sinan.
 - **2026-10-24:** main changes only through a PR from Dev. Dev is tested on `/dev/`. Sinan.
-- **2026-10-24:** Cyberpunk is an Extended theme, futuristic rather than retro: no CRT scanlines. Its design language is Greek mythology (temple-column tabs, Greek-letter tags; Ω replaces the rules book icon), blended with the Cyberpunk 2077 menus (coral headings and lines, a cyan active tab, item cards with a coloured left stripe and a cyan corner notch, yellow tags). Headings and tabs use Tomorrow, with Oxanium elsewhere. No gold Greek-key dividers. The Blackwall is a living WebGL shader with depth: three layers of streaks that sway and heave, with soft ripples from points that wander along the whole wall, and rare, brief tearing with a touch of pixelation. There is no bright focal spot; it stays subtle. Sinan.
+- **2026-10-24:** Cyberpunk is an Extended theme, futuristic rather than retro: no CRT scanlines. Its design language is Greek mythology (temple-column tabs, Greek-letter tags; Ω replaces the rules book icon), blended with the Cyberpunk 2077 menus (coral headings and lines, a cyan active tab, item cards with a coloured left stripe and a cyan corner notch, yellow tags). Headings and tabs use Tomorrow, with Oxanium elsewhere. No gold Greek-key dividers. The Blackwall is a living WebGL shader modelled on stills from the game: straight jail-bar lines crowding into a magenta haze in perspective, a crimson-to-violet colour wave rolling across them, a near layer of tapering spikes rising and falling like an equaliser, soft plasma on the right, and rare, brief tearing. No pixelation and no bright flashing spot; it stays subtle. Sinan.
 - **2026-10-24:** Crafting is its own tab with one section per craft; each bench is an illustrated item with callout labels and an animated button under it. Utku.
 - **2026-10-24:** Armor repair: the Repair Count is capped at 10 dice. Utku.
 - **2026-10-24:** Armor crafting (not written in the 2020.1 book) follows the book's weapon crafting, with armor extras (+1 AV −10%, +5 Soak −5%); every change is marked in `rules-info.js`. Utku.
+- **2026-10-24:** Mossheart is an Extended theme for Utku's character Batbayar, a young warder who fights the Zhoung, a corrupting darkness, inside himself. Dark and grounded rather than whimsical: realistic ivy (woody stems, five-lobed leaves, moss, black berries) creeping round section corners (grown to fit each section by `fx-moss.js`; leaves lean gently, at most 10°, when the pointer brushes past, then settle), a few moss clumps and the odd stitched hide patch on section edges, carved-stone titles (Marcellus SC), drifting spores. Below rises the Zhoung, a violet-black shadow of roots that breathes and sometimes opens its eyes, held back by a faint line of warding runes. Broken attributes take its violet. Utku.
+- **2026-10-24:** Dice: a top-bar switch (per browser, like the theme) between "App rolls" and "My own rolls". With own rolls, every roll the app makes (long rest cleansing, creation 3d8, Powdertinkering, Armor repair and craft, Weapon repair and craft, Brewing, Runecrafting) asks for the number rolled at the table, e.g. in Tabletop Simulator; new rolls go through `askRoll()` in `app.js`. Utku.
+- **2026-10-24:** The repo moved to the free `clockwork-companion` organization, with Sinan, Bedo and Utku as owners. The site moved to clockwork-companion.github.io/clockwork_companion/; the old address forwards to it. Sinan.

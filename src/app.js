@@ -333,6 +333,8 @@ const SKINS = [
   // Extended themes: heavier artwork and their own furniture.
   ["cairn", "Cairn-style gothic", GF + "UnifrakturCook:wght@700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Grenze:wght@500;600;700", "extended"],
   ["cyber", "Cyberpunk", GF + "Tomorrow:wght@500;600;700&family=Oxanium:wght@400;500;600;700;800", "extended"],
+  ["talon", "Talon Saga (steppe)", GF + "Marcellus&family=Marcellus+SC&family=Alegreya+Sans:wght@400;500;700&family=Noto+Sans+Old+Turkic", "extended"],
+  ["moss", "Mossheart (forest)", GF + "Marcellus+SC&family=Cormorant+Garamond:wght@500;600;700&family=Crimson+Pro:wght@400;600;700", "extended"],
 ];
 // The install-app icon (shown only when the browser can install the site; see web/pwa.js).
 const INSTALL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v10.5m0 0-4.2-4.2M12 14l4.2-4.2M4.5 14.5v3.2A2.3 2.3 0 0 0 6.8 20h10.4a2.3 2.3 0 0 0 2.3-2.3v-3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -352,6 +354,60 @@ function SkinPicker() {
       <optgroup label="Themes">${SKINS.filter(x => !x[3]).map(([k, n]) => html`<option value=${k}>${n}</option>`)}</optgroup>
       <optgroup label="Extended">${SKINS.filter(x => x[3] === "extended").map(([k, n]) => html`<option value=${k}>${n}</option>`)}</optgroup>
     </select></label>`;
+}
+
+/* ================= dice: the app rolls, or the player types a roll made at the table ================= */
+// Per browser, like the theme: "app" (default) or "own" (rolled elsewhere, e.g. in Tabletop Simulator, and typed in).
+// askRoll(spec) resolves to the dice results, or to null when the player cancels.
+//   spec: { title, dice: [{ n, sides }], each (type every die; otherwise one total), note, cancel (offer Cancel) }
+// With own rolls and no "each", it resolves to a one-item array holding the total.
+const Dice = { mode: lsGet("cw-dice", "app"), open: null };
+const diceLabel = dice => dice.filter(d => d.n > 0).map(d => `${d.n}d${d.sides}`).join(" + ");
+const autoRoll = spec => spec.dice.flatMap(d => Array.from({ length: d.n }, () => R.rollDie(d.sides)));
+function askRoll(spec) {
+  if (Dice.mode !== "own" || !Dice.open || !spec.dice.some(d => d.n > 0)) return Promise.resolve(autoRoll(spec));
+  return new Promise(res => Dice.open({ spec, res }));
+}
+function DicePicker() {
+  const [mode, setMode] = useState(Dice.mode);
+  return html`<label class="skinpick" title="Roll in the app, or roll at your table (Tabletop Simulator) and type the result"><span class="lbl">Dice</span>
+    <select value=${mode} onChange=${e => { Dice.mode = e.target.value; lsSet("cw-dice", Dice.mode); setMode(Dice.mode); }}>
+      <option value="app">App rolls</option><option value="own">My own rolls</option></select></label>`;
+}
+// The box that asks for a roll. Mounted once in App; askRoll() opens it.
+function DiceAsk() {
+  const [ask, setAsk] = useState(null), [vals, setVals] = useState([]), [err, setErr] = useState("");
+  const first = useRef(null);
+  useEffect(() => { Dice.open = a => { setAsk(a); setVals([]); setErr(""); }; return () => { Dice.open = null; }; }, []);
+  useEffect(() => { if (ask && first.current) first.current.focus(); }, [ask]);
+  if (!ask) return null;
+  const { spec } = ask, each = !!spec.each;
+  const dice = spec.dice.filter(d => d.n > 0);
+  const slots = each ? dice.flatMap(d => Array.from({ length: d.n }, () => ({ lo: 1, hi: d.sides, ph: `d${d.sides}` })))
+    : [{ lo: dice.reduce((s, d) => s + d.n, 0), hi: dice.reduce((s, d) => s + d.n * d.sides, 0), ph: dice.length === 1 && dice[0].n === 1 ? `d${dice[0].sides}` : "total" }];
+  const single = !each && dice.length === 1 && dice[0].n === 1;
+  const done = r => { setAsk(null); ask.res(r); };
+  const submit = e => {
+    e.preventDefault();
+    const nums = slots.map((s, i) => Number(vals[i]));
+    const bad = slots.findIndex((s, i) => !Number.isInteger(nums[i]) || nums[i] < s.lo || nums[i] > s.hi);
+    if (bad >= 0) { setErr(`Type a whole number from ${slots[bad].lo} to ${slots[bad].hi}.`); return; }
+    done(nums);
+  };
+  const cancel = () => { if (spec.cancel) done(null); };
+  return html`<div class="gx-veil dice-veil" onClick=${e => { if (e.target === e.currentTarget) cancel(); }} onKeyDown=${e => { if (e.key === "Escape") cancel(); }}>
+    <form class="gx-choose dice-ask" role="dialog" aria-modal="true" aria-label=${spec.title} onSubmit=${submit} novalidate>
+      <h2 class="ornate">${spec.title}</h2>
+      <p>Roll <b>${diceLabel(dice)}</b> at your table and type ${each ? (slots.length > 1 ? "each die" : "the die") : single ? "the result" : "the total"}.</p>
+      ${spec.note && html`<p class="muted">${spec.note}</p>`}
+      <div class="dice-in">${slots.map((s, i) => html`<input class="inp" type="number" inputmode="numeric" min=${s.lo} max=${s.hi} placeholder=${s.ph}
+        aria-label=${each ? `Die ${i + 1} (${s.ph})` : `Result (${s.lo} to ${s.hi})`} ref=${i === 0 ? first : null} value=${vals[i] == null ? "" : vals[i]}
+        onInput=${e => { const v = vals.slice(); v[i] = e.target.value; setVals(v); setErr(""); }} />`)}</div>
+      ${err && html`<p class="flag bad" role="alert">${err}</p>`}
+      <div class="row dice-btns"><button class="btn primary" type="submit">Use this roll</button>
+        <button class="btn" type="button" onClick=${() => { const r = autoRoll(spec); done(each ? r : [r.reduce((a, b) => a + b, 0)]); }}>Let the app roll</button>
+        ${spec.cancel && html`<button class="btn" type="button" onClick=${cancel}>Cancel</button>`}</div>
+    </form></div>`;
 }
 
 /* ================= app ================= */
@@ -423,7 +479,7 @@ function App() {
       ${gm && html`<div class="seg viewseg" role="group" aria-label="View">
         <button aria-pressed=${view === "chars"} onClick=${() => setView("chars")}>Characters</button>
         <button aria-pressed=${view === "gm"} onClick=${() => setView("gm")}>GM table</button></div>`}
-      <${SkinPicker} />
+      <${SkinPicker} /><${DicePicker} />
       <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button><button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
     </header>
@@ -445,7 +501,7 @@ function App() {
           <p class="muted">Walk through creation step by step, or start from a blank sheet.</p></div>`}`}
     ${making === "choose" && html`<${NewChoice} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")} onBlank=${() => { setMaking(null); create(false); }} />`}
     ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
-    <${Toaster} /><${HoverCard} />
+    <${Toaster} /><${HoverCard} /><${DiceAsk} />
   </div>`;
 }
 
@@ -941,8 +997,10 @@ function VitalsTab({ c, d, update }) {
           <datalist id="cw-conds">${["Stunned", "Entangled", "Frightened", "Blinded", "Prone", "Poisoned", "Charmed", "Paralyzed", "Deafened", "Unconscious", "On Death's Door"].map(o => html`<option value=${o}></option>`)}</datalist>
           <button class="btn small" type="submit">Add</button></form></div>
       <div class="frame"><${Sigils} seed="rest" n=${1} side="l" /><${Head} title="Rest" topic="rest" />
-        <div class="row"><button class="btn" onClick=${() => { markRest(); update(x => addLog(x, R.shortRest(x))); }}>Short rest</button>
-          ${confirmLong ? html`<span class="confirm" style="padding:6px 10px">Roll ${d.cleanse} and apply? <button class="btn small primary" onClick=${() => { markRest(); update(x => { const m = R.longRest(x); addLog(x, m); toast(m); }); setConfirmLong(false); }}>Long rest</button><button class="btn small" onClick=${() => setConfirmLong(false)}>Cancel</button></span>`
+        <div class="row"><button class="btn" onClick=${() => update(x => addLog(x, R.shortRest(x)))}>Short rest</button>
+          ${confirmLong ? html`<span class="confirm" style="padding:6px 10px">Roll ${d.cleanse} and apply? <button class="btn small primary" onClick=${() => { setConfirmLong(false);
+            askRoll({ title: "Long rest", dice: [{ n: 1, sides: 6 }, { n: d.cleanseDice.d4, sides: 4 }], note: "The cleansing dice: Toxicity goes down by the total.", cancel: true })
+              .then(r => { if (r) update(x => { const m = R.longRest(x, r.reduce((a, b) => a + b, 0)); addLog(x, m); toast(m); }); }); }}>Long rest</button><button class="btn small" onClick=${() => setConfirmLong(false)}>Cancel</button></span>`
             : html`<button class="btn primary" onClick=${() => setConfirmLong(true)}>Long rest</button>`}</div>
         <p class="muted">Long rest: +${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${num(c.skills.Conditioning) >= 7 ? 4 : 2} Stamina, recharge every ability. Short rest: recover ${num(c.skills.Conditioning) >= 6 ? 2 : 1} Stamina, recharge short-rest abilities.</p>
         <div class="log">${(c.log || []).slice(0, 12).map(l => html`<div><time>${new Date(l.t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>${l.m}</div>`)}</div></div>
