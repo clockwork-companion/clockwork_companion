@@ -2,6 +2,13 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1b130b">
+<link rel="icon" type="image/png" href="icons/favicon-48.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Clockwork">
 <title>Clockwork Companion</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -52,6 +59,16 @@ button { cursor: pointer; }
 .brand { font-family: var(--f-display); font-size: 30px; line-height: 1; letter-spacing: .02em; }
 .brand small { font-family: var(--f-head); font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3); margin-left: 8px; vertical-align: middle; }
 .status { font-size: 13px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; }
+/* Install-app icon: hidden unless the browser can install the site (web/pwa.js sets html[data-install]). */
+.installbtn { display: none; position: relative; width: 30px; height: 30px; padding: 0; border: 1.5px solid var(--hair); border-radius: 4px; background: transparent; color: var(--brass); cursor: pointer; }
+html[data-install] .installbtn { display: inline-grid; place-items: center; }
+.installbtn svg { width: 18px; height: 18px; }
+.installbtn:hover, .installbtn:focus-visible { border-color: var(--brass); }
+.installbtn[data-tip]:hover::after, .installbtn[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
+  white-space: nowrap; padding: 5px 9px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 600 12px/1.3 system-ui, sans-serif; pointer-events: none; }
+@media (max-width: 700px) { .status .installbtn[data-tip]:hover::after, .status .installbtn[data-tip]:focus-visible::after { left: 0; right: auto; } }
+.installhelp { position: fixed; z-index: 9500; max-width: min(300px, calc(100vw - 24px)); padding: 10px 12px; border-radius: 6px; background: #1b130b; color: #ffe2a8;
+  border: 1px solid #b88a3c; font: 14px/1.4 system-ui, sans-serif; box-shadow: 0 8px 28px rgb(0 0 0 / .45); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
 .dot.live { background: var(--good); }
 .dot.local { background: var(--warn); }
@@ -198,6 +215,15 @@ button { cursor: pointer; }
 .tabs .tab-table { --tc: var(--life); --ts: var(--life-soft); }
 .tabs button:hover { background: color-mix(in srgb, var(--ts) 75%, var(--sunk)); color: var(--ink); }
 .tabs button[aria-selected="true"] { background: var(--rule); border-color: var(--rule); color: var(--paper); box-shadow: inset 0 4px 0 var(--tc); }
+/* Tab swaps: the new page slides in from the side of the tab you picked (no slide on first load). */
+.tabswap[data-dir="r"] { animation: tabInR .24s cubic-bezier(.2, .7, .3, 1); }
+.tabswap[data-dir="l"] { animation: tabInL .24s cubic-bezier(.2, .7, .3, 1); }
+@keyframes tabInR { from { opacity: 0; transform: translateX(28px); } }
+@keyframes tabInL { from { opacity: 0; transform: translateX(-28px); } }
+/* Retro terminal: the screen flickers on instead of sliding. */
+:root[data-skin="retro"] .tabswap[data-dir] { animation: tabFlicker .28s steps(1, end); }
+:root[data-skin="retro"] .tabswap[data-dir=""] { animation: none; }
+@keyframes tabFlicker { 0% { opacity: 0; } 25% { opacity: .7; } 40% { opacity: .15; } 60% { opacity: 1; } 75% { opacity: .6; } }
 .tabicon { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: var(--tc); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
 .tabpane { padding-top: 26px; display: grid; gap: 46px; grid-template-columns: minmax(0, 1fr); }
 .tabpane > *, .frame, .two > *, .meters > * { min-width: 0; }
@@ -619,7 +645,56 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   .spanel { top: auto; height: 82vh; width: 100vw; border-left: 0; border-top: 5px solid var(--bracket); animation: spUp .22s ease-out; }
 }
 @keyframes spUp { from { transform: translateY(40px); opacity: 0; } }
+/* ---------- Motion: showing what just changed ----------
+   Classes are added for one play by replay() in app.js, only when a value changes on the open character.
+   Bars ease to their new length; a loss flashes red, a recovery sweeps a glow along the bar. */
+.track i { transition: width .45s cubic-bezier(.2, .7, .3, 1); }
+.track.fx-bad::after, .track.fx-good::after { content: ""; position: absolute; inset: 0; pointer-events: none; animation-delay: var(--lag, 0ms); }
+.track.fx-bad::after { background: var(--bad); animation: fxFlash .55s ease-out both; animation-delay: var(--lag, 0ms); }
+.track.fx-good::after { background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--good) 45%, #fff) 50%, transparent); animation: fxSweep .7s ease-out both; animation-delay: var(--lag, 0ms); }
+@keyframes fxFlash { 0% { opacity: 0; } 15% { opacity: .55; } 100% { opacity: 0; } }
+@keyframes fxSweep { 0% { opacity: 0; transform: translateX(-100%); } 15% { opacity: .9; } 100% { opacity: 0; transform: translateX(100%); } }
+.bump { animation: bump .36s cubic-bezier(.3, 1.5, .5, 1) both; }
+@keyframes bump { 40% { transform: scale(1.12); } }
+/* A bought pip or attribute cell lands with a brass stamp; a Stamina stack lost lands in red. */
+.pip.stamp, .cell.stamp { animation: stamp .4s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes stamp { 0% { transform: scale(1.5); opacity: .25; box-shadow: 0 0 0 4px var(--brass); } 60% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--brass) 50%, transparent); } }
+.stambar .cell.stamp { animation-name: stampBad; }
+@keyframes stampBad { 0% { transform: scale(1.35); opacity: .3; box-shadow: 0 0 0 4px var(--bad); } 60% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--bad) 50%, transparent); } }
+.stambar .cell.fx-good { animation: cellHeal .55s ease-out both; }
+@keyframes cellHeal { 0% { box-shadow: none; } 30% { box-shadow: 0 0 0 3px var(--good); background: color-mix(in srgb, var(--good) 35%, transparent); } 100% { box-shadow: none; } }
+.stambar.jolt { animation: jolt .3s ease-out; }
+@keyframes jolt { 20% { transform: translateX(-3px); } 45% { transform: translateX(3px); } 70% { transform: translateX(-1px); } }
+/* Near death (8 or 9 stacks lost) the skull beats slowly. */
+.stambar.danger { border-color: color-mix(in srgb, var(--bad) 60%, var(--hair)); }
+.stambar.danger .skullcell { animation: heartbeat 1.6s ease-in-out infinite; }
+@keyframes heartbeat { 0%, 60%, 100% { box-shadow: 0 0 0 0 transparent; } 15% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 70%, transparent); } 30% { box-shadow: 0 0 0 1px var(--bad); } 42% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--bad) 55%, transparent); } }
+/* Trying to buy past a sealed ceiling: the iron wall shudders and the lock drops shut. */
+.cell.wall.clunk { animation: clunk .42s cubic-bezier(.3, .7, .4, 1); }
+.cell.wall.clunk .lock { animation: lockDrop .42s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes clunk { 15% { transform: translateX(-3px); } 35% { transform: translateX(3px); } 55% { transform: translateX(-2px); } 75% { transform: translateX(1px); } }
+@keyframes lockDrop { 0% { transform: translateY(-5px); } 50% { transform: translateY(1px); } }
+/* Weapon cards: Done settles the card, the pencil unfolds it; firing recoils the clip, Reload flashes it full. */
+.wcard.settle { animation: settle .32s cubic-bezier(.2, .7, .3, 1); }
+.wcard.unfold { animation: unfold .28s cubic-bezier(.2, .7, .3, 1); }
+@keyframes settle { from { transform: translateY(-6px) scaleY(1.03); opacity: .5; } }
+@keyframes unfold { from { transform: translateY(4px); opacity: .5; } }
+.clipbox.recoil .durin { animation: recoil .24s ease-out; }
+@keyframes recoil { 30% { transform: translateX(-4px); } }
+.clipbox.reload .durin { animation: reloaded .55s ease-out; }
+@keyframes reloaded { 0% { background: transparent; } 30% { background: var(--brass-soft); border-color: var(--brass); transform: scale(1.08); } }
+.clipbox.bump .durin { animation: bump .3s ease-out; }
+/* Initiative deck: a drawn card flips over, a new round riffles the deck, each card drawn is dealt into "This round". */
+.icardwrap.flip { animation: flip .42s cubic-bezier(.2, .7, .3, 1); transform-origin: 50% 50%; }
+@keyframes flip { 0% { transform: perspective(900px) rotateY(-80deg) translateX(-24px); opacity: .2; } 60% { transform: perspective(900px) rotateY(8deg); opacity: 1; } 100% { transform: none; } }
+.stat.riffle { animation: riffle .5s ease-in-out; }
+@keyframes riffle { 15% { transform: rotate(-4deg) translateY(-2px); } 35% { transform: rotate(3deg); } 55% { transform: rotate(-2deg) translateY(-1px); } 75% { transform: rotate(1deg); } }
+.stat b.bump { display: inline-block; }
+.drawn li.dealt { animation: dealt .34s cubic-bezier(.2, .7, .3, 1) both; }
+@keyframes dealt { from { transform: translate(-14px, -6px) rotate(-6deg); opacity: 0; } }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .track::after { animation: none !important; display: none; } }
 /* ----- Fantasy (candlelit): the parchment theme by night: dark leather, gold-leaf rules, red rubrics ----- */
 :root[data-skin="fantasy-dark"] {
   --paper: #15100b; --card: #1f1811; --sunk: #2a2117; --ink: #ecdcb8; --ink-2: #cdb78e; --ink-3: #9a8562;
@@ -1020,8 +1095,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   --rule: #e8c66a; --bracket: #00f0ff; --hair: #1d2a38; --brass: #e8c66a; --brass-ink: #04060c; --brass-soft: #2a2412;
   --seal: #03050a; --seal-2: #ff2a4d; --blood: #ff2a4d; --blood-soft: #3a0c16; --tox: #3dffa2; --tox-soft: #0b2a1d;
   --hunger: #ffb547; --hunger-soft: #33240c; --life: #00f0ff; --life-soft: #062a33; --warn: #ffb547; --bad: #ff2a4d; --good: #3dffa2; --forge: #ff2a4d;
-  --cyan: #00f0ff; --gold: #e8c66a; --wall: #ff1f3d;
-  --f-display: "Michroma", "Eurostile", sans-serif; --f-head: "Oxanium", "Segoe UI", sans-serif; --f-body: "Oxanium", "Segoe UI", sans-serif; --f-mono: "Oxanium", "Consolas", monospace;
+  --cyan: #00f0ff; --gold: #e8c66a; --wall: #ff1f3d; --coral: #ff5f57; --coral-dim: rgb(255 95 87 / .45); --panel: linear-gradient(180deg, rgb(14 26 36 / .92), rgb(9 15 24 / .94));
+  --f-display: "Tomorrow", "Rajdhani", sans-serif; --f-head: "Oxanium", "Segoe UI", sans-serif; --f-body: "Oxanium", "Segoe UI", sans-serif; --f-mono: "Oxanium", "Consolas", monospace;
   --meander-gold: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='12'%3E%3Cpath d='M0 11.5H14M2.5 11.5V.5H12.5V8.5H6V4H9.5' fill='none' stroke='%23e8c66a' stroke-width='1'/%3E%3C/svg%3E"); --meander-cyan: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='12'%3E%3Cpath d='M0 11.5H14M2.5 11.5V.5H12.5V8.5H6V4H9.5' fill='none' stroke='%2300f0ff' stroke-width='1'/%3E%3C/svg%3E");
   --cut: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
   --cut-s: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
@@ -1034,63 +1109,99 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   linear-gradient(90deg, rgb(0 240 255 / .035) 1px, transparent 1px) 0 0 / 32px 100%,
   radial-gradient(900px 500px at 85% -10%, rgb(0 240 255 / .12), transparent 70%),
   radial-gradient(1200px 420px at 50% 115%, rgb(255 31 61 / .30), transparent 70%), #04060c; background-attachment: fixed; }
-/* the Blackwall: a red wall of drifting data along the bottom edge, fading upward */
-[data-skin="cyber"] body::after { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 42vh; z-index: -1; pointer-events: none;
+/* the Blackwall: a living wall of red and violet data along the bottom of the screen. Its curtain drifts and breathes,
+   its upper edge undulates, a magenta bloom pulses at its heart and slow rings ripple out from it. Kept faint, behind the panels. */
+[data-skin="cyber"] body::after { content: ""; position: fixed; left: -8%; right: -8%; bottom: 0; height: 52vh; z-index: -1; pointer-events: none;
   background:
-    repeating-linear-gradient(90deg, transparent 0 7px, rgb(255 31 61 / .55) 7px 8px, transparent 8px 19px, rgb(255 31 61 / .28) 19px 21px, transparent 21px 34px),
-    repeating-linear-gradient(90deg, transparent 0 53px, rgb(255 120 135 / .6) 53px 54px, transparent 54px 97px),
-    repeating-linear-gradient(0deg, transparent 0 22px, rgb(255 31 61 / .25) 22px 23px, transparent 23px 61px),
-    linear-gradient(0deg, rgb(255 31 61 / .28), transparent 75%);
-  -webkit-mask: linear-gradient(0deg, #000, rgb(0 0 0 / .5) 35%, transparent), repeating-linear-gradient(0deg, #000 0 15px, rgb(0 0 0 / .35) 15px 18px, #000 18px 44px, transparent 44px 47px);
+    repeating-linear-gradient(90deg, transparent 0 6px, rgb(255 40 70 / .5) 6px 7px, transparent 7px 15px, rgb(255 40 90 / .26) 15px 17px, transparent 17px 27px),
+    repeating-linear-gradient(90deg, transparent 0 41px, rgb(255 110 170 / .55) 41px 42px, transparent 42px 77px, rgb(120 70 255 / .4) 77px 78px, transparent 78px 113px),
+    linear-gradient(90deg, rgb(120 30 120 / .0), rgb(200 20 60 / .22) 30%, rgb(255 30 140 / .3) 75%, rgb(255 60 180 / .18)),
+    linear-gradient(0deg, rgb(255 31 61 / .32), transparent 80%);
+  -webkit-mask: radial-gradient(60% 100% at 50% 100%, #000 55%, transparent 100%) 0 0 / 50% 100% repeat-x, linear-gradient(0deg, #000, rgb(0 0 0 / .55) 40%, transparent);
   -webkit-mask-composite: source-in;
-  mask: linear-gradient(0deg, #000, rgb(0 0 0 / .5) 35%, transparent), repeating-linear-gradient(0deg, #000 0 15px, rgb(0 0 0 / .35) 15px 18px, #000 18px 44px, transparent 44px 47px);
-  mask-composite: intersect; animation: cyWall 24s linear infinite; }
-@keyframes cyWall { to { background-position: 340px 0, -485px 0, 0 -183px, 0 0; } }
+  mask: radial-gradient(60% 100% at 50% 100%, #000 55%, transparent 100%) 0 0 / 50% 100% repeat-x, linear-gradient(0deg, #000, rgb(0 0 0 / .55) 40%, transparent);
+  mask-composite: intersect;
+  animation: cyFlow 40s linear infinite, cyBreathe 11s ease-in-out infinite, cySurge 19s ease-in-out infinite; }
+@keyframes cyFlow { to { background-position: 270px 0, -565px 0, 0 0, 0 0; } }
+@keyframes cyBreathe { 0%, 100% { opacity: .7; } 35% { opacity: 1; } 60% { opacity: .78; } 80% { opacity: .95; } }
+@keyframes cySurge { 0%, 100% { -webkit-mask-position: 0 0, 0 0; mask-position: 0 0, 0 0; transform: scaleY(1); }
+  50% { -webkit-mask-position: 38% 0, 0 0; mask-position: 38% 0, 0 0; transform: scaleY(1.08); } }
+[data-skin="cyber"] body::after { transform-origin: 50% 100%; }
+/* when WebGL is available the shader Blackwall (fx-blackwall.js) replaces the CSS stand-in above */
+.blackwall { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+:root.has-blackwall[data-skin="cyber"] body::after, :root.has-blackwall[data-skin="cyber"]::before, :root.has-blackwall[data-skin="cyber"]::after { display: none; }
+/* its heart: a magenta bloom low on the right that swells and fades */
+:root[data-skin="cyber"]::before { content: ""; position: fixed; right: -6vw; bottom: -14vh; width: 52vw; height: 52vh; z-index: -1; pointer-events: none; border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 80 190 / .32), rgb(255 30 110 / .14) 45%, transparent);
+  filter: blur(12px); animation: cyHeart 9s ease-in-out infinite; }
+@keyframes cyHeart { 0%, 100% { transform: scale(.92); opacity: .65; } 45% { transform: scale(1.06); opacity: 1; } 70% { transform: scale(.98); opacity: .8; } }
+/* ripples: faint rings that spread out from the heart and fade */
+:root[data-skin="cyber"]::after { content: ""; position: fixed; right: -10vw; bottom: -30vh; width: 90vw; height: 90vh; z-index: -1; pointer-events: none; border-radius: 50%;
+  background: repeating-radial-gradient(closest-side, transparent 0 46px, rgb(255 70 160 / .16) 48px, transparent 52px);
+  -webkit-mask: radial-gradient(closest-side, #000 30%, transparent 75%); mask: radial-gradient(closest-side, #000 30%, transparent 75%);
+  animation: cyRipple 7s linear infinite; }
+@keyframes cyRipple { from { transform: scale(.82); opacity: 0; } 20% { opacity: .9; } to { transform: scale(1.18); opacity: 0; } }
 :root[data-skin="cyber"] .sigil { display: none; }
-:root[data-skin="cyber"] .top { border-bottom: 0; padding-bottom: 18px; background: var(--meander-gold) 0 100% / 14px 12px repeat-x; }
-:root[data-skin="cyber"] .brand { font: 400 26px/1 var(--f-display); letter-spacing: .16em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 14px rgb(0 240 255 / .55); }
+:root[data-skin="cyber"] .top { border-bottom: 1px solid var(--coral); box-shadow: 0 1px 12px -2px rgb(255 95 87 / .55); }
+:root[data-skin="cyber"] .brand { font: 600 30px/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 14px rgb(0 240 255 / .55); }
 :root[data-skin="cyber"] .brand small { font: 600 12px var(--f-head); color: var(--gold); letter-spacing: .3em; text-shadow: none; }
 :root[data-skin="cyber"] .brand small::after { content: " · ΟΛΥΜΠΟΣ"; color: var(--cyan); }
-:root[data-skin="cyber"] .namefield { font: 400 28px var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid var(--cyan); box-shadow: 0 1px 0 rgb(0 240 255 / .4); }
+:root[data-skin="cyber"] .namefield { font: 600 32px var(--f-display); letter-spacing: .04em; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid var(--cyan); box-shadow: 0 1px 0 rgb(0 240 255 / .4); }
 :root[data-skin="cyber"] :is(.lbl, .field label, .mini label, .stat span, .fact span, .wstats span, .legend b, th, .seg button, .btn, .pbox small) { font-family: var(--f-head); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
-:root[data-skin="cyber"] :is(.field label, .mini label, .fact span, .stat span, th) { color: var(--cyan); }
-:root[data-skin="cyber"] :is(.attr .nm, .gx-title, .ornate, .gx-an b, .sphead h2) { font-family: var(--f-display); font-weight: 400; text-transform: uppercase; letter-spacing: .1em; }
+:root[data-skin="cyber"] :is(.field label, .mini label, .fact span, .stat span, th, .lbl) { color: var(--coral); }
+:root[data-skin="cyber"] :is(.attr .nm, .gx-title, .ornate, .gx-an b, .sphead h2) { font-family: var(--f-display); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
 :root[data-skin="cyber"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3, .meter .t) { font-family: var(--f-head); font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
-:root[data-skin="cyber"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3) { border-bottom: 0; padding-bottom: 8px; background: var(--meander-gold) 0 100% / 9.33px 8px repeat-x; }
-:root[data-skin="cyber"] .attr .nm { font-size: 14px; }
+:root[data-skin="cyber"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3) { font-family: var(--f-display); font-weight: 500; letter-spacing: .04em; color: var(--coral); border-bottom: 1px solid var(--coral-dim); }
+:root[data-skin="cyber"] .attr .nm { font-size: 16px; }
 :root[data-skin="cyber"] .meter .t { font-size: 15px; }
-/* headings: a gold temple-front plate (chamfered like a pediment) marked with Ω, then a cyan Greek-key line */
-:root[data-skin="cyber"] .h { font: 400 17px var(--f-display); letter-spacing: .14em; }
-:root[data-skin="cyber"] .h > span:not(.orn) { padding: 8px 22px 6px 16px; color: #04060c; background: linear-gradient(180deg, #f6dd94, #e8c66a 55%, #b8963c);
-  clip-path: polygon(0 100%, 0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% 100%); box-shadow: 0 0 18px rgb(232 198 106 / .35); }
-:root[data-skin="cyber"] .h > span:not(.orn)::before { content: "Ω"; margin-right: 10px; font: 700 .95em var(--f-head); color: #6a1020; }
-:root[data-skin="cyber"] .orn::before { border: 0; height: 8px; top: 3px; right: 22px; background: var(--meander-cyan) 0 0 / 9.33px 8px repeat-x; opacity: .7; filter: drop-shadow(0 0 3px var(--cyan)); }
-:root[data-skin="cyber"] .orn::after { width: 9px; height: 9px; transform: rotate(45deg); top: 2px; right: 6px; border: 0; background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+/* headings: coral section titles as in the game's menus, over a thin coral line that ends in a cyan diamond */
+:root[data-skin="cyber"] .h { font: 500 25px var(--f-display); letter-spacing: .04em; }
+:root[data-skin="cyber"] .h > span:not(.orn) { color: var(--coral); text-shadow: 0 0 14px rgb(255 95 87 / .45); }
+/* Ω marks a heading that opens its rules, in place of the book icon the other themes use */
+:root[data-skin="cyber"] .hlink .hbook { display: none; }
+:root[data-skin="cyber"] .hlink::after { content: "Ω"; font: 700 .9em var(--f-head); opacity: .6; transition: opacity .15s; }
+:root[data-skin="cyber"] .h .hlink::after { color: var(--gold); opacity: .85; text-shadow: 0 0 10px rgb(232 198 106 / .5); }
+:root[data-skin="cyber"] .hlink:hover::after, :root[data-skin="cyber"] .hlink:focus-visible::after { opacity: 1; }
+:root[data-skin="cyber"] .orn::before { border: 0; height: 1px; top: 8px; right: 22px; background: linear-gradient(90deg, var(--coral), var(--coral-dim) 70%, transparent); }
+:root[data-skin="cyber"] .orn::after { width: 8px; height: 8px; transform: rotate(45deg); top: 4px; right: 7px; border: 1.5px solid var(--cyan); background: transparent; box-shadow: 0 0 8px rgb(0 240 255 / .6); }
 :root[data-skin="cyber"] .diamond::before { transform: rotate(45deg); border: 1.5px solid var(--gold); background: transparent; inset: 3px; }
 :root[data-skin="cyber"] .diamond.on::before { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
 /* frames: holo-glass modules with cut corners, a gold Greek-key cornice, and a Greek-letter module tag (α, β, γ…) */
 :root[data-skin="cyber"] .tabpane { counter-reset: unit; }
-:root[data-skin="cyber"] .frame { counter-increment: unit; border: 1px solid rgb(0 240 255 / .25); padding: 30px 22px 22px; clip-path: var(--cut);
-  background: var(--holo), linear-gradient(180deg, rgb(11 15 25 / .9), rgb(6 9 16 / .9)); box-shadow: inset 0 0 40px rgb(0 240 255 / .04); }
-:root[data-skin="cyber"] .frame::before { left: 18px; right: 18px; top: 7px; width: auto; height: 12px; background: var(--meander-gold) 0 0 / 14px 12px repeat-x; opacity: .55; border: 0; }
+:root[data-skin="cyber"] .frame { counter-increment: unit; border: 1px solid rgb(0 240 255 / .25); padding: 22px 22px 24px; clip-path: var(--cut);
+  background: linear-gradient(var(--coral), var(--coral)) 0 0 / 26px 2px no-repeat, linear-gradient(var(--coral), var(--coral)) 0 0 / 2px 26px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) 100% 100% / 26px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) 100% 100% / 2px 26px no-repeat,
+    var(--holo), linear-gradient(180deg, rgb(11 15 25 / .9), rgb(6 9 16 / .9)); box-shadow: inset 0 0 40px rgb(0 240 255 / .04); }
+:root[data-skin="cyber"] .frame::before { content: none; }
 :root[data-skin="cyber"] .frame::after { content: "ΣΥΣ·" counter(unit, lower-greek); left: auto; right: 22px; top: auto; bottom: 6px; width: auto; height: auto; background: none; border: 0;
   font: 600 11px/1 var(--f-head); letter-spacing: .2em; color: var(--cyan); opacity: .7; }
 :root[data-skin="cyber"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel, .member, .gx-attr, .gx-road, .gx-pick, .gx-choose, .chip) {
-  border: 1px solid var(--hair); border-radius: 0; background: var(--holo), rgb(11 15 25 / .92); clip-path: var(--cut-s); box-shadow: inset 0 1px 0 rgb(0 240 255 / .35); }
-/* tabs: temple columns: fluted shafts under a gold capital; the open one lights up cyan */
-:root[data-skin="cyber"] .tabs { border-bottom: 1px solid var(--gold); gap: 6px; box-shadow: 0 1px 0 rgb(232 198 106 / .25), 0 6px 14px -8px rgb(232 198 106 / .6); }
-:root[data-skin="cyber"] .tabs button { border: 0; border-top: 3px solid var(--gold); padding: 10px 18px 9px; color: var(--ink-2); border-radius: 0;
-  background: repeating-linear-gradient(90deg, rgb(255 255 255 / .045) 0 2px, transparent 2px 7px), rgb(11 15 25 / .9);
-  font: 400 12.5px var(--f-display); letter-spacing: .14em; text-transform: uppercase; box-shadow: inset 0 3px 0 rgb(0 0 0 / .4); }
-:root[data-skin="cyber"] .tabs button:hover { color: #fff; background: repeating-linear-gradient(90deg, rgb(0 240 255 / .08) 0 2px, transparent 2px 7px), rgb(11 15 25 / .9); }
-:root[data-skin="cyber"] .tabs button[aria-selected="true"] { color: #04060c; border-top-color: #f6dd94; background: linear-gradient(180deg, #7ff8ff, var(--cyan)); box-shadow: 0 0 18px rgb(0 240 255 / .45); }
+  border: 1px solid #1c3340; border-radius: 0; clip-path: var(--cut-s);
+  background: linear-gradient(315deg, var(--cyan) 0 8px, transparent 8px) 100% 100% / 20px 20px no-repeat, var(--holo), var(--panel);
+  box-shadow: inset 3px 0 0 var(--card-stripe, var(--cyan)), inset 0 1px 0 rgb(0 240 255 / .18); }
+/* cards read like the game's item cards: a coloured stripe down the left, a cyan corner notch bottom-right */
+:root[data-skin="cyber"] :is(.perkcard.t-A, .perkcard.t-M, .wcard.final.kind-melee, .wound) { --card-stripe: var(--coral); }
+:root[data-skin="cyber"] :is(.perkcard.t-E, .wcard.final.kind-ranged) { --card-stripe: #9a6bff; }
+:root[data-skin="cyber"] :is(.perkcard.talent, .wcard.worn) { --card-stripe: var(--gold); }
+/* small tags read like the game's yellow "NEW" stickers */
+:root[data-skin="cyber"] .flag { background: rgb(243 230 0 / .1); color: #f3e600; border: 1px solid rgb(243 230 0 / .45); border-radius: 0; font-family: var(--f-head); letter-spacing: .08em; }
+:root[data-skin="cyber"] .flag.bad { background: rgb(255 31 61 / .12); color: #ff6a7f; border-color: rgb(255 31 61 / .5); }
+/* tabs: the game's top menu: quiet labels on faint fluted columns over a coral line; the open one glows cyan under a gold capital */
+:root[data-skin="cyber"] .tabs { border-bottom: 1px solid var(--coral); gap: 4px; box-shadow: 0 1px 10px -3px rgb(255 95 87 / .6); }
+:root[data-skin="cyber"] .tabs button { border: 0; border-top: 1px solid transparent; padding: 11px 18px 10px; color: var(--ink-2); border-radius: 0;
+  background: repeating-linear-gradient(90deg, rgb(255 255 255 / .025) 0 2px, transparent 2px 7px);
+  font: 500 15.5px var(--f-display); letter-spacing: .06em; text-transform: uppercase; box-shadow: none; }
+:root[data-skin="cyber"] .tabs button:hover { color: #fff; background: repeating-linear-gradient(90deg, rgb(0 240 255 / .06) 0 2px, transparent 2px 7px); }
+:root[data-skin="cyber"] .tabs button[aria-selected="true"] { color: var(--cyan); border-top-color: var(--gold); text-shadow: 0 0 10px rgb(0 240 255 / .7);
+  background: linear-gradient(0deg, rgb(0 240 255 / .16), transparent 70%), repeating-linear-gradient(90deg, rgb(0 240 255 / .06) 0 2px, transparent 2px 7px); box-shadow: inset 0 -2px 0 var(--cyan); }
+:root[data-skin="cyber"] .tabs button[aria-selected="true"] .tabicon { filter: drop-shadow(0 0 4px var(--cyan)); }
 :root[data-skin="cyber"] .tabicon { stroke: currentColor; }
 /* numbers: clean holo readouts */
 :root[data-skin="cyber"] :is(.attr .val, .stat b, .meter .v, .loadnum b, .wound .cnt, .gx-sum b, .gx-slot b, .gx-av b, .gx-fa b, .wstats b, .statin, .fact b, .srow .m) { font-family: var(--f-head); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--cyan); text-shadow: 0 0 10px rgb(0 240 255 / .5); }
 :root[data-skin="cyber"] .meter .v small { color: var(--ink-3); text-shadow: none; }
 :root[data-skin="cyber"] .stat { background: rgb(0 240 255 / .05); border: 1px solid var(--hair); }
 :root[data-skin="cyber"] .pbox { background: #03050a; border: 1px solid var(--gold); clip-path: var(--cut-s); box-shadow: inset 0 0 12px rgb(232 198 106 / .15); }
-:root[data-skin="cyber"] .pbox b { font-family: var(--f-display); font-weight: 400; color: var(--gold); text-shadow: 0 0 8px rgb(232 198 106 / .5); }
+:root[data-skin="cyber"] .pbox b { font-family: var(--f-display); font-weight: 700; color: var(--gold); text-shadow: 0 0 8px rgb(232 198 106 / .5); }
 :root[data-skin="cyber"] .perkcard.t-E .pbox { border-color: var(--cyan); } :root[data-skin="cyber"] .perkcard.t-E .pbox b { color: var(--cyan); }
 /* attribute cells and pips: light bars; natural cyan, bought gold, broken Blackwall red */
 :root[data-skin="cyber"] .cell { border: 1px solid #1a2634; background: #070a12; border-radius: 1px; }
@@ -1101,7 +1212,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-skin="cyber"] .cell.sealed { background: repeating-linear-gradient(90deg, rgb(255 31 61 / .65) 0 1px, transparent 1px 4px), #070a12; border-color: var(--wall); }
 :root[data-skin="cyber"] .skull { color: var(--wall); --sk-eye: #070a12; }
 :root[data-skin="cyber"] .skullcell.miss .skull { color: #04060c; --sk-eye: #ff8a9a; }
-:root[data-skin="cyber"] .mid { border-radius: 50%; width: 38px; height: 38px; border: 1px solid var(--gold); background: radial-gradient(circle, #0b0f19 55%, rgb(232 198 106 / .25)); color: var(--gold); font: 400 11px var(--f-display); box-shadow: 0 0 10px rgb(232 198 106 / .25); }
+:root[data-skin="cyber"] .mid { border-radius: 50%; width: 38px; height: 38px; border: 1px solid var(--gold); background: radial-gradient(circle, #0b0f19 55%, rgb(232 198 106 / .25)); color: var(--gold); font: 700 14px var(--f-display); box-shadow: 0 0 10px rgb(232 198 106 / .25); }
 :root[data-skin="cyber"] .mid.at { background: var(--gold); color: #04060c; }
 :root[data-skin="cyber"] .pip { border-radius: 0; border: 1.5px solid #2a3a4a; background: transparent; transform: rotate(45deg) scale(.8); }
 :root[data-skin="cyber"] .pip.on { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 7px rgb(232 198 106 / .6); }
@@ -1112,7 +1223,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-skin="cyber"] .track, :root[data-skin="cyber"] .mtrack { background: #03050a !important; border: 1px solid #1a2634; border-radius: 0; }
 :root[data-skin="cyber"] .track i, :root[data-skin="cyber"] .mtrack i { box-shadow: 0 0 10px currentColor; filter: saturate(1.3) brightness(1.1); }
 /* controls */
-:root[data-skin="cyber"] .btn { border: 1px solid rgb(0 240 255 / .6); border-radius: 0; background: rgb(0 240 255 / .05); color: var(--cyan); clip-path: var(--cut-s); }
+:root[data-skin="cyber"] .btn { border: 1px solid var(--coral-dim); border-radius: 0; background: var(--panel); color: var(--cyan); clip-path: var(--cut-s); box-shadow: inset 3px 0 0 var(--coral); }
 :root[data-skin="cyber"] .btn:hover { background: rgb(0 240 255 / .16); color: #fff; }
 :root[data-skin="cyber"] .btn.primary, :root[data-skin="cyber"] .seg button[aria-pressed="true"] { background: linear-gradient(180deg, #f6dd94, var(--gold)); border-color: var(--gold); color: #04060c; }
 :root[data-skin="cyber"] .btn.danger { border-color: var(--wall); color: #ff6a7f; }
@@ -1131,8 +1242,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-skin="cyber"] .craftnav button { border-radius: 0; clip-path: var(--cut-s); border-color: var(--hair); color: var(--cyan); }
 :root[data-skin="cyber"] .craftnav button[aria-pressed="true"] { background: linear-gradient(180deg, #f6dd94, var(--gold)); border-color: var(--gold); color: #04060c; box-shadow: none; }
 @media (max-width: 560px) {
-  [data-skin="cyber"] .tabs button { padding: 9px 8px 8px; font-size: 10px; letter-spacing: .06em; }
-  [data-skin="cyber"] .h { font-size: 14px; } [data-skin="cyber"] .frame { padding: 28px 14px 22px; } [data-skin="cyber"] .namefield { font-size: 22px; }
+  [data-skin="cyber"] .tabs button { padding: 9px 8px 8px; font-size: 12.5px; letter-spacing: .03em; }
+  [data-skin="cyber"] .h { font-size: 21px; } [data-skin="cyber"] .frame { padding: 22px 14px 24px; } [data-skin="cyber"] .namefield { font-size: 27px; }
 }
 
 /* ---------- website build: players panel, companions ---------- */
@@ -1164,6 +1275,10 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   animation: gateRise var(--d) linear infinite; animation-delay: var(--delay); opacity: 0; }
 @keyframes gateRise { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: .9; } 70% { opacity: .55; } 100% { transform: translate(var(--w), -105vh); opacity: 0; } }
 
+.gate .gate-install { position: absolute; top: 14px; right: 14px; z-index: 3; width: 38px; height: 38px; border-color: #6b4a20; background: rgb(20 13 8 / .7); color: #f0c470; }
+.gate .gate-install:hover, .gate .gate-install:focus-visible { border-color: #f0c470; box-shadow: 0 0 12px rgb(255 170 80 / .35); }
+.gate .gate-install svg { width: 22px; height: 22px; }
+.gate .gate-install[data-tip]:hover::after, .gate .gate-install[data-tip]:focus-visible::after { background: #f0c470; color: #1b130b; }
 .gate-wrap { position: relative; z-index: 1; min-height: 100%; display: grid; justify-items: center; align-content: center; gap: 14px; padding: 36px 16px 28px; }
 .gate-crest { display: grid; justify-items: center; text-align: center; }
 .gate .crest { width: 118px; height: 118px; filter: drop-shadow(0 0 18px rgb(255 160 70 / .35)) drop-shadow(0 4px 0 #000); }
@@ -1709,6 +1824,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
       <linearGradient id="gate-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbe7b0"/><stop offset=".5" stop-color="#d49a45"/><stop offset="1" stop-color="#8a5a22"/></linearGradient>
       <radialGradient id="gate-gem" cx=".45" cy=".35" r=".7"><stop offset="0" stop-color="#fff4d2"/><stop offset=".35" stop-color="#ffb04a"/><stop offset="1" stop-color="#8f2a0c"/></radialGradient>
     </defs></svg>
+    <button type="button" class="installbtn gate-install" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v10.5m0 0-4.2-4.2M12 14l4.2-4.2M4.5 14.5v3.2A2.3 2.3 0 0 0 6.8 20h10.4a2.3 2.3 0 0 0 2.3-2.3v-3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <main class="gate-wrap">
       <header class="gate-crest">
         <svg class="crest" viewBox="0 0 200 200" aria-hidden="true">
@@ -1822,6 +1938,9 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   document.head.appendChild(gateFonts);
   firebase.initializeApp(cfg);
   fs = firebase.firestore();
+  // Keep a copy of this table's data on the device, so sheets open and edits queue up when the connection drops.
+  // (Fails quietly in private windows or when another tab already owns the copy.)
+  try { fs.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch {}
   auth = firebase.auth();
   window.claude = {
     use(name) {
@@ -1845,6 +1964,55 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
     gate(user, "", key);
   });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();
+</script>
+<script>
+/* Clockwork Companion: installable app. Registers the offline worker (sw.js) and, when a newer version has been
+   published, offers a one-line "reload" notice instead of switching the page under someone mid-session. */
+(() => {
+  if (!("serviceWorker" in navigator) || !window.isSecureContext) return;
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || document.getElementById("cw-update")) return;
+    const bar = document.createElement("div"); bar.id = "cw-update"; bar.setAttribute("role", "status");
+    bar.style.cssText = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9000;display:flex;gap:10px;align-items:center;" +
+      "padding:8px 12px;max-width:calc(100vw - 32px);background:#1b130b;color:#ffe2a8;border:1px solid #b88a3c;border-radius:6px;font:14px system-ui,sans-serif;box-shadow:0 6px 24px rgb(0 0 0 / .4)";
+    bar.innerHTML = '<span>A new version of the app is ready.</span><button type="button" style="font:inherit;font-weight:600;padding:4px 10px;border:1px solid #e0b462;background:#8a2e1c;color:#ffe2a8;border-radius:4px;cursor:pointer">Reload</button><button type="button" aria-label="Not now" style="font:inherit;background:none;border:0;color:#c9a56a;cursor:pointer">×</button>';
+    const [reload, later] = bar.querySelectorAll("button");
+    reload.onclick = () => location.reload(); later.onclick = () => bar.remove();
+    document.body.appendChild(bar);
+  });
+  addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+
+  // ---- the install-app button (data-install-btn, in the header and on the sign-in screen) ----
+  // It shows only when installing is possible: Chrome/Edge/Android offer an install prompt; iPhone and iPad have no
+  // prompt, so there the button explains Share → Add to Home Screen. Already installed: no button.
+  const root = document.documentElement;
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const apple = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  let offer = null;
+  const mark = v => { if (v && !standalone()) root.dataset.install = v; else delete root.dataset.install; };
+  if (apple) mark("ios");
+  addEventListener("beforeinstallprompt", e => { e.preventDefault(); offer = e; mark("prompt"); });
+  addEventListener("appinstalled", () => { offer = null; mark(""); });
+  const help = btn => {
+    const old = document.querySelector(".installhelp"); if (old) { old.remove(); return; }
+    const tip = document.createElement("div"); tip.className = "installhelp"; tip.setAttribute("role", "status");
+    tip.innerHTML = apple ? "To install: tap <b>Share</b> <span aria-hidden=\"true\">⬆︎</span>, then <b>Add to Home Screen</b>."
+                          : "To install: open your browser's menu and choose <b>Install app</b> (or <b>Add to Home screen</b>).";
+    document.body.appendChild(tip);
+    const r = btn.getBoundingClientRect(), w = tip.offsetWidth;
+    tip.style.top = Math.min(innerHeight - tip.offsetHeight - 8, r.bottom + 8) + "px";
+    tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w)) + "px";
+    setTimeout(() => document.addEventListener("pointerdown", function off(ev) { if (!tip.contains(ev.target)) { tip.remove(); document.removeEventListener("pointerdown", off); } }), 0);
+  };
+  document.addEventListener("click", async e => {
+    const btn = e.target.closest && e.target.closest("[data-install-btn]"); if (!btn) return;
+    e.preventDefault();
+    if (!offer) { help(btn); return; }
+    const o = offer; offer = null;
+    try { await o.prompt(); const r = await o.userChoice; mark(r && r.outcome === "accepted" ? "" : apple ? "ios" : ""); } catch { mark(""); }
+  });
 })();
 </script>
 <script>
@@ -2922,8 +3090,60 @@ function levelTip(c, mode, kind, name, to, raiseBtn = "L", lowerBtn = "R") {
     lines: [html`<em>${raise ? delta : "+" + -delta} Karma</em> · ${have} → ${have - delta}`] };
 }
 
+/* ================= motion helpers ================= */
+// Small, one-off animations that show what just changed (a bar losing HP, a pip being bought). They play only when a
+// value changes while the same character stays open: never on first draw, and not when another character is opened.
+// The "reduce motion" setting switches every animation off in app.css.
+let animScope = "";          // the open character's id, set by Character; hooks compare against it
+const calm = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
+// Replays a CSS animation class on an element, even if it's already there, and clears it once the animation ends.
+function replay(el, cls, delayMs = 0, also = []) {
+  if (!el) return;
+  el.classList.remove(cls, ...also);
+  // The delay goes on the element and, as --lag, to its ::after (a pseudo-element doesn't inherit animation-delay).
+  el.style.animationDelay = delayMs ? delayMs + "ms" : ""; el.style.setProperty("--lag", (delayMs || 0) + "ms");
+  void el.offsetWidth; el.classList.add(cls);
+  // Tidy up when its own animation ends, or after a while if only its children animate (their end events bubble up).
+  const token = (el._fx = (el._fx || 0) + 1);
+  const clear = () => { if (el._fx !== token) return; el.classList.remove(cls); el.style.animationDelay = ""; el.removeEventListener("animationend", done); };
+  const done = e => { if (e.target === el) clear(); };
+  el.addEventListener("animationend", done);
+  setTimeout(clear, 1600 + (delayMs || 0));
+}
+// Calls onChange(from, to) after a redraw in which `value` changed for the same `scope`.
+function useChange(value, onChange, scope = animScope) {
+  const last = useRef({ value, scope });
+  useEffect(() => {
+    const l = last.current; last.current = { value, scope };
+    if (l.scope === scope && l.value !== value) onChange(l.value, value);
+  }, [value, scope]);
+}
+// A number that counts to its new value instead of jumping (Unspent Karma, rounds in a clip).
+function useTween(value, ms = 380, scope = animScope) {
+  const [shown, setShown] = useState(value);
+  const st = useRef({ shown: value, scope, raf: 0 });
+  useEffect(() => {
+    const s = st.current; cancelAnimationFrame(s.raf);
+    const to = +value, from = +s.shown;
+    if (s.scope !== scope || calm() || !isFinite(to) || !isFinite(from) || from === to) { s.scope = scope; s.shown = value; setShown(value); return; }
+    const t0 = performance.now();
+    const step = t => { const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3), n = k < 1 ? Math.round(from + (to - from) * e) : to;
+      s.shown = n; setShown(n); if (k < 1) s.raf = requestAnimationFrame(step); };
+    s.raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(s.raf);
+  }, [value, scope]);
+  return shown;
+}
+// While a rest is being applied, the bars it refills light up one after another instead of all at once.
+let restUntil = 0;
+const resting = () => performance.now() < restUntil;
+const markRest = () => { restUntil = performance.now() + 1200; };
+
 /* ================= small parts ================= */
 function Pips({ value, max = 10, cap = max, onSet, label, big, tipFor }) {
+  const group = useRef();
+  // A newly bought pip gets a brass stamp.
+  useChange(value, (from, to) => { if (to > from) for (let i = from + 1; i <= to; i++) replay(group.current && group.current.children[i - 1], "stamp", (i - from - 1) * 60); });
   const out = [];
   for (let i = 1; i <= max; i++) {
     const on = i <= value, capped = i > cap && !on, over = on && i > cap;
@@ -2937,7 +3157,7 @@ function Pips({ value, max = 10, cap = max, onSet, label, big, tipFor }) {
       onClick=${e => { if (!on) go(); else if (e.detail) toast("Right-click (long-press on a phone) to lower."); else go(); }}
       onContextMenu=${e => { e.preventDefault(); if (on) go(); }}></button>`);
   }
-  return html`<span class=${"pips" + (big ? " big" : "")} role="group" aria-label=${label}>${out}</span>`;
+  return html`<span ref=${group} class=${"pips" + (big ? " big" : "")} role="group" aria-label=${label}>${out}</span>`;
 }
 // A text box that grows with what's typed, instead of a single line that scrolls sideways.
 function AutoText({ id, value, onInput, placeholder, label, cls = "" }) {
@@ -2995,8 +3215,10 @@ const SKINS = [
   ["armour", "Power armour", GF + "Orbitron:wght@600;700;800&family=Chakra+Petch:wght@500;600;700&family=Exo+2:wght@400;500;600&family=Nixie+One"],
   // Extended themes: heavier artwork and their own furniture.
   ["cairn", "Cairn-style gothic", GF + "UnifrakturCook:wght@700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Grenze:wght@500;600;700", "extended"],
-  ["cyber", "Cyberpunk", GF + "Michroma&family=Oxanium:wght@400;500;600;700;800", "extended"],
+  ["cyber", "Cyberpunk", GF + "Tomorrow:wght@500;600;700&family=Oxanium:wght@400;500;600;700;800", "extended"],
 ];
+// The install-app icon (shown only when the browser can install the site; see web/pwa.js).
+const INSTALL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v10.5m0 0-4.2-4.2M12 14l4.2-4.2M4.5 14.5v3.2A2.3 2.3 0 0 0 6.8 20h10.4a2.3 2.3 0 0 0 2.3-2.3v-3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function applySkin(key) {
   const skin = SKINS.find(x => x[0] === key) || SKINS[0], root = document.documentElement;
   if (skin[0] === "ledger") delete root.dataset.skin; else root.dataset.skin = skin[0];
@@ -3085,7 +3307,7 @@ function App() {
         <button aria-pressed=${view === "chars"} onClick=${() => setView("chars")}>Characters</button>
         <button aria-pressed=${view === "gm"} onClick=${() => setView("gm")}>GM table</button></div>`}
       <${SkinPicker} />
-      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
+      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button><button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
     </header>
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
@@ -3164,6 +3386,7 @@ function Roster({ list, all, sel, setSel, current, create, startNew }) {
 
 /* ================= character ================= */
 function Character({ c, update, tab, setTab, onDelete }) {
+  animScope = c.id;   // animations only play for changes on this character, not when another one is opened
   const d = derive(c);
   const [chosenMode, setMode] = useState(() => lsGet("cw-mode", "karma"));
   useEffect(() => lsSet("cw-mode", chosenMode), [chosenMode]);
@@ -3180,18 +3403,27 @@ function Character({ c, update, tab, setTab, onDelete }) {
   const openPanel = (kind, name) => setPanel(p => (p && p.kind === kind && p.name === name ? null : { kind, name }));
   openRuleFn = name => openPanel("rule", name);
   const skillTabs = tab === "sheet" || tab === "talents";
+  // Which way the page slides when the tab changes: in from the right when moving to a tab further along, from the
+  // left when going back. Worked out once per change (not on every redraw), so the slide never replays mid-edit.
+  const nav = useRef({ tab, dir: "" });
+  if (nav.current.tab !== tab) {
+    const order = tabs.map(t => t[0]);
+    nav.current = { tab, dir: order.indexOf(tab) > order.indexOf(nav.current.tab) ? "r" : "l" };
+  }
   return html`
     <${Header} c=${c} d=${d} update=${update} mode=${mode} setMode=${setMode} canFree=${canFree} />
     <div class="tabs" role="tablist">${tabs.map(([k, n]) => html`<button role="tab" class=${"tab-" + k} aria-selected=${tab === k} onClick=${() => setTab(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${TAB_ICONS[k]}</svg>${n}</button>`)}</div>
-    ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
     ${panel && panel.kind === "rule" && html`<${RulePanel} topic=${panel.name} onClose=${() => setPanel(null)} />`}
     ${panel && panel.kind !== "rule" && skillTabs && html`<${SkillPanel} c=${c} kind=${panel.kind} name=${panel.name} mode=${mode} update=${update} onClose=${() => setPanel(null)} />`}
-    ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
-    ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
-    ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
-    ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
-    ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}`;
+    <div class="tabswap" key=${tab} data-dir=${nav.current.dir}>
+      ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
+      ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
+      ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
+      ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
+      ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
+      ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}
+    </div>`;
 }
 
 // Small line icons that tell the tabs apart at a glance.
@@ -3223,6 +3455,7 @@ function Header({ c, d, update, mode, setMode, canFree }) {
   };
   const id = s => `${s}-${c.id}`;
   const off = num(c.pool) - num(c.karma) - d.karma.total;   // pool should equal unspent + spent
+  const shown = { karma: useTween(num(c.karma)), pool: useTween(num(c.pool)) };   // the numbers count to their new value
   const masters = Object.values(Store.chars).filter(x => x.id !== c.id && !x.companionOf).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   return html`<section class="head" style="position:relative;isolation:isolate"><${Sigils} seed="header" n=${1} lead="gears" side="l" />
     <div class="portrait"><${Face} c=${c} />
@@ -3249,7 +3482,7 @@ function Header({ c, d, update, mode, setMode, canFree }) {
     <div class="karmawrap"><div class="panel karma">
       <div class="h" style="margin:0">Karma</div>
       <div class="big">${[["karma", "Unspent"], ["pool", "Pool · earned"]].map(([k, label]) => html`<div class=${"stat" + (mode === "build" ? " editing" : "")}>
-        ${mode === "build" ? html`<${StatEdit} id=${id(k)} value=${num(c[k])} label=${label} onCommit=${v => update(x => { addLog(x, `Free edit: ${label.split(" ")[0]} ${num(x[k])} → ${v}`); x[k] = v; })} />` : html`<b>${num(c[k])}</b>`}
+        ${mode === "build" ? html`<${StatEdit} id=${id(k)} value=${num(c[k])} label=${label} onCommit=${v => update(x => { addLog(x, `Free edit: ${label.split(" ")[0]} ${num(x[k])} → ${v}`); x[k] = v; })} />` : html`<b>${shown[k]}</b>`}
         <span>${label}</span></div>`)}</div>
       <div class="row"><input class="inp" style="width:70px" type="number" min="1" aria-label="Karma to award" placeholder="+0" value=${award} onInput=${e => setAward(e.target.value)} />
         <button class="btn small" disabled=${!(+award > 0)} onClick=${() => { const n = Math.floor(+award); update(x => { x.karma = num(x.karma) + n; x.pool = num(x.pool) + n; addLog(x, `Awarded ${n} Karma`); }); setAward(""); }}>Award</button>
@@ -3323,15 +3556,19 @@ function AttrRow({ c, a, mode, set }) {
   // Left-click a cell to raise the attribute to it; right-click a filled cell to lower it.
   const v = R.attr(c, a.k), base = R.attrBase(c, a.k), ceiling = R.attrCap(c, a.k), cap = mode === "build" ? 20 : ceiling;
   const diff = v - 10, broken = v < 10;
+  const scale = useRef();
+  // Newly raised cells get a stamp; trying to buy past a sealed ceiling makes the lock clunk.
+  useChange(v, (from, to) => { if (to > from && scale.current) scale.current.querySelectorAll(".cell[data-v]").forEach(el => { const n = +el.dataset.v; if (n > from && n <= to) replay(el, "stamp", (n - from - 1) * 50); }); });
+  const clunk = () => scale.current && replay(scale.current.querySelector(".cell.wall"), "clunk");
   const showTip = (e, to) => tip.show(e.currentTarget, to === null ? { title: `${a.n} ${v}`, lines: [html`<${Mouse} side="L" /> raise · <${Mouse} side="R" /> lower`] } : levelTip(c, mode, "attr", a.k, to, "L", "R"));
   const cellFor = (val, cls, extra) => {
     const filled = val <= v;
     const raiseTo = val, lowerTo = val - 1;
-    return html`<button type="button" class=${"cell " + cls} aria-label=${filled ? `Lower ${a.n} to ${lowerTo}` : `Raise ${a.n} to ${raiseTo}`}
+    return html`<button type="button" class=${"cell " + cls} data-v=${val} aria-label=${filled ? `Lower ${a.n} to ${lowerTo}` : `Raise ${a.n} to ${raiseTo}`}
       onMouseEnter=${e => showTip(e, cls.includes("sealed") ? raiseTo : filled ? lowerTo : raiseTo)} onMouseLeave=${() => tip.hide()}
-      onClick=${() => { if (!filled) { set(raiseTo); tip.hide(); } else toast("Right-click (long-press on a phone) to lower."); }}
+      onClick=${() => { if (!filled) { if (cls.includes("sealed")) clunk(); set(raiseTo); tip.hide(); } else toast("Right-click (long-press on a phone) to lower."); }}
       onContextMenu=${e => { e.preventDefault(); if (filled) { set(lowerTo); tip.hide(); } }}
-      onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set(filled ? lowerTo : raiseTo); } }}>${extra || ""}</button>`;
+      onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!filled && cls.includes("sealed")) clunk(); set(filled ? lowerTo : raiseTo); } }}>${extra || ""}</button>`;
   };
   const cells = [];
   if (broken) {
@@ -3354,7 +3591,7 @@ function AttrRow({ c, a, mode, set }) {
   return html`<div class=${"attr" + (broken ? " is-broken" : "")}>
     <span class="nm">${a.n}</span>
     <span class="valblock"><span class="val">${v}</span>${state}</span>
-    <span class=${"scale " + (broken ? "low" : "high")} role="group" aria-label=${`${a.n} scale`}>
+    <span ref=${scale} class=${"scale " + (broken ? "low" : "high")} role="group" aria-label=${`${a.n} scale`}>
       ${broken ? html`<span class="end">0</span><span class="half">${cells}</span>${mid}` : html`${mid}<span class="half">${cells}</span><span class="end">20</span>`}
     </span>
     <span class="base">${base < 10 ? html`<span>started ${base}</span>` : ""}<span>${ceiling < 20 ? html`<b class="sealtext">sealed at ${ceiling}</b>` : "limit 20"}</span>
@@ -3469,20 +3706,28 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
 }
 
 /* ================= vitals tab ================= */
-function Meter({ id, label, cur, max, color, soft, onSet, note, marks = [], invert, topic }) {
+function Meter({ id, label, cur, max, color, soft, onSet, note, marks = [], invert, topic, order = 0 }) {
   const [amt, setAmt] = useState("");
+  // The bar eases to its new length. Losing (or, for Toxicity, gaining) flashes red; recovering glows. During a rest the
+  // bars light up one after another, in the order they sit on the page.
+  const track = useRef(), val = useRef(), lag = resting() ? order * 160 : 0;
+  useChange(cur, (from, to) => {
+    const good = invert ? to < from : to > from;
+    replay(track.current, good ? "fx-good" : "fx-bad", lag, ["fx-good", "fx-bad"]);
+    replay(val.current, "bump", lag);
+  }, id);
   const pctW = max ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0;
   // The bar itself is the control: left-click adds the amount (1 if blank), right-click removes it.
   const step = () => Math.max(1, Math.floor(+amt || 1));
   const apply = sign => { onSet(cur + sign * step()); setAmt(""); tip.hide(); };
   const stepTip = () => ({ title: `${label} ${cur} / ${max}`, lines: [html`<${Mouse} side="L" /> add ${step()} · <${Mouse} side="R" /> remove ${step()}`] });
   return html`<div class="meter">
-    <div class="top2">${topic ? html`<button type="button" class="t hlink" style=${`color:${color}`} onClick=${() => openRuleFn(topic)} aria-label=${`${label}: show the rules`}>${label}${BOOK}</button>` : html`<span class="t" style=${`color:${color}`}>${label}</span>`}<span class="v">${cur}<small> / ${max}</small></span></div>
-    <button type="button" class="track step" style=${`background:${soft}`} aria-label=${`${label}: left-click adds, right-click removes`}
+    <div class="top2">${topic ? html`<button type="button" class="t hlink" style=${`color:${color}`} onClick=${() => openRuleFn(topic)} aria-label=${`${label}: show the rules`}>${label}${BOOK}</button>` : html`<span class="t" style=${`color:${color}`}>${label}</span>`}<span class="v" ref=${val}>${cur}<small> / ${max}</small></span></div>
+    <button type="button" ref=${track} class="track step" style=${`background:${soft}`} aria-label=${`${label}: left-click adds, right-click removes`}
       onMouseEnter=${e => tip.show(e.currentTarget, stepTip())} onMouseLeave=${() => tip.hide()}
       onClick=${() => apply(1)} onContextMenu=${e => { e.preventDefault(); apply(-1); }}
       onKeyDown=${e => { if (["ArrowRight", "ArrowUp", "+", "="].includes(e.key)) { e.preventDefault(); apply(1); } else if (["ArrowLeft", "ArrowDown", "-", "Delete", "Backspace"].includes(e.key)) { e.preventDefault(); apply(-1); } }}>
-      <i style=${`width:${pctW}%;background:${color}`}></i>${marks.map(m => html`<b style=${`left:${(m / max) * 100}%`} title=${`${m}`}></b>`)}</button>
+      <i style=${`width:${pctW}%;background:${color}${lag ? `;transition-delay:${lag}ms` : ""}`}></i>${marks.map(m => html`<b style=${`left:${(m / max) * 100}%`} title=${`${m}`}></b>`)}</button>
     <div class="ctl">
       <input id=${id} type="number" min="1" placeholder="1" aria-label=${`${label} amount`} value=${amt} onInput=${e => setAmt(e.target.value)} onKeyDown=${e => { if (e.key === "Enter") apply(e.shiftKey ? 1 : -1); }} />
       <span class="muted steptip"><${Mouse} side="L" /> add · <${Mouse} side="R" /> remove</span>
@@ -3496,6 +3741,13 @@ const conditioningIgnores = c => (num(c.skills.Conditioning) >= 5 ? 2 : 0);
 function StaminaBar({ c, update }) {
   const n = num(c.vitals.exhaustion), ign = conditioningIgnores(c), immortal = num(c.skills.Conditioning) >= 9;
   const set = to => { to = R.clamp(to, 0, 10); if (to === n) return; update(x => { R.setStamina(x, to); addLog(x, `Stamina lost ${n} → ${to}`); }); tip.hide(); };
+  // A stack lost stamps its cell red and jolts the bar; stacks recovered glow (after the other bars, during a rest).
+  const bar = useRef(), half = useRef();
+  useChange(n, (from, to) => {
+    const cells = half.current ? half.current.children : [];
+    if (to > from) { replay(bar.current, "jolt"); for (let i = from + 1; i <= to; i++) replay(cells[i - 1], "stamp", (i - from - 1) * 60); }
+    else { const lag = resting() ? 4 * 160 : 0; for (let i = to + 1; i <= from; i++) replay(cells[i - 1], "fx-good", lag + (from - i) * 60); }
+  });
   const tipFor = (i, filled) => ({ tone: filled ? "refund" : "short", title: html`<${Mouse} side=${filled ? "R" : "L"} /> ${filled ? `recover to ${i - 1}` : `lose ${i === n + 1 ? "a stack" : "stacks"} to ${i}`}`,
     lines: [i === 10 && immortal ? "Conditioning 9: no death; each stack past 10 costs 5 HP" : `Exhaustion ${i}: ${R.EXHAUSTION[i]}`, i <= ign ? "Conditioning 5: no effect" : ""] });
   const cells = [];
@@ -3508,10 +3760,10 @@ function StaminaBar({ c, update }) {
       onContextMenu=${e => { e.preventDefault(); if (filled) set(i - 1); }}
       onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set(filled ? i - 1 : i); } }}>${i === 10 ? SKULL : ""}</button>`);
   }
-  return html`<section class=${"meter stambar" + (n ? " lost" : "") + (n >= 10 ? " dead" : "")}>
+  return html`<section ref=${bar} class=${"meter stambar" + (n ? " lost" : "") + (n >= 8 && n < 10 && !immortal ? " danger" : "") + (n >= 10 ? " dead" : "")}>
     <div class="top2"><button type="button" class="t hlink" onClick=${() => openRuleFn("stamina")} aria-label="Stamina: show the rules">Stamina lost${BOOK}</button>
       <span class="v">${n}<small> / 10</small></span></div>
-    <span class="scale stam" role="group" aria-label="Stamina lost"><span class="end">0</span><span class="half">${cells}</span></span>
+    <span class="scale stam" role="group" aria-label="Stamina lost"><span class="end">0</span><span class="half" ref=${half}>${cells}</span></span>
     <div class="ctl"><span class="note"><${Mouse} side="L" /> lose a stack · <${Mouse} side="R" /> recover one. Each stack lost is a level of Exhaustion.</span></div>
   </section>`;
 }
@@ -3533,13 +3785,13 @@ function VitalsTab({ c, d, update }) {
   const setV = (k, val, lo, hi) => update(x => { x.vitals[k] = R.clamp(Math.round(val), lo, hi); });
   return html`<div class="tabpane">
     <section class="meters">
-      <${Meter} id=${"hp-" + c.id} label="Hit points" topic="hp" cur=${d.cur.hp} max=${d.max.hp} color="var(--blood)" soft="var(--blood-soft)"
+      <${Meter} id=${"hp-" + c.id} label="Hit points" order=${0} topic="hp" cur=${d.cur.hp} max=${d.max.hp} color="var(--blood)" soft="var(--blood-soft)"
         onSet=${n => setV("hp", n, 0, d.max.hp)} note=${d.cur.hp === 0 ? "Unconscious: roll death saves (d100, 50 or lower succeeds)." : `${num(v.exhaustion) >= 7 ? "Maximum halved by Exhaustion. " : ""}Long rest restores ${d.hpRegen}.`} />
-      <${Meter} id=${"bp-" + c.id} label="Blood points" topic="bp" cur=${d.cur.bp} max=${d.max.bp} color="var(--life)" soft="var(--life-soft)" marks=${[100, 80, 60, 40, 20].filter(m => m < d.max.bp)}
+      <${Meter} id=${"bp-" + c.id} label="Blood points" order=${1} topic="bp" cur=${d.cur.bp} max=${d.max.bp} color="var(--life)" soft="var(--life-soft)" marks=${[100, 80, 60, 40, 20].filter(m => m < d.max.bp)}
         onSet=${n => setV("bp", n, 0, d.max.bp)} note=${d.exhaustionFromBlood ? `Blood loss: ${d.exhaustionFromBlood} Exhaustion at this level.` : `Exhaustion starts at 100. Long rest restores ${d.bpRegen}.`} />
-      <${Meter} id=${"dp-" + c.id} label="Deprivation" topic="dp" cur=${d.cur.dp} max=${d.max.dp} color="var(--hunger)" soft="var(--hunger-soft)" marks=${[25, 20, 15, 10, 5].filter(m => m < d.max.dp)}
+      <${Meter} id=${"dp-" + c.id} label="Deprivation" order=${2} topic="dp" cur=${d.cur.dp} max=${d.max.dp} color="var(--hunger)" soft="var(--hunger-soft)" marks=${[25, 20, 15, 10, 5].filter(m => m < d.max.dp)}
         onSet=${n => setV("dp", n, 0, d.max.dp)} note=${d.exhaustionFromHunger ? `Hunger: ${d.exhaustionFromHunger} Exhaustion at this level.` : `${d.mealsPerDay} meals and ${d.rationsPerDay} rations a day keep this full.`} />
-      <${Meter} id=${"tox-" + c.id} label="Toxicity" topic="tox" cur=${d.cur.tox} max=${d.max.tox} color="var(--tox)" soft="var(--tox-soft)" invert
+      <${Meter} id=${"tox-" + c.id} label="Toxicity" order=${3} topic="tox" cur=${d.cur.tox} max=${d.max.tox} color="var(--tox)" soft="var(--tox-soft)" invert
         onSet=${n => setV("tox", n, 0, d.max.tox * 3)} note=${d.overToxic ? html`<b style="color:var(--bad)">Over the threshold: puking, potion effects lost, no AP.</b>` : `Threshold ${d.max.tox}. Cleanses ${d.cleanse} per long rest.`} />
     </section>
 
@@ -3572,8 +3824,8 @@ function VitalsTab({ c, d, update }) {
           <datalist id="cw-conds">${["Stunned", "Entangled", "Frightened", "Blinded", "Prone", "Poisoned", "Charmed", "Paralyzed", "Deafened", "Unconscious", "On Death's Door"].map(o => html`<option value=${o}></option>`)}</datalist>
           <button class="btn small" type="submit">Add</button></form></div>
       <div class="frame"><${Sigils} seed="rest" n=${1} side="l" /><${Head} title="Rest" topic="rest" />
-        <div class="row"><button class="btn" onClick=${() => update(x => addLog(x, R.shortRest(x)))}>Short rest</button>
-          ${confirmLong ? html`<span class="confirm" style="padding:6px 10px">Roll ${d.cleanse} and apply? <button class="btn small primary" onClick=${() => { update(x => { const m = R.longRest(x); addLog(x, m); toast(m); }); setConfirmLong(false); }}>Long rest</button><button class="btn small" onClick=${() => setConfirmLong(false)}>Cancel</button></span>`
+        <div class="row"><button class="btn" onClick=${() => { markRest(); update(x => addLog(x, R.shortRest(x))); }}>Short rest</button>
+          ${confirmLong ? html`<span class="confirm" style="padding:6px 10px">Roll ${d.cleanse} and apply? <button class="btn small primary" onClick=${() => { markRest(); update(x => { const m = R.longRest(x); addLog(x, m); toast(m); }); setConfirmLong(false); }}>Long rest</button><button class="btn small" onClick=${() => setConfirmLong(false)}>Cancel</button></span>`
             : html`<button class="btn primary" onClick=${() => setConfirmLong(true)}>Long rest</button>`}</div>
         <p class="muted">Long rest: +${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${num(c.skills.Conditioning) >= 7 ? 4 : 2} Stamina, recharge every ability. Short rest: recover ${num(c.skills.Conditioning) >= 6 ? 2 : 1} Stamina, recharge short-rest abilities.</p>
         <div class="log">${(c.log || []).slice(0, 12).map(l => html`<div><time>${new Date(l.t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>${l.m}</div>`)}</div></div>
@@ -3776,7 +4028,12 @@ function WeaponCard({ c, w, i, update }) {
   const dur = num(w.dur), durMax = num(w.durMax);
   const reach = kind === "ranged" ? (num(w.rangeOpt) || num(w.rangeMax) ? `${num(w.rangeOpt)} / ${num(w.rangeMax)} m` : w.range || "—") : kind === "melee" ? "2 m" : "—";
   // Weapons saved before this existed count as finished once they have a name.
-  if (w.final === true || (w.final === undefined && w.name)) return html`<div class=${"wcard final kind-" + kind}>
+  const isFinal = w.final === true || (w.final === undefined && !!w.name);
+  // Done settles the card into its finished form and the pencil unfolds it; firing recoils the clip, Reload sweeps it full.
+  const card = useRef(), clipBox = useRef(), scope = w.id + animScope;
+  useChange(isFinal, () => replay(card.current, isFinal ? "settle" : "unfold", 0, ["settle", "unfold"]), scope);
+  useChange(inClip, (from, to) => replay(clipBox.current, to < from ? "recoil" : to === clipSize && to - from > 1 ? "reload" : "bump", 0, ["recoil", "reload", "bump"]), scope);
+  if (isFinal) return html`<div ref=${card} class=${"wcard final kind-" + kind}>
     <div class="title"><b class="wname">${w.name || "Unnamed weapon"}</b>
       <span class="flag brass">${kind === "shield" ? "Shield" : wl.proficiency}</span>
       <button class="iconbtn" aria-label=${`Edit ${w.name || "weapon"}`} title="Edit" onClick=${() => set("final", false)}>${PENCIL}</button></div>
@@ -3788,7 +4045,7 @@ function WeaponCard({ c, w, i, update }) {
       ${kind === "ranged" && num(w.reload) ? html`<div><span>Reload</span><b>${num(w.reload)} AP</b></div>` : ""}
     </div>
     ${kind === "ranged" && html`<div class="wdur"><span class="lbl">Clip</span>
-      <div class="row"><button class="iconbtn" aria-label="Fire one" onClick=${() => set("clip", Math.max(0, inClip - 1))}>−</button>
+      <div class="row clipbox" ref=${clipBox}><button class="iconbtn" aria-label="Fire one" onClick=${() => set("clip", Math.max(0, inClip - 1))}>−</button>
         <input class="inp durin" type="number" min="0" max=${clipSize || undefined} aria-label="Rounds in the clip" value=${w.clip} onInput=${ev => set("clip", ev.target.value === "" ? "" : R.clamp(+ev.target.value, 0, clipSize || 999))} />
         <span class="muted">/ ${clipSize}</span>
         <button class="iconbtn" aria-label="Add one" onClick=${() => set("clip", Math.min(clipSize || 999, inClip + 1))}>+</button>
@@ -3804,7 +4061,7 @@ function WeaponCard({ c, w, i, update }) {
     </div>
     ${w.props && html`<p class="wprops">${w.props}</p>`}
   </div>`;
-  return html`<div class="wcard editing">
+  return html`<div ref=${card} class="wcard editing">
     <div class="title"><input aria-label="Weapon name" placeholder=${kind === "shield" ? "Shield name" : "Weapon name"} value=${w.name} onInput=${ev => set("name", ev.target.value)} />
       <span class="flag">Editing</span></div>
     <div class="grid2">
@@ -3892,6 +4149,128 @@ function TableTab({ c, update, onDelete }) {
         : html`<button class="btn danger" onClick=${() => setDel(true)}>Delete character</button>`}</section>
   </div>`;
 }
+/* ================= the Blackwall (Cyberpunk theme only) =================
+   A living firewall of red and violet data, drawn with a WebGL fragment shader on a canvas behind the page.
+   It only exists while the Cyberpunk theme is on. The pieces:
+   - a curtain of vertical data streaks in three depths (a far, faintly pixelated violet layer behind red and magenta
+     ones), each swaying and flickering at its own pace;
+   - an upper edge that heaves in slow swells;
+   - soft waves that ripple out from three points wandering slowly along the whole wall, bending the streaks;
+   - now and then, for a fraction of a second, a few thin bands tear sideways, some briefly blocky.
+   It is cheap by design: drawn at half resolution, capped at 30 frames a second, paused when the tab is hidden,
+   and frozen into a single still frame for anyone who asks their device for reduced motion. Without WebGL, the
+   theme's CSS stand-in (in app.css) is used instead. */
+(function () {
+  const FRAG = `
+precision mediump float;
+uniform vec2 res; uniform float t;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
+float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 3; i++) { v += a * noise(p); p = p * 2.07 + 13.1; a *= 0.5; } return v; }
+// One layer of the curtain at depth z (0 = near, 1 = far). Far layers are denser, slower and dimmer.
+float curtain(vec2 uv, float z, float rip) {
+  float sc = mix(1.0, 2.4, z), sp = mix(1.0, 0.4, z);
+  float warp = fbm(vec2(uv.x * 3.0 * sc, uv.y * 2.0 - t * 0.06 * sp + z * 7.0)) - 0.5;
+  float x = uv.x + warp * 0.04 * (1.0 - 0.5 * z) + rip * 0.012 * (1.0 - z);
+  float s1 = pow(abs(sin(x * 240.0 * sc + z * 5.0)), 22.0) * (0.45 + 0.55 * noise(vec2(x * 50.0 * sc, t * 0.7 * sp + z * 3.0)));
+  float s2 = pow(abs(sin(x * 90.0 * sc + 1.3 + z * 2.0)), 34.0) * noise(vec2(x * 20.0 * sc + 5.0, t * 0.35 * sp + uv.y * 1.5));
+  float s = s1 * 0.6 + s2 * 1.1;
+  return s * (0.55 + 0.45 * noise(vec2(x * 80.0 * sc, uv.y * 14.0 + t * 1.2 * sp)));   // data packets running down
+}
+void main() {
+  vec2 uv = gl_FragCoord.xy / res;
+  float asp = res.x / res.y;
+  // tearing: now and then, for a fraction of a second, a few thin horizontal bands slip sideways
+  float ev = floor(t * 4.0);                                 // quarter-second slots
+  float on = step(0.95, hash(vec2(ev, 3.1)));               // about one slot in twenty
+  float band = floor(gl_FragCoord.y / (4.0 + 9.0 * hash(vec2(ev, 1.7))));
+  float torn = on * step(0.72, hash(vec2(band, ev)));
+  vec2 p = uv; p.x += torn * (hash(vec2(band + 3.0, ev)) - 0.5) * 0.035;
+  // a little pixelation inside some torn bands
+  float blocky = torn * step(0.75, hash(vec2(band + 9.0, ev)));
+  vec2 cell = vec2(3.0) / res;
+  p = mix(p, (floor(p / cell) + 0.5) * cell, blocky);
+  // ripples from three sources that wander slowly along the whole wall; soft, no bright spot
+  float rip = 0.0;
+  for (int i = 0; i < 3; i++) {
+    float fi = float(i);
+    vec2 src = vec2(0.5 + 0.45 * sin(t * (0.021 + 0.009 * fi) + fi * 2.1), 0.10 + 0.06 * sin(t * 0.047 + fi * 1.3));
+    float r = length((p - src) * vec2(asp, 1.0));
+    rip += sin(r * 24.0 - t * (1.1 + 0.25 * fi) - fi * 2.0) * exp(-r * 2.6);
+  }
+  rip /= 3.0;
+  // the heaving top edge
+  float edge = 0.30 + 0.08 * fbm(vec2(p.x * 2.0 + t * 0.035, t * 0.05)) + 0.03 * sin(p.x * 7.0 - t * 0.45) + rip * 0.03;
+  float body = smoothstep(edge + 0.18, edge - 0.08, p.y);
+  // depth: a far, faintly pixelated violet layer, a middle layer, and a near layer that the ripples light up
+  vec2 pf = (floor(p * res / 3.0) + 0.5) * 3.0 / res;
+  float far = curtain(pf, 0.9, rip), mid = curtain(p + vec2(0.13, 0.0), 0.45, rip), near = curtain(p + vec2(0.37, 0.0), 0.0, rip);
+  near *= 0.85 + 0.3 * rip;
+  vec3 cFar = vec3(0.42, 0.22, 0.92), cMid = mix(vec3(0.85, 0.08, 0.3), vec3(0.9, 0.2, 0.65), p.x), cNear = mix(vec3(1.0, 0.1, 0.24), vec3(1.0, 0.28, 0.66), smoothstep(0.2, 1.0, p.x));
+  float wF = far * 0.32, wM = mid * 0.55, wN = near * 0.85;
+  float a = wF + wM + wN;
+  vec3 col = (cFar * wF + cMid * wM + cNear * wN) / max(a, 0.001);
+  // the wall's own dim glow, swelling where waves pass
+  a += 0.07 * (0.7 + 0.3 * rip) * smoothstep(0.0, 0.5, 1.0 - p.y);
+  col = mix(col, vec3(0.3, 0.85, 1.0), torn * 0.35);      // torn bands flash faintly cyan
+  float breathe = 0.85 + 0.15 * sin(t * 0.5) * sin(t * 0.19 + 1.0);
+  a = clamp(a * body * breathe, 0.0, 1.0) * 0.6;         // kept in the background
+  gl_FragColor = vec4(col * a, a);
+}`;
+  const VERT = "attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }";
+  let cv = null, gl = null, prog = null, raf = 0, last = 0, t0 = 0, uRes, uT;
+  const still = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function setup() {
+    cv = document.createElement("canvas"); cv.className = "blackwall"; cv.setAttribute("aria-hidden", "true");
+    gl = cv.getContext("webgl", { premultipliedAlpha: true, alpha: true, antialias: false, powerPreference: "low-power" });
+    if (!gl) { cv = null; return false; }
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; };
+    const v = sh(gl.VERTEX_SHADER, VERT), f = sh(gl.FRAGMENT_SHADER, FRAG);
+    if (!v || !f) { cv = null; return false; }
+    prog = gl.createProgram(); gl.attachShader(prog, v); gl.attachShader(prog, f); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { cv = null; return false; }
+    gl.useProgram(prog);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    uRes = gl.getUniformLocation(prog, "res"); uT = gl.getUniformLocation(prog, "t");
+    return true;
+  }
+  function size() {
+    if (!cv) return;
+    const w = Math.max(1, Math.round(innerWidth * 0.5)), h = Math.max(1, Math.round(innerHeight * 0.5));   // half resolution: soft and cheap
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; gl.viewport(0, 0, w, h); }
+  }
+  function draw(now) {
+    raf = 0;
+    if (!cv || document.hidden) return;
+    if (now - last >= 33) {                                  // about 30 frames a second
+      last = now; size();
+      gl.uniform2f(uRes, cv.width, cv.height); gl.uniform1f(uT, still() ? 12.0 : (now - t0) / 1000);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    if (!still()) raf = requestAnimationFrame(draw);
+  }
+  function start() {
+    if (!cv && !setup()) return;                             // no WebGL: the CSS stand-in stays
+    if (!cv.isConnected) document.body.prepend(cv);
+    document.documentElement.classList.add("has-blackwall");
+    t0 = t0 || performance.now(); last = 0;
+    if (!raf) raf = requestAnimationFrame(draw);
+  }
+  function stop() {
+    if (raf) cancelAnimationFrame(raf); raf = 0;
+    if (cv && cv.isConnected) cv.remove();
+    document.documentElement.classList.remove("has-blackwall");
+  }
+  const sync = () => (document.documentElement.dataset.skin === "cyber" && document.body ? start() : stop());
+  new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin"] });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && cv && cv.isConnected && !raf) raf = requestAnimationFrame(draw); });
+  addEventListener("resize", () => { if (cv && cv.isConnected && !raf) raf = requestAnimationFrame(draw); });
+  if (document.body) sync(); else document.addEventListener("DOMContentLoaded", sync);
+})();
 /* ================= crafting tab ================= */
 // One tab for the rulebook's Crafting chapter (16). Each craft gets its own bench; Powdertinkering is built,
 // the others are marked as under construction until their turn comes.
@@ -5195,15 +5574,28 @@ function AddPanel({ e, party, charMap, act }) {
 /* ---------- who is at the table (website only): roles and which characters each player sees ---------- */
 function MembersPanel({ chars, updateChar }) {
   const [confirm, setConfirm] = useState(null);
+  const [move, setMove] = useState(null);   // { from, to }: moving every character from one account to another
   const me = Store.table.uid;
   const members = Store.members.slice().sort((a, b) => (a.role === b.role ? (a.name || "").localeCompare(b.name || "") : a.role === "gm" ? -1 : 1));
   const give = (cid, uid) => updateChar(cid, x => { x.players = [...new Set([...playersOf(x), uid])]; });
   const take = (cid, uid) => updateChar(cid, x => { x.players = playersOf(x).filter(u => u !== uid); });
   const act = p => p.catch(() => toast("Couldn't change that just now. Try again."));
   const nobody = chars.filter(c => !playersOf(c).length);
+  const nameOf = uid => (Store.members.find(m => m.uid === uid) || {}).name || "that account";
+  // A forgotten password can't be reset (accounts have no real email), so the player makes a new account and the
+  // GM moves everything across: every character and companion that lists the old account now lists the new one.
+  const moveAll = async ({ from, to }) => {
+    const list = chars.filter(c => playersOf(c).includes(from));
+    try {
+      for (const c of list) await updateChar(c.id, x => { x.players = [...new Set(playersOf(x).map(u => (u === from ? to : u)))]; });
+      toast(`Moved ${list.length} ${list.length === 1 ? "character" : "characters"} to ${nameOf(to)}. You can remove ${nameOf(from)} from the table now.`);
+    } catch { toast("Couldn't move them just now. Try again."); }
+    setMove(null);
+  };
   return html`<section class="frame"><${Sigils} seed="players" n=${1} lead="note" side="r" />
     <h2 class="h"><span>Players at the table</span><i class="orn" aria-hidden="true"></i></h2>
-    <p class="sub">Players see only the characters you give them. GMs see everyone and run the deck.</p>
+    <p class="sub">Players see only the characters you give them. GMs see everyone and run the deck.
+      Forgot a password? The player makes a new account and joins with the table password, then you move their characters to it.</p>
     <div class="members">${members.map(m => { const mine = chars.filter(c => playersOf(c).includes(m.uid));
       return html`<div class="member">
         <div class="mhead"><b>${m.name}</b><span class=${"flag" + (m.role === "gm" ? " brass" : "")}>${m.role === "gm" ? "GM" : "Player"}</span>${m.uid === me && html`<span class="muted">you</span>`}
@@ -5213,7 +5605,13 @@ function MembersPanel({ chars, updateChar }) {
               <button class="btn small danger" onClick=${() => setConfirm(m.uid)}>Remove</button>`}</span>`}</div>
         <div class="chips">${mine.map(c => html`<span class="cond">${c.name || "Unnamed"}<button aria-label=${`Take ${c.name || "this character"} from ${m.name}`} onClick=${() => take(c.id, m.uid)}>×</button></span>`)}
           <select class="inp give" aria-label=${`Give ${m.name} a character`} value="" onChange=${e => { const v = e.target.value; e.target.value = ""; if (v) give(v, m.uid); }}>
-            <option value="">+ Give a character…</option>${chars.filter(c => !playersOf(c).includes(m.uid)).map(c => html`<option value=${c.id}>${c.name || "Unnamed"}${c.companionOf ? " (companion)" : ""}</option>`)}</select></div>
+            <option value="">+ Give a character…</option>${chars.filter(c => !playersOf(c).includes(m.uid)).map(c => html`<option value=${c.id}>${c.name || "Unnamed"}${c.companionOf ? " (companion)" : ""}</option>`)}</select>
+          ${mine.length > 0 && members.length > 1 && (!move || move.from !== m.uid) && html`<select class="inp give" aria-label=${`Move all of ${m.name}'s characters to another account`} value=""
+            onChange=${e => { const v = e.target.value; e.target.value = ""; if (v) setMove({ from: m.uid, to: v }); }}>
+            <option value="">Move all to…</option>${members.filter(o => o.uid !== m.uid).map(o => html`<option value=${o.uid}>${o.name}</option>`)}</select>`}</div>
+        ${move && move.from === m.uid && html`<div class="mact">
+          <span class="muted">Move ${mine.length} ${mine.length === 1 ? "character" : "characters"} from ${m.name} to ${nameOf(move.to)}?</span>
+          <button class="btn small primary" onClick=${() => moveAll(move)}>Move</button><button class="btn small" onClick=${() => setMove(null)}>Cancel</button></div>`}
       </div>`; })}</div>
     ${nobody.length > 0 && html`<p class="muted">Not given to anyone yet: ${nobody.map(c => c.name || "Unnamed").join(", ")}.</p>`}
   </section>`;
@@ -5284,13 +5682,27 @@ function GMView({ chars, updateChar, openChar }) {
     fn(x); x.hist = [snap, ...(e.hist || [])].slice(0, 10);
     Store.saveEncounter(x);
   };
-  const undo = () => { if (!e.hist || !e.hist.length) return; const [prev, ...rest] = e.hist; Store.saveEncounter(Object.assign({}, prev, { hist: rest })); };
+  const undo = () => { if (!e.hist || !e.hist.length) return; quietUntil.current = performance.now() + 400; const [prev, ...rest] = e.hist; Store.saveEncounter(Object.assign({}, prev, { hist: rest })); };
   const comb = cid => e.combatants.find(c => c.id === cid);
   const nameOf = c => (c ? (c.kind === "pc" ? (charMap[c.charId] ? charMap[c.charId].name : c.name) : c.name + (c.kind === "enemy" && num(c.count) > 1 ? ` ×${c.count}` : "")) : "Removed");
   const current = e.current ? comb(cardOwner(e.current)) : null;
   const roundDone = num(e.round) > 0 && e.deck.every(card => { const o = cardOwner(card), cb = comb(o); return e.acted.includes(o) || !cb || cb.out; });
   const drawLabel = !num(e.round) ? "Shuffle and draw" : roundDone ? `Shuffle for round ${num(e.round) + 1}` : "Draw next card";
   const activeCount = e.combatants.filter(c => !c.out).length;
+  // Motion (only for changes while the table is open, never on opening it): a drawn card flips over, a new round
+  // riffles the deck, and each card drawn is dealt into "This round".
+  // Undo steps back quietly.
+  const cardRef = useRef(), roundRef = useRef(), leftRef = useRef(), drawnRef = useRef(), quietUntil = useRef(0);
+  const moving = () => performance.now() > quietUntil.current;
+  useChange(`${num(e.round)}:${e.current || ""}`, () => moving() && replay(cardRef.current, "flip"), "gm");   // same card opening a new round still flips
+  useChange(num(e.round), (from, to) => { if (to > from && moving()) { replay(roundRef.current, "bump"); replay(leftRef.current, "riffle"); } }, "gm");
+  // A new round empties "This round" before its first card goes in, so a shorter list means deal from the start.
+  useChange(`${num(e.round)}:${e.drawn.length}`, (was, now) => {
+    const ol = drawnRef.current; if (!ol || !moving()) return;
+    const [r0, n0] = was.split(":").map(Number), [r1, n1] = now.split(":").map(Number);
+    const start = r1 === r0 ? n0 : 0;
+    for (let i = start; i < n1; i++) replay(ol.children[i], "dealt", (i - start) * 70);
+  }, "gm");
 
   return html`<div class="tabpane gm">
     <div class="row campbar" role="group" aria-label="Campaign">
@@ -5303,15 +5715,15 @@ function GMView({ chars, updateChar, openChar }) {
         <h2 class="h"><span>Initiative deck</span><i class="orn" aria-hidden="true"></i></h2>
         <p class="sub">One card each, two for Dexterity above 15. Shuffled every round.</p>
         <div class="deckbar">
-          <div class="stat"><b>${num(e.round) || "—"}</b><span>Round</span></div>
+          <div class="stat"><b ref=${roundRef}>${num(e.round) || "—"}</b><span>Round</span></div>
           <div class="stat"><b>${num(e.round) ? e.combatants.filter(c => !c.out && !e.acted.includes(c.id)).length : activeCount}</b><span>Still to act</span></div>
-          <div class="stat"><b>${e.deck.length}</b><span>Cards left</span></div>
+          <div class="stat" ref=${leftRef}><b>${e.deck.length}</b><span>Cards left</span></div>
           <div class="deckbtns"><button class="btn primary big" disabled=${!activeCount} onClick=${() => act(x => drawNext(x, charMap))}>${drawLabel}</button>
             <button class="btn" disabled=${!(e.hist && e.hist.length)} onClick=${undo}>Undo</button></div>
         </div>
-        <${CurrentCard} e=${e} comb=${current} charMap=${charMap} updateChar=${updateChar} act=${act} openChar=${openChar} />
+        <div class="icardwrap" ref=${cardRef}><${CurrentCard} e=${e} comb=${current} charMap=${charMap} updateChar=${updateChar} act=${act} openChar=${openChar} /></div>
 
-        ${e.drawn.length > 0 && html`<div class="drawn"><span class="lbl">This round</span><ol>
+        ${e.drawn.length > 0 && html`<div class="drawn"><span class="lbl">This round</span><ol ref=${drawnRef}>
           ${e.drawn.map(dd => { const c = comb(cardOwner(dd.card)); return html`<li class=${(dd.skip ? "skip " : "") + (dd.card === e.current ? "now " : "") + (c ? "k-" + c.kind : "")} title=${dd.skip ? "Extra card. They already acted this round." : ""}>${nameOf(c)}${dd.skip ? " · extra" : ""}</li>`; })}</ol></div>`}
 
         <div class="row" style="margin-top:14px;justify-content:space-between">

@@ -207,8 +207,60 @@ function levelTip(c, mode, kind, name, to, raiseBtn = "L", lowerBtn = "R") {
     lines: [html`<em>${raise ? delta : "+" + -delta} Karma</em> · ${have} → ${have - delta}`] };
 }
 
+/* ================= motion helpers ================= */
+// Small, one-off animations that show what just changed (a bar losing HP, a pip being bought). They play only when a
+// value changes while the same character stays open: never on first draw, and not when another character is opened.
+// The "reduce motion" setting switches every animation off in app.css.
+let animScope = "";          // the open character's id, set by Character; hooks compare against it
+const calm = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
+// Replays a CSS animation class on an element, even if it's already there, and clears it once the animation ends.
+function replay(el, cls, delayMs = 0, also = []) {
+  if (!el) return;
+  el.classList.remove(cls, ...also);
+  // The delay goes on the element and, as --lag, to its ::after (a pseudo-element doesn't inherit animation-delay).
+  el.style.animationDelay = delayMs ? delayMs + "ms" : ""; el.style.setProperty("--lag", (delayMs || 0) + "ms");
+  void el.offsetWidth; el.classList.add(cls);
+  // Tidy up when its own animation ends, or after a while if only its children animate (their end events bubble up).
+  const token = (el._fx = (el._fx || 0) + 1);
+  const clear = () => { if (el._fx !== token) return; el.classList.remove(cls); el.style.animationDelay = ""; el.removeEventListener("animationend", done); };
+  const done = e => { if (e.target === el) clear(); };
+  el.addEventListener("animationend", done);
+  setTimeout(clear, 1600 + (delayMs || 0));
+}
+// Calls onChange(from, to) after a redraw in which `value` changed for the same `scope`.
+function useChange(value, onChange, scope = animScope) {
+  const last = useRef({ value, scope });
+  useEffect(() => {
+    const l = last.current; last.current = { value, scope };
+    if (l.scope === scope && l.value !== value) onChange(l.value, value);
+  }, [value, scope]);
+}
+// A number that counts to its new value instead of jumping (Unspent Karma, rounds in a clip).
+function useTween(value, ms = 380, scope = animScope) {
+  const [shown, setShown] = useState(value);
+  const st = useRef({ shown: value, scope, raf: 0 });
+  useEffect(() => {
+    const s = st.current; cancelAnimationFrame(s.raf);
+    const to = +value, from = +s.shown;
+    if (s.scope !== scope || calm() || !isFinite(to) || !isFinite(from) || from === to) { s.scope = scope; s.shown = value; setShown(value); return; }
+    const t0 = performance.now();
+    const step = t => { const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3), n = k < 1 ? Math.round(from + (to - from) * e) : to;
+      s.shown = n; setShown(n); if (k < 1) s.raf = requestAnimationFrame(step); };
+    s.raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(s.raf);
+  }, [value, scope]);
+  return shown;
+}
+// While a rest is being applied, the bars it refills light up one after another instead of all at once.
+let restUntil = 0;
+const resting = () => performance.now() < restUntil;
+const markRest = () => { restUntil = performance.now() + 1200; };
+
 /* ================= small parts ================= */
 function Pips({ value, max = 10, cap = max, onSet, label, big, tipFor }) {
+  const group = useRef();
+  // A newly bought pip gets a brass stamp.
+  useChange(value, (from, to) => { if (to > from) for (let i = from + 1; i <= to; i++) replay(group.current && group.current.children[i - 1], "stamp", (i - from - 1) * 60); });
   const out = [];
   for (let i = 1; i <= max; i++) {
     const on = i <= value, capped = i > cap && !on, over = on && i > cap;
@@ -222,7 +274,7 @@ function Pips({ value, max = 10, cap = max, onSet, label, big, tipFor }) {
       onClick=${e => { if (!on) go(); else if (e.detail) toast("Right-click (long-press on a phone) to lower."); else go(); }}
       onContextMenu=${e => { e.preventDefault(); if (on) go(); }}></button>`);
   }
-  return html`<span class=${"pips" + (big ? " big" : "")} role="group" aria-label=${label}>${out}</span>`;
+  return html`<span ref=${group} class=${"pips" + (big ? " big" : "")} role="group" aria-label=${label}>${out}</span>`;
 }
 // A text box that grows with what's typed, instead of a single line that scrolls sideways.
 function AutoText({ id, value, onInput, placeholder, label, cls = "" }) {
@@ -280,8 +332,10 @@ const SKINS = [
   ["armour", "Power armour", GF + "Orbitron:wght@600;700;800&family=Chakra+Petch:wght@500;600;700&family=Exo+2:wght@400;500;600&family=Nixie+One"],
   // Extended themes: heavier artwork and their own furniture.
   ["cairn", "Cairn-style gothic", GF + "UnifrakturCook:wght@700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Grenze:wght@500;600;700", "extended"],
-  ["cyber", "Cyberpunk", GF + "Michroma&family=Oxanium:wght@400;500;600;700;800", "extended"],
+  ["cyber", "Cyberpunk", GF + "Tomorrow:wght@500;600;700&family=Oxanium:wght@400;500;600;700;800", "extended"],
 ];
+// The install-app icon (shown only when the browser can install the site; see web/pwa.js).
+const INSTALL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v10.5m0 0-4.2-4.2M12 14l4.2-4.2M4.5 14.5v3.2A2.3 2.3 0 0 0 6.8 20h10.4a2.3 2.3 0 0 0 2.3-2.3v-3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function applySkin(key) {
   const skin = SKINS.find(x => x[0] === key) || SKINS[0], root = document.documentElement;
   if (skin[0] === "ledger") delete root.dataset.skin; else root.dataset.skin = skin[0];
@@ -370,7 +424,7 @@ function App() {
         <button aria-pressed=${view === "chars"} onClick=${() => setView("chars")}>Characters</button>
         <button aria-pressed=${view === "gm"} onClick=${() => setView("gm")}>GM table</button></div>`}
       <${SkinPicker} />
-      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
+      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button><button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
     </header>
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
@@ -449,6 +503,7 @@ function Roster({ list, all, sel, setSel, current, create, startNew }) {
 
 /* ================= character ================= */
 function Character({ c, update, tab, setTab, onDelete }) {
+  animScope = c.id;   // animations only play for changes on this character, not when another one is opened
   const d = derive(c);
   const [chosenMode, setMode] = useState(() => lsGet("cw-mode", "karma"));
   useEffect(() => lsSet("cw-mode", chosenMode), [chosenMode]);
@@ -465,18 +520,27 @@ function Character({ c, update, tab, setTab, onDelete }) {
   const openPanel = (kind, name) => setPanel(p => (p && p.kind === kind && p.name === name ? null : { kind, name }));
   openRuleFn = name => openPanel("rule", name);
   const skillTabs = tab === "sheet" || tab === "talents";
+  // Which way the page slides when the tab changes: in from the right when moving to a tab further along, from the
+  // left when going back. Worked out once per change (not on every redraw), so the slide never replays mid-edit.
+  const nav = useRef({ tab, dir: "" });
+  if (nav.current.tab !== tab) {
+    const order = tabs.map(t => t[0]);
+    nav.current = { tab, dir: order.indexOf(tab) > order.indexOf(nav.current.tab) ? "r" : "l" };
+  }
   return html`
     <${Header} c=${c} d=${d} update=${update} mode=${mode} setMode=${setMode} canFree=${canFree} />
     <div class="tabs" role="tablist">${tabs.map(([k, n]) => html`<button role="tab" class=${"tab-" + k} aria-selected=${tab === k} onClick=${() => setTab(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${TAB_ICONS[k]}</svg>${n}</button>`)}</div>
-    ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
     ${panel && panel.kind === "rule" && html`<${RulePanel} topic=${panel.name} onClose=${() => setPanel(null)} />`}
     ${panel && panel.kind !== "rule" && skillTabs && html`<${SkillPanel} c=${c} kind=${panel.kind} name=${panel.name} mode=${mode} update=${update} onClose=${() => setPanel(null)} />`}
-    ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
-    ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
-    ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
-    ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
-    ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}`;
+    <div class="tabswap" key=${tab} data-dir=${nav.current.dir}>
+      ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
+      ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
+      ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
+      ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
+      ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
+      ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}
+    </div>`;
 }
 
 // Small line icons that tell the tabs apart at a glance.
@@ -508,6 +572,7 @@ function Header({ c, d, update, mode, setMode, canFree }) {
   };
   const id = s => `${s}-${c.id}`;
   const off = num(c.pool) - num(c.karma) - d.karma.total;   // pool should equal unspent + spent
+  const shown = { karma: useTween(num(c.karma)), pool: useTween(num(c.pool)) };   // the numbers count to their new value
   const masters = Object.values(Store.chars).filter(x => x.id !== c.id && !x.companionOf).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   return html`<section class="head" style="position:relative;isolation:isolate"><${Sigils} seed="header" n=${1} lead="gears" side="l" />
     <div class="portrait"><${Face} c=${c} />
@@ -534,7 +599,7 @@ function Header({ c, d, update, mode, setMode, canFree }) {
     <div class="karmawrap"><div class="panel karma">
       <div class="h" style="margin:0">Karma</div>
       <div class="big">${[["karma", "Unspent"], ["pool", "Pool · earned"]].map(([k, label]) => html`<div class=${"stat" + (mode === "build" ? " editing" : "")}>
-        ${mode === "build" ? html`<${StatEdit} id=${id(k)} value=${num(c[k])} label=${label} onCommit=${v => update(x => { addLog(x, `Free edit: ${label.split(" ")[0]} ${num(x[k])} → ${v}`); x[k] = v; })} />` : html`<b>${num(c[k])}</b>`}
+        ${mode === "build" ? html`<${StatEdit} id=${id(k)} value=${num(c[k])} label=${label} onCommit=${v => update(x => { addLog(x, `Free edit: ${label.split(" ")[0]} ${num(x[k])} → ${v}`); x[k] = v; })} />` : html`<b>${shown[k]}</b>`}
         <span>${label}</span></div>`)}</div>
       <div class="row"><input class="inp" style="width:70px" type="number" min="1" aria-label="Karma to award" placeholder="+0" value=${award} onInput=${e => setAward(e.target.value)} />
         <button class="btn small" disabled=${!(+award > 0)} onClick=${() => { const n = Math.floor(+award); update(x => { x.karma = num(x.karma) + n; x.pool = num(x.pool) + n; addLog(x, `Awarded ${n} Karma`); }); setAward(""); }}>Award</button>
@@ -608,15 +673,19 @@ function AttrRow({ c, a, mode, set }) {
   // Left-click a cell to raise the attribute to it; right-click a filled cell to lower it.
   const v = R.attr(c, a.k), base = R.attrBase(c, a.k), ceiling = R.attrCap(c, a.k), cap = mode === "build" ? 20 : ceiling;
   const diff = v - 10, broken = v < 10;
+  const scale = useRef();
+  // Newly raised cells get a stamp; trying to buy past a sealed ceiling makes the lock clunk.
+  useChange(v, (from, to) => { if (to > from && scale.current) scale.current.querySelectorAll(".cell[data-v]").forEach(el => { const n = +el.dataset.v; if (n > from && n <= to) replay(el, "stamp", (n - from - 1) * 50); }); });
+  const clunk = () => scale.current && replay(scale.current.querySelector(".cell.wall"), "clunk");
   const showTip = (e, to) => tip.show(e.currentTarget, to === null ? { title: `${a.n} ${v}`, lines: [html`<${Mouse} side="L" /> raise · <${Mouse} side="R" /> lower`] } : levelTip(c, mode, "attr", a.k, to, "L", "R"));
   const cellFor = (val, cls, extra) => {
     const filled = val <= v;
     const raiseTo = val, lowerTo = val - 1;
-    return html`<button type="button" class=${"cell " + cls} aria-label=${filled ? `Lower ${a.n} to ${lowerTo}` : `Raise ${a.n} to ${raiseTo}`}
+    return html`<button type="button" class=${"cell " + cls} data-v=${val} aria-label=${filled ? `Lower ${a.n} to ${lowerTo}` : `Raise ${a.n} to ${raiseTo}`}
       onMouseEnter=${e => showTip(e, cls.includes("sealed") ? raiseTo : filled ? lowerTo : raiseTo)} onMouseLeave=${() => tip.hide()}
-      onClick=${() => { if (!filled) { set(raiseTo); tip.hide(); } else toast("Right-click (long-press on a phone) to lower."); }}
+      onClick=${() => { if (!filled) { if (cls.includes("sealed")) clunk(); set(raiseTo); tip.hide(); } else toast("Right-click (long-press on a phone) to lower."); }}
       onContextMenu=${e => { e.preventDefault(); if (filled) { set(lowerTo); tip.hide(); } }}
-      onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set(filled ? lowerTo : raiseTo); } }}>${extra || ""}</button>`;
+      onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!filled && cls.includes("sealed")) clunk(); set(filled ? lowerTo : raiseTo); } }}>${extra || ""}</button>`;
   };
   const cells = [];
   if (broken) {
@@ -639,7 +708,7 @@ function AttrRow({ c, a, mode, set }) {
   return html`<div class=${"attr" + (broken ? " is-broken" : "")}>
     <span class="nm">${a.n}</span>
     <span class="valblock"><span class="val">${v}</span>${state}</span>
-    <span class=${"scale " + (broken ? "low" : "high")} role="group" aria-label=${`${a.n} scale`}>
+    <span ref=${scale} class=${"scale " + (broken ? "low" : "high")} role="group" aria-label=${`${a.n} scale`}>
       ${broken ? html`<span class="end">0</span><span class="half">${cells}</span>${mid}` : html`${mid}<span class="half">${cells}</span><span class="end">20</span>`}
     </span>
     <span class="base">${base < 10 ? html`<span>started ${base}</span>` : ""}<span>${ceiling < 20 ? html`<b class="sealtext">sealed at ${ceiling}</b>` : "limit 20"}</span>
@@ -754,20 +823,28 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
 }
 
 /* ================= vitals tab ================= */
-function Meter({ id, label, cur, max, color, soft, onSet, note, marks = [], invert, topic }) {
+function Meter({ id, label, cur, max, color, soft, onSet, note, marks = [], invert, topic, order = 0 }) {
   const [amt, setAmt] = useState("");
+  // The bar eases to its new length. Losing (or, for Toxicity, gaining) flashes red; recovering glows. During a rest the
+  // bars light up one after another, in the order they sit on the page.
+  const track = useRef(), val = useRef(), lag = resting() ? order * 160 : 0;
+  useChange(cur, (from, to) => {
+    const good = invert ? to < from : to > from;
+    replay(track.current, good ? "fx-good" : "fx-bad", lag, ["fx-good", "fx-bad"]);
+    replay(val.current, "bump", lag);
+  }, id);
   const pctW = max ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0;
   // The bar itself is the control: left-click adds the amount (1 if blank), right-click removes it.
   const step = () => Math.max(1, Math.floor(+amt || 1));
   const apply = sign => { onSet(cur + sign * step()); setAmt(""); tip.hide(); };
   const stepTip = () => ({ title: `${label} ${cur} / ${max}`, lines: [html`<${Mouse} side="L" /> add ${step()} · <${Mouse} side="R" /> remove ${step()}`] });
   return html`<div class="meter">
-    <div class="top2">${topic ? html`<button type="button" class="t hlink" style=${`color:${color}`} onClick=${() => openRuleFn(topic)} aria-label=${`${label}: show the rules`}>${label}${BOOK}</button>` : html`<span class="t" style=${`color:${color}`}>${label}</span>`}<span class="v">${cur}<small> / ${max}</small></span></div>
-    <button type="button" class="track step" style=${`background:${soft}`} aria-label=${`${label}: left-click adds, right-click removes`}
+    <div class="top2">${topic ? html`<button type="button" class="t hlink" style=${`color:${color}`} onClick=${() => openRuleFn(topic)} aria-label=${`${label}: show the rules`}>${label}${BOOK}</button>` : html`<span class="t" style=${`color:${color}`}>${label}</span>`}<span class="v" ref=${val}>${cur}<small> / ${max}</small></span></div>
+    <button type="button" ref=${track} class="track step" style=${`background:${soft}`} aria-label=${`${label}: left-click adds, right-click removes`}
       onMouseEnter=${e => tip.show(e.currentTarget, stepTip())} onMouseLeave=${() => tip.hide()}
       onClick=${() => apply(1)} onContextMenu=${e => { e.preventDefault(); apply(-1); }}
       onKeyDown=${e => { if (["ArrowRight", "ArrowUp", "+", "="].includes(e.key)) { e.preventDefault(); apply(1); } else if (["ArrowLeft", "ArrowDown", "-", "Delete", "Backspace"].includes(e.key)) { e.preventDefault(); apply(-1); } }}>
-      <i style=${`width:${pctW}%;background:${color}`}></i>${marks.map(m => html`<b style=${`left:${(m / max) * 100}%`} title=${`${m}`}></b>`)}</button>
+      <i style=${`width:${pctW}%;background:${color}${lag ? `;transition-delay:${lag}ms` : ""}`}></i>${marks.map(m => html`<b style=${`left:${(m / max) * 100}%`} title=${`${m}`}></b>`)}</button>
     <div class="ctl">
       <input id=${id} type="number" min="1" placeholder="1" aria-label=${`${label} amount`} value=${amt} onInput=${e => setAmt(e.target.value)} onKeyDown=${e => { if (e.key === "Enter") apply(e.shiftKey ? 1 : -1); }} />
       <span class="muted steptip"><${Mouse} side="L" /> add · <${Mouse} side="R" /> remove</span>
@@ -781,6 +858,13 @@ const conditioningIgnores = c => (num(c.skills.Conditioning) >= 5 ? 2 : 0);
 function StaminaBar({ c, update }) {
   const n = num(c.vitals.exhaustion), ign = conditioningIgnores(c), immortal = num(c.skills.Conditioning) >= 9;
   const set = to => { to = R.clamp(to, 0, 10); if (to === n) return; update(x => { R.setStamina(x, to); addLog(x, `Stamina lost ${n} → ${to}`); }); tip.hide(); };
+  // A stack lost stamps its cell red and jolts the bar; stacks recovered glow (after the other bars, during a rest).
+  const bar = useRef(), half = useRef();
+  useChange(n, (from, to) => {
+    const cells = half.current ? half.current.children : [];
+    if (to > from) { replay(bar.current, "jolt"); for (let i = from + 1; i <= to; i++) replay(cells[i - 1], "stamp", (i - from - 1) * 60); }
+    else { const lag = resting() ? 4 * 160 : 0; for (let i = to + 1; i <= from; i++) replay(cells[i - 1], "fx-good", lag + (from - i) * 60); }
+  });
   const tipFor = (i, filled) => ({ tone: filled ? "refund" : "short", title: html`<${Mouse} side=${filled ? "R" : "L"} /> ${filled ? `recover to ${i - 1}` : `lose ${i === n + 1 ? "a stack" : "stacks"} to ${i}`}`,
     lines: [i === 10 && immortal ? "Conditioning 9: no death; each stack past 10 costs 5 HP" : `Exhaustion ${i}: ${R.EXHAUSTION[i]}`, i <= ign ? "Conditioning 5: no effect" : ""] });
   const cells = [];
@@ -793,10 +877,10 @@ function StaminaBar({ c, update }) {
       onContextMenu=${e => { e.preventDefault(); if (filled) set(i - 1); }}
       onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set(filled ? i - 1 : i); } }}>${i === 10 ? SKULL : ""}</button>`);
   }
-  return html`<section class=${"meter stambar" + (n ? " lost" : "") + (n >= 10 ? " dead" : "")}>
+  return html`<section ref=${bar} class=${"meter stambar" + (n ? " lost" : "") + (n >= 8 && n < 10 && !immortal ? " danger" : "") + (n >= 10 ? " dead" : "")}>
     <div class="top2"><button type="button" class="t hlink" onClick=${() => openRuleFn("stamina")} aria-label="Stamina: show the rules">Stamina lost${BOOK}</button>
       <span class="v">${n}<small> / 10</small></span></div>
-    <span class="scale stam" role="group" aria-label="Stamina lost"><span class="end">0</span><span class="half">${cells}</span></span>
+    <span class="scale stam" role="group" aria-label="Stamina lost"><span class="end">0</span><span class="half" ref=${half}>${cells}</span></span>
     <div class="ctl"><span class="note"><${Mouse} side="L" /> lose a stack · <${Mouse} side="R" /> recover one. Each stack lost is a level of Exhaustion.</span></div>
   </section>`;
 }
@@ -818,13 +902,13 @@ function VitalsTab({ c, d, update }) {
   const setV = (k, val, lo, hi) => update(x => { x.vitals[k] = R.clamp(Math.round(val), lo, hi); });
   return html`<div class="tabpane">
     <section class="meters">
-      <${Meter} id=${"hp-" + c.id} label="Hit points" topic="hp" cur=${d.cur.hp} max=${d.max.hp} color="var(--blood)" soft="var(--blood-soft)"
+      <${Meter} id=${"hp-" + c.id} label="Hit points" order=${0} topic="hp" cur=${d.cur.hp} max=${d.max.hp} color="var(--blood)" soft="var(--blood-soft)"
         onSet=${n => setV("hp", n, 0, d.max.hp)} note=${d.cur.hp === 0 ? "Unconscious: roll death saves (d100, 50 or lower succeeds)." : `${num(v.exhaustion) >= 7 ? "Maximum halved by Exhaustion. " : ""}Long rest restores ${d.hpRegen}.`} />
-      <${Meter} id=${"bp-" + c.id} label="Blood points" topic="bp" cur=${d.cur.bp} max=${d.max.bp} color="var(--life)" soft="var(--life-soft)" marks=${[100, 80, 60, 40, 20].filter(m => m < d.max.bp)}
+      <${Meter} id=${"bp-" + c.id} label="Blood points" order=${1} topic="bp" cur=${d.cur.bp} max=${d.max.bp} color="var(--life)" soft="var(--life-soft)" marks=${[100, 80, 60, 40, 20].filter(m => m < d.max.bp)}
         onSet=${n => setV("bp", n, 0, d.max.bp)} note=${d.exhaustionFromBlood ? `Blood loss: ${d.exhaustionFromBlood} Exhaustion at this level.` : `Exhaustion starts at 100. Long rest restores ${d.bpRegen}.`} />
-      <${Meter} id=${"dp-" + c.id} label="Deprivation" topic="dp" cur=${d.cur.dp} max=${d.max.dp} color="var(--hunger)" soft="var(--hunger-soft)" marks=${[25, 20, 15, 10, 5].filter(m => m < d.max.dp)}
+      <${Meter} id=${"dp-" + c.id} label="Deprivation" order=${2} topic="dp" cur=${d.cur.dp} max=${d.max.dp} color="var(--hunger)" soft="var(--hunger-soft)" marks=${[25, 20, 15, 10, 5].filter(m => m < d.max.dp)}
         onSet=${n => setV("dp", n, 0, d.max.dp)} note=${d.exhaustionFromHunger ? `Hunger: ${d.exhaustionFromHunger} Exhaustion at this level.` : `${d.mealsPerDay} meals and ${d.rationsPerDay} rations a day keep this full.`} />
-      <${Meter} id=${"tox-" + c.id} label="Toxicity" topic="tox" cur=${d.cur.tox} max=${d.max.tox} color="var(--tox)" soft="var(--tox-soft)" invert
+      <${Meter} id=${"tox-" + c.id} label="Toxicity" order=${3} topic="tox" cur=${d.cur.tox} max=${d.max.tox} color="var(--tox)" soft="var(--tox-soft)" invert
         onSet=${n => setV("tox", n, 0, d.max.tox * 3)} note=${d.overToxic ? html`<b style="color:var(--bad)">Over the threshold: puking, potion effects lost, no AP.</b>` : `Threshold ${d.max.tox}. Cleanses ${d.cleanse} per long rest.`} />
     </section>
 
@@ -857,8 +941,8 @@ function VitalsTab({ c, d, update }) {
           <datalist id="cw-conds">${["Stunned", "Entangled", "Frightened", "Blinded", "Prone", "Poisoned", "Charmed", "Paralyzed", "Deafened", "Unconscious", "On Death's Door"].map(o => html`<option value=${o}></option>`)}</datalist>
           <button class="btn small" type="submit">Add</button></form></div>
       <div class="frame"><${Sigils} seed="rest" n=${1} side="l" /><${Head} title="Rest" topic="rest" />
-        <div class="row"><button class="btn" onClick=${() => update(x => addLog(x, R.shortRest(x)))}>Short rest</button>
-          ${confirmLong ? html`<span class="confirm" style="padding:6px 10px">Roll ${d.cleanse} and apply? <button class="btn small primary" onClick=${() => { update(x => { const m = R.longRest(x); addLog(x, m); toast(m); }); setConfirmLong(false); }}>Long rest</button><button class="btn small" onClick=${() => setConfirmLong(false)}>Cancel</button></span>`
+        <div class="row"><button class="btn" onClick=${() => { markRest(); update(x => addLog(x, R.shortRest(x))); }}>Short rest</button>
+          ${confirmLong ? html`<span class="confirm" style="padding:6px 10px">Roll ${d.cleanse} and apply? <button class="btn small primary" onClick=${() => { markRest(); update(x => { const m = R.longRest(x); addLog(x, m); toast(m); }); setConfirmLong(false); }}>Long rest</button><button class="btn small" onClick=${() => setConfirmLong(false)}>Cancel</button></span>`
             : html`<button class="btn primary" onClick=${() => setConfirmLong(true)}>Long rest</button>`}</div>
         <p class="muted">Long rest: +${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${num(c.skills.Conditioning) >= 7 ? 4 : 2} Stamina, recharge every ability. Short rest: recover ${num(c.skills.Conditioning) >= 6 ? 2 : 1} Stamina, recharge short-rest abilities.</p>
         <div class="log">${(c.log || []).slice(0, 12).map(l => html`<div><time>${new Date(l.t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>${l.m}</div>`)}</div></div>
@@ -1061,7 +1145,12 @@ function WeaponCard({ c, w, i, update }) {
   const dur = num(w.dur), durMax = num(w.durMax);
   const reach = kind === "ranged" ? (num(w.rangeOpt) || num(w.rangeMax) ? `${num(w.rangeOpt)} / ${num(w.rangeMax)} m` : w.range || "—") : kind === "melee" ? "2 m" : "—";
   // Weapons saved before this existed count as finished once they have a name.
-  if (w.final === true || (w.final === undefined && w.name)) return html`<div class=${"wcard final kind-" + kind}>
+  const isFinal = w.final === true || (w.final === undefined && !!w.name);
+  // Done settles the card into its finished form and the pencil unfolds it; firing recoils the clip, Reload sweeps it full.
+  const card = useRef(), clipBox = useRef(), scope = w.id + animScope;
+  useChange(isFinal, () => replay(card.current, isFinal ? "settle" : "unfold", 0, ["settle", "unfold"]), scope);
+  useChange(inClip, (from, to) => replay(clipBox.current, to < from ? "recoil" : to === clipSize && to - from > 1 ? "reload" : "bump", 0, ["recoil", "reload", "bump"]), scope);
+  if (isFinal) return html`<div ref=${card} class=${"wcard final kind-" + kind}>
     <div class="title"><b class="wname">${w.name || "Unnamed weapon"}</b>
       <span class="flag brass">${kind === "shield" ? "Shield" : wl.proficiency}</span>
       <button class="iconbtn" aria-label=${`Edit ${w.name || "weapon"}`} title="Edit" onClick=${() => set("final", false)}>${PENCIL}</button></div>
@@ -1073,7 +1162,7 @@ function WeaponCard({ c, w, i, update }) {
       ${kind === "ranged" && num(w.reload) ? html`<div><span>Reload</span><b>${num(w.reload)} AP</b></div>` : ""}
     </div>
     ${kind === "ranged" && html`<div class="wdur"><span class="lbl">Clip</span>
-      <div class="row"><button class="iconbtn" aria-label="Fire one" onClick=${() => set("clip", Math.max(0, inClip - 1))}>−</button>
+      <div class="row clipbox" ref=${clipBox}><button class="iconbtn" aria-label="Fire one" onClick=${() => set("clip", Math.max(0, inClip - 1))}>−</button>
         <input class="inp durin" type="number" min="0" max=${clipSize || undefined} aria-label="Rounds in the clip" value=${w.clip} onInput=${ev => set("clip", ev.target.value === "" ? "" : R.clamp(+ev.target.value, 0, clipSize || 999))} />
         <span class="muted">/ ${clipSize}</span>
         <button class="iconbtn" aria-label="Add one" onClick=${() => set("clip", Math.min(clipSize || 999, inClip + 1))}>+</button>
@@ -1089,7 +1178,7 @@ function WeaponCard({ c, w, i, update }) {
     </div>
     ${w.props && html`<p class="wprops">${w.props}</p>`}
   </div>`;
-  return html`<div class="wcard editing">
+  return html`<div ref=${card} class="wcard editing">
     <div class="title"><input aria-label="Weapon name" placeholder=${kind === "shield" ? "Shield name" : "Weapon name"} value=${w.name} onInput=${ev => set("name", ev.target.value)} />
       <span class="flag">Editing</span></div>
     <div class="grid2">
