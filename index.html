@@ -684,6 +684,14 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .clipbox.reload .durin { animation: reloaded .55s ease-out; }
 @keyframes reloaded { 0% { background: transparent; } 30% { background: var(--brass-soft); border-color: var(--brass); transform: scale(1.08); } }
 .clipbox.bump .durin { animation: bump .3s ease-out; }
+/* Initiative deck: a drawn card flips over, a new round riffles the deck, each card drawn is dealt into "This round". */
+.icardwrap.flip { animation: flip .42s cubic-bezier(.2, .7, .3, 1); transform-origin: 50% 50%; }
+@keyframes flip { 0% { transform: perspective(900px) rotateY(-80deg) translateX(-24px); opacity: .2; } 60% { transform: perspective(900px) rotateY(8deg); opacity: 1; } 100% { transform: none; } }
+.stat.riffle { animation: riffle .5s ease-in-out; }
+@keyframes riffle { 15% { transform: rotate(-4deg) translateY(-2px); } 35% { transform: rotate(3deg); } 55% { transform: rotate(-2deg) translateY(-1px); } 75% { transform: rotate(1deg); } }
+.stat b.bump { display: inline-block; }
+.drawn li.dealt { animation: dealt .34s cubic-bezier(.2, .7, .3, 1) both; }
+@keyframes dealt { from { transform: translate(-14px, -6px) rotate(-6deg); opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 @media (prefers-reduced-motion: reduce) { .track::after { animation: none !important; display: none; } }
@@ -7147,13 +7155,27 @@ function GMView({ chars, updateChar, openChar }) {
     fn(x); x.hist = [snap, ...(e.hist || [])].slice(0, 10);
     Store.saveEncounter(x);
   };
-  const undo = () => { if (!e.hist || !e.hist.length) return; const [prev, ...rest] = e.hist; Store.saveEncounter(Object.assign({}, prev, { hist: rest })); };
+  const undo = () => { if (!e.hist || !e.hist.length) return; quietUntil.current = performance.now() + 400; const [prev, ...rest] = e.hist; Store.saveEncounter(Object.assign({}, prev, { hist: rest })); };
   const comb = cid => e.combatants.find(c => c.id === cid);
   const nameOf = c => (c ? (c.kind === "pc" ? (charMap[c.charId] ? charMap[c.charId].name : c.name) : c.name + (c.kind === "enemy" && num(c.count) > 1 ? ` ×${c.count}` : "")) : "Removed");
   const current = e.current ? comb(cardOwner(e.current)) : null;
   const roundDone = num(e.round) > 0 && e.deck.every(card => { const o = cardOwner(card), cb = comb(o); return e.acted.includes(o) || !cb || cb.out; });
   const drawLabel = !num(e.round) ? "Shuffle and draw" : roundDone ? `Shuffle for round ${num(e.round) + 1}` : "Draw next card";
   const activeCount = e.combatants.filter(c => !c.out).length;
+  // Motion (only for changes while the table is open, never on opening it): a drawn card flips over, a new round
+  // riffles the deck, and each card drawn is dealt into "This round".
+  // Undo steps back quietly.
+  const cardRef = useRef(), roundRef = useRef(), leftRef = useRef(), drawnRef = useRef(), quietUntil = useRef(0);
+  const moving = () => performance.now() > quietUntil.current;
+  useChange(`${num(e.round)}:${e.current || ""}`, () => moving() && replay(cardRef.current, "flip"), "gm");   // same card opening a new round still flips
+  useChange(num(e.round), (from, to) => { if (to > from && moving()) { replay(roundRef.current, "bump"); replay(leftRef.current, "riffle"); } }, "gm");
+  // A new round empties "This round" before its first card goes in, so a shorter list means deal from the start.
+  useChange(`${num(e.round)}:${e.drawn.length}`, (was, now) => {
+    const ol = drawnRef.current; if (!ol || !moving()) return;
+    const [r0, n0] = was.split(":").map(Number), [r1, n1] = now.split(":").map(Number);
+    const start = r1 === r0 ? n0 : 0;
+    for (let i = start; i < n1; i++) replay(ol.children[i], "dealt", (i - start) * 70);
+  }, "gm");
 
   return html`<div class="tabpane gm">
     <div class="row campbar" role="group" aria-label="Campaign">
@@ -7166,15 +7188,15 @@ function GMView({ chars, updateChar, openChar }) {
         <h2 class="h"><span>Initiative deck</span><i class="orn" aria-hidden="true"></i></h2>
         <p class="sub">One card each, two for Dexterity above 15. Shuffled every round.</p>
         <div class="deckbar">
-          <div class="stat"><b>${num(e.round) || "—"}</b><span>Round</span></div>
+          <div class="stat"><b ref=${roundRef}>${num(e.round) || "—"}</b><span>Round</span></div>
           <div class="stat"><b>${num(e.round) ? e.combatants.filter(c => !c.out && !e.acted.includes(c.id)).length : activeCount}</b><span>Still to act</span></div>
-          <div class="stat"><b>${e.deck.length}</b><span>Cards left</span></div>
+          <div class="stat" ref=${leftRef}><b>${e.deck.length}</b><span>Cards left</span></div>
           <div class="deckbtns"><button class="btn primary big" disabled=${!activeCount} onClick=${() => act(x => drawNext(x, charMap))}>${drawLabel}</button>
             <button class="btn" disabled=${!(e.hist && e.hist.length)} onClick=${undo}>Undo</button></div>
         </div>
-        <${CurrentCard} e=${e} comb=${current} charMap=${charMap} updateChar=${updateChar} act=${act} openChar=${openChar} />
+        <div class="icardwrap" ref=${cardRef}><${CurrentCard} e=${e} comb=${current} charMap=${charMap} updateChar=${updateChar} act=${act} openChar=${openChar} /></div>
 
-        ${e.drawn.length > 0 && html`<div class="drawn"><span class="lbl">This round</span><ol>
+        ${e.drawn.length > 0 && html`<div class="drawn"><span class="lbl">This round</span><ol ref=${drawnRef}>
           ${e.drawn.map(dd => { const c = comb(cardOwner(dd.card)); return html`<li class=${(dd.skip ? "skip " : "") + (dd.card === e.current ? "now " : "") + (c ? "k-" + c.kind : "")} title=${dd.skip ? "Extra card. They already acted this round." : ""}>${nameOf(c)}${dd.skip ? " · extra" : ""}</li>`; })}</ol></div>`}
 
         <div class="row" style="margin-top:14px;justify-content:space-between">
