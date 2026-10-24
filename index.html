@@ -67,6 +67,45 @@ html[data-install] .installbtn { display: inline-grid; place-items: center; }
 .installbtn[data-tip]:hover::after, .installbtn[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
   white-space: nowrap; padding: 5px 9px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 600 12px/1.3 system-ui, sans-serif; pointer-events: none; }
 @media (max-width: 700px) { .status .installbtn[data-tip]:hover::after, .status .installbtn[data-tip]:focus-visible::after { left: 0; right: auto; } }
+/* Settings button: a gear by default; each theme draws its own symbol for it (a mask, so it takes the theme's colour). */
+:root { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M19.58 8.86L19.99 10.15L22.85 10.19L22.85 13.81L19.99 13.85L19.58 15.14L18.96 16.34L20.95 18.4L18.4 20.95L16.34 18.96L15.14 19.58L13.85 19.99L13.81 22.85L10.19 22.85L10.15 19.99L8.86 19.58L7.66 18.96L5.6 20.95L3.05 18.4L5.04 16.34L4.42 15.14L4.01 13.85L1.15 13.81L1.15 10.19L4.01 10.15L4.42 8.86L5.04 7.66L3.05 5.6L5.6 3.05L7.66 5.04L8.86 4.42L10.15 4.01L10.19 1.15L13.81 1.15L13.85 4.01L15.14 4.42L16.34 5.04L18.4 3.05L20.95 5.6L18.96 7.66ZM15.4 12A3.4 3.4 0 1 1 8.6 12A3.4 3.4 0 1 1 15.4 12Z'/%3E%3C/svg%3E"); }
+:root[data-skin="steam"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M21.27 9.52L21.5 10.65L23.34 10.87L23.34 13.13L21.5 13.35L21.27 14.49L20.91 15.58L22.39 16.69L21.26 18.65L19.55 17.92L18.79 18.79L17.92 19.55L18.65 21.26L16.69 22.39L15.58 20.91L14.48 21.27L13.35 21.5L13.13 23.34L10.87 23.34L10.65 21.5L9.51 21.27L8.42 20.91L7.31 22.39L5.35 21.26L6.08 19.55L5.21 18.79L4.45 17.92L2.74 18.65L1.61 16.69L3.09 15.58L2.73 14.48L2.5 13.35L0.66 13.13L0.66 10.87L2.5 10.65L2.73 9.51L3.09 8.42L1.61 7.31L2.74 5.35L4.45 6.08L5.21 5.21L6.08 4.45L5.35 2.74L7.31 1.61L8.42 3.09L9.52 2.73L10.65 2.5L10.87 0.66L13.13 0.66L13.35 2.5L14.49 2.73L15.58 3.09L16.69 1.61L18.65 2.74L17.92 4.45L18.79 5.21L19.55 6.08L21.26 5.35L22.39 7.31L20.91 8.42ZM19.6 12A7.6 7.6 0 1 1 4.4 12A7.6 7.6 0 1 1 19.6 12ZM14.6 12A2.6 2.6 0 1 1 9.4 12A2.6 2.6 0 1 1 14.6 12ZM13.1 12A1.1 1.1 0 1 1 10.9 12A1.1 1.1 0 1 1 13.1 12ZM14.4 12.75L19.8 12.75L19.8 11.25L14.4 11.25ZM12.55 14.45L15.25 19.13L16.55 18.38L13.85 13.7ZM10.15 13.7L7.45 18.38L8.75 19.13L11.45 14.45ZM9.6 11.25L4.2 11.25L4.2 12.75L9.6 12.75ZM11.45 9.55L8.75 4.87L7.45 5.62L10.15 10.3ZM13.85 10.3L16.55 5.62L15.25 4.87L12.55 9.55Z'/%3E%3C/svg%3E"); }
+:root[data-skin="light"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M3 5.1h1.6v1.8h-1.6ZM11.4 5.1h9.6v1.8h-9.6ZM10.7 6A2.7 2.7 0 1 1 5.3 6A2.7 2.7 0 1 1 10.7 6ZM3 11.1h9.6v1.8h-9.6ZM19.4 11.1h1.6v1.8h-1.6ZM18.7 12A2.7 2.7 0 1 1 13.3 12A2.7 2.7 0 1 1 18.7 12ZM3 17.1h3.6v1.8h-3.6ZM13.4 17.1h7.6v1.8h-7.6ZM12.7 18A2.7 2.7 0 1 1 7.3 18A2.7 2.7 0 1 1 12.7 18Z'/%3E%3C/svg%3E"); }
+:root[data-skin="glass"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M6 3h12a4 4 0 0 1 4 4v0a4 4 0 0 1 -4 4h-12a4 4 0 0 1 -4 -4v0a4 4 0 0 1 4 -4ZM18.6 7A2.6 2.6 0 1 1 13.4 7A2.6 2.6 0 1 1 18.6 7ZM6 13h12a4 4 0 0 1 4 4v0a4 4 0 0 1 -4 4h-12a4 4 0 0 1 -4 -4v0a4 4 0 0 1 4 -4ZM6 14.6h12a2.4 2.4 0 0 1 2.4 2.4v0a2.4 2.4 0 0 1 -2.4 2.4h-12a2.4 2.4 0 0 1 -2.4 -2.4v-0a2.4 2.4 0 0 1 2.4 -2.4ZM10.2 17A2.2 2.2 0 1 1 5.8 17A2.2 2.2 0 1 1 10.2 17Z'/%3E%3C/svg%3E"); }
+:root[data-skin="retro"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M8 0h2v2h-2ZM10 0h2v2h-2ZM12 0h2v2h-2ZM14 0h2v2h-2ZM2 2h2v2h-2ZM4 2h2v2h-2ZM8 2h2v2h-2ZM10 2h2v2h-2ZM12 2h2v2h-2ZM14 2h2v2h-2ZM18 2h2v2h-2ZM20 2h2v2h-2ZM2 4h2v2h-2ZM4 4h2v2h-2ZM6 4h2v2h-2ZM8 4h2v2h-2ZM10 4h2v2h-2ZM12 4h2v2h-2ZM14 4h2v2h-2ZM16 4h2v2h-2ZM18 4h2v2h-2ZM20 4h2v2h-2ZM4 6h2v2h-2ZM6 6h2v2h-2ZM8 6h2v2h-2ZM14 6h2v2h-2ZM16 6h2v2h-2ZM18 6h2v2h-2ZM0 8h2v2h-2ZM2 8h2v2h-2ZM4 8h2v2h-2ZM6 8h2v2h-2ZM16 8h2v2h-2ZM18 8h2v2h-2ZM20 8h2v2h-2ZM22 8h2v2h-2ZM0 10h2v2h-2ZM2 10h2v2h-2ZM4 10h2v2h-2ZM18 10h2v2h-2ZM20 10h2v2h-2ZM22 10h2v2h-2ZM0 12h2v2h-2ZM2 12h2v2h-2ZM4 12h2v2h-2ZM18 12h2v2h-2ZM20 12h2v2h-2ZM22 12h2v2h-2ZM0 14h2v2h-2ZM2 14h2v2h-2ZM4 14h2v2h-2ZM6 14h2v2h-2ZM16 14h2v2h-2ZM18 14h2v2h-2ZM20 14h2v2h-2ZM22 14h2v2h-2ZM4 16h2v2h-2ZM6 16h2v2h-2ZM8 16h2v2h-2ZM14 16h2v2h-2ZM16 16h2v2h-2ZM18 16h2v2h-2ZM2 18h2v2h-2ZM4 18h2v2h-2ZM6 18h2v2h-2ZM8 18h2v2h-2ZM10 18h2v2h-2ZM12 18h2v2h-2ZM14 18h2v2h-2ZM16 18h2v2h-2ZM18 18h2v2h-2ZM20 18h2v2h-2ZM2 20h2v2h-2ZM4 20h2v2h-2ZM8 20h2v2h-2ZM10 20h2v2h-2ZM12 20h2v2h-2ZM14 20h2v2h-2ZM18 20h2v2h-2ZM20 20h2v2h-2ZM8 22h2v2h-2ZM10 22h2v2h-2ZM12 22h2v2h-2ZM14 22h2v2h-2Z'/%3E%3C/svg%3E"); }
+:root[data-skin="fantasy"], :root[data-skin="fantasy-dark"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M13.4 7.2A6.2 6.2 0 1 1 1 7.2A6.2 6.2 0 1 1 13.4 7.2ZM10.6 7.2A3.4 3.4 0 1 1 3.8 7.2A3.4 3.4 0 1 1 10.6 7.2ZM12.75 10.77L22.19 20.21L20.21 22.19L10.77 12.75ZM17.49 19.47L19.26 21.24L16.43 24.06L14.66 22.3ZM14.66 16.64L16.43 18.41L14.45 20.39L12.68 18.62Z'/%3E%3C/svg%3E"); }
+:root[data-skin="armour"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M21.53 17.5L12 23L2.47 17.5L2.47 6.5L12 1L21.53 6.5ZM18.4 12A6.4 6.4 0 1 1 5.6 12A6.4 6.4 0 1 1 18.4 12ZM16.2 12A4.2 4.2 0 1 1 7.8 12A4.2 4.2 0 1 1 16.2 12ZM21.5 12A0.9 0.9 0 1 1 19.7 12A0.9 0.9 0 1 1 21.5 12ZM17.2 19.45A0.9 0.9 0 1 1 15.4 19.45A0.9 0.9 0 1 1 17.2 19.45ZM8.6 19.45A0.9 0.9 0 1 1 6.8 19.45A0.9 0.9 0 1 1 8.6 19.45ZM4.3 12A0.9 0.9 0 1 1 2.5 12A0.9 0.9 0 1 1 4.3 12ZM8.6 4.55A0.9 0.9 0 1 1 6.8 4.55A0.9 0.9 0 1 1 8.6 4.55ZM17.2 4.55A0.9 0.9 0 1 1 15.4 4.55A0.9 0.9 0 1 1 17.2 4.55Z'/%3E%3C/svg%3E"); }
+:root[data-skin="cairn"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M8.5 10h7v11h-7ZM12 1.5C9.4 4.6 9.3 6.9 12 8.8C14.7 6.9 14.6 4.6 12 1.5ZM5.2 20.5h13.6a1.2 1.2 0 0 1 1.2 1.2v0.1a1.2 1.2 0 0 1 -1.2 1.2h-13.6a1.2 1.2 0 0 1 -1.2 -1.2v-0.1a1.2 1.2 0 0 1 1.2 -1.2Z'/%3E%3C/svg%3E"); }
+:root[data-skin="cyber"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M5 5h14v14h-14ZM8 8h8v8h-8ZM10 10h4v4h-4ZM7 1.5h2v3.5h-2ZM7 19h2v3.5h-2ZM1.5 7h3.5v2h-3.5ZM19 7h3.5v2h-3.5ZM11 1.5h2v3.5h-2ZM11 19h2v3.5h-2ZM1.5 11h3.5v2h-3.5ZM19 11h3.5v2h-3.5ZM15 1.5h2v3.5h-2ZM15 19h2v3.5h-2ZM1.5 15h3.5v2h-3.5ZM19 15h3.5v2h-3.5Z'/%3E%3C/svg%3E"); }
+:root[data-skin="talon"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M19 12A7 7 0 1 1 5 12A7 7 0 1 1 19 12ZM17.4 12A5.4 5.4 0 1 1 6.6 12A5.4 5.4 0 1 1 17.4 12ZM13.6 12A1.6 1.6 0 1 1 10.4 12A1.6 1.6 0 1 1 13.6 12ZM7.47 8.61L15.39 16.53L16.53 15.39L8.61 7.47ZM8.61 16.53L16.53 8.61L15.39 7.47L7.47 15.39ZM18.8 12.55L23.5 12.33L23.5 11.67L18.8 11.45ZM17.61 15.88L21.79 18.04L22.12 17.46L18.16 14.92ZM14.92 18.16L17.46 22.12L18.04 21.79L15.88 17.61ZM11.45 18.8L11.67 23.5L12.33 23.5L12.55 18.8ZM8.12 17.61L5.96 21.79L6.54 22.12L9.08 18.16ZM5.84 14.92L1.88 17.46L2.21 18.04L6.39 15.88ZM5.2 11.45L0.5 11.67L0.5 12.33L5.2 12.55ZM6.39 8.12L2.21 5.96L1.88 6.54L5.84 9.08ZM9.08 5.84L6.54 1.88L5.96 2.21L8.12 6.39ZM12.55 5.2L12.33 0.5L11.67 0.5L11.45 5.2ZM15.88 6.39L18.04 2.21L17.46 1.88L14.92 5.84ZM18.16 9.08L22.12 6.54L21.79 5.96L17.61 8.12Z'/%3E%3C/svg%3E"); }
+:root[data-skin="moss"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M16.6 13L16.6 13.16L16.59 13.32L16.57 13.48L16.56 13.64L16.53 13.8L16.5 13.96L16.46 14.11L16.72 14.35L16.99 14.62L17.23 14.9L17.45 15.2L17.63 15.51L17.77 15.82L17.87 16.12L17.93 16.42L17.93 16.71L17.89 16.98L17.81 17.22L17.67 17.43L17.5 17.61L17.28 17.76L17.03 17.86L16.75 17.92L16.45 17.94L16.13 17.92L15.8 17.86L15.45 17.76L15.11 17.62L14.78 17.45L14.45 17.25L14.16 17.06L14.02 17.13L13.87 17.2L13.72 17.27L13.57 17.32L13.42 17.37L13.27 17.42L13.11 17.46L12.96 17.5L12.8 17.53L12.64 17.56L12.48 17.57L12.32 17.59L12.16 17.6L12 17.6L11.84 17.6L11.68 17.59L11.52 17.57L11.36 17.56L11.2 17.53L11.04 17.5L10.89 17.46L10.73 17.42L10.58 17.37L10.43 17.32L10.28 17.27L10.13 17.2L9.98 17.13L9.84 17.06L9.55 17.25L9.22 17.45L8.89 17.62L8.55 17.76L8.2 17.86L7.87 17.92L7.55 17.94L7.25 17.92L6.97 17.86L6.72 17.76L6.5 17.61L6.33 17.43L6.19 17.22L6.11 16.98L6.07 16.71L6.07 16.42L6.13 16.12L6.23 15.82L6.37 15.51L6.55 15.2L6.77 14.9L7.01 14.62L7.28 14.35L7.54 14.11L7.5 13.96L7.47 13.8L7.44 13.64L7.43 13.48L7.41 13.32L7.4 13.16L7.4 13L7.09 12.83L6.69 12.63L6.31 12.4L5.94 12.15L5.6 11.87L5.29 11.57L5.02 11.26L4.8 10.93L4.62 10.6L4.5 10.27L4.43 9.94L4.42 9.63L4.47 9.33L4.58 9.06L4.75 8.81L4.97 8.6L5.23 8.43L5.54 8.31L5.89 8.22L6.26 8.18L6.66 8.19L7.07 8.24L7.49 8.33L7.91 8.45L8.32 8.62L8.72 8.81L9.11 9.02L9.43 9.19L9.56 9.1L9.5 8.67L9.43 8.16L9.38 7.63L9.37 7.1L9.4 6.56L9.46 6.02L9.56 5.5L9.7 5L9.89 4.53L10.11 4.1L10.36 3.72L10.65 3.4L10.96 3.14L11.3 2.95L11.65 2.84L12 2.8L12.35 2.84L12.7 2.95L13.04 3.14L13.35 3.4L13.64 3.72L13.89 4.1L14.11 4.53L14.3 5L14.44 5.5L14.54 6.02L14.6 6.56L14.63 7.1L14.62 7.63L14.57 8.16L14.5 8.67L14.44 9.1L14.57 9.19L14.89 9.02L15.28 8.81L15.68 8.62L16.09 8.45L16.51 8.33L16.93 8.24L17.34 8.19L17.74 8.18L18.11 8.22L18.46 8.31L18.77 8.43L19.03 8.6L19.25 8.81L19.42 9.06L19.53 9.33L19.58 9.63L19.57 9.94L19.5 10.27L19.38 10.6L19.2 10.93L18.98 11.26L18.71 11.57L18.4 11.87L18.06 12.15L17.69 12.4L17.31 12.63L16.91 12.83ZM12.5 13L12 5.66L11.5 13ZM12.23 13.44L17.34 10.16L11.77 12.56ZM11.69 13.39L16.09 16.19L12.31 12.61ZM11.69 12.61L7.91 16.19L12.31 13.39ZM12.23 12.56L6.66 10.16L11.77 13.44ZM11.3 17.4L12.7 17.4L13.3 23.5L12.1 23.5Z'/%3E%3C/svg%3E"); }
+.setbtn { position: relative; width: 34px; height: 34px; display: inline-grid; place-items: center; padding: 0; border: 1.5px solid var(--hair); border-radius: 4px;
+  background: transparent; color: var(--brass); cursor: pointer; }
+.top:not(:has(.viewseg)) .setbtn { margin-left: auto; }
+.setbtn:hover, .setbtn:focus-visible, .setbtn[aria-pressed="true"] { border-color: var(--brass); }
+.setbtn[aria-pressed="true"] { background: var(--sunk); }
+.seticon { width: 20px; height: 20px; background: currentColor; -webkit-mask: var(--set-icon) center / contain no-repeat; mask: var(--set-icon) center / contain no-repeat; }
+@media (hover: hover) { .setbtn[data-tip]:hover::after, .setbtn[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
+  white-space: nowrap; padding: 5px 9px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 600 12px/1.3 system-ui, sans-serif; pointer-events: none; } }
+@media (max-width: 560px) { .top .setbtn { margin-left: auto; } }
+/* Settings page */
+.sethead { display: flex; align-items: center; gap: 14px; margin: 18px 0 2px; }
+.sethead h1 { margin: 0; font-size: 28px; }
+.setrow { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 0; border-top: 1px solid var(--hair); }
+.setrows .setrow:first-child, .frame > .setrow:first-of-type { border-top: 0; padding-top: 0; }
+.setrow > div:first-child { display: grid; gap: 3px; min-width: 0; }
+.setname { font: 600 14px/1.3 var(--f-head); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); }
+.setrow .seg, .setrow .skinpick select { min-width: 230px; }
+.setrow > .row { flex-wrap: nowrap; }
+@media (max-width: 560px) {
+  .setrow { flex-direction: column; align-items: stretch; gap: 8px; }
+  .setrow .seg, .setrow .skinpick select { min-width: 0; width: 100%; }
+  .setrow > .btn { align-self: flex-start; }
+}
+.settings a.btn { color: inherit; text-decoration: none; display: inline-block; }
+.delchar { display: flex; justify-content: flex-end; margin-top: 6px; }
+/* Text size "Larger" (Settings): the whole page scales up a step. */
+html[data-text="large"] .wrap { zoom: 1.15; }
 .installhelp { position: fixed; z-index: 9500; max-width: min(300px, calc(100vw - 24px)); padding: 10px 12px; border-radius: 6px; background: #1b130b; color: #ffe2a8;
   border: 1px solid #b88a3c; font: 14px/1.4 system-ui, sans-serif; box-shadow: 0 8px 28px rgb(0 0 0 / .45); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
@@ -3900,11 +3939,21 @@ applySkin(lsGet("cw-skin", "ledger"));   // before the first paint, so the page 
 function SkinPicker() {
   const [skin, setSkin] = useState(() => lsGet("cw-skin", "ledger"));
   useEffect(() => { applySkin(skin); lsSet("cw-skin", skin); }, [skin]);
-  return html`<label class="skinpick"><span class="lbl">Theme</span>
-    <select value=${skin} onChange=${e => setSkin(e.target.value)}>
+  return html`<label class="skinpick">
+    <select id="set-theme" value=${skin} onChange=${e => setSkin(e.target.value)}>
       <optgroup label="Themes">${SKINS.filter(x => !x[3]).map(([k, n]) => html`<option value=${k}>${n}</option>`)}</optgroup>
       <optgroup label="Extended">${SKINS.filter(x => x[3] === "extended").map(([k, n]) => html`<option value=${k}>${n}</option>`)}</optgroup>
     </select></label>`;
+}
+
+/* ================= text size: per browser, like the theme ================= */
+const TEXT_SIZES = [["normal", "Normal"], ["large", "Larger"]];
+function applyText(key) { if (key === "large") document.documentElement.dataset.text = "large"; else delete document.documentElement.dataset.text; }
+applyText(lsGet("cw-text", "normal"));
+function TextSizePicker() {
+  const [size, setSize] = useState(() => lsGet("cw-text", "normal"));
+  useEffect(() => { applyText(size); lsSet("cw-text", size); }, [size]);
+  return html`<div class="seg" role="group" aria-labelledby="set-text">${TEXT_SIZES.map(([k, n]) => html`<button type="button" aria-pressed=${size === k} onClick=${() => setSize(k)}>${n}</button>`)}</div>`;
 }
 
 /* ================= dice: the app rolls, or the player types a roll made at the table ================= */
@@ -3921,9 +3970,10 @@ function askRoll(spec) {
 }
 function DicePicker() {
   const [mode, setMode] = useState(Dice.mode);
-  return html`<label class="skinpick" title="Roll in the app, or roll at your table (Tabletop Simulator) and type the result"><span class="lbl">Dice</span>
-    <select value=${mode} onChange=${e => { Dice.mode = e.target.value; lsSet("cw-dice", Dice.mode); setMode(Dice.mode); }}>
-      <option value="app">App rolls</option><option value="own">My own rolls</option></select></label>`;
+  const pick = m => { Dice.mode = m; lsSet("cw-dice", m); setMode(m); };
+  return html`<div class="seg" role="group" aria-labelledby="set-dice">
+    <button type="button" aria-pressed=${mode !== "own"} onClick=${() => pick("app")}>App rolls</button>
+    <button type="button" aria-pressed=${mode === "own"} onClick=${() => pick("own")}>My own rolls</button></div>`;
 }
 // The box that asks for a roll. Mounted once in App; askRoll() opens it.
 function DiceAsk() {
@@ -3966,7 +4016,9 @@ function App() {
   const [, force] = useState(0);
   const [drafts, setDrafts] = useState({});
   const [sel, setSel] = useState(() => lsGet("cw-sel", null));
-  const [tab, setTab] = useState(() => (["sheet", "vitals", "gear", "table"].includes(location.hash.slice(1)) ? location.hash.slice(1) : lsGet("cw-tab", "sheet")));
+  const [tab, setTab] = useState(() => { const t = CHAR_TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : lsGet("cw-tab", "sheet"); return CHAR_TABS.includes(t) ? t : "sheet"; });
+  const [settings, setSettings] = useState(() => location.hash === "#settings");
+  const openSettings = on => { setSettings(on); window.scrollTo(0, 0); };
   const lastEdit = useRef({});
   const [view, setView] = useState(() => (location.hash === "#gm" ? "gm" : lsGet("cw-view", "chars")));
   useEffect(() => lsSet("cw-view", view), [view]);
@@ -4003,7 +4055,7 @@ function App() {
   };
   const update = fn => { if (current) updateChar(current.id, fn); };
   Shop.updater = updateChar; Shop.start();   // the workshop writes finished jobs onto this app's characters
-  const openChar = id => { setSel(id); setView("chars"); setTab("sheet"); window.scrollTo(0, 0); };
+  const openChar = id => { setSel(id); setView("chars"); setSettings(false); setTab("sheet"); window.scrollTo(0, 0); };
 
   // A new character belongs to the player who made it. A companion belongs to whoever plays its master.
   // fill(c): the creation guide's choices, applied to the new character before it's saved.
@@ -4029,11 +4081,11 @@ function App() {
     <header class="top">
       <div class="brand">Clockwork<small>Companion</small></div>
       ${gm && html`<div class="seg viewseg" role="group" aria-label="View">
-        <button aria-pressed=${view === "chars"} onClick=${() => setView("chars")}>Characters</button>
-        <button aria-pressed=${view === "gm"} onClick=${() => setView("gm")}>GM table</button></div>`}
-      <${SkinPicker} /><${DicePicker} />
-      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button><button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
+        <button aria-pressed=${!settings && view === "chars"} onClick=${() => { setView("chars"); setSettings(false); }}>Characters</button>
+        <button aria-pressed=${!settings && view === "gm"} onClick=${() => { setView("gm"); setSettings(false); }}>GM table</button></div>`}
+      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
+      <button type="button" class="setbtn" aria-pressed=${settings} aria-label="Settings" data-tip="Settings" onClick=${() => openSettings(!settings)}><i class="seticon" aria-hidden="true"></i></button>
     </header>
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
       ? (window.CW_WEB.reason === "offline" ? "Couldn't reach the shared save, so for now characters are kept in this browser only. Check your connection and reload."
@@ -4041,7 +4093,8 @@ function App() {
       : "Shared saving isn't available in this view, so characters are kept in this browser only. Open the published page while signed in to share them with your table."}</div>`}
     ${Store.readOnly && html`<div class="banner">You're viewing these characters read-only. To edit, ask the owner to invite you as an Editor.</div>`}
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
-    ${view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
+    ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} onBack=${() => openSettings(false)} />`
+      : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
     <${Roster} list=${list} all=${all} sel=${sel} setSel=${setSel} current=${current} create=${create} startNew=${startNew} />
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
       : Store.mode === "loading" ? html`<div class="empty"><p class="muted">Opening the character ledger…</p></div>`
@@ -4110,6 +4163,7 @@ function Roster({ list, all, sel, setSel, current, create, startNew }) {
 }
 
 /* ================= character ================= */
+const CHAR_TABS = ["sheet", "vitals", "talents", "gear", "craft"];
 function Character({ c, update, tab, setTab, onDelete }) {
   animScope = c.id;   // animations only play for changes on this character, not when another one is opened
   const d = derive(c);
@@ -4118,7 +4172,7 @@ function Character({ c, update, tab, setTab, onDelete }) {
   // Free edit is always there for a GM; a player gets it only when the GM switches it on for this sheet.
   const canFree = isGM() || !!c.freeEdit;
   const mode = canFree ? chosenMode : "karma";
-  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ["craft", "Crafting"], ["table", "Tabletop"]];
+  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ["craft", "Crafting"]];
   const [panel, setPanel] = useState(null);
   const [invested, setInvested] = useState(() => { const v = lsGet("cw-invested2", null); return v && typeof v === "object" ? v : { skills: false, weapons: false, sec: false }; });
   useEffect(() => lsSet("cw-invested2", invested), [invested]);
@@ -4142,12 +4196,11 @@ function Character({ c, update, tab, setTab, onDelete }) {
     ${panel && panel.kind === "rule" && html`<${RulePanel} topic=${panel.name} onClose=${() => setPanel(null)} />`}
     ${panel && panel.kind !== "rule" && skillTabs && html`<${SkillPanel} c=${c} kind=${panel.kind} name=${panel.name} mode=${mode} update=${update} onClose=${() => setPanel(null)} />`}
     <div class="tabswap" key=${tab} data-dir=${nav.current.dir}>
-      ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
+      ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} onDelete=${onDelete} />`}
       ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
       ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
       ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
       ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
-      ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}
     </div>`;
 }
 
@@ -4325,7 +4378,7 @@ function AttrRow({ c, a, mode, set }) {
 }
 
 /* ================= sheet tab ================= */
-function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill }) {
+function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill, onDelete }) {
   // The brass diamond on a section heading: filled shows only invested skills, hollow shows them all.
   const diamond = (k, what) => html`<span class="orn has-btn"><button type="button" class=${"diamond" + (invested[k] ? " on" : "")} aria-pressed=${invested[k]}
     aria-label=${invested[k] ? `Show all ${what}` : `Show only invested ${what}`} onClick=${() => toggleInv(k)}
@@ -4375,7 +4428,15 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill }) {
     <section class="frame"><${Sigils} seed="notes" n=${1} lead="note" side="r" /><h2 class="h"><span>Notes</span><i class="orn" aria-hidden="true"></i></h2>
       <div class="field"><label for=${"notes-" + c.id}>Backstory, anything else</label>
       <textarea id=${"notes-" + c.id} rows="5" value=${c.notes} onInput=${e => update(x => { x.notes = e.target.value; })}></textarea></div></section>
+    <${DeleteCharacter} c=${c} onDelete=${onDelete} />
   </div>`;
+}
+function DeleteCharacter({ c, onDelete }) {
+  const [del, setDel] = useState(false);
+  useEffect(() => setDel(false), [c.id]);
+  return html`<div class="delchar">${del ? html`<div class="confirm"><span>Delete <b>${c.name || "this character"}</b> for everyone? This can't be undone.</span>
+      <button class="btn small danger" onClick=${() => onDelete(c.id)}>Delete</button><button class="btn small" onClick=${() => setDel(false)}>Keep</button></div>`
+    : html`<button class="btn small danger" onClick=${() => setDel(true)}>Delete character</button>`}</div>`;
 }
 
 /* ================= skill side panel ================= */
@@ -4825,11 +4886,12 @@ function WeaponCard({ c, w, i, update }) {
   </div>`;
 }
 
-/* ================= tabletop tab ================= */
-function TableTab({ c, update, onDelete }) {
+/* ================= Tabletop Simulator: send a character to the table and bring changes back (in Settings) ================= */
+function TabletopPanel({ c, update }) {
   const data = useMemo(() => R.toTabletop(c), [c]);
   const code = useMemo(() => JSON.stringify(data), [data]);
-  const ta = useRef(); const [paste, setPaste] = useState(""); const [preview, setPreview] = useState(null); const [err, setErr] = useState(""); const [del, setDel] = useState(false);
+  const ta = useRef(); const [paste, setPaste] = useState(""); const [preview, setPreview] = useState(null); const [err, setErr] = useState("");
+  useEffect(() => { setPaste(""); setPreview(null); setErr(""); }, [c.id]);
   const copy = async () => {
     try { await navigator.clipboard.writeText(code); toast("Code copied. Paste it into the sheet's code box in Tabletop Simulator."); }
     catch { ta.current.focus(); ta.current.select(); toast("Selected the code. Press Ctrl+C (or Cmd+C) to copy it."); }
@@ -4851,14 +4913,13 @@ function TableTab({ c, update, onDelete }) {
       setPreview({ n, changes });
     } catch (e) { setErr(e instanceof SyntaxError ? "That doesn't look like a complete code. Copy the whole text from the sheet's Export box." : e.message); }
   };
-  return html`<div class="tabpane">
-    <section class="two">
-      <div class="frame"><${Sigils} seed="send to the table" n=${1} side="r" /><h2 class="h"><span>Send to the table</span><i class="orn" aria-hidden="true"></i></h2>
+  return html`<section class="two">
+      <div class="frame"><${Sigils} seed="send to the table" n=${1} side="r" /><h2 class="h"><span>Send ${c.name || "this character"} to the table</span><i class="orn" aria-hidden="true"></i></h2>
         <ol class="steps"><li>Copy this character's code.</li><li>In Tabletop Simulator, click <b>Load code</b> under your Clockwork sheet and paste it into the box.</li><li>Click <b>Apply</b>. Pips, vitals and your portrait fill in.</li></ol>
         <textarea ref=${ta} class="codebox" readonly aria-label="Tabletop code" value=${code} onFocus=${e => e.target.select()}></textarea>
         <div class="row"><button class="btn primary" onClick=${copy}>Copy code</button><button class="btn" onClick=${save}>Save as file</button>
           <span class="muted">${code.length.toLocaleString()} characters</span></div>
-        ${!c.portraitUrl && html`<p class="muted">Tip: add a public image link under "Portrait link for Tabletop" so the sheet in TTS shows your art.</p>`}</div>
+        ${!c.portraitUrl && html`<p class="muted">Tip: add a public image link under "Portrait link for Tabletop" on the Sheet so the sheet in TTS shows your art.</p>`}</div>
       <div class="frame"><h2 class="h"><span>Bring changes back</span><i class="orn" aria-hidden="true"></i></h2>
         <p class="muted" style="margin-top:0">After a session, click <b>Export</b> on the TTS sheet, copy its code and paste it here to update vitals, pips and Karma.</p>
         <textarea class="codebox" aria-label="Code from Tabletop Simulator" placeholder='{"cw":1, …}' value=${paste} onInput=${e => { setPaste(e.target.value); setPreview(null); setErr(""); }}></textarea>
@@ -4869,11 +4930,52 @@ function TableTab({ c, update, onDelete }) {
           <div class="row"><button class="btn primary" onClick=${() => { update(x => { Object.assign(x, preview.n, { id: x.id }); addLog(x, "Updated from Tabletop Simulator"); }); setPaste(""); setPreview(null); toast("Updated from the table."); }}>Apply changes</button>
             <button class="btn" onClick=${() => setPreview(null)}>Cancel</button></div>` : html`<p style="margin:0">Nothing differs from this character.</p>`}</div>`}
       </div>
+    </section>`;
+}
+
+/* ================= settings ================= */
+// Per-browser choices (theme, text size, dice), the Tabletop code for the open character, the table backup (GM),
+// signing out, and a little about the app. Everything stored per browser starts with "cw-"; Reset clears only
+// the display choices below, never characters, the sign-in or an encounter in progress.
+const RESET_KEYS = ["cw-skin", "cw-text", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp"];
+const REPO = "https://github.com/clockwork-companion/clockwork_companion";
+function SettingsView({ c, update, chars, gm, onBack }) {
+  const [reset, setReset] = useState(false);
+  const dev = !!document.querySelector(".devflag");
+  const live = Store.mode === "live" && Store.table && window.CW_WEB;
+  const doReset = () => { RESET_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch {} }); location.reload(); };
+  return html`<div class="tabpane settings">
+    <div class="sethead"><button type="button" class="btn small" onClick=${onBack}>← Back</button><h1 class="ornate">Settings</h1></div>
+
+    <section class="frame"><h2 class="h"><span>This browser</span><i class="orn" aria-hidden="true"></i></h2>
+      <p class="sub">These choices are saved on this device only, so each player can set their own.</p>
+      <div class="setrows">
+        <div class="setrow"><div><label class="setname" for="set-theme">Theme</label><span class="muted">Colours, type and artwork for the whole app.</span></div><${SkinPicker} /></div>
+        <div class="setrow"><div><span class="setname" id="set-text">Text size</span><span class="muted">Larger is easier to read across the table.</span></div><${TextSizePicker} /></div>
+        <div class="setrow"><div><span class="setname" id="set-dice">Dice</span><span class="muted">Roll in the app, or roll at your table (for example in Tabletop Simulator) and type the result.</span></div><${DicePicker} /></div>
+        <div class="setrow"><div><span class="setname">Reset</span><span class="muted">Puts the theme, text size, dice and remembered tabs back to how they start. Characters aren't touched.</span></div>
+          ${reset ? html`<div class="row"><button class="btn small danger" onClick=${doReset}>Reset and reload</button><button class="btn small" onClick=${() => setReset(false)}>Keep</button></div>`
+            : html`<button class="btn small" onClick=${() => setReset(true)}>Reset…</button>`}</div>
+      </div>
     </section>
-    <section class="frame"><h2 class="h"><span>Character</span><i class="orn" aria-hidden="true"></i></h2>
-      ${del ? html`<div class="confirm"><span>Delete <b>${c.name || "this character"}</b> for everyone? This can't be undone.</span>
-          <button class="btn small danger" onClick=${() => onDelete(c.id)}>Delete</button><button class="btn small" onClick=${() => setDel(false)}>Keep</button></div>`
-        : html`<button class="btn danger" onClick=${() => setDel(true)}>Delete character</button>`}</section>
+
+    ${c ? html`<${TabletopPanel} c=${c} update=${update} />`
+      : html`<section class="frame"><h2 class="h"><span>Tabletop Simulator</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Open a character first, then come back here to send them to the table.</p></section>`}
+
+    ${gm && html`<${BackupPanel} chars=${chars} />`}
+
+    <section class="frame"><h2 class="h"><span>About</span><i class="orn" aria-hidden="true"></i></h2>
+      <p class="sub">${dev ? "This is the Dev test page. Use a test table password so real characters stay untouched." : "This is the live Companion your table plays with."}</p>
+      <div class="row">
+        <a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>
+        <a class="btn small" href=${`${REPO}/issues/new`} target="_blank" rel="noopener">Report a problem</a></div>
+      <p class="muted">Reporting a problem needs a free GitHub account.</p>
+    </section>
+
+    ${live && html`<section class="frame"><h2 class="h"><span>Account</span><i class="orn" aria-hidden="true"></i></h2>
+      <div class="setrow"><div><span class="setname">Signed in to ${Store.table.name}</span><span class="muted">Signing out leaves this table on this device. Your characters stay saved.</span></div>
+        <button class="btn small" onClick=${() => window.CW_WEB.leave()}>Sign out</button></div>
+    </section>`}
   </div>`;
 }
 /* ================= the Blackwall (Cyberpunk theme only) =================
@@ -8467,7 +8569,6 @@ function GMView({ chars, updateChar, openChar }) {
           ${!party.length && html`<p class="muted">No characters here yet. Set a character's campaign on their sheet.</p>`}</div>
       </section>
     </div>
-    <${BackupPanel} chars=${chars} />
   </div>`;
 }
 
