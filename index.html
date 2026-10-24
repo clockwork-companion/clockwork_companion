@@ -350,7 +350,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .loadbar .needle { position: absolute; top: -5px; bottom: -5px; width: 3px; background: var(--rule); transition: left .2s; }
 .loadscale { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr 1fr; font: 12px var(--f-mono); color: var(--ink-3); }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr)); gap: 14px; align-items: start; }
-.wcard { background: var(--card); border: 1.5px solid var(--hair); padding: 12px; display: grid; gap: 8px; min-width: 0; }
+.wcard { background: var(--card); border: 1.5px solid var(--hair); padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-width: 0; }
 .wcard.worn { border-color: var(--rule); box-shadow: inset 4px 0 0 var(--brass); }
 .wcard .title { display: flex; gap: 8px; align-items: center; }
 .wcard .title input { font: 700 17px var(--f-head); letter-spacing: .03em; border: 0; border-bottom: 1.5px solid var(--hair); background: transparent; flex: 1; min-width: 0; }
