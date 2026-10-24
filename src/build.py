@@ -74,8 +74,15 @@ def build(libs, web=False, dev=False):
             tags.append("<script>\n" + read(VENDOR[k]) + "\n</script>"); continue
         if libs[k] not in seen:
             seen.add(libs[k]); tags.append(f'<script src="{libs[k]}"></script>')
-    data = "\n".join(read(f) for f in ["rules.js", "skills-data.js", "skill-tables.js", "rules-info.js"])
-    app = "\n".join(read(f) for f in ["app.js", "fx-blackwall.js", "fx-steppe.js", "fx-moss.js", "craft.js", "craft-armor.js", "genesis.js", "gm.js"])
+    DATA = ["rules.js", "skills-data.js", "skill-tables.js", "rules-info.js"]
+    APP = ["app.js", "fx-blackwall.js", "fx-steppe.js", "fx-moss.js", "craft.js", "craft-armor.js", "craft-weapon.js", "genesis.js", "gm.js"]
+    # Every script in src/ must be bundled. A file left out of these lists (for example by a merge that kept only one
+    # side of this line) builds a page that crashes when its code is needed, so stop here and say which file is missing.
+    missing = sorted(f.name for f in HERE.glob("*.js") if f.name not in DATA + APP + ["web-backend.js"])
+    if missing:
+        sys.exit("build.py: these files in src/ aren't in the build lists (DATA or APP): " + ", ".join(missing))
+    data = "\n".join(read(f) for f in DATA)
+    app = "\n".join(read(f) for f in APP)
     if dev:
         head += "\n" + DEV_MARK
     egg = ("\n" + read("egg.html") + "\n" + read("egg-furnace.html") + "\n") if web else ""   # hidden mini-games (Skyward Boiler, Furnace Below), website only
