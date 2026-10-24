@@ -36,7 +36,10 @@ const Shop = {
     const u = uids || [];
     return u.includes(this.me()) || (u.length === 0 && Store.table.role === "gm");
   },
-  cardOf(c) { const n = norm(c); return { name: n.name || "Unnamed", uids: playersOf(n), weapon: R.wmState(n).lvl, armor: R.amState(n).lvl }; },
+  cardOf(c) { const n = norm(c); return { name: n.name || "Unnamed", uids: playersOf(n), campaign: String(n.campaign || "").trim(), weapon: R.wmState(n).lvl, armor: R.amState(n).lvl }; },
+  // Jobs only go between characters of the same campaign; a character with no campaign set has nobody to send to.
+  camp(x) { return String((x && x.campaign) || "").trim().toLowerCase(); },
+  same(c, r) { const k = this.camp(c); return !!k && k === this.camp(r); },
   // Everyone at the table (characters, not companions).
   list() {
     const local = Object.values(Store.chars).filter(c => !c.companionOf).map(c => Object.assign(this.cardOf(c), { id: c.id }));
@@ -45,7 +48,7 @@ const Shop = {
     local.forEach(r => (byId[r.id] = r));   // what this app can see is fresher than the cards
     return Object.values(byId).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   },
-  smiths(kind, notId) { return this.list().filter(r => r.id !== notId && num(r[kind]) >= SHOP_MIN); },
+  smiths(kind, c) { return this.list().filter(r => r.id !== c.id && num(r[kind]) >= SHOP_MIN && this.same(c, r)); },
   card(id) { return this.list().find(r => r.id === id) || null; },
   // Keep this app's characters on the roster (only when something changed).
   publish() {
@@ -53,7 +56,7 @@ const Shop = {
     Object.values(Store.chars).forEach(c => {
       if (c.companionOf || !(!Store.table || Store.table.role === "gm" || playersOf(c).includes(this.me()))) return;
       const card = this.cardOf(c), key = JSON.stringify(card), have = this.roster.find(r => r.id === c.id);
-      if (this.cards[c.id] === key || (have && JSON.stringify({ name: have.name, uids: have.uids, weapon: have.weapon, armor: have.armor }) === key)) { this.cards[c.id] = key; return; }
+      if (this.cards[c.id] === key || (have && JSON.stringify({ name: have.name, uids: have.uids, campaign: have.campaign || "", weapon: have.weapon, armor: have.armor }) === key)) { this.cards[c.id] = key; return; }
       this.cards[c.id] = key;
       Store.db.doc("roster/" + c.id).set(card).catch(() => this.fail());
     });
@@ -139,13 +142,14 @@ function useShop() {
 function ShopSend({ c, kind, item, busy }) {
   useShop();
   if (!item) return null;
-  const out = Shop.outgoing(c, kind, item.id), smiths = Shop.smiths(kind, c.id), skill = SHOP_SKILL[kind];
+  const out = Shop.outgoing(c, kind, item.id), smiths = Shop.smiths(kind, c), skill = SHOP_SKILL[kind], camp = String(c.campaign || "").trim();
   return html`<div class="shopsend">
     <h3 class="lbl">Or send it to a ${kind === "weapon" ? "weaponsmith" : "armorsmith"}</h3>
     ${Shop.err ? html`<p class="muted ptrule">${Shop.err}</p>`
       : out ? html`<div class="row shopaway"><span><span class="flag brass">At ${out.to.name}'s bench</span> Waiting for them to repair it. It stays in your Gear meanwhile.</span>
           <button class="btn small" disabled=${busy} onClick=${() => Shop.del(out.id)}>Take it back</button></div>`
-      : smiths.length === 0 ? html`<p class="muted ptrule">Nobody else at the table has ${skill} ${SHOP_MIN} or more.</p>`
+      : !camp ? html`<p class="muted ptrule">Set this character's campaign on the Sheet first: you can only send things to smiths in the same campaign.</p>`
+      : smiths.length === 0 ? html`<p class="muted ptrule">Nobody else in ${camp} has ${skill} ${SHOP_MIN} or more.</p>`
       : html`<p class="muted ptrule">They see only this ${kind === "weapon" ? "weapon" : "suit"}, repair it with their own roll and materials, and it comes back here.</p>
         <div class="ptopts brchips">${smiths.map(s => html`<button type="button" class="ptopt" disabled=${busy} onClick=${() => { Shop.send(kind, c, item, s); toast(`Sent to ${s.name}.`); }}>
           <b>Send to ${s.name}</b><span>${skill} ${s[kind]}</span></button>`)}</div>`}
@@ -171,7 +175,7 @@ function ShopJobs({ c, kind, selId, pick, busy }) {
 // On a craft bench: who the finished piece is for.
 function MadeFor({ c, value, onSet, busy }) {
   useShop();
-  const others = Shop.list().filter(r => r.id !== c.id);
+  const others = Shop.list().filter(r => r.id !== c.id && Shop.same(c, r));   // only characters in the same campaign
   if (!others.length) return null;
   return html`<div class="row ptbatch"><label for=${"mf-" + c.id}>Made for</label>
     <select id=${"mf-" + c.id} class="inp" value=${value || ""} disabled=${busy} onChange=${e => onSet(e.target.value)}>

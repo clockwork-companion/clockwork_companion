@@ -19,13 +19,14 @@ page_html = page_html.replace('<script src="firebase-config.js"></script>', '<sc
 
 key = hashlib.sha256(b"clockwork-table:test table").hexdigest(); T = f"tables/{key}"
 SABRE = {"id": "w1", "name": "Steppe sabre", "skill": "Slashing", "hands": 1, "damage": 6, "crit": 5, "dur": 20, "durMax": 100, "durDie": "d10", "props": "", "final": True}
-BAT = {"name": "Batbayar", "players": ["u1"], "weapons": [SABRE]}
-ARS = {"name": "Arslan", "players": ["u2"], "skills": {"Weapon Maintenance": 6}, "attrs": {"WIS": {"base": 16, "value": 16}}, "craft": {"supplies": {"weapon": 9000}}}
+BAT = {"name": "Batbayar", "campaign": "Steppe Wars", "players": ["u1"], "weapons": [SABRE]}
+ARS = {"name": "Arslan", "campaign": "Steppe Wars", "players": ["u2"], "skills": {"Weapon Maintenance": 6}, "attrs": {"WIS": {"base": 16, "value": 16}}, "craft": {"supplies": {"weapon": 9000}}}
 base = {f"{T}/meta/table": {"owner": "gm1"}, f"{T}/members/gm1": {"role": "gm", "name": "sinan"},
         f"{T}/members/u1": {"role": "player", "name": "utku"}, f"{T}/members/u2": {"role": "player", "name": "bedo"},
         f"{T}/characters/bat": BAT, f"{T}/characters/ars": ARS,
-        f"{T}/roster/ars": {"name": "Arslan", "uids": ["u2"], "weapon": 6, "armor": 0},
-        f"{T}/roster/bat": {"name": "Batbayar", "uids": ["u1"], "weapon": 0, "armor": 0}}
+        f"{T}/roster/ars": {"name": "Arslan", "uids": ["u2"], "campaign": "Steppe Wars", "weapon": 6, "armor": 0},
+        f"{T}/roster/kae": {"name": "Kael", "uids": ["u3"], "campaign": "Iron Coast", "weapon": 9, "armor": 9},
+        f"{T}/roster/bat": {"name": "Batbayar", "uids": ["u1"], "campaign": "Steppe Wars", "weapon": 0, "armor": 0}}
 
 class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
@@ -56,6 +57,7 @@ with sync_playwright() as p:
     pg, errs = as_player(b, "u1", base)
     bench(pg, "Weapon upkeep", "Repair")
     check("owner sees Arslan as a weaponsmith", pg.locator(".shopsend .ptopt", has_text="Arslan").count() == 1)
+    check("but not Kael, a smith in another campaign", pg.locator(".shopsend .ptopt", has_text="Kael").count() == 0)
     pg.locator(".shopsend .ptopt", has_text="Arslan").click(); pg.wait_for_timeout(500)
     js = jobs(pg); j = js[0] if js else {}
     check("job written with both sides' players", len(js) == 1 and j.get("from", {}).get("uids") == ["u1"] and j.get("to", {}).get("uids") == ["u2"] and j.get("status") == "open", js)
@@ -86,7 +88,10 @@ with sync_playwright() as p:
     check("the smith paid the materials", ((get(pg, "characters/ars") or {}).get("craft", {}).get("supplies", {}).get("weapon")) == 8600)
     pg.locator(".ptread.end .btn", has_text="Back to").click(); pg.wait_for_timeout(200)
     pg.locator(".ammode button", has_text="Craft").click(); pg.wait_for_timeout(300)
-    pg.locator(".ptlabel").first.click(); pg.select_option("select[id^='mf-']", "bat"); pg.fill("input[id^='wc-n']", "Wolf fang")
+    pg.locator(".ptlabel").first.click()
+    opts = pg.evaluate("[...document.querySelector(\"select[id^='mf-']\").options].map(o => o.textContent)")
+    check("Made for lists only the same campaign", "Batbayar" in opts and "Kael" not in opts, opts)
+    pg.select_option("select[id^='mf-']", "bat"); pg.fill("input[id^='wc-n']", "Wolf fang")
     pg.evaluate("window.Q=[1]"); pg.locator(".forgebtn").click(); pg.wait_for_selector(".ptread.end", timeout=20000); pg.wait_for_timeout(1200)
     gifts = [x for x in jobs(pg) if x.get("mode") == "gift"]
     check("a crafted gift job goes to Batbayar's player", len(gifts) == 1 and gifts[0]["to"]["uids"] == ["u1"] and gifts[0]["item"]["name"] == "Wolf fang", gifts)
