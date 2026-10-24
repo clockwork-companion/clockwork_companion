@@ -50,6 +50,10 @@ python3 src/build.py                  # src/clockwork-companion.html, the claude
 
 **If `index.html` conflicts in a merge:** resolve the `src/` files, rebuild, and commit the rebuilt file.
 
+**`sw.js` is never committed** (it's in `.gitignore`). The build writes it with a version code made from the whole page,
+so every build changes it and two branches would always conflict on it. The publish workflow builds a fresh one.
+If an older branch still has it, a merge may report `sw.js` as deleted: keep it deleted (`git rm sw.js`).
+
 | File in `src/` | What it holds |
 | --- | --- |
 | `app.css` | All styles and every theme (keyed on `html[data-skin="…"]`). It begins with the page `<title>`. |

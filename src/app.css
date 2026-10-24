@@ -1286,7 +1286,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-skin="talon"] .skull { color: var(--ink-3); --sk-eye: #0f1d45; }
 
 /* ----- the runecore layer, where the sheet gets complex ----- */
-:root[data-skin="talon"] :is(.frame:has(.attrs), .frame:has(.skillcols), .frame:has(.perkcards), .panel.karma, .spanel) { position: relative; }
+/* (the side panel is left alone here: it must stay position: fixed, or it falls into the page) */
+:root[data-skin="talon"] :is(.frame:has(.attrs), .frame:has(.skillcols), .frame:has(.perkcards), .panel.karma) { position: relative; }
 :root[data-skin="talon"] :is(.frame:has(.attrs), .frame:has(.skillcols), .frame:has(.perkcards), .tabpane:has(> .craftnav) > .frame) { background: var(--leyline), var(--panelbg);
   box-shadow: inset 0 0 0 3px var(--navy), inset 0 0 0 4px rgb(217 169 69 / .55), 0 10px 28px rgb(10 20 50 / .45), -3px 0 16px -6px rgb(47 214 198 / .8); }
 :root[data-skin="talon"] .panel.karma { background: var(--leyline), rgb(26 49 112 / .92); }
