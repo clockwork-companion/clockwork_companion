@@ -130,6 +130,7 @@ const CW = (() => {
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] },
+               brew: { bonus: 0, known: [], recipes: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
                weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" } }, ledger: [] } },
       talents: [], uses: {},
     };
@@ -166,6 +167,9 @@ const CW = (() => {
     wr.plus = Object.assign({}, wr.plus); wr.exotic = Object.assign({ name: "", dc: 0, note: "" }, wr.exotic);
     if (!Array.isArray(wr.props)) wr.props = [];
     if (!Array.isArray(out.craft.weapon.ledger)) out.craft.weapon.ledger = [];
+    out.craft.brew = Object.assign({}, b.craft.brew, out.craft.brew);
+    out.craft.brew.order = Object.assign({}, b.craft.brew.order, out.craft.brew.order);
+    ["known", "recipes", "ledger"].forEach(k => { if (!Array.isArray(out.craft.brew[k])) out.craft.brew[k] = []; });
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
     out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
@@ -675,6 +679,67 @@ const CW = (() => {
     return out.map(([k, rated]) => (rated ? `${k} (Rating: GM)` : k));
   }
 
+  // ---------- Brewing (rulebook 16.1 and the Brewing skill) ----------
+  // A recipe: base materials, effect, toxicity die and difficulty, plus the same per increment.
+  // Roll d100 − Brewing modifier under the difficulty; a failure wastes the materials. Then roll toxicity.
+  // The book writes the per-increment difficulty as "%15 − SP": we read it as 15% − Brewing (never below 0) per increment.
+  // Catalysts: declared before the roll; their difficulty "−%10 + SP" we read as harder by 10% − Brewing.
+  // Level 3 brews; 5 increments and catalysts (known: 1 per 3 levels, 4 at 10); 7 Potent Brews (two effects,
+  // both rolls must hold, twice as long); 9 potent toxicity takes the higher roll and increments apply to both.
+  // [key, name, herb, base g, g per increment, base toxicity, toxicity per increment, base difficulty, difficulty per increment (minus Brewing), duration, effect(sp, n), when]
+  const BREWS = [
+    { k: "health", n: "Health Potion", herb: "healing herbs", g: 300, gi: 100, tox: "1d8", toxi: "1d4", dc: 50, dci: 15, dur: "long",
+      eff: (sp, n) => `${2 * sp + 2 * n} hit points`, how: "Over the next long rest, instead of your natural hit point regeneration, you regain hit points equal to its effect." },
+    { k: "skele", n: "Skele-Gro", herb: "bone herbs", g: 400, gi: 150, tox: "1d12", toxi: "1d8", dc: 50, dci: 13, dur: "long",
+      eff: (sp, n) => `bones heal ${3 + n}× faster`, how: "Over the next long rest, bones regenerate that many times faster. Count healing time in days." },
+    { k: "sanguinar", n: "The Sanguinar", herb: "blood herbs", g: 300, gi: 200, tox: "1d10", toxi: "1d4", dc: 40, dci: 13, dur: "long",
+      eff: (sp, n) => `${10 * sp + 3 * sp * n} blood points`, how: "Over the next long rest, instead of your natural blood regeneration, you regain blood points equal to its effect." },
+    { k: "sleep", n: "Sleep Tightener", herb: "exhaustion herbs", g: 500, gi: 500, tox: "1d8", toxi: "1d6", dc: 30, dci: 18, dur: "long",
+      eff: (sp, n) => `${1 + n} Exhaustion point${n ? "s" : ""}`, how: "Over the next long rest, on top of natural recovery, you regain that many Exhaustion points." },
+    { k: "pickme", n: "The Pick Me Up", herb: "exhaustion herbs", g: 200, gi: 100, tox: "1d6", toxi: "1d4", dc: 50, dci: 13, dur: "now",
+      eff: (sp, n) => `${Math.floor(sp / 3) + n} turn${Math.floor(sp / 3) + n === 1 ? "" : "s"}`, how: "Takes effect at once: the side effects of Exhaustion wait that many turns." },
+  ];
+  const CATALYSTS = [
+    { k: "duration", n: "Duration Catalyst", dc: 10, what: "Doubles the brew's active duration (only brews lasting less than an hour). Toxicity ×2." },
+    { k: "toxicity", n: "Toxicity Catalyst", dc: 12, what: "Lowers the brew's toxicity by your Brewing." },
+    { k: "volatile", n: "Volatile Catalyst", dc: 10, what: "Roll a d100: 1–10 five more increments, 11–25 three more, 26–70 nothing, 71–94 it fizzles and turns inert, 95–100 it explodes for 1d20 damage in 2 m." },
+  ];
+  const VOLATILE = [[10, 5, "Five more increments!"], [25, 3, "Three more increments."], [70, 0, "Nothing happens."], [94, -1, "It fizzles and turns inert."], [100, -2, "It explodes: 1d20 damage to everyone within 2 m."]];
+  const parseDie = d => { const m = /^(\d*)d(\d+)$/i.exec(String(d || "").trim()); return m ? { n: +(m[1] || 1), sides: +m[2] } : null; };
+  function brewState(c) {
+    const lvl = sk(c, "Brewing"), b = (c.craft && c.craft.brew) || {};
+    return { lvl, mod: skillModifier(c, "Brewing") + num(b.bonus), bonus: num(b.bonus), brew: lvl >= 3, incs: lvl >= 5, catalysts: lvl >= 5,
+             known: lvl >= 10 ? 4 : lvl >= 5 ? Math.max(1, Math.floor(lvl / 3)) : 0, potent: lvl >= 7, potentPlus: lvl >= 9 };
+  }
+  const allBrews = c => [...BREWS, ...(((c.craft && c.craft.brew && c.craft.brew.recipes) || []).map(r => Object.assign({ custom: true }, r)))];
+  const findBrew = (c, k) => allBrews(c).find(r => r.k === k) || BREWS[0];
+  // One brew's numbers at n increments.
+  function brewOne(c, rec, n) {
+    const st = brewState(c), sp = st.lvl;
+    const dci = Math.max(0, num(rec.dci) - sp);
+    const td = parseDie(rec.tox) || { n: 1, sides: 6 }, ti = parseDie(rec.toxi);
+    const tox = [{ n: td.n, sides: td.sides }]; if (ti && n) tox.push({ n: ti.n * n, sides: ti.sides });
+    const effect = rec.custom ? `${rec.effect || "effect"}${n ? ` + ${n} × ${rec.effecti || "more"}` : ""}` : rec.eff(sp, n);
+    return { rec, n, grams: num(rec.g) + num(rec.gi) * n, herb: rec.herb || "herbs", dc: num(rec.dc) - dci * n, dci, tox, effect };
+  }
+  // A brewing order: { k, inc, catalyst, potent: { k, inc } | null }
+  function brewPlan(c, o) {
+    const st = brewState(c), inc = st.incs ? clamp(num(o.inc), 0, 10) : 0;
+    const a = brewOne(c, findBrew(c, o.k), inc);
+    const p = st.potent && o.potent && o.potent.k ? brewOne(c, findBrew(c, o.potent.k), st.potentPlus ? inc : (st.incs ? clamp(num(o.potent.inc), 0, 10) : 0)) : null;
+    const known = (c.craft && c.craft.brew && c.craft.brew.known) || [];
+    const cat = st.catalysts && o.catalyst && known.includes(o.catalyst) ? CATALYSTS.find(x => x.k === o.catalyst) : null;
+    const catDc = cat ? Math.max(0, cat.dc - st.lvl) : 0;
+    const need = {}; [a, p].filter(Boolean).forEach(b => (need[b.herb] = (need[b.herb] || 0) + b.grams));
+    const have = h => num(c.craft && c.craft.supplies && c.craft.supplies["herb:" + h]);
+    const dcs = [a, p].filter(Boolean).map(b => b.dc - catDc);
+    let block = "";
+    if (!st.brew) block = `Brewing potions needs Brewing 3. This character has ${st.lvl}.`;
+    else if (dcs.some(d => d <= 0)) block = "That many increments makes it impossible (difficulty 0% or lower). Take some away.";
+    else { const short = Object.entries(need).find(([h, g]) => have(h) < g); if (short) block = `Needs ${short[1]} g of ${short[0]} (have ${have(short[0])}).`; }
+    return { st, a, p, cat, catDc, need, dcs, chances: dcs.map(d => clamp(d + st.mod - 1, 0, 100)), hours: p ? 2 : 1, block };
+  }
+
   // ---------- Tabletop Simulator export ----------
   function toTabletop(c) {
     const d = derived(c);
@@ -723,6 +788,7 @@ const CW = (() => {
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
-           WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits };
+           WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
+           BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allBrews, findBrew, brewOne, brewPlan };
 })();
 if (typeof module !== "undefined") module.exports = CW;
