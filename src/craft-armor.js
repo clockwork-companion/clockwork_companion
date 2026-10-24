@@ -331,7 +331,7 @@ function CraftSide({ c, rc, cp, st, focus, setFocus, setRc, busy }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>${AM_NAME[focus] || "Type"}</span><small>${focus === "type" ? t.label : focus === "extra" ? `${cp.dc}%` : focus === "av" ? `AV ${cp.finalAV}` : `Soak ${cp.finalSoak}`}</small></h3>
     ${body}
-    <div class="ptplan"><h3 class="lbl">The craft</h3><ol>
+    <div class="ptplan"><${PlanHead} title="The craft" busy=${busy} onReset=${() => setRc(r => refill(r, R.blankCharacter().craft.armor.recipe))} /><ol>
       <li><span>Materials: ${cp.cost} g of ${t.label.toLowerCase()} materials</span><span class="muted">5 × repair cost (${t.repairPerAV} g × AV ${cp.finalAV})</span></li>
       <li><span>Roll under ${cp.dc}%</span><span class="muted">${cp.chance}% to land · a failure leaves a flaw and you roll again; two failures lose it all</span></li>
       <li><span>Eight hours${R.AM_FORGE.includes(cp.type) ? " at a forge" : ""}</span><span class="muted">The suit joins your Armor on the Gear tab.</span></li></ol>

@@ -28,6 +28,14 @@ function CraftTab({ c, update }) {
   </div>`;
 }
 
+// The heading over a bench's plan, with a Reset that clears the set-up (supplies and the ledger stay).
+function PlanHead({ title, busy, onReset }) {
+  return html`<div class="ptplanh"><h3 class="lbl">${title}</h3>
+    <button type="button" class="btn small ptreset" disabled=${busy} title="Clear the set-up. Supplies and the ledger stay." onClick=${onReset}>Reset</button></div>`;
+}
+// Put a recipe back to the blank character's default, in place.
+const refill = (r, d) => { Object.keys(r).forEach(k => delete r[k]); Object.assign(r, JSON.parse(JSON.stringify(d))); };
+
 function UnderConstruction({ c, craft }) {
   const [k, n, skill, blurb] = craft;
   return html`<section class="frame"><h2 class="h"><span>${n}</span><i class="orn" aria-hidden="true"></i></h2>
@@ -217,12 +225,12 @@ function Powdertinkering({ c, update }) {
         <div class="ptside">
           <${PartPicker} part=${focus} c=${c} rc=${rc} st=${st} m=${m} sum=${sum} setRc=${setRc} disabled=${busy} />
           <div class="ptplan">
-            <h3 class="lbl">The craft</h3>
+            <${PlanHead} title="The craft" busy=${busy} onReset=${() => update(x => { x.craft.recipe = { type }; })} />
             <ol>${steps.map(s => html`<li><span>${s.label}</span><span class="muted">${s.dc}% · ${s.chance}% to land · 200 g ${s.mat === "container" ? "container" : s.mat.toLowerCase()}</span></li>`)}</ol>
             <div class="row ptbatch"><label for=${"ptb-" + c.id}>Batch size for ${m.n.toLowerCase()}</label>
               <input id=${"ptb-" + c.id} class="inp durin" type="number" min="1" value=${num(cr.batch[type]) || m.batch} disabled=${busy}
                 onInput=${e => update(x => { x.craft.batch[type] = Math.max(1, +e.target.value || 1); })} />
-              <span class="muted">Book: 4 bullets, 1 grenade, 1 oil. Decide it once per weapon.</span></div>
+              <span class="muted">One clip for this weapon, decided once. The materials stay 200 g a step whatever the size.</span></div>
           </div>
         </div>
       </div>

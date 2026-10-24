@@ -990,6 +990,13 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .forgebtn { display: inline-flex; align-items: center; gap: 9px; }
 .forgebtn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
 .ptwhy { text-align: center; margin: 0; max-width: 44ch; }
+.ptplanh { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.ptplanh .lbl { margin: 0; }
+.ptreset { font-size: 11px; padding: 3px 10px; }
+.ptbody { display: contents; }
+.ptagain { justify-content: center; gap: 8px; }
+.ptopt.row-opt:has(.brdel) { grid-template-columns: minmax(0, 1fr) auto auto; }
+.ptopt.row-opt .brdel { margin-right: 6px; }
 .ptread { width: 100%; max-width: 470px; border: 1.5px solid var(--rule); background: var(--card); padding: 12px 14px; display: grid; gap: 10px; }
 .ptstep { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ptstep b { flex: 1; font: 600 15px var(--f-head); letter-spacing: .05em; text-transform: uppercase; min-width: 0; }
 .ptdet { display: inline-flex; gap: 6px; }
@@ -1108,6 +1115,9 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .rnmun .rn-smoke circle { fill: #3a3631; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .rnmun.failed .rn-smoke circle, .rnmun.shatter .rn-smoke circle { animation: brsmoke 2.4s var(--d) ease-out infinite; }
 .rnalso { margin: 12px 0 0; font-size: 13px; }
+.rnlib { margin-top: 12px; display: grid; gap: 6px; }
+.rnlib .lbl { margin: 0; }
+.brform .ammode { margin: 0; }
 .rneff { display: grid; gap: 8px; }
 .rneff .ammode { margin: 0; }
 .rnpay { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
