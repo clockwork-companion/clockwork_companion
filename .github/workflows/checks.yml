@@ -49,7 +49,7 @@ jobs:
           pip install "playwright>=1.44,<2"
           python -m playwright install --with-deps chromium
 
-      - name: Smoke test (desktop and 390 px, light and dark theme)
+      - name: Smoke test (every theme, desktop and 390 px)
         run: python3 tests/smoke.py "$RUNNER_TEMP/site" smoke-shots
 
       - name: Keep the screenshots
