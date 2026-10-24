@@ -127,6 +127,7 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-24:** Stamina lost and Exhaustion are one track (10 = death; the Conditioning 5 reading is still to confirm). Sinan.
 - **2026-10-24:** Power armour theme is a high-tech HUD: brushed steel and copper, digital type, nixie numbers. No brass, no margin art. Sinan.
 - **2026-10-24:** main changes only through a PR from Dev. Dev is tested on `/dev/`. Sinan.
+- **2026-10-24:** Cyberpunk is an Extended theme: futuristic, not retro (no CRT scanlines). Its design language is Greek mythology (gold Greek-key trims, temple-column tabs, Ω and Greek-letter tags) with the Blackwall glowing red along the bottom. Sinan.
 - **2026-10-24:** Crafting is its own tab with one section per craft; each bench is an illustrated item with callout labels and an animated button under it. Utku.
 - **2026-10-24:** Armor repair: the Repair Count is capped at 10 dice. Utku.
 - **2026-10-24:** Armor crafting (not written in the 2020.1 book) follows the book's weapon crafting, with armor extras (+1 AV −10%, +5 Soak −5%); every change is marked in `rules-info.js`. Utku.
