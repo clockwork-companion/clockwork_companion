@@ -3257,6 +3257,7 @@ function Roster({ list, all, sel, setSel, current, create, startNew }) {
 
 /* ================= character ================= */
 function Character({ c, update, tab, setTab, onDelete }) {
+  animScope = c.id;   // animations only play for changes on this character, not when another one is opened
   const d = derive(c);
   const [chosenMode, setMode] = useState(() => lsGet("cw-mode", "karma"));
   useEffect(() => lsSet("cw-mode", chosenMode), [chosenMode]);
@@ -3273,7 +3274,6 @@ function Character({ c, update, tab, setTab, onDelete }) {
   const openPanel = (kind, name) => setPanel(p => (p && p.kind === kind && p.name === name ? null : { kind, name }));
   openRuleFn = name => openPanel("rule", name);
   const skillTabs = tab === "sheet" || tab === "talents";
-  animScope = c.id;
   return html`
     <${Header} c=${c} d=${d} update=${update} mode=${mode} setMode=${setMode} canFree=${canFree} />
     <div class="tabs" role="tablist">${tabs.map(([k, n]) => html`<button role="tab" class=${"tab-" + k} aria-selected=${tab === k} onClick=${() => setTab(k)}>
