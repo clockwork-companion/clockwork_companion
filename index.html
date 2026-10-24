@@ -1036,8 +1036,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   --rule: #e8c66a; --bracket: #00f0ff; --hair: #1d2a38; --brass: #e8c66a; --brass-ink: #04060c; --brass-soft: #2a2412;
   --seal: #03050a; --seal-2: #ff2a4d; --blood: #ff2a4d; --blood-soft: #3a0c16; --tox: #3dffa2; --tox-soft: #0b2a1d;
   --hunger: #ffb547; --hunger-soft: #33240c; --life: #00f0ff; --life-soft: #062a33; --warn: #ffb547; --bad: #ff2a4d; --good: #3dffa2; --forge: #ff2a4d;
-  --cyan: #00f0ff; --gold: #e8c66a; --wall: #ff1f3d;
-  --f-display: "Rajdhani", "Arial Narrow", sans-serif; --f-head: "Oxanium", "Segoe UI", sans-serif; --f-body: "Oxanium", "Segoe UI", sans-serif; --f-mono: "Oxanium", "Consolas", monospace;
+  --cyan: #00f0ff; --gold: #e8c66a; --wall: #ff1f3d; --coral: #ff5f57; --coral-dim: rgb(255 95 87 / .45); --panel: linear-gradient(180deg, rgb(14 26 36 / .92), rgb(9 15 24 / .94));
+  --f-display: "Tomorrow", "Rajdhani", sans-serif; --f-head: "Oxanium", "Segoe UI", sans-serif; --f-body: "Oxanium", "Segoe UI", sans-serif; --f-mono: "Oxanium", "Consolas", monospace;
   --meander-gold: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='12'%3E%3Cpath d='M0 11.5H14M2.5 11.5V.5H12.5V8.5H6V4H9.5' fill='none' stroke='%23e8c66a' stroke-width='1'/%3E%3C/svg%3E"); --meander-cyan: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='12'%3E%3Cpath d='M0 11.5H14M2.5 11.5V.5H12.5V8.5H6V4H9.5' fill='none' stroke='%2300f0ff' stroke-width='1'/%3E%3C/svg%3E");
   --cut: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
   --cut-s: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
@@ -1068,6 +1068,9 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @keyframes cySurge { 0%, 100% { -webkit-mask-position: 0 0, 0 0; mask-position: 0 0, 0 0; transform: scaleY(1); }
   50% { -webkit-mask-position: 38% 0, 0 0; mask-position: 38% 0, 0 0; transform: scaleY(1.08); } }
 [data-skin="cyber"] body::after { transform-origin: 50% 100%; }
+/* when WebGL is available the shader Blackwall (fx-blackwall.js) replaces the CSS stand-in above */
+.blackwall { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+:root.has-blackwall[data-skin="cyber"] body::after, :root.has-blackwall[data-skin="cyber"]::before, :root.has-blackwall[data-skin="cyber"]::after { display: none; }
 /* its heart: a magenta bloom low on the right that swells and fades */
 :root[data-skin="cyber"]::before { content: ""; position: fixed; right: -6vw; bottom: -14vh; width: 52vw; height: 52vh; z-index: -1; pointer-events: none; border-radius: 50%;
   background: radial-gradient(closest-side, rgb(255 80 190 / .32), rgb(255 30 110 / .14) 45%, transparent);
@@ -1080,47 +1083,59 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   animation: cyRipple 7s linear infinite; }
 @keyframes cyRipple { from { transform: scale(.82); opacity: 0; } 20% { opacity: .9; } to { transform: scale(1.18); opacity: 0; } }
 :root[data-skin="cyber"] .sigil { display: none; }
-:root[data-skin="cyber"] .top { border-bottom: 1px solid rgb(0 240 255 / .45); box-shadow: 0 1px 12px -2px rgb(0 240 255 / .35); }
-:root[data-skin="cyber"] .brand { font: 700 32px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 14px rgb(0 240 255 / .55); }
+:root[data-skin="cyber"] .top { border-bottom: 1px solid var(--coral); box-shadow: 0 1px 12px -2px rgb(255 95 87 / .55); }
+:root[data-skin="cyber"] .brand { font: 600 30px/1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); text-shadow: 0 0 14px rgb(0 240 255 / .55); }
 :root[data-skin="cyber"] .brand small { font: 600 12px var(--f-head); color: var(--gold); letter-spacing: .3em; text-shadow: none; }
 :root[data-skin="cyber"] .brand small::after { content: " · ΟΛΥΜΠΟΣ"; color: var(--cyan); }
-:root[data-skin="cyber"] .namefield { font: 700 34px var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid var(--cyan); box-shadow: 0 1px 0 rgb(0 240 255 / .4); }
+:root[data-skin="cyber"] .namefield { font: 600 32px var(--f-display); letter-spacing: .04em; text-transform: uppercase; color: var(--ink); border-bottom: 1px solid var(--cyan); box-shadow: 0 1px 0 rgb(0 240 255 / .4); }
 :root[data-skin="cyber"] :is(.lbl, .field label, .mini label, .stat span, .fact span, .wstats span, .legend b, th, .seg button, .btn, .pbox small) { font-family: var(--f-head); font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
-:root[data-skin="cyber"] :is(.field label, .mini label, .fact span, .stat span, th) { color: var(--cyan); }
-:root[data-skin="cyber"] :is(.attr .nm, .gx-title, .ornate, .gx-an b, .sphead h2) { font-family: var(--f-display); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+:root[data-skin="cyber"] :is(.field label, .mini label, .fact span, .stat span, th, .lbl) { color: var(--coral); }
+:root[data-skin="cyber"] :is(.attr .nm, .gx-title, .ornate, .gx-an b, .sphead h2) { font-family: var(--f-display); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
 :root[data-skin="cyber"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3, .meter .t) { font-family: var(--f-head); font-weight: 700; text-transform: uppercase; letter-spacing: .12em; }
-:root[data-skin="cyber"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3) { border-bottom: 1px solid rgb(0 240 255 / .35); }
-:root[data-skin="cyber"] .attr .nm { font-size: 18px; }
+:root[data-skin="cyber"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3) { font-family: var(--f-display); font-weight: 500; letter-spacing: .04em; color: var(--coral); border-bottom: 1px solid var(--coral-dim); }
+:root[data-skin="cyber"] .attr .nm { font-size: 16px; }
 :root[data-skin="cyber"] .meter .t { font-size: 15px; }
-/* headings: a gold temple-front plate (chamfered like a pediment) marked with Ω, then a cyan Greek-key line */
-:root[data-skin="cyber"] .h { font: 700 23px var(--f-display); letter-spacing: .1em; }
-:root[data-skin="cyber"] .h > span:not(.orn) { padding: 8px 22px 6px 16px; color: #04060c; background: linear-gradient(180deg, #f6dd94, #e8c66a 55%, #b8963c);
-  clip-path: polygon(0 100%, 0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% 100%); box-shadow: 0 0 18px rgb(232 198 106 / .35); }
+/* headings: coral section titles as in the game's menus, over a thin coral line that ends in a cyan diamond */
+:root[data-skin="cyber"] .h { font: 500 25px var(--f-display); letter-spacing: .04em; }
+:root[data-skin="cyber"] .h > span:not(.orn) { color: var(--coral); text-shadow: 0 0 14px rgb(255 95 87 / .45); }
 /* Ω marks a heading that opens its rules, in place of the book icon the other themes use */
 :root[data-skin="cyber"] .hlink .hbook { display: none; }
 :root[data-skin="cyber"] .hlink::after { content: "Ω"; font: 700 .9em var(--f-head); opacity: .6; transition: opacity .15s; }
-:root[data-skin="cyber"] .h .hlink::after { color: #6a1020; opacity: .85; }
+:root[data-skin="cyber"] .h .hlink::after { color: var(--gold); opacity: .85; text-shadow: 0 0 10px rgb(232 198 106 / .5); }
 :root[data-skin="cyber"] .hlink:hover::after, :root[data-skin="cyber"] .hlink:focus-visible::after { opacity: 1; }
-:root[data-skin="cyber"] .orn::before { border: 0; height: 8px; top: 3px; right: 22px; background: var(--meander-cyan) 0 0 / 9.33px 8px repeat-x; opacity: .7; filter: drop-shadow(0 0 3px var(--cyan)); }
-:root[data-skin="cyber"] .orn::after { width: 9px; height: 9px; transform: rotate(45deg); top: 2px; right: 6px; border: 0; background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+:root[data-skin="cyber"] .orn::before { border: 0; height: 1px; top: 8px; right: 22px; background: linear-gradient(90deg, var(--coral), var(--coral-dim) 70%, transparent); }
+:root[data-skin="cyber"] .orn::after { width: 8px; height: 8px; transform: rotate(45deg); top: 4px; right: 7px; border: 1.5px solid var(--cyan); background: transparent; box-shadow: 0 0 8px rgb(0 240 255 / .6); }
 :root[data-skin="cyber"] .diamond::before { transform: rotate(45deg); border: 1.5px solid var(--gold); background: transparent; inset: 3px; }
 :root[data-skin="cyber"] .diamond.on::before { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
 /* frames: holo-glass modules with cut corners, a gold Greek-key cornice, and a Greek-letter module tag (α, β, γ…) */
 :root[data-skin="cyber"] .tabpane { counter-reset: unit; }
 :root[data-skin="cyber"] .frame { counter-increment: unit; border: 1px solid rgb(0 240 255 / .25); padding: 22px 22px 24px; clip-path: var(--cut);
-  background: var(--holo), linear-gradient(180deg, rgb(11 15 25 / .9), rgb(6 9 16 / .9)); box-shadow: inset 0 0 40px rgb(0 240 255 / .04); }
+  background: linear-gradient(var(--coral), var(--coral)) 0 0 / 26px 2px no-repeat, linear-gradient(var(--coral), var(--coral)) 0 0 / 2px 26px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) 100% 100% / 26px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) 100% 100% / 2px 26px no-repeat,
+    var(--holo), linear-gradient(180deg, rgb(11 15 25 / .9), rgb(6 9 16 / .9)); box-shadow: inset 0 0 40px rgb(0 240 255 / .04); }
 :root[data-skin="cyber"] .frame::before { content: none; }
 :root[data-skin="cyber"] .frame::after { content: "ΣΥΣ·" counter(unit, lower-greek); left: auto; right: 22px; top: auto; bottom: 6px; width: auto; height: auto; background: none; border: 0;
   font: 600 11px/1 var(--f-head); letter-spacing: .2em; color: var(--cyan); opacity: .7; }
 :root[data-skin="cyber"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel, .member, .gx-attr, .gx-road, .gx-pick, .gx-choose, .chip) {
-  border: 1px solid var(--hair); border-radius: 0; background: var(--holo), rgb(11 15 25 / .92); clip-path: var(--cut-s); box-shadow: inset 0 1px 0 rgb(0 240 255 / .35); }
-/* tabs: temple columns: fluted shafts under a gold capital; the open one lights up cyan */
-:root[data-skin="cyber"] .tabs { border-bottom: 1px solid var(--gold); gap: 6px; box-shadow: 0 1px 0 rgb(232 198 106 / .25), 0 6px 14px -8px rgb(232 198 106 / .6); }
-:root[data-skin="cyber"] .tabs button { border: 0; border-top: 3px solid var(--gold); padding: 10px 18px 9px; color: var(--ink-2); border-radius: 0;
-  background: repeating-linear-gradient(90deg, rgb(255 255 255 / .045) 0 2px, transparent 2px 7px), rgb(11 15 25 / .9);
-  font: 700 16px var(--f-display); letter-spacing: .1em; text-transform: uppercase; box-shadow: inset 0 3px 0 rgb(0 0 0 / .4); }
-:root[data-skin="cyber"] .tabs button:hover { color: #fff; background: repeating-linear-gradient(90deg, rgb(0 240 255 / .08) 0 2px, transparent 2px 7px), rgb(11 15 25 / .9); }
-:root[data-skin="cyber"] .tabs button[aria-selected="true"] { color: #04060c; border-top-color: #f6dd94; background: linear-gradient(180deg, #7ff8ff, var(--cyan)); box-shadow: 0 0 18px rgb(0 240 255 / .45); }
+  border: 1px solid #1c3340; border-radius: 0; clip-path: var(--cut-s);
+  background: linear-gradient(315deg, var(--cyan) 0 8px, transparent 8px) 100% 100% / 20px 20px no-repeat, var(--holo), var(--panel);
+  box-shadow: inset 3px 0 0 var(--card-stripe, var(--cyan)), inset 0 1px 0 rgb(0 240 255 / .18); }
+/* cards read like the game's item cards: a coloured stripe down the left, a cyan corner notch bottom-right */
+:root[data-skin="cyber"] :is(.perkcard.t-A, .perkcard.t-M, .wcard.final.kind-melee, .wound) { --card-stripe: var(--coral); }
+:root[data-skin="cyber"] :is(.perkcard.t-E, .wcard.final.kind-ranged) { --card-stripe: #9a6bff; }
+:root[data-skin="cyber"] :is(.perkcard.talent, .wcard.worn) { --card-stripe: var(--gold); }
+/* small tags read like the game's yellow "NEW" stickers */
+:root[data-skin="cyber"] .flag { background: rgb(243 230 0 / .1); color: #f3e600; border: 1px solid rgb(243 230 0 / .45); border-radius: 0; font-family: var(--f-head); letter-spacing: .08em; }
+:root[data-skin="cyber"] .flag.bad { background: rgb(255 31 61 / .12); color: #ff6a7f; border-color: rgb(255 31 61 / .5); }
+/* tabs: the game's top menu: quiet labels on faint fluted columns over a coral line; the open one glows cyan under a gold capital */
+:root[data-skin="cyber"] .tabs { border-bottom: 1px solid var(--coral); gap: 4px; box-shadow: 0 1px 10px -3px rgb(255 95 87 / .6); }
+:root[data-skin="cyber"] .tabs button { border: 0; border-top: 1px solid transparent; padding: 11px 18px 10px; color: var(--ink-2); border-radius: 0;
+  background: repeating-linear-gradient(90deg, rgb(255 255 255 / .025) 0 2px, transparent 2px 7px);
+  font: 500 15.5px var(--f-display); letter-spacing: .06em; text-transform: uppercase; box-shadow: none; }
+:root[data-skin="cyber"] .tabs button:hover { color: #fff; background: repeating-linear-gradient(90deg, rgb(0 240 255 / .06) 0 2px, transparent 2px 7px); }
+:root[data-skin="cyber"] .tabs button[aria-selected="true"] { color: var(--cyan); border-top-color: var(--gold); text-shadow: 0 0 10px rgb(0 240 255 / .7);
+  background: linear-gradient(0deg, rgb(0 240 255 / .16), transparent 70%), repeating-linear-gradient(90deg, rgb(0 240 255 / .06) 0 2px, transparent 2px 7px); box-shadow: inset 0 -2px 0 var(--cyan); }
+:root[data-skin="cyber"] .tabs button[aria-selected="true"] .tabicon { filter: drop-shadow(0 0 4px var(--cyan)); }
 :root[data-skin="cyber"] .tabicon { stroke: currentColor; }
 /* numbers: clean holo readouts */
 :root[data-skin="cyber"] :is(.attr .val, .stat b, .meter .v, .loadnum b, .wound .cnt, .gx-sum b, .gx-slot b, .gx-av b, .gx-fa b, .wstats b, .statin, .fact b, .srow .m) { font-family: var(--f-head); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--cyan); text-shadow: 0 0 10px rgb(0 240 255 / .5); }
@@ -1149,7 +1164,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-skin="cyber"] .track, :root[data-skin="cyber"] .mtrack { background: #03050a !important; border: 1px solid #1a2634; border-radius: 0; }
 :root[data-skin="cyber"] .track i, :root[data-skin="cyber"] .mtrack i { box-shadow: 0 0 10px currentColor; filter: saturate(1.3) brightness(1.1); }
 /* controls */
-:root[data-skin="cyber"] .btn { border: 1px solid rgb(0 240 255 / .6); border-radius: 0; background: rgb(0 240 255 / .05); color: var(--cyan); clip-path: var(--cut-s); }
+:root[data-skin="cyber"] .btn { border: 1px solid var(--coral-dim); border-radius: 0; background: var(--panel); color: var(--cyan); clip-path: var(--cut-s); box-shadow: inset 3px 0 0 var(--coral); }
 :root[data-skin="cyber"] .btn:hover { background: rgb(0 240 255 / .16); color: #fff; }
 :root[data-skin="cyber"] .btn.primary, :root[data-skin="cyber"] .seg button[aria-pressed="true"] { background: linear-gradient(180deg, #f6dd94, var(--gold)); border-color: var(--gold); color: #04060c; }
 :root[data-skin="cyber"] .btn.danger { border-color: var(--wall); color: #ff6a7f; }
@@ -1168,8 +1183,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-skin="cyber"] .craftnav button { border-radius: 0; clip-path: var(--cut-s); border-color: var(--hair); color: var(--cyan); }
 :root[data-skin="cyber"] .craftnav button[aria-pressed="true"] { background: linear-gradient(180deg, #f6dd94, var(--gold)); border-color: var(--gold); color: #04060c; box-shadow: none; }
 @media (max-width: 560px) {
-  [data-skin="cyber"] .tabs button { padding: 9px 8px 8px; font-size: 13px; letter-spacing: .05em; }
-  [data-skin="cyber"] .h { font-size: 19px; } [data-skin="cyber"] .frame { padding: 22px 14px 24px; } [data-skin="cyber"] .namefield { font-size: 27px; }
+  [data-skin="cyber"] .tabs button { padding: 9px 8px 8px; font-size: 12.5px; letter-spacing: .03em; }
+  [data-skin="cyber"] .h { font-size: 21px; } [data-skin="cyber"] .frame { padding: 22px 14px 24px; } [data-skin="cyber"] .namefield { font-size: 27px; }
 }
 
 /* ----- Mossheart (extended): Batbayar's theme. A dark, old forest: ivy with woody stems and moss creeping round the
@@ -3196,7 +3211,7 @@ const SKINS = [
   ["armour", "Power armour", GF + "Orbitron:wght@600;700;800&family=Chakra+Petch:wght@500;600;700&family=Exo+2:wght@400;500;600&family=Nixie+One"],
   // Extended themes: heavier artwork and their own furniture.
   ["cairn", "Cairn-style gothic", GF + "UnifrakturCook:wght@700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Grenze:wght@500;600;700", "extended"],
-  ["cyber", "Cyberpunk", GF + "Rajdhani:wght@500;600;700&family=Oxanium:wght@400;500;600;700;800", "extended"],
+  ["cyber", "Cyberpunk", GF + "Tomorrow:wght@500;600;700&family=Oxanium:wght@400;500;600;700;800", "extended"],
   ["moss", "Mossheart (forest)", GF + "Marcellus+SC&family=Cormorant+Garamond:wght@500;600;700&family=Crimson+Pro:wght@400;600;700", "extended"],
 ];
 function applySkin(key) {
@@ -4103,6 +4118,114 @@ function TableTab({ c, update, onDelete }) {
         : html`<button class="btn danger" onClick=${() => setDel(true)}>Delete character</button>`}</section>
   </div>`;
 }
+/* ================= the Blackwall (Cyberpunk theme only) =================
+   A living firewall of red and violet data, drawn with a WebGL fragment shader on a canvas behind the page.
+   It only exists while the Cyberpunk theme is on. The pieces:
+   - a curtain of vertical data streaks that sway and flicker;
+   - an upper edge that heaves in slow swells;
+   - a pink-white heart low on the right that pulses;
+   - waves that ripple out from the heart through the curtain, bending the streaks as they pass.
+   It is cheap by design: drawn at half resolution, capped at 30 frames a second, paused when the tab is hidden,
+   and frozen into a single still frame for anyone who asks their device for reduced motion. Without WebGL, the
+   theme's CSS stand-in (in app.css) is used instead. */
+(function () {
+  const FRAG = `
+precision mediump float;
+uniform vec2 res; uniform float t;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
+float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { v += a * noise(p); p = p * 2.03 + 11.7; a *= 0.5; } return v; }
+void main() {
+  vec2 uv = gl_FragCoord.xy / res;                   // 0..1, y up from the bottom of the screen
+  float asp = res.x / res.y;
+  vec2 heart = vec2(0.84, 0.06);
+  vec2 d = (uv - heart) * vec2(asp, 1.0);
+  float r = length(d);
+  // waves rippling outward from the heart: two trains at different speeds, fading with distance
+  float rip = sin(r * 34.0 - t * 1.9) * exp(-r * 2.4) + 0.55 * sin(r * 19.0 - t * 1.15 + 1.7) * exp(-r * 1.6);
+  // the living sway: slow warping noise, plus the ripple pushing the streaks sideways
+  float warp = fbm(vec2(uv.x * 3.0, uv.y * 2.2 - t * 0.07)) - 0.5;
+  float x = uv.x + warp * 0.035 + rip * 0.006;
+  // the curtain: vertical streaks at three densities, each flickering at its own pace
+  float s1 = pow(abs(sin(x * 420.0)), 26.0) * (0.55 + 0.45 * noise(vec2(x * 60.0, t * 0.9)));
+  float s2 = pow(abs(sin(x * 170.0 + 1.3)), 14.0) * (0.5 + 0.5 * noise(vec2(x * 30.0 + 5.0, t * 0.5)));
+  float s3 = pow(abs(sin(x * 61.0 + 0.4)), 40.0) * noise(vec2(x * 12.0, t * 0.3 + uv.y * 2.0));
+  float streak = s1 * 0.55 + s2 * 0.7 + s3 * 1.3;
+  // breaks travelling down the streaks, like data packets
+  streak *= 0.65 + 0.35 * noise(vec2(x * 90.0, uv.y * 18.0 + t * 1.4));
+  // the heaving upper edge
+  float edge = 0.30 + 0.07 * fbm(vec2(uv.x * 2.2 + t * 0.04, t * 0.06)) + 0.025 * sin(uv.x * 8.0 - t * 0.55) + rip * 0.02;
+  float body = smoothstep(edge + 0.16, edge - 0.08, uv.y);
+  float breathe = 0.82 + 0.18 * sin(t * 0.55) * sin(t * 0.21 + 1.0);
+  // colour: deep red on the left warming to magenta and pink toward the heart, with violet threads
+  vec3 red = vec3(0.95, 0.08, 0.22), mag = vec3(1.0, 0.22, 0.62), vio = vec3(0.45, 0.25, 1.0);
+  vec3 col = mix(red, mag, smoothstep(0.25, 0.95, uv.x));
+  col = mix(col, vio, s3 * 0.45);
+  float a = streak * body * breathe;
+  a += body * 0.10 * (0.6 + 0.4 * rip);                   // the faint glow of the wall itself, lit by each passing wave
+  // the heart: a pulsing bloom with tendrils
+  float pulse = 0.75 + 0.25 * sin(t * 1.3);
+  float tend = fbm(vec2(atan(d.y, d.x) * 3.0, r * 6.0 - t * 0.35));
+  float bloom = exp(-r * 7.5) * pulse + exp(-r * 3.2) * 0.35 * tend * pulse;
+  col = mix(col, vec3(1.0, 0.72, 0.92), clamp(bloom * 0.9, 0.0, 1.0));
+  a += bloom * 0.85;
+  a = clamp(a, 0.0, 1.0) * 0.62;                          // keep it in the background
+  gl_FragColor = vec4(col * a, a);
+}`;
+  const VERT = "attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }";
+  let cv = null, gl = null, prog = null, raf = 0, last = 0, t0 = 0, uRes, uT;
+  const still = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function setup() {
+    cv = document.createElement("canvas"); cv.className = "blackwall"; cv.setAttribute("aria-hidden", "true");
+    gl = cv.getContext("webgl", { premultipliedAlpha: true, alpha: true, antialias: false, powerPreference: "low-power" });
+    if (!gl) { cv = null; return false; }
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; };
+    const v = sh(gl.VERTEX_SHADER, VERT), f = sh(gl.FRAGMENT_SHADER, FRAG);
+    if (!v || !f) { cv = null; return false; }
+    prog = gl.createProgram(); gl.attachShader(prog, v); gl.attachShader(prog, f); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { cv = null; return false; }
+    gl.useProgram(prog);
+    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    uRes = gl.getUniformLocation(prog, "res"); uT = gl.getUniformLocation(prog, "t");
+    return true;
+  }
+  function size() {
+    if (!cv) return;
+    const w = Math.max(1, Math.round(innerWidth * 0.5)), h = Math.max(1, Math.round(innerHeight * 0.5));   // half resolution: soft and cheap
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; gl.viewport(0, 0, w, h); }
+  }
+  function draw(now) {
+    raf = 0;
+    if (!cv || document.hidden) return;
+    if (now - last >= 33) {                                  // about 30 frames a second
+      last = now; size();
+      gl.uniform2f(uRes, cv.width, cv.height); gl.uniform1f(uT, still() ? 12.0 : (now - t0) / 1000);
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    if (!still()) raf = requestAnimationFrame(draw);
+  }
+  function start() {
+    if (!cv && !setup()) return;                             // no WebGL: the CSS stand-in stays
+    if (!cv.isConnected) document.body.prepend(cv);
+    document.documentElement.classList.add("has-blackwall");
+    t0 = t0 || performance.now(); last = 0;
+    if (!raf) raf = requestAnimationFrame(draw);
+  }
+  function stop() {
+    if (raf) cancelAnimationFrame(raf); raf = 0;
+    if (cv && cv.isConnected) cv.remove();
+    document.documentElement.classList.remove("has-blackwall");
+  }
+  const sync = () => (document.documentElement.dataset.skin === "cyber" && document.body ? start() : stop());
+  new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin"] });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && cv && cv.isConnected && !raf) raf = requestAnimationFrame(draw); });
+  addEventListener("resize", () => { if (cv && cv.isConnected && !raf) raf = requestAnimationFrame(draw); });
+  if (document.body) sync(); else document.addEventListener("DOMContentLoaded", sync);
+})();
 /* ================= crafting tab ================= */
 // One tab for the rulebook's Crafting chapter (16). Each craft gets its own bench; Powdertinkering is built,
 // the others are marked as under construction until their turn comes.
