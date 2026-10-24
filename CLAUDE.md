@@ -30,7 +30,7 @@ your feature branch ──PR──▶ Dev ──(tested on the Dev page)──PR
 ## 2. Publishing (don't break this)
 
 - `.github/workflows/pages.yml` runs on every push to **main** or **Dev**.
-  - It copies main to the site root.
+  - It builds main from `src/` into the site root (the committed `index.html` is not what gets published).
   - It builds Dev from `src/` with `--dev` into `/dev/`.
   - It force-pushes the result to the **`gh-pages`** branch, which GitHub Pages serves.
 - **Never edit `gh-pages` by hand.** It is rebuilt from scratch on every run.
@@ -57,6 +57,7 @@ python3 src/build.py                  # src/clockwork-companion.html, the claude
 | `skills-data.js`, `skill-tables.js` | Every skill, perk and table extracted from the rulebook. |
 | `rules-info.js` | The plain-language rules shown when a section heading is clicked (`RULES_INFO`). |
 | `app.js` | The UI (Preact + htm, no build step): sheet, vitals, Skills & Talents, gear, tabletop, themes. |
+| `fx-blackwall.js` | The Cyberpunk theme's animated Blackwall: a WebGL shader on a canvas behind the page. It only runs while that theme is on; without WebGL the CSS stand-in in `app.css` shows instead. |
 | `craft.js` | The Crafting tab: one section per craft, and the Powdertinkering bench (munition drawings with callouts, forge animation, supplies, ledger). |
 | `craft-armor.js` | Crafting → Armor upkeep: the Repair and Craft benches (suit drawings on a stand, hammer and forge animations). |
 | `genesis.js` | Guided character creation. |
@@ -97,6 +98,9 @@ version must keep working in a newer one, and the live site must survive data wr
   - Fonts load only when the theme is picked (the `SKINS` list in `app.js`).
   - Every theme must keep drop-downs readable and work at 390 px wide with no sideways scrolling.
   - "Extended" themes may restyle more heavily. Don't add decorative margin artwork; it was removed on purpose.
+  - A theme may add a **background effect module** (like `fx-blackwall.js`) when CSS can't do the job. It must switch itself on and off with the theme, stay behind the page, pause when the tab is hidden, hold still for reduced motion, and fall back to CSS.
+  - **One symbol per heading.** If a theme adds a symbol to headings and another symbol is already there in every
+    theme (like the book icon that marks a heading with rules), the theme's symbol **replaces** it rather than sitting beside it.
 - **Rulebook first, house rules over the book.**
   - When a rule is unclear, don't invent one: ask your person.
   - Mark the app's own interpretation with a `{ note }` in `rules-info.js`.
@@ -127,7 +131,7 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-24:** Stamina lost and Exhaustion are one track (10 = death; the Conditioning 5 reading is still to confirm). Sinan.
 - **2026-10-24:** Power armour theme is a high-tech HUD: brushed steel and copper, digital type, nixie numbers. No brass, no margin art. Sinan.
 - **2026-10-24:** main changes only through a PR from Dev. Dev is tested on `/dev/`. Sinan.
-- **2026-10-24:** Cyberpunk is an Extended theme: futuristic, not retro (no CRT scanlines). Its design language is Greek mythology (gold Greek-key trims, temple-column tabs, Ω and Greek-letter tags) with the Blackwall glowing red along the bottom. Sinan.
+- **2026-10-24:** Cyberpunk is an Extended theme, futuristic rather than retro: no CRT scanlines. Its design language is Greek mythology (temple-column tabs, Greek-letter tags; Ω replaces the rules book icon), blended with the Cyberpunk 2077 menus (coral headings and lines, a cyan active tab, item cards with a coloured left stripe and a cyan corner notch, yellow tags). Headings and tabs use Tomorrow, with Oxanium elsewhere. No gold Greek-key dividers. The Blackwall is a living WebGL shader: it sways, heaves and ripples out from a pulsing heart, but stays subtle. Sinan.
 - **2026-10-24:** Crafting is its own tab with one section per craft; each bench is an illustrated item with callout labels and an animated button under it. Utku.
 - **2026-10-24:** Armor repair: the Repair Count is capped at 10 dice. Utku.
 - **2026-10-24:** Armor crafting (not written in the 2020.1 book) follows the book's weapon crafting, with armor extras (+1 AV −10%, +5 Soak −5%); every change is marked in `rules-info.js`. Utku.
