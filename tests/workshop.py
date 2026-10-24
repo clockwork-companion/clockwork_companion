@@ -76,8 +76,7 @@ with sync_playwright() as p:
     check("it stays in the owner's Gear", [w.get("id") for w in me().get("weapons", [])] == ["w1"])
     check("but is locked: durability and edit can't be used", pg.locator(".wcard.final.away").count() == 1 and pg.locator(".wcard.away button[aria-label='Lose 1 durability']").is_disabled() and pg.locator(".wcard.away button[aria-label^='Edit']").is_disabled())
     pg.locator(".wcard.final").screenshot(path=str(SHOTS / "workshop-locked.png"))
-    bench(pg, "Weapon upkeep", "Repair")
-    check("it can't be repaired at home meanwhile, and the bench has no send box", pg.locator(".forgebtn").is_disabled() and pg.locator(".shopgear, .shopsend").count() == 0)
+    check("no crafting skills, so no Crafting tab for the owner", pg.get_by_role("tab", name="Crafting").count() == 0)
     done = dict(j); done.pop("id", None); done.update({"status": "done", "result": {"gained": 41, "roll": "check 7 → 9 × d10: 41", "by": "Arslan"}})
     put(pg, f"jobs/{j['id']}", done); pg.wait_for_timeout(1800)
     sab = me().get("weapons", [{}])[0]

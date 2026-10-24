@@ -16,14 +16,56 @@ const CRAFT_ICONS = {
   armor: html`<path d="M10 2.5l6 2.2v4.8c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V4.7z M10 2.5v15" />`,
 };
 
+// The crafts this character has put points into. The Crafting tab, and each bench in it, only appear once they have.
+const craftsOpen = c => CRAFTS.filter(([, , skill]) => num((c.skills || {})[skill]) > 0);
+// Benches that unlocked on the open character (set by the Character view) and haven't been shown yet: their buttons
+// are forged in the next time the Crafting tab is open. The tab itself forges in when it first appears.
+const CraftFresh = { char: "", keys: [], take(id, k) { if (this.char !== id || !this.keys.includes(k)) return false; this.keys = this.keys.filter(x => x !== k); return true; } };
+
+// The Crafting tab arriving, or a new bench in it: the button rises out of the rule glowing like hot metal,
+// with a burst of sparks. Nothing moves for reduced motion; the toast says what unlocked either way.
+// If the button is off screen (a skill is usually raised further down the sheet), it waits until it scrolls into view.
+function forgeIn(el) {
+  if (!el || reduceMotion()) return;
+  const r0 = el.getBoundingClientRect();
+  if (r0.bottom < 0 || r0.top > innerHeight) {
+    el.classList.add("forge-wait");   // hidden until it rises
+    const io = new IntersectionObserver(es => { if (es.some(e => e.intersectionRatio > .6)) { io.disconnect(); el.classList.remove("forge-wait"); forgeIn(el); } }, { threshold: [.6] });
+    io.observe(el);
+    return;
+  }
+  el.classList.remove("forging"); void el.offsetWidth; el.classList.add("forging");
+  setTimeout(() => el.classList.remove("forging"), 2300);
+  // Sparks live in a page-sized layer that clips them, so they never make the page scroll sideways.
+  const r = el.getBoundingClientRect(), burst = document.createElement("div"), at = document.createElement("div");
+  burst.className = "forgeburst"; burst.setAttribute("aria-hidden", "true"); burst.style.height = document.documentElement.scrollHeight + "px";
+  at.className = "forgeat"; at.style.left = r.left + scrollX + r.width / 2 + "px"; at.style.top = r.top + scrollY + r.height * .6 + "px"; burst.appendChild(at);
+  for (let i = 0; i < 26; i++) {
+    const a = -Math.PI * (.05 + Math.random() * .9), v = 40 + Math.random() * 110, sp = document.createElement("i");
+    sp.style.setProperty("--dx", (Math.cos(a) * v * (Math.random() < .5 ? 1 : -1) * 1.4).toFixed(0) + "px");
+    sp.style.setProperty("--dy", (Math.sin(a) * v).toFixed(0) + "px");
+    sp.style.setProperty("--fall", (30 + Math.random() * 60).toFixed(0) + "px");
+    sp.style.animationDelay = (380 + Math.random() * 160).toFixed(0) + "ms";
+    sp.style.animationDuration = (650 + Math.random() * 600).toFixed(0) + "ms";
+    at.appendChild(sp);
+  }
+  document.body.appendChild(burst);
+  setTimeout(() => burst.remove(), 2200);
+}
+
 function CraftTab({ c, update }) {
-  const [sub, setSub] = useState(() => lsGet("cw-craft-sub", "powder"));
+  const open = craftsOpen(c);
+  const [chosen, setSub] = useState(() => lsGet("cw-craft-sub", "powder"));
+  const sub = open.some(x => x[0] === chosen) ? chosen : (open[0] || CRAFTS[0])[0];   // a hidden bench falls back to the first open one
   useEffect(() => lsSet("cw-craft-sub", sub), [sub]);
+  // A bench that just unlocked while this tab is open: forge its button in.
+  const nav = useRef(null);
+  useEffect(() => { if (!nav.current) return; open.forEach(([k]) => { if (CraftFresh.take(c.id, k)) forgeIn(nav.current.querySelector(".cn-" + k)); }); }, [c.id, open.map(x => x[0]).join()]);
   const shop = useShop();   // the "new job" notice can send the smith to the Weapon or Armor upkeep bench
   useEffect(() => { const f = shop.focus; if (f && f.char === c.id) setSub(f.kind); }, [shop.focusSeq, c.id]);
   const cur = CRAFTS.find(x => x[0] === sub) || CRAFTS[0];
   return html`<div class="tabpane">
-    <nav class="craftnav" aria-label="Crafts">${CRAFTS.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} class=${"cn-" + k} onClick=${() => setSub(k)}>
+    <nav class="craftnav" aria-label="Crafts" ref=${nav}>${open.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} class=${"cn-" + k} onClick=${() => setSub(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${CRAFT_ICONS[k]}</svg><span>${n}</span>
       <small>${num(c.skills[skill]) ? `${skill} ${num(c.skills[skill])}` : ""}</small></button>`)}</nav>
     ${sub === "powder" ? html`<${Powdertinkering} c=${c} update=${update} />` : sub === "brew" ? html`<${Brewing} c=${c} update=${update} />` : sub === "rune" ? html`<${Runecrafting} c=${c} update=${update} />` : sub === "armor" ? html`<${ArmorUpkeep} c=${c} update=${update} />` : sub === "weapon" ? html`<${WeaponUpkeep} c=${c} update=${update} />` : html`<${UnderConstruction} c=${c} craft=${cur} />`}

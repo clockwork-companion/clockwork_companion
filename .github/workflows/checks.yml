@@ -55,6 +55,9 @@ jobs:
       - name: Workshop jobs between players (Firebase stand-in)
         run: python3 tests/workshop.py "$RUNNER_TEMP/site" smoke-shots
 
+      - name: Crafting appears only with crafting skills
+        run: python3 tests/craft_unlock.py "$RUNNER_TEMP/site"
+
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v6

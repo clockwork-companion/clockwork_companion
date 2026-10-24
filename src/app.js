@@ -597,7 +597,23 @@ function Character({ c, update, tab, setTab, onDelete }) {
   // Free edit is always there for a GM; a player gets it only when the GM switches it on for this sheet.
   const canFree = isGM() || !!c.freeEdit;
   const mode = canFree ? chosenMode : "karma";
-  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ["craft", "Crafting"]];
+  // Crafting only appears once the character has points in a crafting skill (and then only those benches).
+  const crafts = craftsOpen(c).map(x => x[0]);
+  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ...(crafts.length ? [["craft", "Crafting"]] : [])];
+  useEffect(() => { if (tab === "craft" && !crafts.length) setTab("sheet"); }, [tab, crafts.length]);
+  // Spot crafts unlocking on this character (not when another character is opened) and celebrate them.
+  const known = useRef({ id: c.id, keys: crafts });
+  useEffect(() => {
+    const k = known.current;
+    if (k.id !== c.id) { known.current = { id: c.id, keys: crafts }; return; }
+    const fresh = crafts.filter(x => !k.keys.includes(x));
+    known.current = { id: c.id, keys: crafts };
+    if (!fresh.length) return;
+    const names = fresh.map(x => CRAFTS.find(y => y[0] === x)[1]);
+    if (k.keys.length) { CraftFresh.keys = (CraftFresh.char === c.id ? CraftFresh.keys : []).concat(fresh); CraftFresh.char = c.id; }   // new benches: forged in when Crafting opens
+    if (!k.keys.length) { toast(`The forge is lit: Crafting unlocked (${names.join(", ")}).`); forgeIn(document.querySelector(".tabs .tab-craft")); }
+    else toast(`New bench in Crafting: ${names.join(", ")}.`);
+  }, [c.id, crafts.join()]);
   const [panel, setPanel] = useState(null);
   const [invested, setInvested] = useState(() => { const v = lsGet("cw-invested2", null); return v && typeof v === "object" ? v : { skills: false, weapons: false, sec: false }; });
   useEffect(() => lsSet("cw-invested2", invested), [invested]);
