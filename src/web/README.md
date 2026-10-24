@@ -7,10 +7,20 @@ Character sheets, Karma, vitals, gear and the GM initiative deck for *Clockwork:
 Players sign in with a username and password. The GM sees every character and runs the initiative deck;
 players see only the characters (and companions) the GM gives them, plus any they create themselves.
 
+## Install it as an app
+The site can be installed like an app, and it opens even with a weak or no connection (sheets you've opened
+before are kept on the device, and changes made offline are sent when you're back online).
+- **Android (Chrome):** menu ⋮ → **Install app** (or **Add to Home screen**).
+- **iPhone / iPad (Safari):** Share → **Add to Home Screen**.
+- **Computer (Chrome or Edge):** the install icon at the right end of the address bar.
+
+When a new version is published, the app shows "A new version of the app is ready" with a **Reload** button.
+
 ## Files
 - `index.html` — the whole app.
 - `firebase-config.js` — your Firebase settings (fill this in once).
 - `firestore.rules` — the database rules to paste into Firebase.
+- `manifest.webmanifest`, `sw.js`, `icons/` — what makes it installable and work offline.
 - `egg/` — art and sound for a hidden game (free CC0 assets; sources in `egg/furnace/CREDITS.md`).
 
 ## One-time setup
