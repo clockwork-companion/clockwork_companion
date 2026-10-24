@@ -59,6 +59,7 @@ python3 src/build.py                  # src/clockwork-companion.html, the claude
 | `app.js` | The UI (Preact + htm, no build step): sheet, vitals, Skills & Talents, gear, tabletop, themes. |
 | `fx-blackwall.js` | The Cyberpunk theme's animated Blackwall: a WebGL shader on a canvas behind the page. It only runs while that theme is on; without WebGL the CSS stand-in in `app.css` shows instead. |
 | `fx-steppe.js` | The Talon Saga theme's living landscape: central Mongolian steppe, gers, ancestral stones, a galloping herd and an eagle at random intervals, drawn on a 2D canvas behind the page. It only runs while that theme is on. |
+| `fx-moss.js` | The Mossheart theme's living ivy: grows ivy (sized to each section), moss clumps and hide patches round the sections, and lets leaves lean a little when the pointer brushes past. Only while that theme is on; without it the CSS vines in `app.css` show instead. |
 | `craft.js` | The Crafting tab: one section per craft, and the Powdertinkering bench (munition drawings with callouts, forge animation, supplies, ledger). |
 | `craft-armor.js` | Crafting → Armor upkeep: the Repair and Craft benches (suit drawings on a stand, hammer and forge animations). |
 | `genesis.js` | Guided character creation. |
@@ -136,3 +137,4 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-24:** Crafting is its own tab with one section per craft; each bench is an illustrated item with callout labels and an animated button under it. Utku.
 - **2026-10-24:** Armor repair: the Repair Count is capped at 10 dice. Utku.
 - **2026-10-24:** Armor crafting (not written in the 2020.1 book) follows the book's weapon crafting, with armor extras (+1 AV −10%, +5 Soak −5%); every change is marked in `rules-info.js`. Utku.
+- **2026-10-24:** Mossheart is an Extended theme for Utku's character Batbayar, a young warder who fights the Zhoung, a corrupting darkness, inside himself. Dark and grounded rather than whimsical: realistic ivy (woody stems, five-lobed leaves, moss, black berries) creeping round section corners (grown to fit each section by `fx-moss.js`; leaves lean gently, at most 10°, when the pointer brushes past, then settle), a few moss clumps and the odd stitched hide patch on section edges, carved-stone titles (Marcellus SC), drifting spores. Below rises the Zhoung, a violet-black shadow of roots that breathes and sometimes opens its eyes, held back by a faint line of warding runes. Broken attributes take its violet. Utku.
