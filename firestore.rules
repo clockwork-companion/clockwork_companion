@@ -71,5 +71,18 @@ service cloud.firestore {
                     && request.resource.data.score > 0 && request.resource.data.score <= 9999
                     && request.resource.data.at == request.time;
     }
+
+    // Hidden game (Furnace Below): shared high scores with the floor reached. Read by anyone, add-only.
+    match /arcade/furnace-below/scores/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(["name", "score", "floor", "at"])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 16
+                    && request.resource.data.score is int
+                    && request.resource.data.score > 0 && request.resource.data.score <= 999999
+                    && request.resource.data.floor is int
+                    && request.resource.data.floor >= 1 && request.resource.data.floor <= 999
+                    && request.resource.data.at == request.time;
+    }
   }
 }
