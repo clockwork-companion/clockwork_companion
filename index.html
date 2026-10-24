@@ -1039,6 +1039,13 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .forgebtn { display: inline-flex; align-items: center; gap: 9px; }
 .forgebtn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
 .ptwhy { text-align: center; margin: 0; max-width: 44ch; }
+.ptplanh { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.ptplanh .lbl { margin: 0; }
+.ptreset { font-size: 11px; padding: 3px 10px; }
+.ptbody { display: contents; }
+.ptagain { justify-content: center; gap: 8px; }
+.ptopt.row-opt:has(.brdel) { grid-template-columns: minmax(0, 1fr) auto auto; }
+.ptopt.row-opt .brdel { margin-right: 6px; }
 .ptread { width: 100%; max-width: 470px; border: 1.5px solid var(--rule); background: var(--card); padding: 12px 14px; display: grid; gap: 10px; }
 .ptstep { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ptstep b { flex: 1; font: 600 15px var(--f-head); letter-spacing: .05em; text-transform: uppercase; min-width: 0; }
 .ptdet { display: inline-flex; gap: 6px; }
@@ -1157,6 +1164,16 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .rnmun .rn-smoke circle { fill: #3a3631; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .rnmun.failed .rn-smoke circle, .rnmun.shatter .rn-smoke circle { animation: brsmoke 2.4s var(--d) ease-out infinite; }
 .rnalso { margin: 12px 0 0; font-size: 13px; }
+/* the workshop: jobs between players */
+.shopsend { margin-top: 18px; display: grid; gap: 6px; }
+.shopsend .lbl, .shoph { margin: 10px 0 2px; }
+.shopaway { gap: 8px; align-items: center; justify-content: space-between; }
+.shopaway > span { flex: 1 1 220px; font-size: 13px; color: var(--ink-2); }
+.ptopt.row-opt .shopback { margin-right: 8px; white-space: nowrap; }
+.wpbase { margin-top: 6px; }
+.rnlib { margin-top: 12px; display: grid; gap: 6px; }
+.rnlib .lbl { margin: 0; }
+.brform .ammode { margin: 0; }
 .rneff { display: grid; gap: 8px; }
 .rneff .ammode { margin: 0; }
 .rnpay { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
@@ -1586,7 +1603,25 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-skin="moss"] .frame:nth-of-type(3n)::after { display: none; }
 /* the living ivy (fx-moss.js) grows its own longer vines, moss and hide patches; the CSS vines above are its stand-in */
 .mh-ivy-layer { position: absolute; left: 0; top: 0; z-index: 2; overflow: hidden; pointer-events: none; }
-.mh-ivy { position: absolute; overflow: visible; pointer-events: none; }
+.mh-ivy { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; will-change: transform; }
+/* switching sections: a gust of leaves wipes the old section away and the new one appears in its wake (fx-moss.js) */
+:root.has-ivy[data-skin="moss"] .tabswap[data-dir]:not(.mh-wipe-in) { animation: none; }
+.mh-ghost { position: absolute; z-index: 3; margin: 0; padding: 0; max-width: none; overflow: hidden; pointer-events: none; }
+.mh-ghost > .tabswap { animation: none; }
+.mh-ghost.mh-wipe-out, :root .tabswap.mh-wipe-in { -webkit-mask-size: 300% 100%; mask-size: 300% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; animation: mhWipe .95s cubic-bezier(.4, .05, .35, 1) both; }
+.mh-ghost.mh-wipe-out.wind-l { -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 55%); mask-image: linear-gradient(90deg, #000 45%, transparent 55%); --m0: 20%; --m1: 82%; }
+:root .tabswap.mh-wipe-in.wind-l { -webkit-mask-image: linear-gradient(90deg, transparent 45%, #000 55%); mask-image: linear-gradient(90deg, transparent 45%, #000 55%); --m0: 20%; --m1: 82%; }
+.mh-ghost.mh-wipe-out.wind-r { -webkit-mask-image: linear-gradient(90deg, transparent 45%, #000 55%); mask-image: linear-gradient(90deg, transparent 45%, #000 55%); --m0: 82%; --m1: 20%; }
+:root .tabswap.mh-wipe-in.wind-r { -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 55%); mask-image: linear-gradient(90deg, #000 45%, transparent 55%); --m0: 82%; --m1: 20%; }
+.mh-wipe-out { filter: saturate(.7); }
+@keyframes mhWipe { from { -webkit-mask-position: var(--m0) 0; mask-position: var(--m0) 0; } to { -webkit-mask-position: var(--m1) 0; mask-position: var(--m1) 0; } }
+.mh-gust { position: fixed; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+.mh-gust svg { position: absolute; left: 0; top: 0; overflow: visible; filter: drop-shadow(0 2px 2px rgb(0 0 0 / .45)); }
+.mh-ivy.mh-leave { animation: mhLeave .7s ease-in forwards; }
+.mh-ivy.mh-grow { animation: mhGrow .7s .38s cubic-bezier(.2, .7, .3, 1) both; }
+@keyframes mhLeave { to { opacity: 0; translate: calc(var(--wind, -1) * 70px) -14px; } }
+@keyframes mhGrow { from { opacity: 0; scale: .97; } }
+@media (prefers-reduced-motion: reduce) { .mh-ivy.mh-leave, .mh-ivy.mh-grow, .mh-ghost.mh-wipe-out, :root .tabswap.mh-wipe-in { animation: none; } .mh-gust { display: none; } }
 :root.has-ivy[data-skin="moss"] .frame::before, :root.has-ivy[data-skin="moss"] .frame::after { display: none; }
 
 :root[data-skin="moss"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel, .member, .gx-attr, .gx-road, .gx-pick, .ptread, .pled, .ptopt, .ptel, .ptstage, .ptlabel) {
@@ -2149,6 +2184,13 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
       return name === "characters" && me.role !== "gm" ? ref.where("players", "array-contains", me.uid) : ref;
     },
     doc: path => fs.doc(`${root}/${path}`),
+    // Workshop jobs: a GM sees them all; a player sees the ones they sent or that wait on their bench.
+    jobs: (cb, err) => {
+      const docs = s => s.docs.map(d => Object.assign({}, d.data(), { id: d.id })), ref = fs.collection(`${root}/jobs`);
+      if (me.role === "gm") return ref.onSnapshot(s => cb(docs(s)), err);
+      const part = { from: [], to: [] }, out = () => { const m = new Map(); [...part.from, ...part.to].forEach(j => m.set(j.id, j)); cb([...m.values()]); };
+      ["from", "to"].forEach(k => ref.where(`${k}.uids`, "array-contains", me.uid).onSnapshot(s => { part[k] = docs(s); out(); }, err));
+    },
   };
   const assets = {
     async upload(file, previousId) {
@@ -2573,11 +2615,11 @@ const CW = (() => {
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
-               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] },
-               brew: { bonus: 0, known: [], recipes: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
-               rune: { bonus: 0, order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
+               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
+               brew: { bonus: 0, known: [], recipes: [], catalysts: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
+               rune: { bonus: 0, effects: [], order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
                        second: null, hoax: false, pay: "hp", hours: 1 }, ledger: [] },
-               weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" } }, ledger: [] } },
+               weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" }, for: "" }, ledger: [] }, jobsDone: [] },
       talents: [], uses: {},
     };
   }
@@ -2615,10 +2657,11 @@ const CW = (() => {
     if (!Array.isArray(out.craft.weapon.ledger)) out.craft.weapon.ledger = [];
     out.craft.brew = Object.assign({}, b.craft.brew, out.craft.brew);
     out.craft.brew.order = Object.assign({}, b.craft.brew.order, out.craft.brew.order);
-    ["known", "recipes", "ledger"].forEach(k => { if (!Array.isArray(out.craft.brew[k])) out.craft.brew[k] = []; });
+    ["known", "recipes", "catalysts", "ledger"].forEach(k => { if (!Array.isArray(out.craft.brew[k])) out.craft.brew[k] = []; });
     out.craft.rune = Object.assign({}, b.craft.rune, out.craft.rune);
     out.craft.rune.order = Object.assign({}, b.craft.rune.order, out.craft.rune.order);
-    if (!Array.isArray(out.craft.rune.ledger)) out.craft.rune.ledger = [];
+    ["effects", "ledger"].forEach(k => { if (!Array.isArray(out.craft.rune[k])) out.craft.rune[k] = []; });
+    if (!Array.isArray(out.craft.jobsDone)) out.craft.jobsDone = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
     out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
@@ -3038,7 +3081,8 @@ const CW = (() => {
   // Everything a repair of suit a needs: cost, materials, dice, and why it can't happen yet (if so).
   function repairPlan(c, a) {
     const st = amState(c), t = ARMOR[a.type] || ARMOR.light, chk = armorCheck(c, a);
-    const max = chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
+    // A suit sent by another player carries its wearer's own maximum (their Armor Mastery bonus included).
+    const max = a.jobMax != null ? num(a.jobMax) : chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
     const cost = t.repairPerAV * Math.max(1, num(a.av)) * (broken ? 2 : 1);
     const sides = +String(t.repairDie).slice(1);
     const have = num(c.craft && c.craft.supplies && c.craft.supplies[a.type]);
@@ -3160,6 +3204,7 @@ const CW = (() => {
     return { lvl, mod: skillModifier(c, "Brewing") + num(b.bonus), bonus: num(b.bonus), brew: lvl >= 3, incs: lvl >= 5, catalysts: lvl >= 5,
              known: lvl >= 10 ? 4 : lvl >= 5 ? Math.max(1, Math.floor(lvl / 3)) : 0, potent: lvl >= 7, potentPlus: lvl >= 9 };
   }
+  const allCatalysts = c => [...CATALYSTS, ...(((c.craft && c.craft.brew && c.craft.brew.catalysts) || []).map(k => Object.assign({ custom: true }, k)))];
   const allBrews = c => [...BREWS, ...(((c.craft && c.craft.brew && c.craft.brew.recipes) || []).map(r => Object.assign({ custom: true }, r)))];
   const findBrew = (c, k) => allBrews(c).find(r => r.k === k) || BREWS[0];
   // One brew's numbers at n increments.
@@ -3177,7 +3222,7 @@ const CW = (() => {
     const a = brewOne(c, findBrew(c, o.k), inc);
     const p = st.potent && o.potent && o.potent.k ? brewOne(c, findBrew(c, o.potent.k), st.potentPlus ? inc : (st.incs ? clamp(num(o.potent.inc), 0, 10) : 0)) : null;
     const known = (c.craft && c.craft.brew && c.craft.brew.known) || [];
-    const cat = st.catalysts && o.catalyst && known.includes(o.catalyst) ? CATALYSTS.find(x => x.k === o.catalyst) : null;
+    const cat = st.catalysts && o.catalyst && known.includes(o.catalyst) ? allCatalysts(c).find(x => x.k === o.catalyst) || null : null;
     const catDc = cat ? Math.max(0, cat.dc - st.lvl) : 0;
     const need = {}; [a, p].filter(Boolean).forEach(b => (need[b.herb] = (need[b.herb] || 0) + b.grams));
     const have = h => num(c.craft && c.craft.supplies && c.craft.supplies["herb:" + h]);
@@ -3226,8 +3271,8 @@ const CW = (() => {
     const extra = st.extra && !hoax ? Math.max(0, num(o.extra)) : 0;
     const extraPct = Math.floor(extra / 50);
     const mod = st.mod + extraPct, cost = Math.max(0, num(o.cost));
-    const effects = [{ kind: o.kind === "manifest" ? "manifest" : "enhance", effect: String(o.effect || "").trim(), dc: num(o.dc) }]
-      .concat(second ? [{ kind: second.kind === "manifest" ? "manifest" : "enhance", effect: String(second.effect || "").trim(), dc: num(second.dc) }] : []);
+    const eff = x => ({ kind: x.kind === "manifest" ? "manifest" : "enhance", effect: String(x.effect || "").trim(), dc: num(x.dc), note: String(x.note || "").trim() });
+    const effects = [eff(o)].concat(second ? [eff(second)] : []);
     // Chance to succeed: an enhancing stone holds on d100 − mod below 30, a manifesting stone below the GM's difficulty.
     const chances = effects.map(e => clamp((e.kind === "manifest" ? e.dc : 30) + mod - 1, 0, 100));
     const hours = Math.max(1, Math.floor(num(o.hours)) || 1), pay = HOAX_PAY[o.pay] ? o.pay : "hp";
@@ -3295,7 +3340,7 @@ const CW = (() => {
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
-           BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allBrews, findBrew, brewOne, brewPlan,
+           BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allCatalysts, allBrews, findBrew, brewOne, brewPlan,
            GEMS, RUNE_TABLE, runePotency, HOAX_PAY, runeState, runePlan };
 })();
 if (typeof module !== "undefined") module.exports = CW;
@@ -3498,23 +3543,25 @@ const RULES_INFO = {
     "Armor Maintenance 3 lets you mend a suit's Soak Pool. You need a blacksmithing kit; heavy and plate armor also need a forge.",
     { t: { cols: ["Type", "Materials per attempt", "Repair Die"], rows: [["Light", "50 g × AV", "d6"], ["Medium", "70 g × AV", "d8"], ["Heavy", "100 g × AV", "d10"], ["Plate", "150 g × AV", "d12"]] } },
     { h: "How a repair goes" }, { ul: ["Roll an Armor Maintenance check: d100 minus your modifier (3% × Armor Maintenance).", "Repair Count = 10 − check ÷ 10, rounded down. A check of 32 gives 6.", "Roll the Repair Die that many times. The total goes back into the Soak Pool.", "Each attempt takes an hour."] },
-    { note: "The app's readings: the Repair Count never goes above 10 dice (Utku). A broken suit (Soak 0) needs a skilled craftsman; the app counts Armor Maintenance 5 as skilled and charges double materials to rebuild it. This last one is a draft to confirm." } ] },
+    { h: "Working for other players" }, { ul: ["A player picks their item on the Repair bench and sends it to a smith in the same campaign (Maintenance 3 or more). The item stays in their Gear.", "The smith sees only that item, under \"Jobs from other players\", and repairs it with their own roll and materials. They can also send it back.", "The result lands on the owner's item the next time the owner's app is open.", "On the Craft bench, \"Made for\" sends a finished piece straight to another player's Gear (same campaign only)."] },
+    { note: "The app's readings: the Repair Count never goes above 10 dice (Utku). A suit repaired for someone else fills up to its wearer's own Soak maximum. A broken suit (Soak 0) needs a skilled craftsman; the app counts Armor Maintenance 5 as skilled and charges double materials to rebuild it. This last one is a draft to confirm." } ] },
   armorCraft: { kicker: "Crafting", title: "Crafting armor", body: [
     "Armor Maintenance 4 lets you make mundane suits; 8 adds Artisan properties. The 2020.1 book names armor crafting but doesn't give its steps yet, so the app follows the book's weapon crafting.",
     { h: "How a craft goes (our reading)" }, { ul: ["The GM gives the suit's type, Armor Value and Soak Pool.", "Materials: 5 × the suit's repair cost, of its type.", "Difficulty 70%. Roll d100 minus your modifier; under 70, the suit is made.", "A failure gives the suit a flaw (the GM decides it) and you roll again. A second failure loses the suit and every material.", "Crafting takes 8 hours. Heavy and plate need a forge."] },
     { h: "Extras (our reading)" }, { t: { cols: ["Extra", "Difficulty"], rows: [["Armor Value +1 (within the type's range)", "−10%"], ["Soak Pool +5", "−5%"]] } },
-    { note: "Changed from weapon crafting: the stat extras use armor's two numbers in place of the weapon table; the 'two random positive properties' step is left out because armor has no property list; a new suit's Soak Pool defaults to 10 × AV, from the book's chain-mail example. Artisan properties (level 8) aren't written in the book yet." } ] },
+    { note: "Changed from weapon crafting: the stat extras use armor's two numbers in place of the weapon table; the 'two random positive properties' step is left out because armor has no property list; a new suit's Soak Pool defaults to 10 × AV, from the book's chain-mail example. The base Armor Value and Soak Pool come from the GM, so on a table only a GM can set them; players raise them with the extras (Utku). Artisan properties (level 8) aren't written in the book yet." } ] },
   weaponRepair: { kicker: "Crafting", title: "Repairing weapons", body: [
     "Weapon Maintenance 3 lets you craft, repair and salvage mundane weapons. You need a blacksmithing kit or a forge.",
     { t: { cols: ["Weapon", "Materials per attempt"], rows: [["One-handed", "400 g"], ["Two-handed", "800 g"], ["Unwieldy", "+400 g"]] } },
     { h: "How a repair goes" }, { ul: ["Roll a Weapon Maintenance check: d100 minus your modifier (3% × Weapon Maintenance).", "Repair Count = 10 − check ÷ 10, rounded down. A check of 32 gives 6.", "Roll a d10 that many times. The total goes back into the weapon's Durability.", "Each attempt takes an hour."] },
+    { h: "Working for other players" }, { ul: ["A player picks their item on the Repair bench and sends it to a smith in the same campaign (Maintenance 3 or more). The item stays in their Gear.", "The smith sees only that item, under \"Jobs from other players\", and repairs it with their own roll and materials. They can also send it back.", "The result lands on the owner's item the next time the owner's app is open.", "On the Craft bench, \"Made for\" sends a finished piece straight to another player's Gear (same campaign only)."] },
     { note: "The app's readings: the Repair Count never goes above 10 dice, as for armor (Utku). A weapon at 0 durability can be repaired like any other; the flaw it gained for breaking stays until a weaponsmith removes it." } ] },
   weaponCraft: { kicker: "Crafting", title: "Crafting weapons", body: [
     "Weapon Maintenance 3 lets you craft mundane weapons; 5 adds exotic materials; 7 a second chosen property and one more failure.",
     { h: "How a craft goes" }, { ul: ["Ask the GM for the weapon's base stats: damage, accuracy, critical chance, durability and durability die.", "Materials: 5 × the weapon's repair materials.", "Difficulty 70%, made harder by any changes you add (below). Roll d100 minus your modifier; under the difficulty, it's made.", "If it has fewer than 2 properties, it gains 2 random positive ones.", "A failure gives the weapon a random flaw and you roll again. A second failure (third from Weapon Maintenance 7) loses the weapon and every material.", "Crafting takes 8 hours."] },
     { h: "Changes you can add" }, { t: { cols: ["Change", "Difficulty"], rows: [["Damage +1", "−10%"], ["Accuracy +1%", "−2%"], ["Critical chance +1%", "−2%"], ["A weapon property", "−10%"], ["Durability +1", "−1%"], ["Higher durability die", "−5%"]] } },
     "Exotic materials (unusual metals, monster parts) change the difficulty either way, as the GM says, and all their properties go onto the weapon.",
-    { note: "The app's readings: the random properties and flaws are drawn from those that fit the weapon (melee or ranged), and the GM sets any Rating. A ranged weapon's clip and ranges are set afterwards on its card. Tuning, Runecarving and Masterworking aren't on the bench yet." } ] },
+    { note: "The app's readings: the random properties and flaws are drawn from those that fit the weapon (melee or ranged), and the GM sets any Rating. A ranged weapon's clip and ranges are set afterwards on its card. Base stats come from the GM, so on a table only a GM can set them on the bench; players raise them with the changes above (Utku). Tuning, Runecarving and Masterworking aren't on the bench yet." } ] },
   brewing: { kicker: "Crafting", title: "Brewing", body: [
     "Brewing 3 lets you brew potions. You need a brewing kit, herbs or monster parts (the GM tells you their effects), and a flask.",
     { h: "How a brew goes" }, { ul: ["Your modifier is 3% × Brewing, plus any item bonus.", "Roll d100 and subtract your modifier. Under the brew's difficulty, it holds; otherwise the materials are lost.", "On a success, roll its toxicity and write the brew's stats down.", "A brew takes an hour."] },
@@ -3522,7 +3569,7 @@ const RULES_INFO = {
     { t: { cols: ["Recipe", "Effect", "Herbs", "Toxicity", "Difficulty"], rows: [["Health Potion", "2×Brewing HP, +2 per increment", "300 g + 100", "1d8 + 1d4", "50%, −(15 − Brewing)%"], ["Skele-Gro", "Bones heal 3× faster, +1×", "400 g + 150", "1d12 + 1d8", "50%, −(13 − Brewing)%"], ["The Sanguinar", "10×Brewing blood, +3×Brewing", "300 g + 200", "1d10 + 1d4", "40%, −(13 − Brewing)%"], ["Sleep Tightener", "1 Exhaustion point, +1", "500 g + 500", "1d8 + 1d6", "30%, −(18 − Brewing)%"], ["The Pick Me Up", "Brewing÷3 turns, +1", "200 g + 100", "1d6 + 1d4", "50%, −(13 − Brewing)%"]] } },
     { h: "Catalysts (Brewing 5)" }, { ul: ["Declare one before the roll; its difficulty is added to the brew's.", "You know 1 catalyst per 3 levels of Brewing (4 at 10).", "Duration: doubles a brew lasting under an hour; toxicity ×2.", "Toxicity: lowers toxicity by your Brewing.", "Volatile: a d100 decides: 1–10 five more increments, 11–25 three, 26–70 nothing, 71–94 it turns inert, 95–100 it explodes for 1d20 in 2 m."] },
     { h: "Potent Brews (Brewing 7)" }, { ul: ["One flask with two effects (the same effect may be taken twice). Roll for both; if either fails, both fail.", "Takes twice as long.", "Brewing 9: toxicity takes the higher of the two rolls instead of both, and increments apply to both."] },
-    { note: "The app's readings: the book writes per-increment difficulty as \"%15 − SP\"; the app reads it as 15% minus your Brewing (never below 0) per increment. A catalyst's \"−%10 + SP\" is read the same way: 10% harder, less your Brewing. Catalysts start at Brewing 5 with at least one known. The level 6 perk (\"extra materials to make brewing easier\") points to an \"Incrementing Brews\" section that's missing from our copy of the book, so it isn't on the bench yet. Flasks aren't counted." } ] },
+    { note: "The app's readings: the book writes per-increment difficulty as \"%15 − SP\"; the app reads it as 15% minus your Brewing (never below 0) per increment. A catalyst's \"−%10 + SP\" is read the same way: 10% harder, less your Brewing. Catalysts start at Brewing 5 with at least one known. The level 6 perk (\"extra materials to make brewing easier\") points to an \"Incrementing Brews\" section that's missing from our copy of the book, so it isn't on the bench yet. Flasks aren't counted. A catalyst the GM gives you takes your Brewing off its difficulty like the book's, and counts towards the catalysts you know. The book has no batches (one brew, one flask): \"Brew the same again\" just repeats the brew with a new roll." } ] },
   runecrafting: { kicker: "Crafting", title: "Runecrafting", body: [
     "A runestone is a gem (or certain monster parts) enchanted in a ritual that consumes materials. You need a runecrafting kit, the gem and the materials. An Appraisal check tells you what a gem can become and what the materials cost.",
     { h: "Two kinds of stone" }, { ul: ["Enhancing: raises one of the user's skills, attributes or abilities. Its strength (potency) comes from the table below.", "Manifesting: has an effect it can produce, all the time or a number of times. The GM sets a difficulty for it."] },
@@ -3533,7 +3580,7 @@ const RULES_INFO = {
     { h: "Potent Runestones (7)" }, "Made like two runestones at once. If either roll fails, both effects, the gem and the materials are destroyed.",
     { h: "Hoaxstones (6)" }, { ul: ["A mundane object becomes a temporary runestone, made like any other.", "Instead of materials, pay life force: for each 100 rubles the materials are worth, 2 hit points, 10 blood points or 5 deprivation points, all from one source.", "It lasts 1 hour, then crumbles. Each extra hour costs the same again, chosen when you make it.", "If the check fails, the life force is still lost."] },
     { h: "Embedding and removing" }, "Enhancing stones and stronger manifesting stones must be set into an item with a runeslot. Removing one usually destroys either the item or the stone: you choose which to save.",
-    { note: "The app's readings: \"Above 30\" on the table is read as 30 or more failing (so 29 is the last success). Potent Runestones need a precious gem, since a semi-precious one holds a single power. A Hoaxstone's life force is counted per started 100 rubles (250 rubles is 3 × the cost), and the stone itself still takes 8 hours to make, as the book says it is made like any other. Semi-precious caps and extra materials don't apply to Hoaxstones; the gem list's precious/semi-precious split (ruby, sapphire, emerald, diamond are precious) is the usual one, not the book's. The level 8 re-roll is offered right after a check you don't like, once per gemstone, and isn't offered for Hoaxstones. Identifying, extracting, moving and merging are listed but have no roll in the book, so the bench doesn't do them." } ] }
+    { note: "The app's readings: \"Above 30\" on the table is read as 30 or more failing (so 29 is the last success). Potent Runestones need a precious gem, since a semi-precious one holds a single power. A Hoaxstone's life force is counted per started 100 rubles (250 rubles is 3 × the cost), and the stone itself still takes 8 hours to make, as the book says it is made like any other. Semi-precious caps and extra materials don't apply to Hoaxstones; the gem list's precious/semi-precious split (ruby, sapphire, emerald, diamond are precious) is the usual one, not the book's. The level 8 re-roll is offered right after a check you don't like, once per gemstone, and isn't offered for Hoaxstones. Identifying, extracting, moving and merging are listed but have no roll in the book, so the bench doesn't do them. The book has no batches (one ritual, one stone): \"Enchant another the same way\" repeats the ritual with a new roll and new materials. Saved effects only fill in the effect; their difficulty is the GM's." } ] }
 };
 </script>
 <script>
@@ -3598,12 +3645,15 @@ const Store = {
       toast(err && err.code === "invalid_argument" ? "You can watch the initiative deck but not change it." : "Couldn't save the initiative deck just now. Try that again.");
     });
   },
-  queues: {}, timers: {},
+  queues: {}, timers: {}, pending: {},
   save(c, delay = 650) {
-    clearTimeout(this.timers[c.id]);
+    clearTimeout(this.timers[c.id]); this.pending[c.id] = c;
     this.timers[c.id] = setTimeout(() => this.flush(c), delay);
   },
+  // Save a character's waiting change now (the workshop clears a job only once the result is safely stored).
+  flushNow(id) { const c = this.pending[id]; if (!c) return Promise.resolve(); clearTimeout(this.timers[id]); return this.flush(c); },
   flush(c) {
+    if (this.pending[c.id] === c) delete this.pending[c.id];
     const body = clean(c); delete body.id;
     if (this.mode !== "live") { this.chars = Object.assign({}, this.chars, { [c.id]: Object.assign(body, { id: c.id }) }); lsSet(LS_KEY, this.chars); this.emit(); return Promise.resolve(); }
     const prev = this.queues[c.id] || Promise.resolve();
@@ -3616,6 +3666,7 @@ const Store = {
     this.queues[c.id] = p; return p;
   },
   async remove(id) {
+    Shop.forget(id);
     if (this.mode !== "live") { const n = Object.assign({}, this.chars); delete n[id]; this.chars = n; lsSet(LS_KEY, n); this.emit(); return; }
     await this.db.doc("characters/" + id).delete();
   },
@@ -4003,6 +4054,7 @@ function App() {
     Store.save(next);
   };
   const update = fn => { if (current) updateChar(current.id, fn); };
+  Shop.updater = updateChar; Shop.start();   // the workshop writes finished jobs onto this app's characters
   const openChar = id => { setSel(id); setView("chars"); setSettings(false); setTab("sheet"); window.scrollTo(0, 0); };
 
   // A new character belongs to the player who made it. A companion belongs to whoever plays its master.
@@ -5503,13 +5555,20 @@ void main() {
    small spring: when the cursor (or a finger) passes nearby, leaves lean the way it moved, then settle back.
    It only exists while the Mossheart theme is on. Nothing animates unless the pointer moves; it stops while
    the tab is hidden, and holds still for anyone who asks their device for reduced motion. Without it, the
-   theme's CSS vines (in app.css) are used instead. */
+   theme's CSS vines (in app.css) are used instead.
+   Switching sections (Sheet, Vitals, …): the ivy is measured the moment the new section is inserted, before it
+   is painted, and each section's ivy is kept, so it never lags behind. A gust of leaves then blows across: the
+   old section is wiped away behind it and the new one appears in its wake, in the direction you moved. */
 (function () {
   const NS = "http://www.w3.org/2000/svg";
   const IVY = "M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z";
   const VEINS = "M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12";
   const PAD = 40, REACH = 110, MAX_LEAN = 10;
-  let layer = null, leaves = [], active = new Set(), raf = 0, sig = "", timer = 0, mo = null;
+  let layer = null, leaves = [], active = new Set(), raf = 0, timer = 0, mo = null, width = 0;
+  const entries = new Map();   // section element -> { svg, key }
+  const cache = new Map();     // key -> grown ivy no longer on screen, ready to reuse
+  let bucket = null;           // where corner() puts the leaves it grows
+  let swapping = 0, follow = 0, followUntil = 0, gust = null;
   let px = -1e5, py = -1e5, vx = 0, vy = 0, lastT = 0;
   const still = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const on = () => document.documentElement.dataset.skin === "moss";
@@ -5590,7 +5649,7 @@ void main() {
         const lg = el("g", { transform: `translate(0 -6) scale(${s.toFixed(2)})` }, sw);
         el("path", { d: IVY, fill: `url(#${r() < .5 ? "mh-lg" : "mh-lg2"})`, stroke: "#0f1a0c", "stroke-width": ".7" }, lg);
         el("path", { d: VEINS, stroke: "#7f9a5c", "stroke-opacity": ".55", "stroke-width": ".6", fill: "none" }, lg);
-        leaves.push({ el: sw, lx: x, ly: y, a, sx, sy, cx, cy, svg, th: 0, om: 0 });
+        bucket.push({ el: sw, lx: x, ly: y, a, sx, sy, cx, cy, svg, th: 0, om: 0 });
       }
     };
     grow(top, 0); grow(side, 1);
@@ -5600,41 +5659,130 @@ void main() {
   }
   // Sections in the order CSS counts them (nth-of-type among their siblings), so the corners alternate the same way.
   function nth(f) { let n = 1, s = f; while ((s = s.previousElementSibling)) if (s.tagName === f.tagName) n++; return n; }
+  // One section's ivy, grown for its size (and its place in the order, so the corners alternate).
+  function build(n, W, H) {
+    const r = rng(n * 97 + Math.round(W / 40));
+    const svg = el("svg", { class: "mh-ivy", width: W + 2 * PAD, height: H + 2 * PAD, viewBox: `0 0 ${W + 2 * PAD} ${H + 2 * PAD}`, "aria-hidden": "true" });
+    svg._leaves = bucket = [];
+    const lenX = Math.max(140, Math.min(460, W * .42)), lenY = Math.max(100, Math.min(320, H * .55));
+    const C = { tl: [PAD, PAD, 1, 1], tr: [W + PAD, PAD, -1, 1], br: [W + PAD, H + PAD, -1, -1], bl: [PAD, H + PAD, 1, -1] };
+    const pair = n % 2 ? ["tl", "br"] : ["tr", "bl"];
+    corner(svg, r, ...C[pair[0]], lenX, lenY);
+    if (n % 3) corner(svg, r, ...C[pair[1]], lenX * .8, lenY * .8);
+    // moss on an edge away from the ivy, and now and then a hide patch
+    const g = el("g", {}, svg);
+    const edgeY = pair[0] === "tl" ? H + PAD : PAD, mx = PAD + W * (.35 + r() * .3);
+    moss(g, r, mx, edgeY, 90, 22 + r() * 14, 5, 4);
+    if (H > 240) moss(g, r, pair[0] === "tl" ? W + PAD : PAD, PAD + H * (.3 + r() * .2), 55, 4, 16, 2);
+    if (n % 3 === 1 && W > 300) hide(g, r, PAD + W * (.62 + r() * .2), pair[0] === "tl" ? H + PAD - 2 : PAD + 2, (r() - .5) * 16);
+    bucket = null;
+    return svg;
+  }
+  // Ivy that leaves the screen is kept for when its section comes back; during a gust it blows away first.
+  function park(e) {
+    const svg = e.svg, keep = () => { svg.remove(); svg.classList.remove("mh-leave", "mh-grow"); cache.delete(e.key); cache.set(e.key, svg); if (cache.size > 48) cache.delete(cache.keys().next().value); };
+    if (swapping && !still()) { svg.classList.remove("mh-grow"); svg.style.setProperty("--wind", swapping); svg.classList.add("mh-leave"); setTimeout(keep, 700); }
+    else keep();
+  }
+  // Grow (or reuse) ivy for every section on screen, then put each where its section is now.
   function layout() {
-    timer = 0;
+    clearTimeout(timer); timer = 0;
     if (!layer) return;
-    const frames = [...document.querySelectorAll(".frame")].filter(f => f.offsetParent !== null);
-    const rects = frames.map(f => f.getBoundingClientRect());
-    const sx0 = scrollX, sy0 = scrollY;
-    const key = rects.map(r => [r.left + sx0, r.top + sy0, r.width, r.height].map(Math.round).join(",")).join(";") + "|" + document.documentElement.clientWidth;
-    if (key === sig) return;
-    sig = key; leaves = []; active.clear();
-    [...layer.querySelectorAll("svg.mh-ivy")].forEach(s => s.remove());
-    // the layer covers the page (not more), so leaves past a section's edge never cause sideways scrolling
-    const app = document.getElementById("app"), bottom = app ? app.getBoundingClientRect().bottom + sy0 + PAD : 0;
-    layer.style.width = document.documentElement.clientWidth + "px"; layer.style.height = Math.max(0, bottom) + "px";
-    frames.forEach((f, i) => {
-      const r0 = rects[i], n = nth(f), r = rng(n * 97 + Math.round(r0.width / 40));
-      const W = r0.width, H = r0.height, x0 = r0.left + sx0 - PAD, y0 = r0.top + sy0 - PAD;
-      const svg = el("svg", { class: "mh-ivy", width: W + 2 * PAD, height: H + 2 * PAD, viewBox: `0 0 ${W + 2 * PAD} ${H + 2 * PAD}`, "aria-hidden": "true" });
-      svg.style.left = x0 + "px"; svg.style.top = y0 + "px";
-      svg._x = x0; svg._y = y0;
-      const lenX = Math.max(140, Math.min(460, W * .42)), lenY = Math.max(100, Math.min(320, H * .55));
-      const C = { tl: [PAD, PAD, 1, 1], tr: [W + PAD, PAD, -1, 1], br: [W + PAD, H + PAD, -1, -1], bl: [PAD, H + PAD, 1, -1] };
-      const pair = n % 2 ? ["tl", "br"] : ["tr", "bl"];
-      corner(svg, r, ...C[pair[0]], lenX, lenY);
-      if (n % 3) corner(svg, r, ...C[pair[1]], lenX * .8, lenY * .8);
-      // moss on an edge away from the ivy, and now and then a hide patch
-      const g = el("g", {}, svg);
-      const edgeY = pair[0] === "tl" ? H + PAD : PAD, mx = PAD + W * (.35 + r() * .3);
-      moss(g, r, mx, edgeY, 90, 22 + r() * 14, 5, 4);
-      if (H > 240) moss(g, r, pair[0] === "tl" ? W + PAD : PAD, PAD + H * (.3 + r() * .2), 55, 4, 16, 2);
-      if (n % 3 === 1 && W > 300) hide(g, r, PAD + W * (.62 + r() * .2), pair[0] === "tl" ? H + PAD - 2 : PAD + 2, (r() - .5) * 16);
-      layer.appendChild(svg);
+    const frames = [...document.querySelectorAll(".frame")].filter(f => f.offsetParent !== null && !f.closest(".mh-ghost"));
+    const seen = new Set();
+    frames.forEach(f => {
+      const b = f.getBoundingClientRect(), n = nth(f), W = Math.round(b.width), H = Math.round(b.height), key = `${n}|${W}|${H}`;
+      let e = entries.get(f);
+      if (!e || e.key !== key) {
+        if (e) park(e);
+        let svg = cache.get(key);
+        if (svg) cache.delete(key); else svg = build(n, W, H);
+        svg.classList.remove("mh-leave");
+        if (swapping && !still()) { svg.classList.add("mh-grow"); setTimeout(() => svg.classList.remove("mh-grow"), 1300); }
+        layer.appendChild(svg);
+        e = { svg, key }; entries.set(f, e);
+      }
+      seen.add(f);
     });
+    for (const [f, e] of entries) if (!seen.has(f)) { entries.delete(f); park(e); }
+    leaves = [].concat(...[...entries.values()].map(e => e.svg._leaves)); active.clear();
+    // the layer covers the page (not more), so leaves past a section's edge never cause sideways scrolling
+    const app = document.getElementById("app"), bottom = app ? app.getBoundingClientRect().bottom + scrollY + PAD : 0;
+    width = document.documentElement.clientWidth;
+    layer.style.width = width + "px"; layer.style.height = Math.max(0, bottom) + "px";
+    place();
+  }
+  // Move each section's ivy to where the section is right now (cheap: no regrowing).
+  function place() {
+    for (const [f, e] of entries) {
+      const b = f.getBoundingClientRect(), x = b.left + scrollX - PAD, y = b.top + scrollY - PAD;
+      if (e.svg._x !== x || e.svg._y !== y) { e.svg.style.transform = `translate(${x}px, ${y}px)`; e.svg._x = x; e.svg._y = y; }
+    }
+  }
+  // While something on the page is animating (a section sliding, a panel opening), keep the ivy on it.
+  function track(ms) {
+    followUntil = Math.max(followUntil, performance.now() + ms);
+    if (follow) return;
+    const step = () => { follow = 0; if (!layer) return; place(); if (performance.now() < followUntil && !document.hidden) follow = requestAnimationFrame(step); };
+    follow = requestAnimationFrame(step);
+  }
+
+  /* ---------- the gust: switching sections ---------- */
+  const LEAF_FILL = ["#46683a", "#2c4a22", "#3a5a2c", "#5c7a3a", "#6b5a2a", "#7a5226", "#4f3a1c"];
+  function blow(old, nu) {
+    finishGust();
+    const wind = nu.dataset.dir === "l" ? 1 : -1;   // to a tab on the right, the wind blows leftward (the way the section slides in)
+    const r = nu.getBoundingClientRect(), x = r.left + scrollX, y = r.top + scrollY;
+    // The old section stays on screen as a picture of itself (inert, no ids) and is wiped away by the gust.
+    old.querySelectorAll("[id]").forEach(n => n.removeAttribute("id"));
+    old.querySelectorAll("label[for]").forEach(n => n.removeAttribute("for"));
+    old.style.animation = "none";
+    const ghost = document.createElement("div");
+    ghost.className = "wrap mh-ghost"; ghost.setAttribute("aria-hidden", "true"); ghost.inert = true;
+    ghost.style.cssText = `left:${x}px;top:${y}px;width:${r.width}px;height:${Math.max(0, Math.min(old.scrollHeight || 4000, innerHeight - r.top))}px`;
+    ghost.appendChild(old);
+    document.body.appendChild(ghost);
+    ghost.style.height = Math.max(0, Math.min(old.scrollHeight, innerHeight - r.top)) + "px";
+    const dirCls = wind < 0 ? "wind-l" : "wind-r";
+    ghost.classList.add("mh-wipe-out", dirCls); nu.classList.add("mh-wipe-in", dirCls);
+    // the leaves ride the edge of the wipe, across the part of the section that's on screen
+    const top = Math.max(0, r.top), bot = Math.min(innerHeight, r.bottom), span = Math.max(80, bot - top);
+    const g = document.createElement("div"); g.className = "mh-gust"; g.setAttribute("aria-hidden", "true");
+    const n = Math.round(Math.min(40, 18 + span / 30)), W = innerWidth;
+    for (let i = 0; i < n; i++) {
+      const sz = 18 + Math.random() * 18, s = el("svg", { viewBox: "-14 -24 28 28", width: sz, height: sz });
+      el("path", { d: IVY, fill: LEAF_FILL[Math.floor(Math.random() * LEAF_FILL.length)], stroke: "#0f1a0c", "stroke-width": ".8" }, s);
+      el("path", { d: VEINS, stroke: "#9ab070", "stroke-opacity": ".45", "stroke-width": ".7", fill: "none" }, s);
+      g.appendChild(s);
+      const y0 = top + Math.random() * span, x0 = wind < 0 ? W + 40 : -40, x1 = wind < 0 ? -60 : W + 60;
+      const lift = (Math.random() - .5) * 140, spin = (Math.random() < .5 ? -1 : 1) * (240 + Math.random() * 420), dur = 850 + Math.random() * 450;
+      const k = t => `translate(${(x0 + (x1 - x0) * t).toFixed(0)}px, ${(y0 + lift * t + Math.sin(t * 6 + i) * 22).toFixed(0)}px) rotate(${(spin * t).toFixed(0)}deg) scale(${(1 - .25 * Math.abs(t - .5)).toFixed(2)})`;
+      s.animate([0, .25, .5, .75, 1].map((t, j) => ({ transform: k(t), opacity: j === 0 || j === 4 ? 0 : 1 })), { duration: dur, delay: i * 18 + Math.random() * 160, easing: "cubic-bezier(.35,.1,.45,1)", fill: "both" });
+    }
+    document.body.appendChild(g);
+    gust = { ghost, nu, g, dirCls, t: setTimeout(finishGust, 1700) };
+  }
+  function finishGust() {
+    if (!gust) return;
+    clearTimeout(gust.t); gust.ghost.remove(); gust.g.remove(); gust.nu.classList.remove("mh-wipe-in", gust.dirCls);
+    gust = null; swapping = 0; queue();
+  }
+  const isSwap = n => n.nodeType === 1 && n.classList.contains("tabswap");
+  // Watch the page: a new section → measure now (and maybe blow a gust); anything else → measure shortly.
+  function watch(records) {
+    let gone = null, came = null;
+    for (const m of records) {
+      if (m.target.closest && m.target.closest(".mh-ivy-layer, .mh-ghost, .mh-gust")) continue;
+      m.removedNodes.forEach(n => { if (isSwap(n)) gone = n; });
+      m.addedNodes.forEach(n => { if (isSwap(n)) came = n; });
+    }
+    if (!came) { queue(); return; }
+    if (gone && !still() && !document.hidden) { swapping = came.dataset.dir === "l" ? 1 : -1; blow(gone, came); }
+    layout(); track(400);
   }
   const queue = () => { if (!timer) timer = setTimeout(layout, 140); };
-  // Sections slide in when a tab opens; measure again once anything inside the app finishes animating.
+  // Something inside the app is animating: follow it, and measure again once it's done.
+  const moving = e => { const t = e.target; if (t && t.closest && t.closest("#app") && (t.classList.contains("frame") || (t.querySelector && t.querySelector(".frame")))) track(700); };
   const settle = e => { if (e.target && e.target.closest && e.target.closest("#app") && !e.target.closest(".mh-ivy-layer")) queue(); };
   // Leaves are springs: a nearby pointer pushes them the way it moved; they sway back and settle.
   function tick() {
@@ -5671,19 +5819,23 @@ void main() {
     layer.appendChild(defs());
     document.body.appendChild(layer);
     document.documentElement.classList.add("has-ivy");
-    sig = ""; layout();
-    mo = new MutationObserver(queue); mo.observe(document.getElementById("app") || document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "open"] });
+    layout();
+    mo = new MutationObserver(watch); mo.observe(document.getElementById("app") || document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "open"] });
     addEventListener("resize", queue); addEventListener("pointermove", move, { passive: true });
+    document.addEventListener("animationstart", moving, true);
     document.addEventListener("animationend", settle, true); document.addEventListener("transitionend", settle, true);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(queue);
   }
   function stop() {
     if (!layer) return;
     if (raf) cancelAnimationFrame(raf); raf = 0;
+    if (follow) cancelAnimationFrame(follow); follow = 0; clearTimeout(timer); timer = 0;
     if (mo) mo.disconnect(); mo = null;
+    finishGust();
     removeEventListener("resize", queue); removeEventListener("pointermove", move);
+    document.removeEventListener("animationstart", moving, true);
     document.removeEventListener("animationend", settle, true); document.removeEventListener("transitionend", settle, true);
-    layer.remove(); layer = null; leaves = []; active.clear(); sig = "";
+    layer.remove(); layer = null; leaves = []; active.clear(); entries.clear(); cache.clear();
     document.documentElement.classList.remove("has-ivy");
   }
   const sync = () => (on() && document.body ? start() : stop());
@@ -5720,6 +5872,14 @@ function CraftTab({ c, update }) {
     ${sub === "powder" ? html`<${Powdertinkering} c=${c} update=${update} />` : sub === "brew" ? html`<${Brewing} c=${c} update=${update} />` : sub === "rune" ? html`<${Runecrafting} c=${c} update=${update} />` : sub === "armor" ? html`<${ArmorUpkeep} c=${c} update=${update} />` : sub === "weapon" ? html`<${WeaponUpkeep} c=${c} update=${update} />` : html`<${UnderConstruction} c=${c} craft=${cur} />`}
   </div>`;
 }
+
+// The heading over a bench's plan, with a Reset that clears the set-up (supplies and the ledger stay).
+function PlanHead({ title, busy, onReset }) {
+  return html`<div class="ptplanh"><h3 class="lbl">${title}</h3>
+    <button type="button" class="btn small ptreset" disabled=${busy} title="Clear the set-up. Supplies and the ledger stay." onClick=${onReset}>Reset</button></div>`;
+}
+// Put a recipe back to the blank character's default, in place.
+const refill = (r, d) => { Object.keys(r).forEach(k => delete r[k]); Object.assign(r, JSON.parse(JSON.stringify(d))); };
 
 function UnderConstruction({ c, craft }) {
   const [k, n, skill, blurb] = craft;
@@ -5910,12 +6070,12 @@ function Powdertinkering({ c, update }) {
         <div class="ptside">
           <${PartPicker} part=${focus} c=${c} rc=${rc} st=${st} m=${m} sum=${sum} setRc=${setRc} disabled=${busy} />
           <div class="ptplan">
-            <h3 class="lbl">The craft</h3>
+            <${PlanHead} title="The craft" busy=${busy} onReset=${() => update(x => { x.craft.recipe = { type }; })} />
             <ol>${steps.map(s => html`<li><span>${s.label}</span><span class="muted">${s.dc}% · ${s.chance}% to land · 200 g ${s.mat === "container" ? "container" : s.mat.toLowerCase()}</span></li>`)}</ol>
             <div class="row ptbatch"><label for=${"ptb-" + c.id}>Batch size for ${m.n.toLowerCase()}</label>
               <input id=${"ptb-" + c.id} class="inp durin" type="number" min="1" value=${num(cr.batch[type]) || m.batch} disabled=${busy}
                 onInput=${e => update(x => { x.craft.batch[type] = Math.max(1, +e.target.value || 1); })} />
-              <span class="muted">Book: 4 bullets, 1 grenade, 1 oil. Decide it once per weapon.</span></div>
+              <span class="muted">One clip for this weapon, decided once. The materials stay 200 g a step whatever the size.</span></div>
           </div>
         </div>
       </div>
@@ -6252,6 +6412,190 @@ function Munition({ m, rc, sum, st, focus, partState, forging, phase, onPick }) 
         <span class="v">${!s.access ? "Not on this munition" : locked ? `Powdertinker ${st.unlockAt[p]}` : s.value || (p === "status" && !(rc.core && rc.core.el) ? "Needs a core" : "None")}</span></button>`; })}
   </div>`;
 }
+/* ================= crafting: the workshop (jobs between players) ================= */
+// A weaponsmith or armorsmith can repair another player's weapon or suit, or craft one for them, without the item
+// changing hands in the app. The owner sends a copy of one item (a "job"); it shows on the smith's Repair bench; the
+// smith rolls with their own skill and materials; then the owner's app writes the result onto the real item and
+// clears the job. A weapon or suit "made for" someone becomes a gift job that the recipient's app adds to their Gear.
+// The roster (one card per character: name, who plays it, Weapon and Armor Maintenance) says who can take jobs.
+// Players can't open each other's characters, so only the owner's (or recipient's) app ever changes their sheet.
+const SHOP_MIN = 3;   // Weapon/Armor Maintenance needed to take jobs (the book's repairs start at 3)
+const SHOP_SKILL = { weapon: "Weapon Maintenance", armor: "Armor Maintenance" };
+
+const Shop = {
+  started: false, jobs: [], roster: [], err: "", listeners: new Set(), cards: {}, busy: new Set(), updater: null,
+  emit() { this.listeners.forEach(f => f()); },
+  live() { return Store.mode === "live"; },
+  start() {
+    if (this.started || Store.mode === "loading") return;
+    this.started = true;
+    if (!this.live()) { this.jobs = lsGet("cw-jobs", []); Store.listeners.add(() => this.sync()); this.sync(); return; }
+    const db = Store.db, docs = s => s.docs.map(d => Object.assign({}, d.data(), { id: d.id }));
+    db.collection("roster").onSnapshot(s => { this.roster = docs(s); this.err = ""; this.emit(); this.publish(); }, () => this.fail());
+    const onJobs = list => { this.jobs = list; this.sync(); };
+    if (db.jobs) db.jobs(onJobs, () => this.fail());
+    else db.collection("jobs").onSnapshot(s => onJobs(docs(s)), () => this.fail());
+    Store.listeners.add(() => { this.publish(); this.sync(); });
+    this.publish();
+  },
+  fail() { this.err = "The table's database rules don't allow the workshop yet. Ask the GM (Sinan) to update them."; this.emit(); },
+
+  /* ---------- who's who ---------- */
+  me() { return Store.table ? Store.table.uid : null; },
+  // This app may change a character's sheet on its owner's behalf: in this browser, on claude.ai, by its player,
+  // or by a GM for a character nobody plays.
+  owns(char, uids) {
+    if (!Store.chars[char]) return false;
+    if (!Store.table) return true;
+    const u = uids || [];
+    return u.includes(this.me()) || (u.length === 0 && Store.table.role === "gm");
+  },
+  cardOf(c) { const n = norm(c); return { name: n.name || "Unnamed", uids: playersOf(n), campaign: String(n.campaign || "").trim(), weapon: R.wmState(n).lvl, armor: R.amState(n).lvl }; },
+  // Jobs only go between characters of the same campaign; a character with no campaign set has nobody to send to.
+  camp(x) { return String((x && x.campaign) || "").trim().toLowerCase(); },
+  same(c, r) { const k = this.camp(c); return !!k && k === this.camp(r); },
+  // Everyone at the table (characters, not companions).
+  list() {
+    const local = Object.values(Store.chars).filter(c => !c.companionOf).map(c => Object.assign(this.cardOf(c), { id: c.id }));
+    if (!this.live()) return local;
+    const byId = {}; this.roster.forEach(r => (byId[r.id] = r));
+    local.forEach(r => (byId[r.id] = r));   // what this app can see is fresher than the cards
+    return Object.values(byId).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  },
+  smiths(kind, c) { return this.list().filter(r => r.id !== c.id && num(r[kind]) >= SHOP_MIN && this.same(c, r)); },
+  card(id) { return this.list().find(r => r.id === id) || null; },
+  // Keep this app's characters on the roster (only when something changed).
+  publish() {
+    if (!this.live() || this.err) return;
+    Object.values(Store.chars).forEach(c => {
+      if (c.companionOf || !(!Store.table || Store.table.role === "gm" || playersOf(c).includes(this.me()))) return;
+      const card = this.cardOf(c), key = JSON.stringify(card), have = this.roster.find(r => r.id === c.id);
+      if (this.cards[c.id] === key || (have && JSON.stringify({ name: have.name, uids: have.uids, campaign: have.campaign || "", weapon: have.weapon, armor: have.armor }) === key)) { this.cards[c.id] = key; return; }
+      this.cards[c.id] = key;
+      Store.db.doc("roster/" + c.id).set(card).catch(() => this.fail());
+    });
+  },
+  forget(id) {
+    this.jobs.filter(j => j.from.char === id || j.to.char === id).forEach(j => this.del(j.id));
+    if (this.live()) Store.db.doc("roster/" + id).delete().catch(() => {});
+  },
+
+  /* ---------- jobs ---------- */
+  put(job) {
+    const body = clean(job); delete body.id;
+    if (!this.live()) { this.jobs = [...this.jobs.filter(j => j.id !== job.id), Object.assign(body, { id: job.id })]; lsSet("cw-jobs", this.jobs); this.emit(); this.sync(); return Promise.resolve(); }
+    return Store.db.doc("jobs/" + job.id).set(body).catch(() => { toast("Couldn't reach the workshop just now. Try again."); this.fail(); });
+  },
+  del(id) {
+    if (!this.live()) { this.jobs = this.jobs.filter(j => j.id !== id); lsSet("cw-jobs", this.jobs); this.emit(); return; }
+    Store.db.doc("jobs/" + id).delete().catch(() => {});
+  },
+  party(c) { const k = this.cardOf(c); return { char: c.id, name: k.name, uids: k.uids }; },
+  // The owner sends one item to a smith.
+  send(kind, c, item, smith) {
+    const it = clean(item);
+    if (kind === "armor") it.jobMax = R.armorCheck(norm(c), item).soakMax;   // the wearer's own Soak maximum
+    return this.put({ id: "j" + rid(), kind, mode: "repair", from: this.party(c), to: { char: smith.id, name: smith.name, uids: smith.uids || [] }, item: it, status: "open", t: Date.now() });
+  },
+  // The smith hands a finished craft to someone.
+  gift(kind, c, item, to) {
+    return this.put({ id: "j" + rid(), kind, mode: "gift", from: this.party(c), to: { char: to.id, name: to.name, uids: to.uids || [] }, item: clean(item), status: "open", t: Date.now() });
+  },
+  // The smith reports back (done or declined).
+  answer(job, status, result) {
+    if (!this.jobs.some(j => j.id === job.id)) return false;
+    this.put(Object.assign({}, job, { status, result: result || null, at: Date.now() }));
+    return true;
+  },
+  find(pred) { return this.jobs.find(pred) || null; },
+  // Open jobs waiting on this character's bench.
+  incoming(c, kind) { return this.jobs.filter(j => j.kind === kind && j.mode === "repair" && j.status === "open" && j.to.char === c.id); },
+  outgoing(c, kind, itemId) { return this.find(j => j.kind === kind && j.mode === "repair" && j.from.char === c.id && j.item.id === itemId && j.status === "open"); },
+
+  // Write finished jobs onto the sheets this app looks after, then clear them.
+  sync() {
+    this.emit();
+    if (!this.updater) return;
+    this.jobs.forEach(j => {
+      if (this.busy.has(j.id)) return;
+      const repairBack = j.mode === "repair" && j.status !== "open" && this.owns(j.from.char, j.from.uids);
+      const giftIn = j.mode === "gift" && this.owns(j.to.char, j.to.uids);
+      if (!repairBack && !giftIn) return;
+      this.busy.add(j.id);
+      const target = repairBack ? j.from.char : j.to.char;
+      this.updater(target, x => {
+        if (!Array.isArray(x.craft.jobsDone)) x.craft.jobsDone = [];
+        if (x.craft.jobsDone.includes(j.id)) return;
+        x.craft.jobsDone = [j.id, ...x.craft.jobsDone].slice(0, 40);
+        const label = j.item.name || (j.kind === "weapon" ? "Weapon" : `${(R.ARMOR[j.item.type] || R.ARMOR.light).label} armor`);
+        if (giftIn) {
+          if (j.kind === "weapon") x.weapons.push(Object.assign({}, j.item, { id: rid(), where: "pack" }));
+          else x.armor.push(Object.assign({}, j.item, { id: rid(), worn: false }));
+          addLog(x, `${j.from.name} made ${label} for you; it's in your Gear now`);
+          return;
+        }
+        if (j.status === "declined") { addLog(x, `${j.to.name} sent ${label} back without repairing it`); return; }
+        const r = j.result || {}, gained = num(r.gained);
+        if (j.kind === "weapon") { const w = x.weapons.find(y => y.id === j.item.id); if (w) w.dur = Math.min(num(w.durMax), num(w.dur) + gained); }
+        else { const a = x.armor.find(y => y.id === j.item.id); if (a) a.soak = Math.min(num(j.item.jobMax) || Infinity, num(a.soak) + gained); }
+        addLog(x, `${j.to.name} repaired ${label}: +${gained} ${j.kind === "weapon" ? "Durability" : "Soak"}${r.roll ? ` (${r.roll})` : ""}`);
+      });
+      toast(giftIn ? `${j.from.name} sent you ${j.item.name || "a new item"}.` : j.status === "declined" ? `${j.to.name} sent ${j.item.name || "it"} back.` : `${j.to.name} repaired ${j.item.name || "your item"}.`);
+      Store.flushNow(target).then(() => this.del(j.id));
+    });
+  },
+};
+
+function useShop() {
+  const [, tick] = useState(0);
+  useEffect(() => { const f = () => tick(n => n + 1); Shop.listeners.add(f); Shop.start(); return () => Shop.listeners.delete(f); }, []);
+  return Shop;
+}
+
+// On the owner's Repair bench, under the picked item: send it to a smith, or see that it's away.
+function ShopSend({ c, kind, item, busy }) {
+  useShop();
+  if (!item) return null;
+  const out = Shop.outgoing(c, kind, item.id), smiths = Shop.smiths(kind, c), skill = SHOP_SKILL[kind], camp = String(c.campaign || "").trim();
+  return html`<div class="shopsend">
+    <h3 class="lbl">Or send it to a ${kind === "weapon" ? "weaponsmith" : "armorsmith"}</h3>
+    ${Shop.err ? html`<p class="muted ptrule">${Shop.err}</p>`
+      : out ? html`<div class="row shopaway"><span><span class="flag brass">At ${out.to.name}'s bench</span> Waiting for them to repair it. It stays in your Gear meanwhile.</span>
+          <button class="btn small" disabled=${busy} onClick=${() => Shop.del(out.id)}>Take it back</button></div>`
+      : !camp ? html`<p class="muted ptrule">Set this character's campaign on the Sheet first: you can only send things to smiths in the same campaign.</p>`
+      : smiths.length === 0 ? html`<p class="muted ptrule">Nobody else in ${camp} has ${skill} ${SHOP_MIN} or more.</p>`
+      : html`<p class="muted ptrule">They see only this ${kind === "weapon" ? "weapon" : "suit"}, repair it with their own roll and materials, and it comes back here.</p>
+        <div class="ptopts brchips">${smiths.map(s => html`<button type="button" class="ptopt" disabled=${busy} onClick=${() => { Shop.send(kind, c, item, s); toast(`Sent to ${s.name}.`); }}>
+          <b>Send to ${s.name}</b><span>${skill} ${s[kind]}</span></button>`)}</div>`}
+  </div>`;
+}
+
+// On the smith's Repair bench: other players' items waiting for them.
+function ShopJobs({ c, kind, selId, pick, busy }) {
+  useShop();
+  const jobs = Shop.incoming(c, kind);
+  if (!jobs.length) return null;
+  return html`<h3 class="lbl shoph">Jobs from other players</h3>
+    <div class="ptopts amsuits">${jobs.map(j => { const it = j.item, wpn = kind === "weapon";
+      const now = wpn ? num(it.dur) : num(it.soak), max = wpn ? num(it.durMax) : num(it.jobMax) || num(it.soakMax);
+      return html`<div class=${"ptopt row-opt" + (selId === "job:" + j.id ? " on" : "")}>
+        <button type="button" class="ptcheck" aria-pressed=${selId === "job:" + j.id} disabled=${busy} onClick=${() => pick("job:" + j.id)}>
+          <b>${j.from.name}'s ${it.name || (wpn ? "weapon" : "armor")}</b><span>${wpn ? `${it.shield ? "Shield" : it.skill} · Durability` : `${(R.ARMOR[it.type] || R.ARMOR.light).label} · AV ${num(it.av)} · Soak`} ${now}/${max}</span>
+          <i class="amtrack"><i style=${`width:${max ? (now / max) * 100 : 0}%`}></i></i></button>
+        <button class="btn small shopback" disabled=${busy} title="Send it back without repairing it" onClick=${() => Shop.answer(j, "declined")}>Send back</button></div>`; })}</div>
+    <h3 class="lbl shoph">Your own</h3>`;
+}
+
+// On a craft bench: who the finished piece is for.
+function MadeFor({ c, value, onSet, busy }) {
+  useShop();
+  const others = Shop.list().filter(r => r.id !== c.id && Shop.same(c, r));   // only characters in the same campaign
+  if (!others.length) return null;
+  return html`<div class="row ptbatch"><label for=${"mf-" + c.id}>Made for</label>
+    <select id=${"mf-" + c.id} class="inp" value=${value || ""} disabled=${busy} onChange=${e => onSet(e.target.value)}>
+      <option value="">Me (my Gear)</option>${others.map(r => html`<option value=${r.id}>${r.name}</option>`)}</select>
+    <span class="muted">It goes straight to their Gear; your materials pay for it.</span></div>`;
+}
 /* ================= crafting: armor upkeep (Armor Maintenance) ================= */
 // Two benches in one: Repair (the book's procedure) and Craft (our reading, built on the book's weapon crafting).
 // The suit stands on a mannequin. Repair hammers out its dents one Repair Die at a time; crafting forges it from a ghost outline.
@@ -6367,10 +6711,14 @@ function ArmorUpkeep({ c, update }) {
   useEffect(() => { stop(); setRun(null); setSel(""); }, [c.id]);
   const busy = !!run && !run.done;
   // The suit to repair: the one picked, else the most damaged.
+  useShop();
   const suits = c.armor;
   const byNeed = [...suits].sort((a, b) => R.repairPlan(c, b).missing - R.repairPlan(c, a).missing);
-  const suit = suits.find(a => a.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
-  const rp = suit ? R.repairPlan(c, suit) : null;
+  // Another player's suit on this bench (a workshop job), else one of this character's own.
+  const job = run && run.kind === "repair" ? run.job : selId.startsWith("job:") ? Shop.incoming(c, "armor").find(j => "job:" + j.id === selId) || null : null;
+  const suit = job ? job.item : suits.find(a => a.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
+  const away = !job && suit ? Shop.outgoing(c, "armor", suit.id) : null;   // sent to a smith: they repair it, not us
+  const rp = suit ? Object.assign(R.repairPlan(c, suit), away ? { block: `It's at ${away.to.name}'s bench. Take it back to repair it yourself.` } : {}) : null;
   const rc = ca.recipe, cp = R.craftPlan(c, rc);
   const setRc = fn => update(x => fn(x.craft.armor.recipe));
   const T = R.ARMOR;
@@ -6379,12 +6727,12 @@ function ArmorUpkeep({ c, update }) {
   /* ---------- repair: one check, then one hammer strike per Repair Die ---------- */
   const startRepair = async () => {
     if (!suit || rp.block) return;
-    const plan = rp, id = suit.id;
-    const first = await askRoll({ title: "Armor repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
+    const plan = rp, id = suit.id, theJob = job;
+    const first = await askRoll({ title: theJob ? `Armor repair check: ${theJob.from.name}'s ${suit.name || "armor"}` : "Armor repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
       note: `d100 − ${st.mod}. Repair Count = 10 − check ÷ 10: that many ${plan.die} restore Soak.` });
     if (!first) return;
-    setSel(id);
-    setRun({ kind: "repair", phase: "rolling", id, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod });
+    setSel(theJob ? "job:" + theJob.id : id);
+    setRun({ kind: "repair", phase: "rolling", id, job: theJob, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod });
     later(() => {
       const r = first[0], check = r - st.mod, count = R.repairCount(check);
       patch({ phase: "counted", r, check, count, dice: [] });
@@ -6405,6 +6753,19 @@ function ArmorUpkeep({ c, update }) {
   const finishRepair = () => {
     const f = runRef.current; if (!f) return;
     const total = f.dice.reduce((s, x) => s + x, 0), gained = Math.min(f.plan.missing, total);
+    if (f.job) {
+      // Another player's suit: the result goes back to them; this smith pays the materials.
+      const roll = `check ${f.r}−${f.mod}=${f.check} → ${f.count} × ${f.plan.die}${f.count ? ": " + total : ""}`;
+      if (!Shop.answer(f.job, "done", { gained, roll, by: c.name || "" })) { toast(`${f.job.from.name} took it back before you finished.`); patch({ done: true, phase: "done", total, gainedFinal: 0, gone: true }); return; }
+      update(x => {
+        x.craft.supplies[f.plan.mat] = Math.max(0, num(x.craft.supplies[f.plan.mat]) - f.plan.cost);
+        const txt = `${f.job.from.name}'s ${f.job.item.name || T[f.job.item.type].label + " armor"}: Soak ${f.plan.soak} → ${f.plan.soak + gained}`;
+        addLedger(x, { kind: "repair", name: `${f.plan.broken ? "Rebuilt" : "Repaired"} ${txt}`, rolls: [roll] });
+        addLog(x, `Armor repair for ${f.job.from.name}: ${txt} (${f.plan.cost} g ${f.plan.mat} materials)`);
+      });
+      patch({ done: true, phase: "done", total, gainedFinal: gained });
+      return;
+    }
     update(x => {
       const a = x.armor.find(y => y.id === f.id); if (!a) return;
       a.soak = num(a.soak) + gained;
@@ -6424,7 +6785,7 @@ function ArmorUpkeep({ c, update }) {
       note: `d100 − ${st.mod}, under ${plan.dc}.${n ? " A second failure loses the suit." : " A failure leaves a flaw and gives one more try."}` });
     const first = await ask(0);
     if (!first) return;
-    setRun({ kind: "craft", phase: "heat", plan, name, rolls: [], flaws: 0, mod: st.mod });
+    setRun({ kind: "craft", phase: "heat", plan, name, for: rc.for || "", rolls: [], flaws: 0, mod: st.mod });
     const roll = async n => {
       const r = n ? (await ask(1))[0] : first[0];
       if (!runRef.current) return;
@@ -6442,14 +6803,17 @@ function ArmorUpkeep({ c, update }) {
   const finishCraft = ok => {
     const f = runRef.current; if (!f) return;
     const nm = f.name + (f.flaws ? ` · ${f.flaws} flaw` : "");
+    const forWho = ok && f.for && f.for !== c.id ? Shop.card(f.for) : null;
     update(x => {
       x.craft.supplies[f.plan.type] = Math.max(0, num(x.craft.supplies[f.plan.type]) - f.plan.cost);
-      if (ok) x.armor.push({ id: rid(), name: nm, type: f.plan.type, av: f.plan.finalAV, soak: f.plan.finalSoak, soakMax: f.plan.finalSoak, worn: false, where: "pack" });
-      addLedger(x, { kind: "craft", name: ok ? `Crafted ${nm} (AV ${f.plan.finalAV}, Soak ${f.plan.finalSoak})` : `Lost ${f.name} in the forge`, scrap: !ok, det: ok ? f.flaws : 0,
+      const made = ok && { id: rid(), name: nm, type: f.plan.type, av: f.plan.finalAV, soak: f.plan.finalSoak, soakMax: f.plan.finalSoak, worn: false, where: "pack" };
+      if (made && !forWho) x.armor.push(made);
+      if (made && forWho) Shop.gift("armor", c, made, forWho);
+      addLedger(x, { kind: "craft", name: ok ? `Crafted ${nm}${forWho ? ` for ${forWho.name}` : ""} (AV ${f.plan.finalAV}, Soak ${f.plan.finalSoak})` : `Lost ${f.name} in the forge`, scrap: !ok, det: ok ? f.flaws : 0,
         rolls: f.rolls.map(r => `${r.r}−${f.mod}=${r.total} vs ${f.plan.dc} ${r.ok ? "✓" : "✗"}`) });
       addLog(x, ok ? `Armor crafting: made ${nm} (${f.plan.cost} g ${f.plan.type} materials)` : `Armor crafting: the suit was lost (${f.plan.cost} g ${f.plan.type} materials)`);
     });
-    patch({ done: true, phase: ok ? "made" : "lost" });
+    patch({ done: true, phase: ok ? "made" : "lost", forName: forWho ? forWho.name : "" });
   };
   const close = () => { stop(); setRun(null); };
 
@@ -6480,7 +6844,7 @@ function ArmorUpkeep({ c, update }) {
             ${run && html`<${AmReadout} run=${run} onClose=${close} />`}
           </div>
         </div>
-        <div class="ptside">${mode === "repair" ? html`<${RepairSide} c=${c} suits=${suits} suit=${suit} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
+        <div class="ptside">${mode === "repair" ? html`<${RepairSide} c=${c} suits=${suits} suit=${suit} job=${job} selId=${selId} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
           : html`<${CraftSide} c=${c} rc=${rc} cp=${cp} st=${st} focus=${focus} setFocus=${setFocus} setRc=${setRc} busy=${busy} />`}</div>
       </div>
     </section>
@@ -6517,7 +6881,7 @@ function AmReadout({ run, onClose }) {
     if (run.done) return html`<div class=${"ptread end " + (run.gainedFinal ? "done" : "nothing")} role="status">
       <p class="ptbig">${run.gainedFinal ? `+${run.gainedFinal} Soak` : "No soak recovered"}</p>
       <p>${run.count ? `${run.count} × ${p.die}: ${run.dice.length > 1 ? run.dice.join(" + ") + " = " : ""}${run.total}${run.total > run.gainedFinal ? ` (the suit was full at ${p.max})` : ""}` : "The check was too high for even one Repair Die."}</p>
-      <p class="muted">${p.cost} g of ${p.mat} materials used · an hour's work.</p>
+      <p class="muted">${run.gone ? "Nothing was spent." : `${p.cost} g of ${p.mat} materials used · an hour's work.`}${run.job && !run.gone ? ` It goes back to ${run.job.from.name}'s Gear.` : ""}</p>
       <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
     return html`<div class="ptread" role="status" aria-live="polite">
       <div class="ptstep"><span class="lbl">${run.phase === "rolling" ? "Armor Maintenance check" : "Repair Dice"}</span>
@@ -6532,7 +6896,7 @@ function AmReadout({ run, onClose }) {
   if (run.done) return html`<div class=${"ptread end " + (run.phase === "made" ? "done" : "scrap")} role="status">
     <p class="ptbig">${run.phase === "made" ? "Forged" : "Lost in the forge"}</p>
     <p>${run.phase === "made" ? `${run.name}: ${p.t.label}, AV ${p.finalAV}, Soak ${p.finalSoak}${run.flaws ? ", with a flaw for the GM to decide" : ""}.` : "Two failures: the suit and every material in it are gone."}</p>
-    ${run.phase === "made" && html`<p class="muted">Added to Armor on the Gear tab. Eight hours at the anvil.</p>`}
+    ${run.phase === "made" && html`<p class="muted">${run.forName ? `Sent to ${run.forName}'s Gear` : "Added to Armor on the Gear tab"}. Eight hours at the anvil.</p>`}
     <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
   return html`<div class="ptread" role="status" aria-live="polite">
     <div class="ptstep"><span class="lbl">Roll ${Math.min(2, (run.rolls || []).length + ((run.phase === "rolling" && !r) || run.phase === "flaw" ? 1 : 0)) || 1} of 2 at most</span>
@@ -6544,12 +6908,13 @@ function AmReadout({ run, onClose }) {
   </div>`;
 }
 
-function RepairSide({ c, suits, suit, rp, st, busy, pick }) {
+function RepairSide({ c, suits, suit, job, selId, rp, st, busy, pick }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>Suits</span></h3>
+    <${ShopJobs} c=${c} kind="armor" selId=${selId} pick=${pick} busy=${busy} />
     ${suits.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${suits.map(a => { const p = R.repairPlan(c, a);
-      return html`<button type="button" class="ptopt amsuit" aria-pressed=${suit && suit.id === a.id} disabled=${busy} onClick=${() => pick(a.id)}>
-        <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}</b>
+      return html`<button type="button" class="ptopt amsuit" aria-pressed=${!job && suit && suit.id === a.id} disabled=${busy} onClick=${() => pick(a.id)}>
+        <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}${Shop.outgoing(c, "armor", a.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "armor", a.id).to.name}'s</span>` : ""}</b>
         <span>${R.ARMOR[a.type].label} · AV ${num(a.av)} · Soak ${p.soak}/${p.max}</span>
         <i class="amtrack"><i style=${`width:${p.max ? (p.soak / p.max) * 100 : 0}%`}></i></i></button>`; })}</div>`}
     ${suit && html`<div class="ptplan"><h3 class="lbl">The repair</h3><ol>
@@ -6557,6 +6922,7 @@ function RepairSide({ c, suits, suit, rp, st, busy, pick }) {
       <li><span>Check: d100 − ${st.mod}</span><span class="muted">Repair Count = 10 − check ÷ 10, rounded down, at most 10</span></li>
       <li><span>Roll ${rp.die} that many times</span><span class="muted">The total goes back into the Soak Pool (up to ${rp.max}). An hour per attempt.</span></li></ol>
       <p class="ptdc">Check 0 or less: 10 × ${rp.die} · check 40: 6 × ${rp.die} · check 90: 1 × ${rp.die}</p></div>`}
+    ${suit && !job && html`<${ShopSend} c=${c} kind="armor" item=${suit} busy=${busy} />`}
   </div>`;
 }
 
@@ -6568,7 +6934,9 @@ function CraftSide({ c, rc, cp, st, focus, setFocus, setRc, busy }) {
   if (focus === "type") body = html`<p class="muted ptrule">The GM tells you what kind of suit can be made here.</p><div class="ptopts">${Object.entries(T).map(([k, x]) => html`<button type="button" class="ptopt" aria-pressed=${cp.type === k} disabled=${busy}
       onClick=${() => setRc(r => { r.type = k; r.av = x.av[0]; r.soak = 10 * x.av[0]; r.plusAV = 0; })}><b>${x.label} · AV ${x.av[0]}–${x.av[1]}</b>
       <span>${5 * x.repairPerAV} g × AV of ${x.label.toLowerCase()} materials${R.AM_FORGE.includes(k) ? " · needs a forge" : ""}</span></button>`)}</div>`;
-  else if (focus === "av" || focus === "soak") body = html`<p class="muted ptrule">The suit's base numbers, from the GM.</p>
+  else if (focus === "av" || focus === "soak") body = !isGM() ? html`<p class="muted ptrule">The suit's base numbers come from the GM, so only a GM can set them here (they can open your sheet). To raise them yourself, use Extras: each step makes the roll harder.</p>
+    <div class="facts wpbase">${[["Armor Value", cp.av], ["Soak Pool", cp.soak], ["Range for " + t.label.toLowerCase(), `${t.av[0]}–${t.av[1]}`]].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>`
+  : html`<p class="muted ptrule">The suit's base numbers, from the GM. Only a GM can change these; players raise them through Extras.</p>
     <div class="row ptrate"><span><b>Armor Value ${cp.av}</b> · ${t.label} runs ${t.av[0]}–${t.av[1]}</span>
       <${Step} label="Armor Value" value=${cp.av} min=${t.av[0]} max=${t.av[1]} onSet=${v => setRc(r => { r.av = v; r.plusAV = Math.min(num(r.plusAV), t.av[1] - v); })} /></div>
     <div class="row ptrate"><span><b>Soak Pool ${cp.soak}</b> · usually 10 × AV</span>
@@ -6585,12 +6953,13 @@ function CraftSide({ c, rc, cp, st, focus, setFocus, setRc, busy }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>${AM_NAME[focus] || "Type"}</span><small>${focus === "type" ? t.label : focus === "extra" ? `${cp.dc}%` : focus === "av" ? `AV ${cp.finalAV}` : `Soak ${cp.finalSoak}`}</small></h3>
     ${body}
-    <div class="ptplan"><h3 class="lbl">The craft</h3><ol>
+    <div class="ptplan"><${PlanHead} title="The craft" busy=${busy} onReset=${() => setRc(r => refill(r, R.blankCharacter().craft.armor.recipe))} /><ol>
       <li><span>Materials: ${cp.cost} g of ${t.label.toLowerCase()} materials</span><span class="muted">5 × repair cost (${t.repairPerAV} g × AV ${cp.finalAV})</span></li>
       <li><span>Roll under ${cp.dc}%</span><span class="muted">${cp.chance}% to land · a failure leaves a flaw and you roll again; two failures lose it all</span></li>
       <li><span>Eight hours${R.AM_FORGE.includes(cp.type) ? " at a forge" : ""}</span><span class="muted">The suit joins your Armor on the Gear tab.</span></li></ol>
       <div class="row ptbatch"><label for=${"amn-" + c.id}>Name</label>
-        <input id=${"amn-" + c.id} class="inp" placeholder=${`${t.label} armor`} value=${rc.name || ""} disabled=${busy} onInput=${e => setRc(r => { r.name = e.target.value; })} /></div></div>
+        <input id=${"amn-" + c.id} class="inp" placeholder=${`${t.label} armor`} value=${rc.name || ""} disabled=${busy} onInput=${e => setRc(r => { r.name = e.target.value; })} /></div>
+      <${MadeFor} c=${c} value=${rc.for} busy=${busy} onSet=${v => setRc(r => { r.for = v; })} /></div>
   </div>`;
 }
 /* ================= crafting: weapon upkeep (Weapon Maintenance) ================= */
@@ -6722,10 +7091,14 @@ function WeaponUpkeep({ c, update }) {
   useEffect(() => () => stop(), []);
   useEffect(() => { stop(); setRun(null); setSel(""); }, [c.id]);
   const busy = !!run && !run.done;
+  useShop();
   const ws = c.weapons.filter(w => num(w.durMax) > 0 || w.name);
   const byNeed = [...ws].sort((a, b) => R.wRepairPlan(c, b).missing - R.wRepairPlan(c, a).missing);
-  const weapon = ws.find(w => w.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
-  const rp = weapon ? R.wRepairPlan(c, weapon) : null;
+  // Another player's weapon on this bench (a workshop job), else one of this character's own.
+  const job = run && run.kind === "repair" ? run.job : selId.startsWith("job:") ? Shop.incoming(c, "weapon").find(j => "job:" + j.id === selId) || null : null;
+  const weapon = job ? job.item : ws.find(w => w.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
+  const away = !job && weapon ? Shop.outgoing(c, "weapon", weapon.id) : null;   // sent to a smith: they repair it, not us
+  const rp = weapon ? Object.assign(R.wRepairPlan(c, weapon), away ? { block: `It's at ${away.to.name}'s bench. Take it back to repair it yourself.` } : {}) : null;
   const rc = cw.recipe, cp = R.wCraftPlan(c, rc);
   const setRc = fn => update(x => fn(x.craft.weapon.recipe));
   const addLedger = (x, e) => { x.craft.weapon.ledger = [Object.assign({ id: rid(), t: Date.now(), note: "" }, e), ...x.craft.weapon.ledger].slice(0, 20); };
@@ -6734,12 +7107,12 @@ function WeaponUpkeep({ c, update }) {
   /* ---------- repair: one check, then one hammer strike per d10 ---------- */
   const startRepair = async () => {
     if (!weapon || rp.block) return;
-    const plan = rp, id = weapon.id;
-    const first = await askRoll({ title: "Weapon repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
+    const plan = rp, id = weapon.id, theJob = job;
+    const first = await askRoll({ title: theJob ? `Weapon repair check: ${theJob.from.name}'s ${weapon.name || "weapon"}` : "Weapon repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
       note: `d100 − ${st.mod}. Repair Count = 10 − check ÷ 10: that many d10 restore Durability.` });
     if (!first) return;
-    setSel(id);
-    setRun({ kind: "repair", phase: "rolling", id, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod, flaws: [] });
+    setSel(theJob ? "job:" + theJob.id : id);
+    setRun({ kind: "repair", phase: "rolling", id, job: theJob, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod, flaws: [] });
     later(() => {
       const r = first[0], check = r - st.mod, count = R.repairCount(check);
       patch({ phase: "counted", r, check, count, dice: [] });
@@ -6760,6 +7133,19 @@ function WeaponUpkeep({ c, update }) {
   const finishRepair = () => {
     const f = runRef.current; if (!f) return;
     const total = f.dice.reduce((s, x) => s + x, 0), gained = Math.min(f.plan.missing, total);
+    if (f.job) {
+      // Another player's weapon: the result goes back to them; this smith pays the materials.
+      const roll = `check ${f.r}−${f.mod}=${f.check} → ${f.count} × d10${f.count ? ": " + total : ""}`;
+      if (!Shop.answer(f.job, "done", { gained, roll, by: c.name || "" })) { toast(`${f.job.from.name} took it back before you finished.`); patch({ done: true, phase: "done", total, gainedFinal: 0, gone: true }); return; }
+      update(x => {
+        x.craft.supplies.weapon = Math.max(0, num(x.craft.supplies.weapon) - f.plan.cost);
+        const txt = `${f.job.from.name}'s ${f.job.item.name || "weapon"}: Durability ${f.plan.dur} → ${f.plan.dur + gained}`;
+        addLedger(x, { kind: "repair", name: `Repaired ${txt}`, rolls: [roll] });
+        addLog(x, `Weapon repair for ${f.job.from.name}: ${txt} (${f.plan.cost} g weapon materials)`);
+      });
+      patch({ done: true, phase: "done", total, gainedFinal: gained });
+      return;
+    }
     update(x => {
       const w = x.weapons.find(y => y.id === f.id); if (!w) return;
       w.dur = num(w.dur) + gained;
@@ -6802,17 +7188,20 @@ function WeaponUpkeep({ c, update }) {
     const extra = ok && p.props.length < 2 ? R.randomTraits(R.WEAPON_PROPS, p.kind, p.props, 2) : [];
     const exotic = p.ex ? [`${p.ex.name}${p.ex.note ? ` (${p.ex.note})` : ""}`] : [];
     const props = [...chosen, ...extra, ...exotic, ...(r.unwieldy ? ["Unwieldy"] : []), ...f.flaws];
+    const forWho = ok && r.for && r.for !== c.id ? Shop.card(r.for) : null;
     update(x => {
       x.craft.supplies.weapon = Math.max(0, num(x.craft.supplies.weapon) - p.cost);
-      if (ok) x.weapons.push({ id: rid(), name: f.name, skill: r.skill, shield: r.skill === "Shield", hands: num(r.hands) === 2 ? 2 : 1,
+      const made = ok && { id: rid(), name: f.name, skill: r.skill, shield: r.skill === "Shield", hands: num(r.hands) === 2 ? 2 : 1,
         size: r.skill === "Shield" || num(r.hands) === 2 ? "large" : "medium", damage: p.final.damage, crit: p.final.crit, accuracy: p.final.accuracy,
         dur: p.final.durMax, durMax: p.final.durMax, durDie: p.final.durDie, clip: 0, clipMax: 0, rangeOpt: 0, rangeMax: 0, reload: 0,
-        props: props.join(", "), where: "pack", final: true });
-      addLedger(x, { kind: "craft", name: ok ? `Crafted ${f.name}${f.flaws.length ? ` · ${f.flaws.length} flaw${f.flaws.length > 1 ? "s" : ""}` : ""}` : `Lost ${f.name} in the forge`,
+        props: props.join(", "), where: "pack", final: true };
+      if (made && !forWho) x.weapons.push(made);
+      if (made && forWho) Shop.gift("weapon", c, made, forWho);
+      addLedger(x, { kind: "craft", name: ok ? `Crafted ${f.name}${forWho ? ` for ${forWho.name}` : ""}${f.flaws.length ? ` · ${f.flaws.length} flaw${f.flaws.length > 1 ? "s" : ""}` : ""}` : `Lost ${f.name} in the forge`,
         scrap: !ok, det: ok && props.some(t => /Rating: GM/.test(t)) ? 1 : 0, rolls: f.rolls.map(q => `${q.r}−${f.mod}=${q.total} vs ${p.dc} ${q.ok ? "✓" : "✗"}`) });
       addLog(x, ok ? `Weapon crafting: made ${f.name} (${p.cost} g weapon materials)` : `Weapon crafting: the weapon was lost (${p.cost} g weapon materials)`);
     });
-    patch({ done: true, phase: ok ? "made" : "lost", gotProps: ok ? [...chosen, ...extra, ...exotic] : [], extra });
+    patch({ done: true, phase: ok ? "made" : "lost", gotProps: ok ? [...chosen, ...extra, ...exotic] : [], extra, forName: forWho ? forWho.name : "" });
   };
   const close = () => { stop(); setRun(null); };
 
@@ -6845,7 +7234,7 @@ function WeaponUpkeep({ c, update }) {
             ${run && html`<${WmReadout} run=${run} onClose=${close} />`}
           </div>
         </div>
-        <div class="ptside">${mode === "repair" ? html`<${WRepairSide} c=${c} ws=${ws} weapon=${weapon} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
+        <div class="ptside">${mode === "repair" ? html`<${WRepairSide} c=${c} ws=${ws} weapon=${weapon} job=${job} selId=${selId} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
           : html`<${WCraftSide} c=${c} rc=${rc} cp=${cp} st=${st} focus=${focus} setRc=${setRc} busy=${busy} />`}</div>
       </div>
     </section>
@@ -6880,7 +7269,7 @@ function WmReadout({ run, onClose }) {
     if (run.done) return html`<div class=${"ptread end " + (run.gainedFinal ? "done" : "nothing")} role="status">
       <p class="ptbig">${run.gainedFinal ? `+${run.gainedFinal} Durability` : "No durability recovered"}</p>
       <p>${run.count ? `${run.count} × d10: ${run.dice.length > 1 ? run.dice.join(" + ") + " = " : ""}${run.total}${run.total > run.gainedFinal ? ` (it was full at ${p.max})` : ""}` : "The check was too high for even one die."}</p>
-      <p class="muted">${p.cost} g of weapon materials used · an hour's work.${p.broken ? " The flaw it gained for breaking stays until a weaponsmith removes it." : ""}</p>
+      <p class="muted">${run.gone ? "Nothing was spent." : `${p.cost} g of weapon materials used · an hour's work.`}${run.job && !run.gone ? ` It goes back to ${run.job.from.name}'s Gear.` : ""}${p.broken ? " The flaw it gained for breaking stays until a weaponsmith removes it." : ""}</p>
       <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
     return html`<div class="ptread" role="status" aria-live="polite">
       <div class="ptstep"><span class="lbl">${run.phase === "rolling" ? "Weapon Maintenance check" : "Repair dice"}</span><b>${run.phase === "rolling" ? "Looking it over…" : `${run.count} × d10`}</b></div>
@@ -6893,7 +7282,7 @@ function WmReadout({ run, onClose }) {
   if (run.done) return html`<div class=${"ptread end " + (run.phase === "made" ? "done" : "scrap")} role="status">
     <p class="ptbig">${run.phase === "made" ? "Forged" : "Lost in the forge"}</p>
     <p>${run.phase === "made" ? `${run.name}: damage ${p.final.damage}, crit ${p.final.crit}%, accuracy ${p.final.accuracy >= 0 ? "+" : ""}${p.final.accuracy}%, durability ${p.final.durMax} (${p.final.durDie}).` : "Too many failures: the weapon and every material in it are gone."}</p>
-    ${run.phase === "made" && html`<p class="muted">${run.extra && run.extra.length ? "It had fewer than 2 properties, so it gained 2 at random. " : ""}Added to Weapons on the Gear tab${R.RANGED_WEAPONS.includes(run.recipe.skill) ? "; set its clip and ranges there" : ""}. Eight hours at the anvil.</p>`}
+    ${run.phase === "made" && html`<p class="muted">${run.extra && run.extra.length ? "It had fewer than 2 properties, so it gained 2 at random. " : ""}${run.forName ? `Sent to ${run.forName}'s Gear` : "Added to Weapons on the Gear tab"}${R.RANGED_WEAPONS.includes(run.recipe.skill) ? "; set its clip and ranges there" : ""}. Eight hours at the anvil.</p>`}
     <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
   return html`<div class="ptread" role="status" aria-live="polite">
     <div class="ptstep"><span class="lbl">Roll ${Math.min(maxRolls, run.rolls.length + ((run.phase === "rolling" && !r) || run.phase === "flaw" ? 1 : 0)) || 1} of ${maxRolls} at most</span>
@@ -6905,12 +7294,13 @@ function WmReadout({ run, onClose }) {
   </div>`;
 }
 
-function WRepairSide({ c, ws, weapon, rp, st, busy, pick }) {
+function WRepairSide({ c, ws, weapon, job, selId, rp, st, busy, pick }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>Weapons</span></h3>
+    <${ShopJobs} c=${c} kind="weapon" selId=${selId} pick=${pick} busy=${busy} />
     ${ws.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${ws.map(w => { const p = R.wRepairPlan(c, w);
-      return html`<button type="button" class="ptopt amsuit" aria-pressed=${weapon && weapon.id === w.id} disabled=${busy} onClick=${() => pick(w.id)}>
-        <b>${w.name || "Unnamed weapon"}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}</b>
+      return html`<button type="button" class="ptopt amsuit" aria-pressed=${!job && weapon && weapon.id === w.id} disabled=${busy} onClick=${() => pick(w.id)}>
+        <b>${w.name || "Unnamed weapon"}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}${Shop.outgoing(c, "weapon", w.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "weapon", w.id).to.name}'s</span>` : ""}</b>
         <span>${w.shield ? "Shield" : w.skill} · ${num(w.hands) === 2 ? "two-handed" : "one-handed"} · Durability ${p.dur}/${p.max}</span>
         <i class="amtrack"><i style=${`width:${p.max ? (p.dur / p.max) * 100 : 0}%`}></i></i></button>`; })}</div>`}
     ${weapon && html`<div class="ptplan"><h3 class="lbl">The repair</h3><ol>
@@ -6918,6 +7308,7 @@ function WRepairSide({ c, ws, weapon, rp, st, busy, pick }) {
       <li><span>Check: d100 − ${st.mod}</span><span class="muted">Repair Count = 10 − check ÷ 10, rounded down, at most 10</span></li>
       <li><span>Roll d10 that many times</span><span class="muted">The total goes back into Durability (up to ${rp.max}). An hour per attempt.</span></li></ol>
       <p class="ptdc">Check 0 or less: 10 × d10 · check 40: 6 × d10 · check 90: 1 × d10</p></div>`}
+    ${weapon && !job && html`<${ShopSend} c=${c} kind="weapon" item=${weapon} busy=${busy} />`}
   </div>`;
 }
 
@@ -6935,8 +7326,11 @@ function WCraftSide({ c, rc, cp, st, focus, setRc, busy }) {
         <optgroup label="Ranged">${R.RANGED_WEAPONS.map(t => html`<option>${t}</option>`)}</optgroup><optgroup label="Other"><option>Shield</option></optgroup></select></div>
       <div class="mini"><label for=${"wc-h" + c.id}>Hands</label><select id=${"wc-h" + c.id} value=${rc.hands} disabled=${busy} onChange=${e => setRc(r => { r.hands = +e.target.value; })}><option value="1">One</option><option value="2">Two</option></select></div></div>
     <label class="amforge"><input type="checkbox" checked=${!!rc.unwieldy} disabled=${busy} onChange=${e => setRc(r => { r.unwieldy = e.target.checked; })} /> Unwieldy <span class="muted">(the GM says; +400 g to repair, so ×5 to craft)</span></label>
-    <div class="row ptbatch"><label for=${"wc-n" + c.id}>Name</label><input id=${"wc-n" + c.id} class="inp" placeholder="Name it" value=${rc.name || ""} disabled=${busy} onInput=${e => setRc(r => { r.name = e.target.value; })} /></div>`;
-  else if (focus === "av") body = html`<p class="muted ptrule">The base stats, from the GM.</p>
+    <div class="row ptbatch"><label for=${"wc-n" + c.id}>Name</label><input id=${"wc-n" + c.id} class="inp" placeholder="Name it" value=${rc.name || ""} disabled=${busy} onInput=${e => setRc(r => { r.name = e.target.value; })} /></div>
+    <${MadeFor} c=${c} value=${rc.for} busy=${busy} onSet=${v => setRc(r => { r.for = v; })} />`;
+  else if (focus === "av") body = !isGM() ? html`<p class="muted ptrule">The base stats come from the GM, so only a GM can set them here (they can open your sheet). To raise them yourself, use Changes: each step makes the roll harder.</p>
+    <div class="facts wpbase">${[["Damage", rc.damage], ["Crit", `${num(rc.crit)}%`], ["Accuracy", `${num(rc.accuracy) >= 0 ? "+" : ""}${num(rc.accuracy)}%`], ["Durability", rc.dur], ["Durability die", rc.durDie]].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>`
+  : html`<p class="muted ptrule">The base stats, from the GM. Only a GM can change these; players raise them through Changes.</p>
     <div class="grid2">${numIn("damage", "Damage")}${numIn("crit", "Crit %")}${numIn("accuracy", "Accuracy ±")}${numIn("dur", "Durability", 5)}
       <div class="mini"><label for=${"wc-d" + c.id}>Durability die</label><select id=${"wc-d" + c.id} value=${rc.durDie} disabled=${busy} onChange=${e => setRc(r => { r.durDie = e.target.value; r.plus = Object.assign({}, r.plus, { die: 0 }); })}>${R.DUR_DICE.map(d => html`<option>${d}</option>`)}</select></div></div>`;
   else {
@@ -6959,7 +7353,7 @@ function WCraftSide({ c, rc, cp, st, focus, setRc, busy }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>${focus === "type" ? "Weapon" : focus === "av" ? "Base stats" : "Changes"}</span><small>${focus === "extra" ? `${cp.dc}%` : rc.skill}</small></h3>
     ${body}
-    <div class="ptplan"><h3 class="lbl">The craft</h3><ol>
+    <div class="ptplan"><${PlanHead} title="The craft" busy=${busy} onReset=${() => setRc(r => refill(r, R.blankCharacter().craft.weapon.recipe))} /><ol>
       <li><span>Materials: ${cp.cost} g of weapon materials</span><span class="muted">5 × repair (${R.weaponRepairCost(rc)} g)</span></li>
       <li><span>Roll under ${cp.dc}%</span><span class="muted">${cp.chance}% to land · each failure adds a random flaw and rolls again; failure ${st.maxFails + 1} loses it all</span></li>
       <li><span>Eight hours</span><span class="muted">${cp.props.length < 2 ? "Fewer than 2 properties: it gains 2 at random. " : ""}It joins your Weapons on the Gear tab.</span></li></ol></div>
@@ -7090,7 +7484,7 @@ function Brewing({ c, update }) {
     const p = f.plan, made = how === "done";
     const effA = made ? R.brewOne(c, p.a.rec, p.a.n + (res.extra || 0)).effect : "", effB = made && p.p ? R.brewOne(c, p.p.rec, p.p.n + (res.extra || 0)).effect : "";
     const name = `${p.a.rec.n}${p.a.n + (res.extra || 0) ? ` +${p.a.n + (res.extra || 0)}` : ""}${p.p ? ` & ${p.p.rec.n}${p.p.n + (res.extra || 0) ? ` +${p.p.n + (res.extra || 0)}` : ""}` : ""}`;
-    const stats = `${effA}${effB ? `; ${effB}` : ""}${p.cat && p.cat.k === "duration" ? "; duration doubled" : ""} · Toxicity ${res.tox}`;
+    const stats = `${effA}${effB ? `; ${effB}` : ""}${p.cat && p.cat.k === "duration" ? "; duration doubled" : ""}${p.cat && p.cat.custom ? `; ${p.cat.n}${p.cat.what ? ` (${p.cat.what})` : ""}` : ""} · Toxicity ${res.tox}`;
     update(x => {
       Object.entries(p.need).forEach(([h, g]) => (x.craft.supplies["herb:" + h] = Math.max(0, num(x.craft.supplies["herb:" + h]) - g)));
       if (made) x.items.push({ id: rid(), name: `${name} (${stats})`, qty: 1, size: "small" });
@@ -7119,7 +7513,7 @@ function Brewing({ c, update }) {
           <div class="ptforge">
             ${!run && html`<button class="btn primary big forgebtn" disabled=${!!plan.block} onClick=${start}>${FLASK_ICON}Brew${plan.p ? " a Potent Brew" : ""} · ${plan.hours === 2 ? "2 hours" : "1 hour"}</button>
               ${plan.block && html`<p class="muted ptwhy">${plan.block}</p>`}`}
-            ${run && html`<${BrewReadout} run=${run} onClose=${close} />`}
+            ${run && html`<${BrewReadout} run=${run} onClose=${close} again=${plan.block || ""} onAgain=${() => { close(); start(); }} />`}
           </div>
         </div>
         <div class="ptside"><${BrewSide} c=${c} st=${st} plan=${plan} o=${o} setO=${setO} focus=${focus} busy=${busy} update=${update} /></div>
@@ -7144,7 +7538,7 @@ function Brewing({ c, update }) {
 }
 const FLASK_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 2.5h4 M8.6 2.5v4.2L4.5 15a1.6 1.6 0 0 0 1.4 2.5h8.2a1.6 1.6 0 0 0 1.4-2.5l-4.1-8.3V2.5 M6.4 11.5h7.2" /></svg>`;
 
-function BrewReadout({ run, onClose }) {
+function BrewReadout({ run, onClose, onAgain, again }) {
   const [spin, setSpin] = useState(0);
   useEffect(() => {
     if (run.phase !== "rolling" || reduceMotion()) return;
@@ -7159,7 +7553,9 @@ function BrewReadout({ run, onClose }) {
       <p>${ok ? html`<b>${run.result.name}</b>: ${run.result.stats}` : run.phase === "boom" ? `${run.boom} damage to everyone within 2 m. The herbs are gone.` : run.phase === "inert" ? "The Volatile Catalyst fizzled; the brew does nothing. The herbs are gone." : "The roll missed: the herbs are wasted."}</p>
       ${run.vol && html`<p class="muted">Volatile Catalyst: ${run.vol.v}. ${run.vol.text}</p>`}
       ${ok && html`<p class="muted">Toxicity ${run.toxParts && run.toxParts[1] != null ? `${run.toxParts[0]} and ${run.toxParts[1]}` : run.toxParts ? run.toxParts[0] : ""}${p.cat && p.cat.k === "toxicity" ? `, less ${p.st.lvl} (Toxicity Catalyst)` : p.cat && p.cat.k === "duration" ? ", doubled (Duration Catalyst)" : ""} → ${run.tox}. In the inventory now. ${p.hours === 2 ? "Two hours" : "An hour"} at the cauldron.</p>`}
-      <button class="btn primary" onClick=${onClose}>Back to the cauldron</button></div>`;
+      <div class="row ptagain"><button class="btn primary" disabled=${!!again} onClick=${onAgain}>${ok ? "Brew the same again" : "Try again"}</button>
+        <button class="btn" onClick=${onClose}>Back to the cauldron</button></div>
+      ${again && html`<p class="muted ptwhy">${again}</p>`}</div>`;
   }
   return html`<div class="ptread" role="status" aria-live="polite">
     <div class="ptstep"><span class="lbl">${p.p ? `Potent Brew · roll ${Math.min(2, run.rolls.length + (r ? 0 : 1))} of 2` : "Brewing check"}</span>
@@ -7171,9 +7567,8 @@ function BrewReadout({ run, onClose }) {
 }
 
 function BrewSide({ c, st, plan, o, setO, focus, busy, update }) {
-  const [adding, setAdding] = useState(false);
-  const Step = ({ label, value, max, onSet }) => html`<span class="ptstepper"><button class="iconbtn" aria-label=${`Lower ${label}`} disabled=${busy || value <= 0} onClick=${() => onSet(value - 1)}>−</button>
-    <button class="iconbtn" aria-label=${`Raise ${label}`} disabled=${busy || value >= max} onClick=${() => onSet(value + 1)}>+</button></span>`;
+  const [adding, setAdding] = useState(false), [addCat, setAddCat] = useState(false);
+  const Step = BrStep;
   const all = R.allBrews(c), cb = c.craft.brew;
   const pick = (rec, cur, on, short) => html`<button type="button" class="ptopt" aria-pressed=${cur === rec.k} disabled=${busy} onClick=${on}>
     <b><i class="dot" style=${`background:${brewHue(rec)}`}></i>${rec.n}${rec.custom ? " · GM" : ""}</b>${!short && html`<span>${R.brewOne(c, rec, 0).effect} · ${rec.g} g ${rec.herb} · ${rec.tox} toxicity · ${rec.dc}%</span>`}</button>`;
@@ -7188,25 +7583,44 @@ function BrewSide({ c, st, plan, o, setO, focus, busy, update }) {
       <p class="muted">Both rolls must hold, and it takes twice as long${st.potentPlus ? ". Increments apply to both." : "."}</p>`
       : html`<p class="ptlocked">Potent Brews unlock at Brewing 7.</p>`}`;
   else if (focus === "av") body = st.incs ? html`
-    <div class="row ptrate"><span><b>${plan.a.rec.n} +${plan.a.n}</b> · ${plan.a.effect}</span><${Step} label="increments" value=${num(o.inc)} max=${10} onSet=${v => setO(x => { x.inc = v; })} /></div>
+    <div class="row ptrate"><span><b>${plan.a.rec.n} +${plan.a.n}</b> · ${plan.a.effect}</span><${Step} label="increments" busy=${busy} value=${num(o.inc)} max=${10} onSet=${v => setO(x => { x.inc = v; })} /></div>
     <p class="ptdc">Each increment: +${plan.a.rec.gi} g, +${plan.a.rec.toxi} toxicity, −${plan.a.dci}% difficulty (${plan.a.rec.dci}% less your Brewing)</p>
-    ${plan.p && !st.potentPlus && html`<div class="row ptrate"><span><b>${plan.p.rec.n} +${plan.p.n}</b> · ${plan.p.effect}</span><${Step} label="second brew increments" value=${num(o.potent.inc)} max=${10} onSet=${v => setO(x => { x.potent = Object.assign({}, x.potent, { inc: v }); })} /></div>`}`
+    ${plan.p && !st.potentPlus && html`<div class="row ptrate"><span><b>${plan.p.rec.n} +${plan.p.n}</b> · ${plan.p.effect}</span><${Step} label="second brew increments" busy=${busy} value=${num(o.potent.inc)} max=${10} onSet=${v => setO(x => { x.potent = Object.assign({}, x.potent, { inc: v }); })} /></div>`}`
     : html`<p class="ptlocked">Increments unlock at Brewing 5.</p>`;
   else if (focus === "soak") body = html`<p class="muted ptrule">What this brew takes, against what you carry.</p>
     <ol class="brneed">${Object.entries(plan.need).map(([h, g]) => html`<li><span>${g} g of ${h}</span><span class="muted">have ${num(c.craft.supplies["herb:" + h])} g</span></li>`)}</ol>`;
   else body = !st.catalysts ? html`<p class="ptlocked">Catalysts unlock at Brewing 5.</p>` : html`
     <p class="muted ptrule">You know ${st.known} catalyst${st.known > 1 ? "s" : ""}. Tick the ones you know, then pick one for this brew.</p>
-    <div class="ptopts">${R.CATALYSTS.map(k => { const known = cb.known.includes(k.k), full = !known && cb.known.length >= st.known;
+    <div class="ptopts">${R.allCatalysts(c).map(k => { const known = cb.known.includes(k.k), full = !known && cb.known.length >= st.known;
       return html`<div class=${"ptopt row-opt" + (o.catalyst === k.k ? " on" : "")}>
-        <button type="button" class="ptcheck" disabled=${busy || !known} onClick=${() => setO(x => { x.catalyst = x.catalyst === k.k ? "" : k.k; })}><b>${k.n} · −${Math.max(0, k.dc - st.lvl)}%</b><span>${k.what}</span></button>
-        <label class="brknown"><input type="checkbox" checked=${known} disabled=${busy || full} onChange=${e => update(x => { const on = e.target.checked; x.craft.brew.known = on ? [...x.craft.brew.known, k.k] : x.craft.brew.known.filter(y => y !== k.k); if (!on && x.craft.brew.order.catalyst === k.k) x.craft.brew.order.catalyst = ""; })} /> Known</label></div>`; })}</div>`;
+        <button type="button" class="ptcheck" disabled=${busy || !known} onClick=${() => setO(x => { x.catalyst = x.catalyst === k.k ? "" : k.k; })}><b>${k.n}${k.custom ? " · GM" : ""} · −${Math.max(0, k.dc - st.lvl)}%</b><span>${k.what || "The GM decides what it does."}</span></button>
+        <label class="brknown"><input type="checkbox" checked=${known} disabled=${busy || full} onChange=${e => update(x => { const on = e.target.checked; x.craft.brew.known = on ? [...x.craft.brew.known, k.k] : x.craft.brew.known.filter(y => y !== k.k); if (!on && x.craft.brew.order.catalyst === k.k) x.craft.brew.order.catalyst = ""; })} /> Known</label>
+        ${k.custom && html`<button class="iconbtn brdel" aria-label=${`Remove ${k.n}`} disabled=${busy} onClick=${() => update(x => { x.craft.brew.catalysts = x.craft.brew.catalysts.filter(y => y.k !== k.k); x.craft.brew.known = x.craft.brew.known.filter(y => y !== k.k); if (x.craft.brew.order.catalyst === k.k) x.craft.brew.order.catalyst = ""; })}>×</button>`}</div>`; })}</div>
+    ${!addCat ? html`<button class="btn small" style="margin-top:8px" disabled=${busy} onClick=${() => setAddCat(true)}>+ A catalyst from the GM</button>`
+      : html`<${CatalystForm} onSave=${k => { update(x => { x.craft.brew.catalysts.push(k); }); setAddCat(false); }} onCancel=${() => setAddCat(false)} />`}`;
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>${BR_NAMES[focus]}</span></h3>
-    ${body}
-    <div class="ptplan"><h3 class="lbl">The brew</h3><ol>
+    <div class="ptbody" key=${focus}>${body}</div>
+    <div class="ptplan"><${PlanHead} title="The brew" busy=${busy} onReset=${() => setO(x => refill(x, R.blankCharacter().craft.brew.order))} /><ol>
       ${[plan.a, plan.p].filter(Boolean).map((b, i) => html`<li><span>${b.rec.n}${b.n ? ` +${b.n}` : ""}: roll under ${plan.dcs[i]}%</span><span class="muted">${plan.chances[i]}% to hold · ${b.effect} · toxicity ${b.tox.map(d => `${d.n}d${d.sides}`).join(" + ")}</span></li>`)}
       <li><span>${plan.hours === 2 ? "Two hours" : "An hour"} at the cauldron</span><span class="muted">${plan.a.rec.how || "The GM decides how the effect works."}</span></li></ol></div>
   </div>`;
+}
+
+function BrStep({ label, value, max, onSet, busy }) {
+  return html`<span class="ptstepper"><button class="iconbtn" aria-label=${`Lower ${label}`} disabled=${busy || value <= 0} onClick=${() => onSet(value - 1)}>−</button>
+    <button class="iconbtn" aria-label=${`Raise ${label}`} disabled=${busy || value >= max} onClick=${() => onSet(value + 1)}>+</button></span>`;
+}
+// A catalyst the GM gives: a name, its difficulty (your Brewing is taken off, like the book's) and what it does.
+function CatalystForm({ onSave, onCancel }) {
+  const [k, setK] = useState({ n: "", dc: 10, what: "" });
+  const ok = k.n.trim();
+  return html`<div class="brform">
+    <div class="grid2"><div class="mini"><label for="cf-n">Name</label><input id="cf-n" type="text" value=${k.n} placeholder="Frost Catalyst" onInput=${e => setK(Object.assign({}, k, { n: e.target.value }))} /></div>
+      <div class="mini"><label for="cf-dc">Difficulty (%, less your Brewing)</label><input id="cf-dc" type="number" min="0" value=${k.dc} onInput=${e => setK(Object.assign({}, k, { dc: Math.max(0, +e.target.value || 0) }))} /></div></div>
+    <div class="mini"><label for="cf-w">What it does</label><input id="cf-w" type="text" value=${k.what} placeholder="The brew also chills the drinker's blood: fire damage halved for an hour." onInput=${e => setK(Object.assign({}, k, { what: e.target.value }))} /></div>
+    <div class="row" style="margin-top:8px"><button class="btn small primary" disabled=${!ok} onClick=${() => onSave({ k: "x" + rid(), n: k.n.trim(), dc: k.dc, what: k.what.trim() })}>Save catalyst</button>
+      <button class="btn small" onClick=${onCancel}>Cancel</button></div></div>`;
 }
 
 // A recipe the GM gives: the same fields as the book's.
@@ -7366,7 +7780,7 @@ function Runecrafting({ c, update }) {
   const finish = (ok, res) => {
     const f = runRef.current; if (!f) return;
     const p = f.plan, spent = p.spend * (f.rerolled ? 2 : 1);
-    const desc = res.map(x => x.e.kind === "enhance" ? `${x.e.effect}, potency ${x.val} (${x.pot})` : `${x.e.effect} (manifesting)`).join(" & ");
+    const desc = res.map(x => x.e.kind === "enhance" ? `${x.e.effect}${x.e.note ? ` (${x.e.note})` : ""}, potency ${x.val} (${x.pot})` : `${x.e.effect} (manifesting${x.e.note ? `: ${x.e.note}` : ""})`).join(" & ");
     const vessel = p.hoax ? `Hoaxstone (${p.name})` : `Runestone (${p.name}, ${p.precious ? "precious" : "semi-precious"})`;
     const name = `${vessel}: ${desc}${p.hoax ? ` · lasts ${p.lasts} hour${p.lasts > 1 ? "s" : ""}` : ""}`;
     const what = p.effects.map(e => e.effect).join(" & ");
@@ -7402,10 +7816,10 @@ function Runecrafting({ c, update }) {
           <div class="ptforge">
             ${!run && html`<button class="btn primary big forgebtn" disabled=${!!plan.block} onClick=${start}>${RUNE_ICON}${plan.hoax ? "Make the Hoaxstone" : plan.second ? "Enchant a Potent Runestone" : "Enchant"} · ${plan.hours} hours</button>
               ${plan.block && html`<p class="muted ptwhy">${plan.block}</p>`}`}
-            ${run && html`<${RuneReadout} run=${run} onClose=${close} onPick=${pick} />`}
+            ${run && html`<${RuneReadout} run=${run} onClose=${close} onPick=${pick} again=${plan.block || ""} onAgain=${() => { close(); start(); }} />`}
           </div>
         </div>
-        <div class="ptside"><${RuneSide} c=${c} st=${st} plan=${plan} o=${o} setO=${setO} focus=${focus} busy=${busy} /></div>
+        <div class="ptside"><${RuneSide} c=${c} st=${st} plan=${plan} o=${o} setO=${setO} focus=${focus} busy=${busy} update=${update} /></div>
       </div>
       ${(st.identify || st.extract || st.sage) && html`<p class="muted rnalso">Also, without a roll: ${[st.identify && "identify a runestone you find (an hour)", st.extract && "take a rune out of an item without ruining either",
         st.sage && "move an enchantment between runestones, or merge two into a Potent Runestone"].filter(Boolean).join("; ")}.</p>`}
@@ -7429,7 +7843,7 @@ function Runecrafting({ c, update }) {
 }
 const RUNE_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 16 7.5 10 17.5 4 7.5Z M4 7.5h12 M8 3.8v13.7 M8 7.5l4 4" /></svg>`;
 
-function RuneReadout({ run, onClose, onPick }) {
+function RuneReadout({ run, onClose, onPick, onAgain, again }) {
   const [spin, setSpin] = useState(0);
   useEffect(() => {
     if (run.phase !== "rolling" || run.roll || reduceMotion()) return;
@@ -7444,7 +7858,9 @@ function RuneReadout({ run, onClose, onPick }) {
       <p>${ok ? html`<b>${p.hoax ? "Hoaxstone" : p.name}</b>: ${run.result.desc}` : run.phase === "shatter" ? "One roll missed, so both effects, the gem and the materials are lost." : p.hoax ? "The roll missed. The object stays mundane." : "The roll missed. The materials are spent; the gem is still yours."}</p>
       <p class="muted">${[run.spent && `${run.spent} rubles of materials used${run.spent > p.spend ? " (re-rolled)" : ""}`, p.hoax && `${p.life} ${p.payName} paid`,
         ok && p.hoax && `It crumbles after ${p.lasts} hour${p.lasts > 1 ? "s" : ""}`, ok && "In the inventory now", `${p.hours} hours of work`].filter(Boolean).join(". ")}.</p>
-      <button class="btn primary" onClick=${onClose}>Back to the slab</button></div>`;
+      <div class="row ptagain"><button class="btn primary" disabled=${!!again} onClick=${onAgain}>${ok ? (p.hoax ? "Make another the same way" : "Enchant another the same way") : "Try again"}</button>
+        <button class="btn" onClick=${onClose}>Back to the slab</button></div>
+      ${again && html`<p class="muted ptwhy">${again}</p>`}</div>`;
   }
   const verdict = r && (e.kind === "manifest" ? `${r.r} − ${p.mod} = ${r.total} ${r.ok ? "<" : "≥"} ${r.dc}` : `${r.r} − ${p.mod} = ${r.total} → ${r.ok ? `potency ${r.pot}${r.capped ? ` (held from ${r.capped})` : ""}` : "30 or more: fails"}`);
   return html`<div class="ptread" role="status" aria-live="polite">
@@ -7460,12 +7876,43 @@ function RuneReadout({ run, onClose, onPick }) {
 function RuneEffect({ e, set, label, busy, cid }) {
   return html`<div class="rneff">
     <div class="seg two ammode" role="group" aria-label=${`${label}: kind of stone`}>${[["enhance", "Enhancing"], ["manifest", "Manifesting"]].map(([k, n]) => html`<button type="button" aria-pressed=${(e.kind || "enhance") === k} disabled=${busy} onClick=${() => set({ kind: k })}>${n}</button>`)}</div>
-    <div class="mini"><label for=${"rn-e-" + label.replace(/\W+/g, "") + cid}>${label}</label><input id=${"rn-e-" + label.replace(/\W+/g, "") + cid} type="text" value=${e.effect || ""} disabled=${busy} placeholder=${(e.kind || "enhance") === "manifest" ? "Glows like a lantern, 3 times a day" : "Stealth"} onInput=${ev => set({ effect: ev.target.value })} /></div>
+    <div class="mini"><label for=${"rn-e-" + label.replace(/\W+/g, "") + cid}>${label}</label><input id=${"rn-e-" + label.replace(/\W+/g, "") + cid} type="text" value=${e.effect || ""} disabled=${busy} placeholder=${(e.kind || "enhance") === "manifest" ? "Glows like a lantern, 3 times a day" : "Stealth"} onInput=${ev => set({ effect: ev.target.value, note: "" })} /></div>
+    ${e.note && html`<p class="muted ptrule">${e.note}</p>`}
     ${e.kind === "manifest" && html`<div class="mini"><label for=${"rn-d-" + label.replace(/\W+/g, "") + cid}>Difficulty from the GM (%)</label><input id=${"rn-d-" + label.replace(/\W+/g, "") + cid} type="number" min="1" max="100" value=${e.dc} disabled=${busy} onInput=${ev => set({ dc: +ev.target.value || 0 })} /></div>`}
   </div>`;
 }
 
-function RuneSide({ c, st, plan, o, setO, focus, busy }) {
+// Effects the GM gave, saved for later (like Brewing's GM recipes): pick one to fill in an effect.
+function RuneLibrary({ c, busy, update, slot, canPick = true }) {
+  const [adding, setAdding] = useState(false);
+  const put = (x, f) => { const o = x.craft.rune.order, v = { effect: f.n, kind: f.kind, dc: f.kind === "manifest" ? f.dc : 50, note: [f.uses, f.what].filter(Boolean).join(". ") };
+    if (slot === "second") o.second = Object.assign({}, o.second, v); else Object.assign(o, v); };
+  const list = c.craft.rune.effects;
+  return html`<div class="rnlib">
+    ${list.length > 0 && html`<h3 class="lbl">Saved effects</h3><div class="ptopts">${list.map(f => html`<div class="ptopt row-opt">
+      <button type="button" class="ptcheck" disabled=${busy || !canPick} onClick=${() => update(x => put(x, f))}>
+        <b>${f.n} · ${f.kind === "manifest" ? `manifesting, under ${f.dc}%` : "enhancing"}</b><span>${[f.uses, f.what].filter(Boolean).join(". ") || "No notes."}</span></button>
+      <button class="iconbtn brdel" aria-label=${`Remove ${f.n}`} disabled=${busy} onClick=${() => update(x => { x.craft.rune.effects = x.craft.rune.effects.filter(y => y.k !== f.k); })}>×</button></div>`)}</div>`}
+    ${!adding ? html`<button class="btn small" style="margin-top:8px" disabled=${busy} onClick=${() => setAdding(true)}>+ A custom effect</button>`
+      : html`<${EffectForm} onSave=${f => { update(x => { x.craft.rune.effects.push(f); if (canPick) put(x, f); }); setAdding(false); }} onCancel=${() => setAdding(false)} />`}
+  </div>`;
+}
+function EffectForm({ onSave, onCancel }) {
+  const [f, setF] = useState({ n: "", kind: "enhance", dc: 50, uses: "", what: "" });
+  const set = v => setF(Object.assign({}, f, v));
+  const ok = f.n.trim() && (f.kind !== "manifest" || f.dc > 0);
+  return html`<div class="brform">
+    <div class="seg two ammode" role="group" aria-label="Kind of effect">${[["enhance", "Enhancing"], ["manifest", "Manifesting"]].map(([k, n]) => html`<button type="button" aria-pressed=${f.kind === k} onClick=${() => set({ kind: k })}>${n}</button>`)}</div>
+    <div class="grid2"><div class="mini"><label for="ef-n">Name</label><input id="ef-n" type="text" value=${f.n} placeholder=${f.kind === "manifest" ? "Lantern light" : "Stealth"} onInput=${e => set({ n: e.target.value })} /></div>
+      ${f.kind === "manifest" ? html`<div class="mini"><label for="ef-dc">Difficulty from the GM (%)</label><input id="ef-dc" type="number" min="1" max="100" value=${f.dc} onInput=${e => set({ dc: +e.target.value || 0 })} /></div>`
+        : html`<div class="mini"><label for="ef-u">What it raises</label><input id="ef-u" type="text" value=${f.uses} placeholder="+potency to Stealth checks" onInput=${e => set({ uses: e.target.value })} /></div>`}</div>
+    ${f.kind === "manifest" && html`<div class="mini"><label for="ef-u2">How often</label><input id="ef-u2" type="text" value=${f.uses} placeholder="3 times a day" onInput=${e => set({ uses: e.target.value })} /></div>`}
+    <div class="mini"><label for="ef-w">What it does</label><input id="ef-w" type="text" value=${f.what} placeholder="Glows like a lantern for an hour when touched." onInput=${e => set({ what: e.target.value })} /></div>
+    <div class="row" style="margin-top:8px"><button class="btn small primary" disabled=${!ok} onClick=${() => onSave({ k: "e" + rid(), n: f.n.trim(), kind: f.kind, dc: f.dc, uses: f.uses.trim(), what: f.what.trim() })}>Save effect</button>
+      <button class="btn small" onClick=${onCancel}>Cancel</button></div></div>`;
+}
+
+function RuneSide({ c, st, plan, o, setO, focus, busy, update }) {
   let body;
   if (focus === "type") body = html`
     ${st.hoax && html`<div class="seg two ammode" role="group" aria-label="Gem or Hoaxstone"><button type="button" aria-pressed=${!o.hoax} disabled=${busy} onClick=${() => setO(x => { x.hoax = false; })}>A gem</button>
@@ -7478,7 +7925,8 @@ function RuneSide({ c, st, plan, o, setO, focus, busy }) {
         ${plan.g.k === "other" && html`<div class="row"><div class="mini" style="flex:1"><label for=${"rn-v" + c.id}>The vessel</label><input id=${"rn-v" + c.id} type="text" value=${o.gemName} disabled=${busy} placeholder="Wyvern eye" onChange=${e => setO(x => { x.gemName = e.target.value; })} /></div>
           <label class="brknown"><input type="checkbox" checked=${!!o.precious} disabled=${busy || !st.precious} onChange=${e => setO(x => { x.precious = e.target.checked; })} /> Precious</label></div>`}`}`;
   else if (focus === "av") body = html`<p class="muted ptrule">What the GM agreed the stone does. Enhancing stones raise a skill, attribute or ability; manifesting stones produce an effect.</p>
-    <${RuneEffect} e=${o} busy=${busy} cid=${c.id} label="Effect" set=${v => setO(x => Object.assign(x, v))} />`;
+    <${RuneEffect} e=${o} busy=${busy} cid=${c.id} label="Effect" set=${v => setO(x => Object.assign(x, v))} />
+    <${RuneLibrary} c=${c} busy=${busy} update=${update} slot="first" />`;
   else if (focus === "soak") body = plan.hoax ? html`
     <p class="muted ptrule">For every 100 rubles the materials would cost, per hour it lasts: 2 hit points, 10 blood points or 5 deprivation points, all from one. Paid even if it fails.</p>
     <div class="mini"><label for=${"rn-c" + c.id}>Materials it would take (rubles)</label><input id=${"rn-c" + c.id} type="number" min="0" step="50" value=${o.cost} disabled=${busy} onInput=${e => setO(x => { x.cost = Math.max(0, +e.target.value || 0); })} /></div>
@@ -7493,16 +7941,17 @@ function RuneSide({ c, st, plan, o, setO, focus, busy }) {
     <div class="row ptrate"><span><b>Lasts ${plan.lasts} hour${plan.lasts > 1 ? "s" : ""}</b> · each hour costs the life force again</span>
       <span class="ptstepper"><button class="iconbtn" aria-label="Fewer hours" disabled=${busy || plan.lasts <= 1} onClick=${() => setO(x => { x.hours = Math.max(1, num(x.hours) - 1); })}>−</button>
       <button class="iconbtn" aria-label="More hours" disabled=${busy || plan.lasts >= 24} onClick=${() => setO(x => { x.hours = num(x.hours) + 1; })}>+</button></span></div>`
-    : !st.potent ? html`<p class="ptlocked">A second effect (a Potent Runestone) unlocks at Runecrafting 7.</p>`
-    : !plan.precious ? html`<p class="ptlocked">A semi-precious gem holds one effect. Pick a precious gem for a Potent Runestone.</p>`
-    : html`<div class="seg two ammode" role="group" aria-label="Second effect"><button type="button" aria-pressed=${!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = null; })}>One effect</button>
-        <button type="button" aria-pressed=${!!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = x.second || { kind: "enhance", effect: "", dc: 50 }; })}>Two effects</button></div>
+    : html`${!st.potent ? html`<p class="ptlocked">A second effect (a Potent Runestone) unlocks at Runecrafting 7. You can still save effects for later.</p>`
+      : !plan.precious ? html`<p class="ptlocked">A semi-precious gem holds one effect. Pick a precious gem (Vessel) for a Potent Runestone.</p>`
+      : html`<div class="ptopts brchips"><button type="button" class="ptopt" aria-pressed=${!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = null; })}><b>None</b></button></div>
+      ${!o.second && html`<p class="muted ptrule">None: the stone has one effect. Pick a saved effect below, or make a new one, for a Potent Runestone.</p>`}
       ${o.second && html`<${RuneEffect} e=${o.second} busy=${busy} cid=${c.id} label="Second effect" set=${v => setO(x => { x.second = Object.assign({}, x.second, v); })} />
-        <p class="muted ptrule">Two rolls, twice the time. If either fails, both effects, the gem and the materials are lost. The same effect twice stacks.</p>`}`;
+        <p class="muted ptrule">Two rolls, twice the time. If either fails, both effects, the gem and the materials are lost. The same effect twice stacks.</p>`}`}
+      <${RuneLibrary} c=${c} busy=${busy} update=${update} slot="second" canPick=${st.potent && plan.precious} />`;
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>${focus === "extra" && plan.hoax ? "Hoaxstone" : RN_NAMES[focus]}</span></h3>
-    ${body}
-    <div class="ptplan"><h3 class="lbl">The ritual</h3><ol>
+    <div class="ptbody" key=${focus}>${body}</div>
+    <div class="ptplan"><${PlanHead} title="The ritual" busy=${busy} onReset=${() => setO(x => refill(x, R.blankCharacter().craft.rune.order))} /><ol>
       ${plan.effects.map(e => html`<li><span>${e.effect || "An effect"}: ${e.kind === "manifest" ? `roll under ${e.dc}%` : "roll under 30, lower is stronger"}</span><span class="muted">${plan.chances[plan.effects.indexOf(e)]}% to hold${e.kind === "enhance" ? (plan.semi ? " · potency up to d6" : " · potency up to 12") : ""}</span></li>`)}
       <li><span>${plan.hoax ? `${plan.life} ${plan.payName}` : `${plan.spend} rubles of materials`}</span><span class="muted">${plan.hoax ? "Paid even if it fails" : "Lost if it fails"}${st.reroll && !plan.hoax ? " · one re-roll per gem (pays again)" : ""}</span></li>
       <li><span>${plan.hours} hours of work</span><span class="muted">${plan.hoax ? `Then it lasts ${plan.lasts} hour${plan.lasts > 1 ? "s" : ""}` : "Then set it into an item with a runeslot"}</span></li></ol></div>

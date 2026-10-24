@@ -141,7 +141,7 @@ function Runecrafting({ c, update }) {
   const finish = (ok, res) => {
     const f = runRef.current; if (!f) return;
     const p = f.plan, spent = p.spend * (f.rerolled ? 2 : 1);
-    const desc = res.map(x => x.e.kind === "enhance" ? `${x.e.effect}, potency ${x.val} (${x.pot})` : `${x.e.effect} (manifesting)`).join(" & ");
+    const desc = res.map(x => x.e.kind === "enhance" ? `${x.e.effect}${x.e.note ? ` (${x.e.note})` : ""}, potency ${x.val} (${x.pot})` : `${x.e.effect} (manifesting${x.e.note ? `: ${x.e.note}` : ""})`).join(" & ");
     const vessel = p.hoax ? `Hoaxstone (${p.name})` : `Runestone (${p.name}, ${p.precious ? "precious" : "semi-precious"})`;
     const name = `${vessel}: ${desc}${p.hoax ? ` · lasts ${p.lasts} hour${p.lasts > 1 ? "s" : ""}` : ""}`;
     const what = p.effects.map(e => e.effect).join(" & ");
@@ -177,10 +177,10 @@ function Runecrafting({ c, update }) {
           <div class="ptforge">
             ${!run && html`<button class="btn primary big forgebtn" disabled=${!!plan.block} onClick=${start}>${RUNE_ICON}${plan.hoax ? "Make the Hoaxstone" : plan.second ? "Enchant a Potent Runestone" : "Enchant"} · ${plan.hours} hours</button>
               ${plan.block && html`<p class="muted ptwhy">${plan.block}</p>`}`}
-            ${run && html`<${RuneReadout} run=${run} onClose=${close} onPick=${pick} />`}
+            ${run && html`<${RuneReadout} run=${run} onClose=${close} onPick=${pick} again=${plan.block || ""} onAgain=${() => { close(); start(); }} />`}
           </div>
         </div>
-        <div class="ptside"><${RuneSide} c=${c} st=${st} plan=${plan} o=${o} setO=${setO} focus=${focus} busy=${busy} /></div>
+        <div class="ptside"><${RuneSide} c=${c} st=${st} plan=${plan} o=${o} setO=${setO} focus=${focus} busy=${busy} update=${update} /></div>
       </div>
       ${(st.identify || st.extract || st.sage) && html`<p class="muted rnalso">Also, without a roll: ${[st.identify && "identify a runestone you find (an hour)", st.extract && "take a rune out of an item without ruining either",
         st.sage && "move an enchantment between runestones, or merge two into a Potent Runestone"].filter(Boolean).join("; ")}.</p>`}
@@ -204,7 +204,7 @@ function Runecrafting({ c, update }) {
 }
 const RUNE_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5 16 7.5 10 17.5 4 7.5Z M4 7.5h12 M8 3.8v13.7 M8 7.5l4 4" /></svg>`;
 
-function RuneReadout({ run, onClose, onPick }) {
+function RuneReadout({ run, onClose, onPick, onAgain, again }) {
   const [spin, setSpin] = useState(0);
   useEffect(() => {
     if (run.phase !== "rolling" || run.roll || reduceMotion()) return;
@@ -219,7 +219,9 @@ function RuneReadout({ run, onClose, onPick }) {
       <p>${ok ? html`<b>${p.hoax ? "Hoaxstone" : p.name}</b>: ${run.result.desc}` : run.phase === "shatter" ? "One roll missed, so both effects, the gem and the materials are lost." : p.hoax ? "The roll missed. The object stays mundane." : "The roll missed. The materials are spent; the gem is still yours."}</p>
       <p class="muted">${[run.spent && `${run.spent} rubles of materials used${run.spent > p.spend ? " (re-rolled)" : ""}`, p.hoax && `${p.life} ${p.payName} paid`,
         ok && p.hoax && `It crumbles after ${p.lasts} hour${p.lasts > 1 ? "s" : ""}`, ok && "In the inventory now", `${p.hours} hours of work`].filter(Boolean).join(". ")}.</p>
-      <button class="btn primary" onClick=${onClose}>Back to the slab</button></div>`;
+      <div class="row ptagain"><button class="btn primary" disabled=${!!again} onClick=${onAgain}>${ok ? (p.hoax ? "Make another the same way" : "Enchant another the same way") : "Try again"}</button>
+        <button class="btn" onClick=${onClose}>Back to the slab</button></div>
+      ${again && html`<p class="muted ptwhy">${again}</p>`}</div>`;
   }
   const verdict = r && (e.kind === "manifest" ? `${r.r} − ${p.mod} = ${r.total} ${r.ok ? "<" : "≥"} ${r.dc}` : `${r.r} − ${p.mod} = ${r.total} → ${r.ok ? `potency ${r.pot}${r.capped ? ` (held from ${r.capped})` : ""}` : "30 or more: fails"}`);
   return html`<div class="ptread" role="status" aria-live="polite">
@@ -235,12 +237,43 @@ function RuneReadout({ run, onClose, onPick }) {
 function RuneEffect({ e, set, label, busy, cid }) {
   return html`<div class="rneff">
     <div class="seg two ammode" role="group" aria-label=${`${label}: kind of stone`}>${[["enhance", "Enhancing"], ["manifest", "Manifesting"]].map(([k, n]) => html`<button type="button" aria-pressed=${(e.kind || "enhance") === k} disabled=${busy} onClick=${() => set({ kind: k })}>${n}</button>`)}</div>
-    <div class="mini"><label for=${"rn-e-" + label.replace(/\W+/g, "") + cid}>${label}</label><input id=${"rn-e-" + label.replace(/\W+/g, "") + cid} type="text" value=${e.effect || ""} disabled=${busy} placeholder=${(e.kind || "enhance") === "manifest" ? "Glows like a lantern, 3 times a day" : "Stealth"} onInput=${ev => set({ effect: ev.target.value })} /></div>
+    <div class="mini"><label for=${"rn-e-" + label.replace(/\W+/g, "") + cid}>${label}</label><input id=${"rn-e-" + label.replace(/\W+/g, "") + cid} type="text" value=${e.effect || ""} disabled=${busy} placeholder=${(e.kind || "enhance") === "manifest" ? "Glows like a lantern, 3 times a day" : "Stealth"} onInput=${ev => set({ effect: ev.target.value, note: "" })} /></div>
+    ${e.note && html`<p class="muted ptrule">${e.note}</p>`}
     ${e.kind === "manifest" && html`<div class="mini"><label for=${"rn-d-" + label.replace(/\W+/g, "") + cid}>Difficulty from the GM (%)</label><input id=${"rn-d-" + label.replace(/\W+/g, "") + cid} type="number" min="1" max="100" value=${e.dc} disabled=${busy} onInput=${ev => set({ dc: +ev.target.value || 0 })} /></div>`}
   </div>`;
 }
 
-function RuneSide({ c, st, plan, o, setO, focus, busy }) {
+// Effects the GM gave, saved for later (like Brewing's GM recipes): pick one to fill in an effect.
+function RuneLibrary({ c, busy, update, slot, canPick = true }) {
+  const [adding, setAdding] = useState(false);
+  const put = (x, f) => { const o = x.craft.rune.order, v = { effect: f.n, kind: f.kind, dc: f.kind === "manifest" ? f.dc : 50, note: [f.uses, f.what].filter(Boolean).join(". ") };
+    if (slot === "second") o.second = Object.assign({}, o.second, v); else Object.assign(o, v); };
+  const list = c.craft.rune.effects;
+  return html`<div class="rnlib">
+    ${list.length > 0 && html`<h3 class="lbl">Saved effects</h3><div class="ptopts">${list.map(f => html`<div class="ptopt row-opt">
+      <button type="button" class="ptcheck" disabled=${busy || !canPick} onClick=${() => update(x => put(x, f))}>
+        <b>${f.n} · ${f.kind === "manifest" ? `manifesting, under ${f.dc}%` : "enhancing"}</b><span>${[f.uses, f.what].filter(Boolean).join(". ") || "No notes."}</span></button>
+      <button class="iconbtn brdel" aria-label=${`Remove ${f.n}`} disabled=${busy} onClick=${() => update(x => { x.craft.rune.effects = x.craft.rune.effects.filter(y => y.k !== f.k); })}>×</button></div>`)}</div>`}
+    ${!adding ? html`<button class="btn small" style="margin-top:8px" disabled=${busy} onClick=${() => setAdding(true)}>+ A custom effect</button>`
+      : html`<${EffectForm} onSave=${f => { update(x => { x.craft.rune.effects.push(f); if (canPick) put(x, f); }); setAdding(false); }} onCancel=${() => setAdding(false)} />`}
+  </div>`;
+}
+function EffectForm({ onSave, onCancel }) {
+  const [f, setF] = useState({ n: "", kind: "enhance", dc: 50, uses: "", what: "" });
+  const set = v => setF(Object.assign({}, f, v));
+  const ok = f.n.trim() && (f.kind !== "manifest" || f.dc > 0);
+  return html`<div class="brform">
+    <div class="seg two ammode" role="group" aria-label="Kind of effect">${[["enhance", "Enhancing"], ["manifest", "Manifesting"]].map(([k, n]) => html`<button type="button" aria-pressed=${f.kind === k} onClick=${() => set({ kind: k })}>${n}</button>`)}</div>
+    <div class="grid2"><div class="mini"><label for="ef-n">Name</label><input id="ef-n" type="text" value=${f.n} placeholder=${f.kind === "manifest" ? "Lantern light" : "Stealth"} onInput=${e => set({ n: e.target.value })} /></div>
+      ${f.kind === "manifest" ? html`<div class="mini"><label for="ef-dc">Difficulty from the GM (%)</label><input id="ef-dc" type="number" min="1" max="100" value=${f.dc} onInput=${e => set({ dc: +e.target.value || 0 })} /></div>`
+        : html`<div class="mini"><label for="ef-u">What it raises</label><input id="ef-u" type="text" value=${f.uses} placeholder="+potency to Stealth checks" onInput=${e => set({ uses: e.target.value })} /></div>`}</div>
+    ${f.kind === "manifest" && html`<div class="mini"><label for="ef-u2">How often</label><input id="ef-u2" type="text" value=${f.uses} placeholder="3 times a day" onInput=${e => set({ uses: e.target.value })} /></div>`}
+    <div class="mini"><label for="ef-w">What it does</label><input id="ef-w" type="text" value=${f.what} placeholder="Glows like a lantern for an hour when touched." onInput=${e => set({ what: e.target.value })} /></div>
+    <div class="row" style="margin-top:8px"><button class="btn small primary" disabled=${!ok} onClick=${() => onSave({ k: "e" + rid(), n: f.n.trim(), kind: f.kind, dc: f.dc, uses: f.uses.trim(), what: f.what.trim() })}>Save effect</button>
+      <button class="btn small" onClick=${onCancel}>Cancel</button></div></div>`;
+}
+
+function RuneSide({ c, st, plan, o, setO, focus, busy, update }) {
   let body;
   if (focus === "type") body = html`
     ${st.hoax && html`<div class="seg two ammode" role="group" aria-label="Gem or Hoaxstone"><button type="button" aria-pressed=${!o.hoax} disabled=${busy} onClick=${() => setO(x => { x.hoax = false; })}>A gem</button>
@@ -253,7 +286,8 @@ function RuneSide({ c, st, plan, o, setO, focus, busy }) {
         ${plan.g.k === "other" && html`<div class="row"><div class="mini" style="flex:1"><label for=${"rn-v" + c.id}>The vessel</label><input id=${"rn-v" + c.id} type="text" value=${o.gemName} disabled=${busy} placeholder="Wyvern eye" onChange=${e => setO(x => { x.gemName = e.target.value; })} /></div>
           <label class="brknown"><input type="checkbox" checked=${!!o.precious} disabled=${busy || !st.precious} onChange=${e => setO(x => { x.precious = e.target.checked; })} /> Precious</label></div>`}`}`;
   else if (focus === "av") body = html`<p class="muted ptrule">What the GM agreed the stone does. Enhancing stones raise a skill, attribute or ability; manifesting stones produce an effect.</p>
-    <${RuneEffect} e=${o} busy=${busy} cid=${c.id} label="Effect" set=${v => setO(x => Object.assign(x, v))} />`;
+    <${RuneEffect} e=${o} busy=${busy} cid=${c.id} label="Effect" set=${v => setO(x => Object.assign(x, v))} />
+    <${RuneLibrary} c=${c} busy=${busy} update=${update} slot="first" />`;
   else if (focus === "soak") body = plan.hoax ? html`
     <p class="muted ptrule">For every 100 rubles the materials would cost, per hour it lasts: 2 hit points, 10 blood points or 5 deprivation points, all from one. Paid even if it fails.</p>
     <div class="mini"><label for=${"rn-c" + c.id}>Materials it would take (rubles)</label><input id=${"rn-c" + c.id} type="number" min="0" step="50" value=${o.cost} disabled=${busy} onInput=${e => setO(x => { x.cost = Math.max(0, +e.target.value || 0); })} /></div>
@@ -268,16 +302,17 @@ function RuneSide({ c, st, plan, o, setO, focus, busy }) {
     <div class="row ptrate"><span><b>Lasts ${plan.lasts} hour${plan.lasts > 1 ? "s" : ""}</b> · each hour costs the life force again</span>
       <span class="ptstepper"><button class="iconbtn" aria-label="Fewer hours" disabled=${busy || plan.lasts <= 1} onClick=${() => setO(x => { x.hours = Math.max(1, num(x.hours) - 1); })}>−</button>
       <button class="iconbtn" aria-label="More hours" disabled=${busy || plan.lasts >= 24} onClick=${() => setO(x => { x.hours = num(x.hours) + 1; })}>+</button></span></div>`
-    : !st.potent ? html`<p class="ptlocked">A second effect (a Potent Runestone) unlocks at Runecrafting 7.</p>`
-    : !plan.precious ? html`<p class="ptlocked">A semi-precious gem holds one effect. Pick a precious gem for a Potent Runestone.</p>`
-    : html`<div class="seg two ammode" role="group" aria-label="Second effect"><button type="button" aria-pressed=${!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = null; })}>One effect</button>
-        <button type="button" aria-pressed=${!!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = x.second || { kind: "enhance", effect: "", dc: 50 }; })}>Two effects</button></div>
+    : html`${!st.potent ? html`<p class="ptlocked">A second effect (a Potent Runestone) unlocks at Runecrafting 7. You can still save effects for later.</p>`
+      : !plan.precious ? html`<p class="ptlocked">A semi-precious gem holds one effect. Pick a precious gem (Vessel) for a Potent Runestone.</p>`
+      : html`<div class="ptopts brchips"><button type="button" class="ptopt" aria-pressed=${!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = null; })}><b>None</b></button></div>
+      ${!o.second && html`<p class="muted ptrule">None: the stone has one effect. Pick a saved effect below, or make a new one, for a Potent Runestone.</p>`}
       ${o.second && html`<${RuneEffect} e=${o.second} busy=${busy} cid=${c.id} label="Second effect" set=${v => setO(x => { x.second = Object.assign({}, x.second, v); })} />
-        <p class="muted ptrule">Two rolls, twice the time. If either fails, both effects, the gem and the materials are lost. The same effect twice stacks.</p>`}`;
+        <p class="muted ptrule">Two rolls, twice the time. If either fails, both effects, the gem and the materials are lost. The same effect twice stacks.</p>`}`}
+      <${RuneLibrary} c=${c} busy=${busy} update=${update} slot="second" canPick=${st.potent && plan.precious} />`;
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>${focus === "extra" && plan.hoax ? "Hoaxstone" : RN_NAMES[focus]}</span></h3>
-    ${body}
-    <div class="ptplan"><h3 class="lbl">The ritual</h3><ol>
+    <div class="ptbody" key=${focus}>${body}</div>
+    <div class="ptplan"><${PlanHead} title="The ritual" busy=${busy} onReset=${() => setO(x => refill(x, R.blankCharacter().craft.rune.order))} /><ol>
       ${plan.effects.map(e => html`<li><span>${e.effect || "An effect"}: ${e.kind === "manifest" ? `roll under ${e.dc}%` : "roll under 30, lower is stronger"}</span><span class="muted">${plan.chances[plan.effects.indexOf(e)]}% to hold${e.kind === "enhance" ? (plan.semi ? " · potency up to d6" : " · potency up to 12") : ""}</span></li>`)}
       <li><span>${plan.hoax ? `${plan.life} ${plan.payName}` : `${plan.spend} rubles of materials`}</span><span class="muted">${plan.hoax ? "Paid even if it fails" : "Lost if it fails"}${st.reroll && !plan.hoax ? " · one re-roll per gem (pays again)" : ""}</span></li>
       <li><span>${plan.hours} hours of work</span><span class="muted">${plan.hoax ? `Then it lasts ${plan.lasts} hour${plan.lasts > 1 ? "s" : ""}` : "Then set it into an item with a runeslot"}</span></li></ol></div>

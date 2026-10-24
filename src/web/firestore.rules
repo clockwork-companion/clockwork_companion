@@ -49,6 +49,40 @@ service cloud.firestore {
       allow delete: if isGM(t) || (isMember(t) && plays(resource.data.get("players", [])));
     }
 
+    // The workshop (Crafting → Weapon and Armor upkeep). A smith repairs another player's weapon or suit without
+    // seeing their sheet: the owner sends a copy of one item as a job, the smith writes the result onto the job, and
+    // the owner's app applies it. Who plays each character is checked against the character itself.
+    function playersOfChar(t, id) { return get(/databases/$(database)/documents/tables/$(t)/characters/$(id)).data.get("players", []); }
+    function charExists(t, id) { return exists(/databases/$(database)/documents/tables/$(t)/characters/$(id)); }
+    function campaignOf(t, id) { return get(/databases/$(database)/documents/tables/$(t)/characters/$(id)).data.get("campaign", ""); }
+
+    // The roster: one card per character (name, who plays it, Weapon/Armor Maintenance), so players can find a smith.
+    match /tables/{t}/roster/{id} {
+      allow read: if isMember(t);
+      allow create, update: if isMember(t) && charExists(t, id)
+                    && request.resource.data.get("uids", []) == playersOfChar(t, id)
+                    && (isGM(t) || plays(playersOfChar(t, id)));
+      allow delete: if isGM(t) || (isMember(t) && (!charExists(t, id) || plays(playersOfChar(t, id))));
+    }
+
+    // Jobs: only between two characters of the same campaign (a campaign must be set).
+    // The sender (the owner, or the smith handing over a new item) creates one; both sides can read it;
+    // either side can update its status and result but not who it's between or the item; either side can clear it.
+    match /tables/{t}/jobs/{id} {
+      allow read: if isGM(t) || (isMember(t) && (plays(resource.data.from.uids) || plays(resource.data.to.uids)));
+      allow create: if isMember(t) && request.resource.data.status == "open"
+                    && request.resource.data.from.uids == playersOfChar(t, request.resource.data.from.char)
+                    && request.resource.data.to.uids == playersOfChar(t, request.resource.data.to.char)
+                    && campaignOf(t, request.resource.data.from.char) != ""
+                    && campaignOf(t, request.resource.data.from.char) == campaignOf(t, request.resource.data.to.char)
+                    && (isGM(t) || plays(request.resource.data.from.uids));
+      allow update: if isMember(t) && (isGM(t) || plays(resource.data.from.uids) || plays(resource.data.to.uids))
+                    && request.resource.data.from == resource.data.from && request.resource.data.to == resource.data.to
+                    && request.resource.data.item == resource.data.item && request.resource.data.kind == resource.data.kind
+                    && request.resource.data.mode == resource.data.mode;
+      allow delete: if isGM(t) || (isMember(t) && (plays(resource.data.from.uids) || plays(resource.data.to.uids)));
+    }
+
     // The initiative deck is the GM's.
     match /tables/{t}/encounters/{id} {
       allow read, write: if isGM(t);

@@ -52,6 +52,9 @@ jobs:
       - name: Smoke test (every theme, desktop and 390 px)
         run: python3 tests/smoke.py "$RUNNER_TEMP/site" smoke-shots
 
+      - name: Workshop jobs between players (Firebase stand-in)
+        run: python3 tests/workshop.py "$RUNNER_TEMP/site" smoke-shots
+
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v6
