@@ -10,6 +10,8 @@ players see only the characters (and companions) the GM gives them, plus any the
 ## Install it as an app
 The site can be installed like an app, and it opens even with a weak or no connection (sheets you've opened
 before are kept on the device, and changes made offline are sent when you're back online).
+- **Easiest:** the install icon (an arrow into a tray) at the top right of the sign-in screen, or next to **Sign out**.
+  It only shows when your browser can install the site.
 - **Android (Chrome):** menu ⋮ → **Install app** (or **Add to Home screen**).
 - **iPhone / iPad (Safari):** Share → **Add to Home Screen**.
 - **Computer (Chrome or Edge):** the install icon at the right end of the address bar.
