@@ -131,6 +131,8 @@ const CW = (() => {
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] },
                brew: { bonus: 0, known: [], recipes: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
+               rune: { bonus: 0, order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
+                       second: null, hoax: false, pay: "hp", hours: 1 }, ledger: [] },
                weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" } }, ledger: [] } },
       talents: [], uses: {},
     };
@@ -170,6 +172,9 @@ const CW = (() => {
     out.craft.brew = Object.assign({}, b.craft.brew, out.craft.brew);
     out.craft.brew.order = Object.assign({}, b.craft.brew.order, out.craft.brew.order);
     ["known", "recipes", "ledger"].forEach(k => { if (!Array.isArray(out.craft.brew[k])) out.craft.brew[k] = []; });
+    out.craft.rune = Object.assign({}, b.craft.rune, out.craft.rune);
+    out.craft.rune.order = Object.assign({}, b.craft.rune.order, out.craft.rune.order);
+    if (!Array.isArray(out.craft.rune.ledger)) out.craft.rune.ledger = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
     out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
@@ -740,6 +745,63 @@ const CW = (() => {
     return { st, a, p, cat, catDc, need, dcs, chances: dcs.map(d => clamp(d + st.mod - 1, 0, 100)), hours: p ? 2 : 1, block };
   }
 
+  // ---------- Runecrafting (Crafting: Runecrafting, and the skill's perks) ----------
+  // Level 3 identify runestones; 4 enchant semi-precious gems; 5 precious gems, and extra materials (+1% per 50 rubles);
+  // 6 Hoaxstones; 7 Potent Runestones (two effects, twice the time); 8 one re-roll per gemstone; 9 extract runes;
+  // 10 move enchantments, merge two runestones. An enchantment takes 8 hours.
+  const GEMS = [
+    { k: "amethyst", n: "Amethyst", hue: "#8a5cd0" }, { k: "garnet", n: "Garnet", hue: "#9e1f2e" }, { k: "topaz", n: "Topaz", hue: "#e3a23a" },
+    { k: "jade", n: "Jade", hue: "#3f9b6a" }, { k: "lapis", n: "Lapis lazuli", hue: "#2c4fa8" }, { k: "moonstone", n: "Moonstone", hue: "#c9d6e6" },
+    { k: "ruby", n: "Ruby", hue: "#d0213f", precious: true }, { k: "sapphire", n: "Sapphire", hue: "#1f55d6", precious: true },
+    { k: "emerald", n: "Emerald", hue: "#14a35a", precious: true }, { k: "diamond", n: "Diamond", hue: "#e8f4ff", precious: true },
+    { k: "other", n: "Other vessel", hue: "#b08a5a" },
+  ];
+  // The Runecrafting Difficulty table: d100 − modifier → the stone's potency. 30 or more fails.
+  const RUNE_TABLE = [[-31, "12"], [-21, "d12"], [-11, "d10"], [-1, "d8"], [9, "d6"], [19, "d4"], [29, "1"]];
+  const POTENCY_RANK = ["1", "d4", "d6", "d8", "d10", "d12", "12"];
+  function runePotency(result, semi) {
+    const row = RUNE_TABLE.find(([hi]) => result <= hi);
+    if (!row) return { pot: null, capped: false };
+    // Semi-precious gems hold power up to d6; anything better counts as d6.
+    if (semi && POTENCY_RANK.indexOf(row[1]) > POTENCY_RANK.indexOf("d6")) return { pot: "d6", capped: row[1] };
+    return { pot: row[1], capped: false };
+  }
+  const HOAX_PAY = { hp: { n: "hit points", per: 2 }, bp: { n: "blood points", per: 10 }, dp: { n: "deprivation points", per: 5 } };
+  function runeState(c) {
+    const lvl = sk(c, "Runecrafting"), b = (c.craft && c.craft.rune) || {};
+    return { lvl, mod: skillModifier(c, "Runecrafting") + num(b.bonus), bonus: num(b.bonus), identify: lvl >= 3, semi: lvl >= 4, precious: lvl >= 5,
+             extra: lvl >= 5, hoax: lvl >= 6, potent: lvl >= 7, reroll: lvl >= 8, extract: lvl >= 9, sage: lvl >= 10 };
+  }
+  // An enchanting order: { gem, gemName, precious, kind: enhance|manifest, effect, dc, cost, extra, second: { kind, effect, dc } | null, hoax, pay, hours }
+  function runePlan(c, o) {
+    const st = runeState(c), g = GEMS.find(x => x.k === o.gem) || GEMS[0];
+    const hoax = st.hoax && !!o.hoax;
+    const precious = !hoax && (g.k === "other" ? !!o.precious : !!g.precious);
+    const semi = !hoax && !precious;
+    const second = st.potent && !hoax && precious && o.second ? o.second : null;
+    const extra = st.extra && !hoax ? Math.max(0, num(o.extra)) : 0;
+    const extraPct = Math.floor(extra / 50);
+    const mod = st.mod + extraPct, cost = Math.max(0, num(o.cost));
+    const effects = [{ kind: o.kind === "manifest" ? "manifest" : "enhance", effect: String(o.effect || "").trim(), dc: num(o.dc) }]
+      .concat(second ? [{ kind: second.kind === "manifest" ? "manifest" : "enhance", effect: String(second.effect || "").trim(), dc: num(second.dc) }] : []);
+    // Chance to succeed: an enhancing stone holds on d100 − mod below 30, a manifesting stone below the GM's difficulty.
+    const chances = effects.map(e => clamp((e.kind === "manifest" ? e.dc : 30) + mod - 1, 0, 100));
+    const hours = Math.max(1, Math.floor(num(o.hours)) || 1), pay = HOAX_PAY[o.pay] ? o.pay : "hp";
+    const life = hoax ? Math.max(1, Math.ceil(cost / 100)) * HOAX_PAY[pay].per * hours : 0;
+    const name = hoax ? (String(o.gemName || "").trim() || "a mundane object") : g.k === "other" ? (String(o.gemName || "").trim() || "a vessel") : g.n;
+    const have = num(c.craft && c.craft.supplies && c.craft.supplies.runemat);
+    const lifeHave = hoax ? derived(c).cur[pay] : 0;
+    let block = "";
+    if (hoax) { if (!st.hoax) block = "Hoaxstones need Runecrafting 6."; else if (life > lifeHave) block = `This Hoaxstone costs ${life} ${HOAX_PAY[pay].n}; you have ${lifeHave}.`; }
+    else if (!st.semi) block = `Enchanting gems needs Runecrafting 4. This character has ${st.lvl}.`;
+    else if (precious && !st.precious) block = "Precious gems need Runecrafting 5. Pick a semi-precious gem.";
+    else if (cost + extra > have) block = `Needs ${cost + extra} rubles' worth of materials (have ${have}).`;
+    if (!block && effects.some(e => !e.effect)) block = "Describe the effect first (what the GM agreed it does).";
+    if (!block && effects.some(e => e.kind === "manifest" && e.dc <= 0)) block = "Set the difficulty the GM gave for the manifesting effect.";
+    return { st, g, name, hoax, precious, semi, second: !!second, effects, extra, extraPct, mod, cost, spend: hoax ? 0 : cost + extra,
+             chances, hours: second ? 16 : 8, lasts: hoax ? hours : 0, life, pay, payName: HOAX_PAY[pay].n, block };
+  }
+
   // ---------- Tabletop Simulator export ----------
   function toTabletop(c) {
     const d = derived(c);
@@ -789,6 +851,7 @@ const CW = (() => {
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
-           BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allBrews, findBrew, brewOne, brewPlan };
+           BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allBrews, findBrew, brewOne, brewPlan,
+           GEMS, RUNE_TABLE, runePotency, HOAX_PAY, runeState, runePlan };
 })();
 if (typeof module !== "undefined") module.exports = CW;
