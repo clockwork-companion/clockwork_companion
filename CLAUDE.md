@@ -4,9 +4,11 @@ This repo is the **Clockwork Companion**, a web character sheet and GM tool for 
 a homebrew tabletop RPG. Three people work on it, each with their own Claude. Read this whole file before changing
 anything. When this file and an instruction from your own person disagree, ask them before acting.
 
-- **People:** Sinan (owner of the repo, co-GM), Bedo, and one more collaborator. Address them in plain language.
-- **Live site:** https://vansinan101.github.io/clockwork_companion/
-- **Dev page:** https://vansinan101.github.io/clockwork_companion/dev/ (red DEV ribbon)
+- **People:** Sinan (co-GM), Bedo and Utku. All three are **owners** of the `clockwork-companion` GitHub organization,
+  which owns the repo. Address them in plain language.
+- **Repo:** https://github.com/clockwork-companion/clockwork_companion (moved from `vansinan101` on 2026-10-24; old links forward)
+- **Live site:** https://clockwork-companion.github.io/clockwork_companion/
+- **Dev page:** https://clockwork-companion.github.io/clockwork_companion/dev/ (red DEV ribbon)
 
 ## 1. Branches: how work moves
 
@@ -71,6 +73,8 @@ If an older branch still has it, a merge may report `sw.js` as deleted: keep it 
 | `craft.js` | The Crafting tab: one section per craft, and the Powdertinkering bench (munition drawings with callouts, forge animation, supplies, ledger). |
 | `craft-armor.js` | Crafting → Armor upkeep: the Repair and Craft benches (suit drawings on a stand, hammer and forge animations). |
 | `craft-weapon.js` | Crafting → Weapon upkeep: the Repair and Craft benches (weapon drawings in a rack by type, nicks hammered out, forge with flaws and random properties). |
+| `craft-brew.js` | Crafting → Brewing: a cauldron over a fire with a herb pouch, catalyst vial and flask; recipes (the book's and the GM's), increments, catalysts, Potent Brews; potions go into the inventory with their toxicity. |
+| `craft-rune.js` | Crafting → Runecrafting: a gem (or a mundane object for a Hoaxstone) over a ritual slab in a ring of runes; enhancing and manifesting stones, potency from the book's table, Potent Runestones, the level 8 re-roll; runestones go into the inventory. |
 | `genesis.js` | Guided character creation. |
 | `gm.js` | GM table: players and roles, backups, the initiative deck. |
 | `web-backend.js`, `web/` | Website-only parts: sign-in, Firestore storage, the rules file, the README template. |
@@ -147,4 +151,5 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-24:** Armor repair: the Repair Count is capped at 10 dice. Utku.
 - **2026-10-24:** Armor crafting (not written in the 2020.1 book) follows the book's weapon crafting, with armor extras (+1 AV −10%, +5 Soak −5%); every change is marked in `rules-info.js`. Utku.
 - **2026-10-24:** Mossheart is an Extended theme for Utku's character Batbayar, a young warder who fights the Zhoung, a corrupting darkness, inside himself. Dark and grounded rather than whimsical: realistic ivy (woody stems, five-lobed leaves, moss, black berries) creeping round section corners (grown to fit each section by `fx-moss.js`; leaves lean gently, at most 10°, when the pointer brushes past, then settle), a few moss clumps and the odd stitched hide patch on section edges, carved-stone titles (Marcellus SC), drifting spores. Below rises the Zhoung, a violet-black shadow of roots that breathes and sometimes opens its eyes, held back by a faint line of warding runes. Broken attributes take its violet. Utku.
-- **2026-10-24:** Dice: a top-bar switch (per browser, like the theme) between "App rolls" and "My own rolls". With own rolls, every roll the app makes (long rest cleansing, creation 3d8, Powdertinkering, Armor repair and craft) asks for the number rolled at the table, e.g. in Tabletop Simulator; new rolls go through `askRoll()` in `app.js`. Utku.
+- **2026-10-24:** Dice: a top-bar switch (per browser, like the theme) between "App rolls" and "My own rolls". With own rolls, every roll the app makes (long rest cleansing, creation 3d8, Powdertinkering, Armor repair and craft, Weapon repair and craft, Brewing, Runecrafting) asks for the number rolled at the table, e.g. in Tabletop Simulator; new rolls go through `askRoll()` in `app.js`. Utku.
+- **2026-10-24:** The repo moved to the free `clockwork-companion` organization, with Sinan, Bedo and Utku as owners. The site moved to clockwork-companion.github.io/clockwork_companion/; the old address forwards to it. Sinan.

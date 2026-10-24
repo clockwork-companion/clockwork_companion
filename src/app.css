@@ -674,6 +674,14 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .clipbox.reload .durin { animation: reloaded .55s ease-out; }
 @keyframes reloaded { 0% { background: transparent; } 30% { background: var(--brass-soft); border-color: var(--brass); transform: scale(1.08); } }
 .clipbox.bump .durin { animation: bump .3s ease-out; }
+/* Initiative deck: a drawn card flips over, a new round riffles the deck, each card drawn is dealt into "This round". */
+.icardwrap.flip { animation: flip .42s cubic-bezier(.2, .7, .3, 1); transform-origin: 50% 50%; }
+@keyframes flip { 0% { transform: perspective(900px) rotateY(-80deg) translateX(-24px); opacity: .2; } 60% { transform: perspective(900px) rotateY(8deg); opacity: 1; } 100% { transform: none; } }
+.stat.riffle { animation: riffle .5s ease-in-out; }
+@keyframes riffle { 15% { transform: rotate(-4deg) translateY(-2px); } 35% { transform: rotate(3deg); } 55% { transform: rotate(-2deg) translateY(-1px); } 75% { transform: rotate(1deg); } }
+.stat b.bump { display: inline-block; }
+.drawn li.dealt { animation: dealt .34s cubic-bezier(.2, .7, .3, 1) both; }
+@keyframes dealt { from { transform: translate(-14px, -6px) rotate(-6deg); opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 @media (prefers-reduced-motion: reduce) { .track::after { animation: none !important; display: none; } }
@@ -1072,6 +1080,96 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @keyframes amrise { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-34px); } }
 @keyframes ampop { 0% { transform: scale(.4); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .ptsparks { display: none; } }
+/* ----- Runecrafting: a gem over a ritual slab in a ring of runes ----- */
+.rnmun .rn-glyph { fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: stroke .3s, filter .3s; }
+.rnmun .rn-glyph.on { filter: drop-shadow(0 0 3px rgba(255, 240, 200, .85)); stroke-width: 1.9; }
+.rnmun .rn-circle { opacity: .35; transition: opacity .5s; }
+.rnmun.ritual .rn-circle, .rnmun.rolling .rn-circle, .rnmun.bound .rn-circle { opacity: .9; animation: rnspin 9s linear infinite; }
+.rnmun .rn-flame { transform-box: fill-box; transform-origin: 50% 100%; animation: brflick 1.3s var(--d) ease-in-out infinite alternate; }
+.rnmun.ritual .rn-flame, .rnmun.rolling .rn-flame { animation-duration: .5s; transform: scale(1.25); }
+.rnmun.failed .rn-flame, .rnmun.shatter .rn-flame { opacity: .15; animation: none; }
+.rnmun .rn-halo { opacity: .25; transition: opacity .6s; }
+.rnmun.ritual .rn-halo, .rnmun.rolling .rn-halo { opacity: .7; animation: rnpulse 1.4s ease-in-out infinite alternate; }
+.rnmun.bound .rn-halo { opacity: 1; }
+.rnmun.failed .rn-halo, .rnmun.shatter .rn-halo { opacity: 0; }
+.rnmun .rn-gem { transition: transform .9s ease-in-out, filter .6s; }
+.rnmun.ritual .rn-gem, .rnmun.rolling .rn-gem { transform: translateY(-16px); animation: rnhover 2.2s ease-in-out infinite alternate; }
+.rnmun.bound .rn-gem { transform: translateY(-8px); filter: drop-shadow(0 0 10px #fff6c8); }
+.rnmun.failed .rn-gem { filter: grayscale(.6) brightness(.75); }
+.rnmun .rn-carve { fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 40; stroke-dashoffset: 40; opacity: 0; }
+.rnmun.bound .rn-carve { opacity: 1; animation: rncarve 1s .2s ease-out forwards; filter: drop-shadow(0 0 3px #fff6c8); }
+.rnmun .rn-cracks { opacity: 0; }
+.rnmun.shatter .rn-gem { animation: rnvanish .5s ease-in forwards; }
+.rnmun.shatter .rn-cracks { opacity: 1; }
+.rnmun .rn-shards polygon { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.rnmun.shatter .rn-shards polygon { animation: rnshard .9s .2s ease-out forwards; }
+.rnmun .rn-motes circle { opacity: 0; }
+.rnmun.ritual .rn-motes circle, .rnmun.rolling .rn-motes circle { animation: rnmote 1.3s var(--d) ease-in infinite; }
+.rnmun .rn-smoke circle { fill: #3a3631; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.rnmun.failed .rn-smoke circle, .rnmun.shatter .rn-smoke circle { animation: brsmoke 2.4s var(--d) ease-out infinite; }
+.rnalso { margin: 12px 0 0; font-size: 13px; }
+.rneff { display: grid; gap: 8px; }
+.rneff .ammode { margin: 0; }
+.rnpay { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
+.rnchoose { gap: 8px; margin-top: 10px; align-items: center; }
+.rnchoose .muted { flex: 1 1 220px; font-size: 13px; }
+@keyframes rnspin { to { stroke-dashoffset: -80; } }
+@keyframes rnpulse { from { opacity: .45; } to { opacity: .85; } }
+@keyframes rnhover { from { transform: translateY(-14px); } to { transform: translateY(-22px); } }
+@keyframes rncarve { 0% { stroke-dashoffset: 40; } 100% { stroke-dashoffset: 0; } }
+@keyframes rnvanish { 0% { opacity: 1; transform: none; } 60% { opacity: 1; transform: translate(2px, 1px); } 100% { opacity: 0; transform: scale(.9); } }
+@keyframes rnshard { 0% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translate(var(--x), calc(var(--y) + 40px)) rotate(200deg); } }
+@keyframes rnmote { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(104px, -118px) scale(.5); } }
+@media (prefers-reduced-motion: reduce) { .rnmun .rn-motes, .rnmun .rn-shards { display: none; } .rnmun.bound .rn-carve { stroke-dashoffset: 0; } }
+/* ----- Brewing: cauldron, herbs, catalyst vial, flask ----- */
+.brmun .br-fire path { transform-box: fill-box; transform-origin: 50% 100%; animation: brflick 1.1s var(--d) ease-in-out infinite alternate; }
+.brmun .br-glow { opacity: .55; transition: opacity .6s; }
+.brmun.boil .br-glow, .brmun.steep .br-glow { opacity: 1; }
+.brmun.boil .br-fire path { animation-duration: .45s; }
+.brmun .br-liquid { transition: fill .9s; }
+.brmun .br-swirl { animation: brswirl 5s ease-in-out infinite alternate; }
+.brmun .br-bubbles circle { transform-box: fill-box; transform-origin: center; opacity: 0; animation: brbub 2.6s var(--d) ease-in infinite; }
+.brmun.steep .br-bubbles circle { animation-duration: 1.6s; }
+.brmun.boil .br-bubbles circle { animation-duration: .8s; }
+.brmun.spoiled .br-bubbles circle, .brmun.boom .br-bubbles circle { animation: none; opacity: 0; }
+.brmun .br-steam path { opacity: 0; animation: brsteam 3.4s var(--d) ease-out infinite; }
+.brmun.boil .br-steam path, .brmun.steep .br-steam path { animation-duration: 1.9s; }
+.brmun .br-leaves path { transform-box: fill-box; transform-origin: center; animation: brleaf 1.2s var(--d) ease-in both; }
+.brmun .br-vial { transition: transform .5s; }
+.brmun .br-vial.on { transform: translateY(6px); }
+.brmun .br-drop { opacity: 0; }
+.brmun.steep .br-vial.on .br-drop { animation: brdrop 1.2s .3s ease-in both; }
+.brmun .br-fill { transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0); transition: transform 1.2s ease-out .25s, fill .6s; }
+.brmun.pour .br-fill { transform: scaleY(.62); }
+.brmun .br-stream { stroke-dasharray: 120; stroke-dashoffset: 120; opacity: 0; }
+.brmun.pour .br-stream { animation: brpour 1.6s ease-in-out both; }
+.brmun .br-cork { transform-box: fill-box; transform-origin: center; transition: transform .5s; }
+.brmun.pour .br-cork { transform: translate(38px, 98px) rotate(90deg); animation: brcork .9s ease-in both; }
+@keyframes brcork { 0% { transform: none; } 35% { transform: translate(18px, -34px) rotate(160deg); } 100% { transform: translate(38px, 98px) rotate(90deg); } }
+.brmun .br-smoke circle { fill: #3a3631; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.brmun.spoiled .br-smoke circle, .brmun.boom .br-smoke circle { animation: brsmoke 2.4s var(--d) ease-out infinite; }
+.brmun .br-flash { opacity: 0; pointer-events: none; }
+.brmun.boom .br-flash { animation: brflash .7s ease-out; }
+.brmun.boom .br-pot { animation: brshake .4s ease-in-out 2; }
+.ptopts.brchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ptopts.brchips .ptopt { padding: 6px 10px; }
+.brneed { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.brneed li { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.brknown { display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 12.5px; white-space: nowrap; color: var(--ink-2); }
+.ptopt .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.brform { margin-top: 10px; padding: 10px; border: 1.5px dashed var(--hair); display: grid; gap: 8px; }
+.brform .grid2 { gap: 8px; }
+@keyframes brflick { from { transform: scaleY(.82) skewX(-3deg); } to { transform: scaleY(1.12) skewX(3deg); } }
+@keyframes brswirl { from { transform: translateX(-30px); } to { transform: translateX(26px); } }
+@keyframes brbub { 0% { opacity: 0; transform: translateY(2px) scale(.4); } 30% { opacity: .9; } 100% { opacity: 0; transform: translateY(-16px) scale(1.2); } }
+@keyframes brsteam { 0% { opacity: 0; transform: translateY(0); } 30% { opacity: .4; } 100% { opacity: 0; transform: translateY(-44px); } }
+@keyframes brleaf { 0% { opacity: 0; transform: translateY(-30px) rotate(0); } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(96px) rotate(260deg); } }
+@keyframes brdrop { 0% { opacity: 1; transform: translateY(0); } 90% { opacity: 1; } 100% { opacity: 0; transform: translateY(124px); } }
+@keyframes brpour { 0% { opacity: 0; stroke-dashoffset: 120; } 20% { opacity: 1; } 70% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: -120; opacity: 0; } }
+@keyframes brsmoke { 0% { opacity: 0; transform: translateY(0) scale(.6); } 30% { opacity: .75; } 100% { opacity: 0; transform: translateY(-70px) scale(1.6); } }
+@keyframes brflash { 0% { opacity: .9; } 100% { opacity: 0; } }
+@keyframes brshake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@media (prefers-reduced-motion: reduce) { .brmun .br-fill { transition: none; } .brmun.pour .br-fill { transform: scaleY(.62); } .brmun .br-leaves, .brmun .br-flash { display: none; } }
 /* ----- Cyberpunk (extended): Olympus on the net. A clean, future-city interface where the old gods run as AIs:
    gold Greek-key (meander) trims, temple-column tabs, Greek-letter module tags, cyan holo light, and the Blackwall,
    the red firewall at the edge of the net, smouldering along the bottom of the screen ----- */

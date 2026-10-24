@@ -137,22 +137,30 @@ function WeaponUpkeep({ c, update }) {
   const traitTip = n => { const k = n.replace(/ \(.*$/, ""); const all = [...R.WEAPON_PROPS, ...R.WEAPON_FLAWS]; return all.some(x => x[0] === k) ? "See the Weapons rules on the Gear tab." : ""; };
 
   /* ---------- repair: one check, then one hammer strike per d10 ---------- */
-  const startRepair = () => {
+  const startRepair = async () => {
     if (!weapon || rp.block) return;
-    const plan = rp, id = weapon.id; setSel(id);
+    const plan = rp, id = weapon.id;
+    const first = await askRoll({ title: "Weapon repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
+      note: `d100 − ${st.mod}. Repair Count = 10 − check ÷ 10: that many d10 restore Durability.` });
+    if (!first) return;
+    setSel(id);
     setRun({ kind: "repair", phase: "rolling", id, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod, flaws: [] });
     later(() => {
-      const r = R.rollDie(100), check = r - st.mod, count = R.repairCount(check);
-      const dice = Array.from({ length: count }, () => R.rollDie(plan.sides));
-      patch({ phase: "counted", r, check, count, dice });
-      const strike = i => {
-        if (i >= count) return later(() => finishRepair(), 450);
-        patch({ phase: "strike", strike: i });
-        later(() => patch(g => ({ shown: i + 1, gained: Math.min(plan.missing, g.gained + dice[i]) })), 230);
-        later(() => strike(i + 1), 560);
-      };
-      later(() => strike(0), 1100);
-    }, 1100);
+      const r = first[0], check = r - st.mod, count = R.repairCount(check);
+      patch({ phase: "counted", r, check, count, dice: [] });
+      // Rolled at the table, the d10s come back as one total: one strike for the lot.
+      askRoll({ title: `Repair dice: ${count}d10`, dice: [{ n: count, sides: plan.sides }], note: "Durability goes back up by the total." }).then(dice => {
+        if (!runRef.current) return;
+        patch({ dice });
+        const strike = i => {
+          if (i >= dice.length) return later(() => finishRepair(), 450);
+          patch({ phase: "strike", strike: i });
+          later(() => patch(g => ({ shown: i + 1, gained: Math.min(plan.missing, g.gained + dice[i]) })), 230);
+          later(() => strike(i + 1), 560);
+        };
+        later(() => strike(0), 1100);
+      });
+    }, Dice.mode === "own" ? 500 : 1100);
   };
   const finishRepair = () => {
     const f = runRef.current; if (!f) return;
@@ -162,29 +170,35 @@ function WeaponUpkeep({ c, update }) {
       w.dur = num(w.dur) + gained;
       x.craft.supplies.weapon = Math.max(0, num(x.craft.supplies.weapon) - f.plan.cost);
       const txt = `${w.name || "Weapon"}: Durability ${f.plan.dur} → ${f.plan.dur + gained}`;
-      addLedger(x, { kind: "repair", name: `Repaired ${txt}`, rolls: [`check ${f.r}−${f.mod}=${f.check} → ${f.count} × d10${f.count ? ": " + f.dice.join(" + ") + " = " + total : ""}`] });
+      addLedger(x, { kind: "repair", name: `Repaired ${txt}`, rolls: [`check ${f.r}−${f.mod}=${f.check} → ${f.count} × d10${f.count ? ": " + (f.dice.length > 1 ? f.dice.join(" + ") + " = " : "") + total : ""}`] });
       addLog(x, `Weapon repair: ${txt} (${f.plan.cost} g weapon materials, ${f.count}d10)`);
     });
     patch({ done: true, phase: "done", total, gainedFinal: gained });
   };
 
   /* ---------- craft: roll; each failure adds a random flaw and rolls again, until the failures run out ---------- */
-  const startCraft = () => {
+  const startCraft = async () => {
     if (cp.block) return;
     const plan = cp, recipe = clean(rc), name = (rc.name || "").trim() || `New ${rc.skill === "Shield" ? "shield" : rc.skill.toLowerCase() + " weapon"}`;
+    const ask = n => askRoll({ title: n ? `Weapon craft: try ${n + 1}` : "Weapon craft check", dice: [{ n: 1, sides: 100 }], cancel: !n,
+      note: `d100 − ${st.mod}, under ${plan.dc}.${n >= plan.st.maxFails ? " One more failure loses the weapon." : " A failure adds a flaw and gives another try."}` });
+    const first = await ask(0);
+    if (!first) return;
     setRun({ kind: "craft", phase: "heat", plan, recipe, name, rolls: [], flaws: [], mod: st.mod });
-    const roll = () => {
+    const roll = async n => {
+      const r = n ? (await ask(n))[0] : first[0];
+      if (!runRef.current) return;
       patch({ phase: "rolling", roll: null });
       later(() => {
-        const g = runRef.current, r = R.rollDie(100), ok = r - st.mod < plan.dc;
+        const g = runRef.current, ok = r - st.mod < plan.dc;
         patch(h => ({ roll: { r, total: r - st.mod, ok }, rolls: [...h.rolls, { r, total: r - st.mod, ok }] }));
         if (ok) return later(() => finishCraft(true), 500);
         const flaw = R.randomTraits(R.WEAPON_FLAWS, plan.kind, g.flaws.map(x => x.replace(/ \(.*$/, "")), 1)[0] || "A flaw (GM)";
         if (g.flaws.length + 1 > g.plan.st.maxFails) later(() => { patch(h => ({ flaws: [...h.flaws, flaw] })); later(() => finishCraft(false), 700); }, 600);
-        else later(() => { patch(h => ({ phase: "flaw", flaws: [...h.flaws, flaw] })); later(roll, 1500); }, 600);
+        else later(() => { patch(h => ({ phase: "flaw", flaws: [...h.flaws, flaw] })); later(() => roll(n + 1), 1500); }, 600);
       }, 1400);
     };
-    later(roll, 900);
+    later(() => roll(0), 900);
   };
   const finishCraft = ok => {
     const f = runRef.current; if (!f) return;
@@ -270,7 +284,7 @@ function WmReadout({ run, onClose }) {
     const p = run.plan;
     if (run.done) return html`<div class=${"ptread end " + (run.gainedFinal ? "done" : "nothing")} role="status">
       <p class="ptbig">${run.gainedFinal ? `+${run.gainedFinal} Durability` : "No durability recovered"}</p>
-      <p>${run.count ? `${run.count} × d10: ${run.dice.join(" + ")} = ${run.total}${run.total > run.gainedFinal ? ` (it was full at ${p.max})` : ""}` : "The check was too high for even one die."}</p>
+      <p>${run.count ? `${run.count} × d10: ${run.dice.length > 1 ? run.dice.join(" + ") + " = " : ""}${run.total}${run.total > run.gainedFinal ? ` (it was full at ${p.max})` : ""}` : "The check was too high for even one die."}</p>
       <p class="muted">${p.cost} g of weapon materials used · an hour's work.${p.broken ? " The flaw it gained for breaking stays until a weaponsmith removes it." : ""}</p>
       <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
     return html`<div class="ptread" role="status" aria-live="polite">
