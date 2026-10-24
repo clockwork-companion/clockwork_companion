@@ -2,7 +2,9 @@
 // A weaponsmith or armorsmith can repair another player's weapon or suit, or craft one for them, without the item
 // changing hands in the app. The owner sends a copy of one item (a "job"); it shows on the smith's Repair bench; the
 // smith rolls with their own skill and materials; then the owner's app writes the result onto the real item and
-// clears the job. A weapon or suit "made for" someone becomes a gift job that the recipient's app adds to their Gear.
+// clears the job. The item never enters the smith's Gear. It stays in the owner's Gear, locked (it can't be used or
+// worn) until it comes back repaired, or as it was if the smith sends it back or the owner takes it back.
+// A weapon or suit "made for" someone becomes a gift job that the recipient's app adds to their Gear.
 // The roster (one card per character: name, who plays it, Weapon and Armor Maintenance) says who can take jobs.
 // Players can't open each other's characters, so only the owner's (or recipient's) app ever changes their sheet.
 const SHOP_MIN = 3;   // Weapon/Armor Maintenance needed to take jobs (the book's repairs start at 3)
@@ -63,7 +65,9 @@ const Shop = {
     });
   },
   forget(id) {
-    this.jobs.filter(j => j.from.char === id || j.to.char === id).forEach(j => this.del(j.id));
+    // A smith's character is deleted: items still waiting on their bench go back to their owners, unrepaired.
+    this.jobs.filter(j => j.to.char === id && j.mode === "repair" && j.status === "open").forEach(j => this.put(Object.assign({}, j, { status: "declined", result: null, at: Date.now() })));
+    this.jobs.filter(j => j.from.char === id || (j.to.char === id && j.mode === "gift")).forEach(j => this.del(j.id));
     if (this.live()) Store.db.doc("roster/" + id).delete().catch(() => {});
   },
 
@@ -87,9 +91,21 @@ const Shop = {
   },
   // The owner takes an item back before it's repaired; the payment comes back with it.
   recall(job, update) {
+    update(x => { this.restore(x, job, 0); this.give(x, job.pay);
+      addLog(x, `Took ${job.item.name || "it"} back from ${job.to.name}${this.hasPay(job.pay) ? `; got ${this.payText(Object.assign({}, job.pay, { note: "" }))} back` : ""}`); });
     this.del(job.id);
-    if (update && this.hasPay(job.pay)) update(x => { this.give(x, job.pay); addLog(x, `Took ${job.item.name || "it"} back from ${job.to.name}; got ${this.payText(job.pay)} back`); });
   },
+  // Hand a job's item back to the owner, with any durability or soak the smith restored (if it was removed from
+  // their Gear meanwhile, it comes back as it was sent).
+  restore(x, job, gained) {
+    const it = Object.assign({}, job.item); delete it.jobMax;
+    const list = job.kind === "weapon" ? x.weapons : x.armor;
+    let mine = list.find(y => y.id === it.id);
+    if (!mine) { mine = it; if (job.kind === "armor") mine.worn = false; list.push(mine); }
+    if (job.kind === "weapon") mine.dur = Math.min(num(mine.durMax), num(mine.dur) + num(gained));
+    else mine.soak = Math.min(num(job.item.jobMax) || Infinity, num(mine.soak) + num(gained));
+  },
+
 
   /* ---------- payment: coins, things from the inventory, and a note ---------- */
   payClean(pay) {
@@ -164,13 +180,12 @@ const Shop = {
           addLog(x, `${j.from.name} made ${label} for you; it's in your Gear now`);
           return;
         }
-        if (j.status === "declined") { this.give(x, j.pay); addLog(x, `${j.to.name} sent ${label} back without repairing it${this.hasPay(j.pay) ? `; your ${this.payText(Object.assign({}, j.pay, { note: "" }))} came back too` : ""}`); return; }
+        if (j.status === "declined") { this.restore(x, j, 0); this.give(x, j.pay); addLog(x, `${j.to.name} sent ${label} back without repairing it${this.hasPay(j.pay) ? `; your ${this.payText(Object.assign({}, j.pay, { note: "" }))} came back too` : ""}`); return; }
         const r = j.result || {}, gained = num(r.gained);
-        if (j.kind === "weapon") { const w = x.weapons.find(y => y.id === j.item.id); if (w) w.dur = Math.min(num(w.durMax), num(w.dur) + gained); }
-        else { const a = x.armor.find(y => y.id === j.item.id); if (a) a.soak = Math.min(num(j.item.jobMax) || Infinity, num(a.soak) + gained); }
+        this.restore(x, j, gained);
         addLog(x, `${j.to.name} repaired ${label}: +${gained} ${j.kind === "weapon" ? "Durability" : "Soak"}${r.roll ? ` (${r.roll})` : ""}`);
       });
-      toast(giftIn ? `${j.from.name} sent you ${j.item.name || "a new item"}.` : j.status === "declined" ? `${j.to.name} sent ${j.item.name || "it"} back.` : `${j.to.name} repaired ${j.item.name || "your item"}.`);
+      toast(giftIn ? `${j.from.name} sent you ${j.item.name || "a new item"}.` : j.status === "declined" ? `${j.to.name} sent ${j.item.name || "it"} back unrepaired.` : `${j.to.name} repaired ${j.item.name || "your item"}.`);
       Store.flushNow(target).then(() => this.del(j.id));
     });
   },
@@ -186,10 +201,10 @@ function useShop() {
 function ShopGear({ c, kind, item, update }) {
   useShop();
   const [open, setOpen] = useState(false), [to, setTo] = useState(""), [coins, setCoins] = useState(""), [pick, setPick] = useState(""), [qty, setQty] = useState(1), [note, setNote] = useState("");
-  const out = Shop.outgoing(c, kind, item.id);
   const what = kind === "weapon" ? "weaponsmith" : "armorsmith";
-  if (out) return html`<div class="shopgear away"><span><span class="flag brass">At ${out.to.name}'s bench</span> ${Shop.hasPay(out.pay) || (out.pay && out.pay.note) ? `Paid: ${Shop.payText(out.pay)}.` : ""}</span>
-    <button class="btn small" onClick=${() => { Shop.recall(out, update); toast(`${item.name || "It"} is back with you.`); }}>Take it back</button></div>`;
+  const out = Shop.outgoing(c, kind, item.id);
+  if (out) return html`<div class="shopgear away"><span><span class="flag brass">At ${out.to.name}'s bench</span> Can't be used until it's back.${Shop.hasPay(out.pay) || (out.pay && out.pay.note) ? ` Paid: ${Shop.payText(out.pay)}.` : ""}</span>
+    <button class="btn small" onClick=${() => { Shop.recall(out, update); toast(`${item.name || "It"} is back in your hands.`); }}>Take it back</button></div>`;
   if (!open) return html`<button class="btn small shopbtn" onClick=${() => setOpen(true)}>Send to a ${what}</button>`;
   const smiths = Shop.smiths(kind, c), skill = SHOP_SKILL[kind], camp = String(c.campaign || "").trim(), id = k => `sg-${k}-${item.id}`;
   const smith = smiths.find(s => s.id === to) || (smiths.length === 1 ? smiths[0] : null);
@@ -199,7 +214,10 @@ function ShopGear({ c, kind, item, update }) {
   const send = () => {
     if (!smith || short) return;
     let ok = true;
-    update(x => { ok = Shop.take(x, Shop.payClean(pay)); if (ok) addLog(x, `Sent ${item.name || "a " + kind} to ${smith.name} for repair${Shop.payClean(pay) ? `, paying ${Shop.payText(Shop.payClean(pay))}` : ""}`); });
+    // The payment leaves this sheet; the item stays, locked, and a worn suit comes off.
+    update(x => { ok = Shop.take(x, Shop.payClean(pay)); if (!ok) return;
+      if (kind === "armor") { const a = x.armor.find(y => y.id === item.id); if (a) a.worn = false; }
+      addLog(x, `Sent ${item.name || "a " + kind} to ${smith.name} for repair${Shop.payClean(pay) ? `, paying ${Shop.payText(Shop.payClean(pay))}` : ""}`); });
     if (!ok) { toast("That payment isn't on the sheet any more."); return; }
     Shop.send(kind, c, item, smith, pay); toast(`Sent to ${smith.name}.`); setOpen(false); setCoins(""); setPick(""); setQty(1); setNote("");
   };
@@ -208,7 +226,7 @@ function ShopGear({ c, kind, item, update }) {
     ${Shop.err ? html`<p class="muted">${Shop.err}</p>`
       : !camp ? html`<p class="muted">Set this character's campaign on the Sheet first: you can only send things to smiths in the same campaign.</p>`
       : !smiths.length ? html`<p class="muted">Nobody else in ${camp} has ${skill} ${SHOP_MIN} or more.</p>`
-      : html`<p class="muted">They see only this ${kind === "weapon" ? "weapon" : "suit"} and repair it with their own roll and materials. It stays in your Gear meanwhile.</p>
+      : html`<p class="muted">It stays in your Gear but can't be used${kind === "armor" ? " or worn" : ""} while ${smith ? smith.name : "the smith"} works on it. They see only this ${kind === "weapon" ? "weapon" : "suit"} and use their own roll and materials.</p>
       <div class="mini"><label for=${id("to")}>Smith</label><select id=${id("to")} value=${smith ? smith.id : ""} onChange=${e => setTo(e.target.value)}>
         ${!smith && html`<option value="">Pick a smith</option>`}${smiths.map(s => html`<option value=${s.id}>${s.name} · ${skill} ${s[kind]}</option>`)}</select></div>
       <div class="shoppay"><span class="lbl">Payment (optional)</span>
