@@ -123,7 +123,7 @@ function Brewing({ c, update }) {
     const p = f.plan, made = how === "done";
     const effA = made ? R.brewOne(c, p.a.rec, p.a.n + (res.extra || 0)).effect : "", effB = made && p.p ? R.brewOne(c, p.p.rec, p.p.n + (res.extra || 0)).effect : "";
     const name = `${p.a.rec.n}${p.a.n + (res.extra || 0) ? ` +${p.a.n + (res.extra || 0)}` : ""}${p.p ? ` & ${p.p.rec.n}${p.p.n + (res.extra || 0) ? ` +${p.p.n + (res.extra || 0)}` : ""}` : ""}`;
-    const stats = `${effA}${effB ? `; ${effB}` : ""}${p.cat && p.cat.k === "duration" ? "; duration doubled" : ""} · Toxicity ${res.tox}`;
+    const stats = `${effA}${effB ? `; ${effB}` : ""}${p.cat && p.cat.k === "duration" ? "; duration doubled" : ""}${p.cat && p.cat.custom ? `; ${p.cat.n}${p.cat.what ? ` (${p.cat.what})` : ""}` : ""} · Toxicity ${res.tox}`;
     update(x => {
       Object.entries(p.need).forEach(([h, g]) => (x.craft.supplies["herb:" + h] = Math.max(0, num(x.craft.supplies["herb:" + h]) - g)));
       if (made) x.items.push({ id: rid(), name: `${name} (${stats})`, qty: 1, size: "small" });
@@ -152,7 +152,7 @@ function Brewing({ c, update }) {
           <div class="ptforge">
             ${!run && html`<button class="btn primary big forgebtn" disabled=${!!plan.block} onClick=${start}>${FLASK_ICON}Brew${plan.p ? " a Potent Brew" : ""} · ${plan.hours === 2 ? "2 hours" : "1 hour"}</button>
               ${plan.block && html`<p class="muted ptwhy">${plan.block}</p>`}`}
-            ${run && html`<${BrewReadout} run=${run} onClose=${close} />`}
+            ${run && html`<${BrewReadout} run=${run} onClose=${close} again=${plan.block || ""} onAgain=${() => { close(); start(); }} />`}
           </div>
         </div>
         <div class="ptside"><${BrewSide} c=${c} st=${st} plan=${plan} o=${o} setO=${setO} focus=${focus} busy=${busy} update=${update} /></div>
@@ -177,7 +177,7 @@ function Brewing({ c, update }) {
 }
 const FLASK_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 2.5h4 M8.6 2.5v4.2L4.5 15a1.6 1.6 0 0 0 1.4 2.5h8.2a1.6 1.6 0 0 0 1.4-2.5l-4.1-8.3V2.5 M6.4 11.5h7.2" /></svg>`;
 
-function BrewReadout({ run, onClose }) {
+function BrewReadout({ run, onClose, onAgain, again }) {
   const [spin, setSpin] = useState(0);
   useEffect(() => {
     if (run.phase !== "rolling" || reduceMotion()) return;
@@ -192,7 +192,9 @@ function BrewReadout({ run, onClose }) {
       <p>${ok ? html`<b>${run.result.name}</b>: ${run.result.stats}` : run.phase === "boom" ? `${run.boom} damage to everyone within 2 m. The herbs are gone.` : run.phase === "inert" ? "The Volatile Catalyst fizzled; the brew does nothing. The herbs are gone." : "The roll missed: the herbs are wasted."}</p>
       ${run.vol && html`<p class="muted">Volatile Catalyst: ${run.vol.v}. ${run.vol.text}</p>`}
       ${ok && html`<p class="muted">Toxicity ${run.toxParts && run.toxParts[1] != null ? `${run.toxParts[0]} and ${run.toxParts[1]}` : run.toxParts ? run.toxParts[0] : ""}${p.cat && p.cat.k === "toxicity" ? `, less ${p.st.lvl} (Toxicity Catalyst)` : p.cat && p.cat.k === "duration" ? ", doubled (Duration Catalyst)" : ""} → ${run.tox}. In the inventory now. ${p.hours === 2 ? "Two hours" : "An hour"} at the cauldron.</p>`}
-      <button class="btn primary" onClick=${onClose}>Back to the cauldron</button></div>`;
+      <div class="row ptagain"><button class="btn primary" disabled=${!!again} onClick=${onAgain}>${ok ? "Brew the same again" : "Try again"}</button>
+        <button class="btn" onClick=${onClose}>Back to the cauldron</button></div>
+      ${again && html`<p class="muted ptwhy">${again}</p>`}</div>`;
   }
   return html`<div class="ptread" role="status" aria-live="polite">
     <div class="ptstep"><span class="lbl">${p.p ? `Potent Brew · roll ${Math.min(2, run.rolls.length + (r ? 0 : 1))} of 2` : "Brewing check"}</span>
@@ -204,9 +206,8 @@ function BrewReadout({ run, onClose }) {
 }
 
 function BrewSide({ c, st, plan, o, setO, focus, busy, update }) {
-  const [adding, setAdding] = useState(false);
-  const Step = ({ label, value, max, onSet }) => html`<span class="ptstepper"><button class="iconbtn" aria-label=${`Lower ${label}`} disabled=${busy || value <= 0} onClick=${() => onSet(value - 1)}>−</button>
-    <button class="iconbtn" aria-label=${`Raise ${label}`} disabled=${busy || value >= max} onClick=${() => onSet(value + 1)}>+</button></span>`;
+  const [adding, setAdding] = useState(false), [addCat, setAddCat] = useState(false);
+  const Step = BrStep;
   const all = R.allBrews(c), cb = c.craft.brew;
   const pick = (rec, cur, on, short) => html`<button type="button" class="ptopt" aria-pressed=${cur === rec.k} disabled=${busy} onClick=${on}>
     <b><i class="dot" style=${`background:${brewHue(rec)}`}></i>${rec.n}${rec.custom ? " · GM" : ""}</b>${!short && html`<span>${R.brewOne(c, rec, 0).effect} · ${rec.g} g ${rec.herb} · ${rec.tox} toxicity · ${rec.dc}%</span>`}</button>`;
@@ -221,25 +222,44 @@ function BrewSide({ c, st, plan, o, setO, focus, busy, update }) {
       <p class="muted">Both rolls must hold, and it takes twice as long${st.potentPlus ? ". Increments apply to both." : "."}</p>`
       : html`<p class="ptlocked">Potent Brews unlock at Brewing 7.</p>`}`;
   else if (focus === "av") body = st.incs ? html`
-    <div class="row ptrate"><span><b>${plan.a.rec.n} +${plan.a.n}</b> · ${plan.a.effect}</span><${Step} label="increments" value=${num(o.inc)} max=${10} onSet=${v => setO(x => { x.inc = v; })} /></div>
+    <div class="row ptrate"><span><b>${plan.a.rec.n} +${plan.a.n}</b> · ${plan.a.effect}</span><${Step} label="increments" busy=${busy} value=${num(o.inc)} max=${10} onSet=${v => setO(x => { x.inc = v; })} /></div>
     <p class="ptdc">Each increment: +${plan.a.rec.gi} g, +${plan.a.rec.toxi} toxicity, −${plan.a.dci}% difficulty (${plan.a.rec.dci}% less your Brewing)</p>
-    ${plan.p && !st.potentPlus && html`<div class="row ptrate"><span><b>${plan.p.rec.n} +${plan.p.n}</b> · ${plan.p.effect}</span><${Step} label="second brew increments" value=${num(o.potent.inc)} max=${10} onSet=${v => setO(x => { x.potent = Object.assign({}, x.potent, { inc: v }); })} /></div>`}`
+    ${plan.p && !st.potentPlus && html`<div class="row ptrate"><span><b>${plan.p.rec.n} +${plan.p.n}</b> · ${plan.p.effect}</span><${Step} label="second brew increments" busy=${busy} value=${num(o.potent.inc)} max=${10} onSet=${v => setO(x => { x.potent = Object.assign({}, x.potent, { inc: v }); })} /></div>`}`
     : html`<p class="ptlocked">Increments unlock at Brewing 5.</p>`;
   else if (focus === "soak") body = html`<p class="muted ptrule">What this brew takes, against what you carry.</p>
     <ol class="brneed">${Object.entries(plan.need).map(([h, g]) => html`<li><span>${g} g of ${h}</span><span class="muted">have ${num(c.craft.supplies["herb:" + h])} g</span></li>`)}</ol>`;
   else body = !st.catalysts ? html`<p class="ptlocked">Catalysts unlock at Brewing 5.</p>` : html`
     <p class="muted ptrule">You know ${st.known} catalyst${st.known > 1 ? "s" : ""}. Tick the ones you know, then pick one for this brew.</p>
-    <div class="ptopts">${R.CATALYSTS.map(k => { const known = cb.known.includes(k.k), full = !known && cb.known.length >= st.known;
+    <div class="ptopts">${R.allCatalysts(c).map(k => { const known = cb.known.includes(k.k), full = !known && cb.known.length >= st.known;
       return html`<div class=${"ptopt row-opt" + (o.catalyst === k.k ? " on" : "")}>
-        <button type="button" class="ptcheck" disabled=${busy || !known} onClick=${() => setO(x => { x.catalyst = x.catalyst === k.k ? "" : k.k; })}><b>${k.n} · −${Math.max(0, k.dc - st.lvl)}%</b><span>${k.what}</span></button>
-        <label class="brknown"><input type="checkbox" checked=${known} disabled=${busy || full} onChange=${e => update(x => { const on = e.target.checked; x.craft.brew.known = on ? [...x.craft.brew.known, k.k] : x.craft.brew.known.filter(y => y !== k.k); if (!on && x.craft.brew.order.catalyst === k.k) x.craft.brew.order.catalyst = ""; })} /> Known</label></div>`; })}</div>`;
+        <button type="button" class="ptcheck" disabled=${busy || !known} onClick=${() => setO(x => { x.catalyst = x.catalyst === k.k ? "" : k.k; })}><b>${k.n}${k.custom ? " · GM" : ""} · −${Math.max(0, k.dc - st.lvl)}%</b><span>${k.what || "The GM decides what it does."}</span></button>
+        <label class="brknown"><input type="checkbox" checked=${known} disabled=${busy || full} onChange=${e => update(x => { const on = e.target.checked; x.craft.brew.known = on ? [...x.craft.brew.known, k.k] : x.craft.brew.known.filter(y => y !== k.k); if (!on && x.craft.brew.order.catalyst === k.k) x.craft.brew.order.catalyst = ""; })} /> Known</label>
+        ${k.custom && html`<button class="iconbtn brdel" aria-label=${`Remove ${k.n}`} disabled=${busy} onClick=${() => update(x => { x.craft.brew.catalysts = x.craft.brew.catalysts.filter(y => y.k !== k.k); x.craft.brew.known = x.craft.brew.known.filter(y => y !== k.k); if (x.craft.brew.order.catalyst === k.k) x.craft.brew.order.catalyst = ""; })}>×</button>`}</div>`; })}</div>
+    ${!addCat ? html`<button class="btn small" style="margin-top:8px" disabled=${busy} onClick=${() => setAddCat(true)}>+ A catalyst from the GM</button>`
+      : html`<${CatalystForm} onSave=${k => { update(x => { x.craft.brew.catalysts.push(k); }); setAddCat(false); }} onCancel=${() => setAddCat(false)} />`}`;
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>${BR_NAMES[focus]}</span></h3>
-    ${body}
-    <div class="ptplan"><h3 class="lbl">The brew</h3><ol>
+    <div class="ptbody" key=${focus}>${body}</div>
+    <div class="ptplan"><${PlanHead} title="The brew" busy=${busy} onReset=${() => setO(x => refill(x, R.blankCharacter().craft.brew.order))} /><ol>
       ${[plan.a, plan.p].filter(Boolean).map((b, i) => html`<li><span>${b.rec.n}${b.n ? ` +${b.n}` : ""}: roll under ${plan.dcs[i]}%</span><span class="muted">${plan.chances[i]}% to hold · ${b.effect} · toxicity ${b.tox.map(d => `${d.n}d${d.sides}`).join(" + ")}</span></li>`)}
       <li><span>${plan.hours === 2 ? "Two hours" : "An hour"} at the cauldron</span><span class="muted">${plan.a.rec.how || "The GM decides how the effect works."}</span></li></ol></div>
   </div>`;
+}
+
+function BrStep({ label, value, max, onSet, busy }) {
+  return html`<span class="ptstepper"><button class="iconbtn" aria-label=${`Lower ${label}`} disabled=${busy || value <= 0} onClick=${() => onSet(value - 1)}>−</button>
+    <button class="iconbtn" aria-label=${`Raise ${label}`} disabled=${busy || value >= max} onClick=${() => onSet(value + 1)}>+</button></span>`;
+}
+// A catalyst the GM gives: a name, its difficulty (your Brewing is taken off, like the book's) and what it does.
+function CatalystForm({ onSave, onCancel }) {
+  const [k, setK] = useState({ n: "", dc: 10, what: "" });
+  const ok = k.n.trim();
+  return html`<div class="brform">
+    <div class="grid2"><div class="mini"><label for="cf-n">Name</label><input id="cf-n" type="text" value=${k.n} placeholder="Frost Catalyst" onInput=${e => setK(Object.assign({}, k, { n: e.target.value }))} /></div>
+      <div class="mini"><label for="cf-dc">Difficulty (%, less your Brewing)</label><input id="cf-dc" type="number" min="0" value=${k.dc} onInput=${e => setK(Object.assign({}, k, { dc: Math.max(0, +e.target.value || 0) }))} /></div></div>
+    <div class="mini"><label for="cf-w">What it does</label><input id="cf-w" type="text" value=${k.what} placeholder="The brew also chills the drinker's blood: fire damage halved for an hour." onInput=${e => setK(Object.assign({}, k, { what: e.target.value }))} /></div>
+    <div class="row" style="margin-top:8px"><button class="btn small primary" disabled=${!ok} onClick=${() => onSave({ k: "x" + rid(), n: k.n.trim(), dc: k.dc, what: k.what.trim() })}>Save catalyst</button>
+      <button class="btn small" onClick=${onCancel}>Cancel</button></div></div>`;
 }
 
 // A recipe the GM gives: the same fields as the book's.

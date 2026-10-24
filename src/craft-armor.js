@@ -111,12 +111,19 @@ function ArmorUpkeep({ c, update }) {
   const stop = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   useEffect(() => () => stop(), []);
   useEffect(() => { stop(); setRun(null); setSel(""); }, [c.id]);
+  // The "new job" notice asked to open a job on this bench.
+  const shop = useShop();
+  useEffect(() => { const f = shop.focus; if (f && f.kind === "armor" && f.char === c.id && !runRef.current) { shop.focus = null; setMode("repair"); setSel(f.sel); } }, [shop.focusSeq, c.id]);
   const busy = !!run && !run.done;
   // The suit to repair: the one picked, else the most damaged.
+  useShop();
   const suits = c.armor;
   const byNeed = [...suits].sort((a, b) => R.repairPlan(c, b).missing - R.repairPlan(c, a).missing);
-  const suit = suits.find(a => a.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
-  const rp = suit ? R.repairPlan(c, suit) : null;
+  // Another player's suit on this bench (a workshop job), else one of this character's own.
+  const job = run && run.kind === "repair" ? run.job : selId.startsWith("job:") ? Shop.incoming(c, "armor").find(j => "job:" + j.id === selId) || null : null;
+  const suit = job ? job.item : suits.find(a => a.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
+  const away = !job && suit ? Shop.outgoing(c, "armor", suit.id) : null;   // sent to a smith: they repair it, not us
+  const rp = suit ? Object.assign(R.repairPlan(c, suit), away ? { block: `It's at ${away.to.name}'s bench. Take it back on the Gear tab to repair it yourself.` } : {}) : null;
   const rc = ca.recipe, cp = R.craftPlan(c, rc);
   const setRc = fn => update(x => fn(x.craft.armor.recipe));
   const T = R.ARMOR;
@@ -125,12 +132,12 @@ function ArmorUpkeep({ c, update }) {
   /* ---------- repair: one check, then one hammer strike per Repair Die ---------- */
   const startRepair = async () => {
     if (!suit || rp.block) return;
-    const plan = rp, id = suit.id;
-    const first = await askRoll({ title: "Armor repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
+    const plan = rp, id = suit.id, theJob = job;
+    const first = await askRoll({ title: theJob ? `Armor repair check: ${theJob.from.name}'s ${suit.name || "armor"}` : "Armor repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
       note: `d100 − ${st.mod}. Repair Count = 10 − check ÷ 10: that many ${plan.die} restore Soak.` });
     if (!first) return;
-    setSel(id);
-    setRun({ kind: "repair", phase: "rolling", id, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod });
+    setSel(theJob ? "job:" + theJob.id : id);
+    setRun({ kind: "repair", phase: "rolling", id, job: theJob, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod });
     later(() => {
       const r = first[0], check = r - st.mod, count = R.repairCount(check);
       patch({ phase: "counted", r, check, count, dice: [] });
@@ -151,6 +158,20 @@ function ArmorUpkeep({ c, update }) {
   const finishRepair = () => {
     const f = runRef.current; if (!f) return;
     const total = f.dice.reduce((s, x) => s + x, 0), gained = Math.min(f.plan.missing, total);
+    if (f.job) {
+      // Another player's suit: the result goes back to them; this smith pays the materials.
+      const roll = `check ${f.r}−${f.mod}=${f.check} → ${f.count} × ${f.plan.die}${f.count ? ": " + total : ""}`;
+      if (!Shop.answer(f.job, "done", { gained, roll, by: c.name || "" })) { toast(`${f.job.from.name} took it back before you finished.`); patch({ done: true, phase: "done", total, gainedFinal: 0, gone: true }); return; }
+      update(x => {
+        if (f.job.pay) { Shop.give(x, f.job.pay); if (Shop.hasPay(f.job.pay) || f.job.pay.note) addLog(x, `Paid by ${f.job.from.name}: ${Shop.payText(f.job.pay)}`); }
+        x.craft.supplies[f.plan.mat] = Math.max(0, num(x.craft.supplies[f.plan.mat]) - f.plan.cost);
+        const txt = `${f.job.from.name}'s ${f.job.item.name || T[f.job.item.type].label + " armor"}: Soak ${f.plan.soak} → ${f.plan.soak + gained}`;
+        addLedger(x, { kind: "repair", name: `${f.plan.broken ? "Rebuilt" : "Repaired"} ${txt}`, rolls: [roll] });
+        addLog(x, `Armor repair for ${f.job.from.name}: ${txt} (${f.plan.cost} g ${f.plan.mat} materials)`);
+      });
+      patch({ done: true, phase: "done", total, gainedFinal: gained });
+      return;
+    }
     update(x => {
       const a = x.armor.find(y => y.id === f.id); if (!a) return;
       a.soak = num(a.soak) + gained;
@@ -170,7 +191,7 @@ function ArmorUpkeep({ c, update }) {
       note: `d100 − ${st.mod}, under ${plan.dc}.${n ? " A second failure loses the suit." : " A failure leaves a flaw and gives one more try."}` });
     const first = await ask(0);
     if (!first) return;
-    setRun({ kind: "craft", phase: "heat", plan, name, rolls: [], flaws: 0, mod: st.mod });
+    setRun({ kind: "craft", phase: "heat", plan, name, for: rc.for || "", rolls: [], flaws: 0, mod: st.mod });
     const roll = async n => {
       const r = n ? (await ask(1))[0] : first[0];
       if (!runRef.current) return;
@@ -188,14 +209,17 @@ function ArmorUpkeep({ c, update }) {
   const finishCraft = ok => {
     const f = runRef.current; if (!f) return;
     const nm = f.name + (f.flaws ? ` · ${f.flaws} flaw` : "");
+    const forWho = ok && f.for && f.for !== c.id ? Shop.card(f.for) : null;
     update(x => {
       x.craft.supplies[f.plan.type] = Math.max(0, num(x.craft.supplies[f.plan.type]) - f.plan.cost);
-      if (ok) x.armor.push({ id: rid(), name: nm, type: f.plan.type, av: f.plan.finalAV, soak: f.plan.finalSoak, soakMax: f.plan.finalSoak, worn: false, where: "pack" });
-      addLedger(x, { kind: "craft", name: ok ? `Crafted ${nm} (AV ${f.plan.finalAV}, Soak ${f.plan.finalSoak})` : `Lost ${f.name} in the forge`, scrap: !ok, det: ok ? f.flaws : 0,
+      const made = ok && { id: rid(), name: nm, type: f.plan.type, av: f.plan.finalAV, soak: f.plan.finalSoak, soakMax: f.plan.finalSoak, worn: false, where: "pack" };
+      if (made && !forWho) x.armor.push(made);
+      if (made && forWho) Shop.gift("armor", c, made, forWho);
+      addLedger(x, { kind: "craft", name: ok ? `Crafted ${nm}${forWho ? ` for ${forWho.name}` : ""} (AV ${f.plan.finalAV}, Soak ${f.plan.finalSoak})` : `Lost ${f.name} in the forge`, scrap: !ok, det: ok ? f.flaws : 0,
         rolls: f.rolls.map(r => `${r.r}−${f.mod}=${r.total} vs ${f.plan.dc} ${r.ok ? "✓" : "✗"}`) });
       addLog(x, ok ? `Armor crafting: made ${nm} (${f.plan.cost} g ${f.plan.type} materials)` : `Armor crafting: the suit was lost (${f.plan.cost} g ${f.plan.type} materials)`);
     });
-    patch({ done: true, phase: ok ? "made" : "lost" });
+    patch({ done: true, phase: ok ? "made" : "lost", forName: forWho ? forWho.name : "" });
   };
   const close = () => { stop(); setRun(null); };
 
@@ -226,7 +250,7 @@ function ArmorUpkeep({ c, update }) {
             ${run && html`<${AmReadout} run=${run} onClose=${close} />`}
           </div>
         </div>
-        <div class="ptside">${mode === "repair" ? html`<${RepairSide} c=${c} suits=${suits} suit=${suit} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
+        <div class="ptside">${mode === "repair" ? html`<${RepairSide} c=${c} suits=${suits} suit=${suit} job=${job} selId=${selId} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
           : html`<${CraftSide} c=${c} rc=${rc} cp=${cp} st=${st} focus=${focus} setFocus=${setFocus} setRc=${setRc} busy=${busy} />`}</div>
       </div>
     </section>
@@ -263,7 +287,7 @@ function AmReadout({ run, onClose }) {
     if (run.done) return html`<div class=${"ptread end " + (run.gainedFinal ? "done" : "nothing")} role="status">
       <p class="ptbig">${run.gainedFinal ? `+${run.gainedFinal} Soak` : "No soak recovered"}</p>
       <p>${run.count ? `${run.count} × ${p.die}: ${run.dice.length > 1 ? run.dice.join(" + ") + " = " : ""}${run.total}${run.total > run.gainedFinal ? ` (the suit was full at ${p.max})` : ""}` : "The check was too high for even one Repair Die."}</p>
-      <p class="muted">${p.cost} g of ${p.mat} materials used · an hour's work.</p>
+      <p class="muted">${run.gone ? "Nothing was spent." : `${p.cost} g of ${p.mat} materials used · an hour's work.`}${run.job && !run.gone ? ` It goes back to ${run.job.from.name}'s Gear.` : ""}</p>
       <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
     return html`<div class="ptread" role="status" aria-live="polite">
       <div class="ptstep"><span class="lbl">${run.phase === "rolling" ? "Armor Maintenance check" : "Repair Dice"}</span>
@@ -278,7 +302,7 @@ function AmReadout({ run, onClose }) {
   if (run.done) return html`<div class=${"ptread end " + (run.phase === "made" ? "done" : "scrap")} role="status">
     <p class="ptbig">${run.phase === "made" ? "Forged" : "Lost in the forge"}</p>
     <p>${run.phase === "made" ? `${run.name}: ${p.t.label}, AV ${p.finalAV}, Soak ${p.finalSoak}${run.flaws ? ", with a flaw for the GM to decide" : ""}.` : "Two failures: the suit and every material in it are gone."}</p>
-    ${run.phase === "made" && html`<p class="muted">Added to Armor on the Gear tab. Eight hours at the anvil.</p>`}
+    ${run.phase === "made" && html`<p class="muted">${run.forName ? `Sent to ${run.forName}'s Gear` : "Added to Armor on the Gear tab"}. Eight hours at the anvil.</p>`}
     <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
   return html`<div class="ptread" role="status" aria-live="polite">
     <div class="ptstep"><span class="lbl">Roll ${Math.min(2, (run.rolls || []).length + ((run.phase === "rolling" && !r) || run.phase === "flaw" ? 1 : 0)) || 1} of 2 at most</span>
@@ -290,12 +314,13 @@ function AmReadout({ run, onClose }) {
   </div>`;
 }
 
-function RepairSide({ c, suits, suit, rp, st, busy, pick }) {
+function RepairSide({ c, suits, suit, job, selId, rp, st, busy, pick }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>Suits</span></h3>
+    <${ShopJobs} c=${c} kind="armor" selId=${selId} pick=${pick} busy=${busy} />
     ${suits.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${suits.map(a => { const p = R.repairPlan(c, a);
-      return html`<button type="button" class="ptopt amsuit" aria-pressed=${suit && suit.id === a.id} disabled=${busy} onClick=${() => pick(a.id)}>
-        <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}</b>
+      return html`<button type="button" class="ptopt amsuit" aria-pressed=${!job && suit && suit.id === a.id} disabled=${busy} onClick=${() => pick(a.id)}>
+        <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}${Shop.outgoing(c, "armor", a.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "armor", a.id).to.name}'s</span>` : ""}</b>
         <span>${R.ARMOR[a.type].label} · AV ${num(a.av)} · Soak ${p.soak}/${p.max}</span>
         <i class="amtrack"><i style=${`width:${p.max ? (p.soak / p.max) * 100 : 0}%`}></i></i></button>`; })}</div>`}
     ${suit && html`<div class="ptplan"><h3 class="lbl">The repair</h3><ol>
@@ -314,7 +339,9 @@ function CraftSide({ c, rc, cp, st, focus, setFocus, setRc, busy }) {
   if (focus === "type") body = html`<p class="muted ptrule">The GM tells you what kind of suit can be made here.</p><div class="ptopts">${Object.entries(T).map(([k, x]) => html`<button type="button" class="ptopt" aria-pressed=${cp.type === k} disabled=${busy}
       onClick=${() => setRc(r => { r.type = k; r.av = x.av[0]; r.soak = 10 * x.av[0]; r.plusAV = 0; })}><b>${x.label} · AV ${x.av[0]}–${x.av[1]}</b>
       <span>${5 * x.repairPerAV} g × AV of ${x.label.toLowerCase()} materials${R.AM_FORGE.includes(k) ? " · needs a forge" : ""}</span></button>`)}</div>`;
-  else if (focus === "av" || focus === "soak") body = html`<p class="muted ptrule">The suit's base numbers, from the GM.</p>
+  else if (focus === "av" || focus === "soak") body = !isGM() ? html`<p class="muted ptrule">The suit's base numbers come from the GM, so only a GM can set them here (they can open your sheet). To raise them yourself, use Extras: each step makes the roll harder.</p>
+    <div class="facts wpbase">${[["Armor Value", cp.av], ["Soak Pool", cp.soak], ["Range for " + t.label.toLowerCase(), `${t.av[0]}–${t.av[1]}`]].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>`
+  : html`<p class="muted ptrule">The suit's base numbers, from the GM. Only a GM can change these; players raise them through Extras.</p>
     <div class="row ptrate"><span><b>Armor Value ${cp.av}</b> · ${t.label} runs ${t.av[0]}–${t.av[1]}</span>
       <${Step} label="Armor Value" value=${cp.av} min=${t.av[0]} max=${t.av[1]} onSet=${v => setRc(r => { r.av = v; r.plusAV = Math.min(num(r.plusAV), t.av[1] - v); })} /></div>
     <div class="row ptrate"><span><b>Soak Pool ${cp.soak}</b> · usually 10 × AV</span>
@@ -331,11 +358,12 @@ function CraftSide({ c, rc, cp, st, focus, setFocus, setRc, busy }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>${AM_NAME[focus] || "Type"}</span><small>${focus === "type" ? t.label : focus === "extra" ? `${cp.dc}%` : focus === "av" ? `AV ${cp.finalAV}` : `Soak ${cp.finalSoak}`}</small></h3>
     ${body}
-    <div class="ptplan"><h3 class="lbl">The craft</h3><ol>
+    <div class="ptplan"><${PlanHead} title="The craft" busy=${busy} onReset=${() => setRc(r => refill(r, R.blankCharacter().craft.armor.recipe))} /><ol>
       <li><span>Materials: ${cp.cost} g of ${t.label.toLowerCase()} materials</span><span class="muted">5 × repair cost (${t.repairPerAV} g × AV ${cp.finalAV})</span></li>
       <li><span>Roll under ${cp.dc}%</span><span class="muted">${cp.chance}% to land · a failure leaves a flaw and you roll again; two failures lose it all</span></li>
       <li><span>Eight hours${R.AM_FORGE.includes(cp.type) ? " at a forge" : ""}</span><span class="muted">The suit joins your Armor on the Gear tab.</span></li></ol>
       <div class="row ptbatch"><label for=${"amn-" + c.id}>Name</label>
-        <input id=${"amn-" + c.id} class="inp" placeholder=${`${t.label} armor`} value=${rc.name || ""} disabled=${busy} onInput=${e => setRc(r => { r.name = e.target.value; })} /></div></div>
+        <input id=${"amn-" + c.id} class="inp" placeholder=${`${t.label} armor`} value=${rc.name || ""} disabled=${busy} onInput=${e => setRc(r => { r.name = e.target.value; })} /></div>
+      <${MadeFor} c=${c} value=${rc.for} busy=${busy} onSet=${v => setRc(r => { r.for = v; })} /></div>
   </div>`;
 }

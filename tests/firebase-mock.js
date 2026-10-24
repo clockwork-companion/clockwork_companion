@@ -19,7 +19,8 @@
       onSnapshot(cb) { const l = () => cb(docSnap(path)); listeners.add(l); setTimeout(l, 0); return () => listeners.delete(l); },
     };
   }
-  const pass = (data, [f, op, v]) => op === "array-contains" ? Array.isArray(data[f]) && data[f].includes(v) : op === "==" ? data[f] === v : true;
+  const field = (data, f) => f.split(".").reduce((x, k) => (x == null ? x : x[k]), data);   // "from.uids" reads a nested field, as Firestore does
+  const pass = (data, [f, op, v]) => { const x = field(data, f); return op === "array-contains" ? Array.isArray(x) && x.includes(v) : op === "==" ? x === v : true; };
   function query(path, filters) {
     const snap = () => {
       const docs = [...store.keys()].filter(k => k.startsWith(path + "/") && !k.slice(path.length + 1).includes("/") && filters.every(f => pass(store.get(k), f))).map(docSnap);

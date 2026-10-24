@@ -57,6 +57,45 @@ html[data-install] .installbtn { display: inline-grid; place-items: center; }
 .installbtn[data-tip]:hover::after, .installbtn[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
   white-space: nowrap; padding: 5px 9px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 600 12px/1.3 system-ui, sans-serif; pointer-events: none; }
 @media (max-width: 700px) { .status .installbtn[data-tip]:hover::after, .status .installbtn[data-tip]:focus-visible::after { left: 0; right: auto; } }
+/* Settings button: a gear by default; each theme draws its own symbol for it (a mask, so it takes the theme's colour). */
+:root { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M19.58 8.86L19.99 10.15L22.85 10.19L22.85 13.81L19.99 13.85L19.58 15.14L18.96 16.34L20.95 18.4L18.4 20.95L16.34 18.96L15.14 19.58L13.85 19.99L13.81 22.85L10.19 22.85L10.15 19.99L8.86 19.58L7.66 18.96L5.6 20.95L3.05 18.4L5.04 16.34L4.42 15.14L4.01 13.85L1.15 13.81L1.15 10.19L4.01 10.15L4.42 8.86L5.04 7.66L3.05 5.6L5.6 3.05L7.66 5.04L8.86 4.42L10.15 4.01L10.19 1.15L13.81 1.15L13.85 4.01L15.14 4.42L16.34 5.04L18.4 3.05L20.95 5.6L18.96 7.66ZM15.4 12A3.4 3.4 0 1 1 8.6 12A3.4 3.4 0 1 1 15.4 12Z'/%3E%3C/svg%3E"); }
+:root[data-skin="steam"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M21.27 9.52L21.5 10.65L23.34 10.87L23.34 13.13L21.5 13.35L21.27 14.49L20.91 15.58L22.39 16.69L21.26 18.65L19.55 17.92L18.79 18.79L17.92 19.55L18.65 21.26L16.69 22.39L15.58 20.91L14.48 21.27L13.35 21.5L13.13 23.34L10.87 23.34L10.65 21.5L9.51 21.27L8.42 20.91L7.31 22.39L5.35 21.26L6.08 19.55L5.21 18.79L4.45 17.92L2.74 18.65L1.61 16.69L3.09 15.58L2.73 14.48L2.5 13.35L0.66 13.13L0.66 10.87L2.5 10.65L2.73 9.51L3.09 8.42L1.61 7.31L2.74 5.35L4.45 6.08L5.21 5.21L6.08 4.45L5.35 2.74L7.31 1.61L8.42 3.09L9.52 2.73L10.65 2.5L10.87 0.66L13.13 0.66L13.35 2.5L14.49 2.73L15.58 3.09L16.69 1.61L18.65 2.74L17.92 4.45L18.79 5.21L19.55 6.08L21.26 5.35L22.39 7.31L20.91 8.42ZM19.6 12A7.6 7.6 0 1 1 4.4 12A7.6 7.6 0 1 1 19.6 12ZM14.6 12A2.6 2.6 0 1 1 9.4 12A2.6 2.6 0 1 1 14.6 12ZM13.1 12A1.1 1.1 0 1 1 10.9 12A1.1 1.1 0 1 1 13.1 12ZM14.4 12.75L19.8 12.75L19.8 11.25L14.4 11.25ZM12.55 14.45L15.25 19.13L16.55 18.38L13.85 13.7ZM10.15 13.7L7.45 18.38L8.75 19.13L11.45 14.45ZM9.6 11.25L4.2 11.25L4.2 12.75L9.6 12.75ZM11.45 9.55L8.75 4.87L7.45 5.62L10.15 10.3ZM13.85 10.3L16.55 5.62L15.25 4.87L12.55 9.55Z'/%3E%3C/svg%3E"); }
+:root[data-skin="light"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M3 5.1h1.6v1.8h-1.6ZM11.4 5.1h9.6v1.8h-9.6ZM10.7 6A2.7 2.7 0 1 1 5.3 6A2.7 2.7 0 1 1 10.7 6ZM3 11.1h9.6v1.8h-9.6ZM19.4 11.1h1.6v1.8h-1.6ZM18.7 12A2.7 2.7 0 1 1 13.3 12A2.7 2.7 0 1 1 18.7 12ZM3 17.1h3.6v1.8h-3.6ZM13.4 17.1h7.6v1.8h-7.6ZM12.7 18A2.7 2.7 0 1 1 7.3 18A2.7 2.7 0 1 1 12.7 18Z'/%3E%3C/svg%3E"); }
+:root[data-skin="glass"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M6 3h12a4 4 0 0 1 4 4v0a4 4 0 0 1 -4 4h-12a4 4 0 0 1 -4 -4v0a4 4 0 0 1 4 -4ZM18.6 7A2.6 2.6 0 1 1 13.4 7A2.6 2.6 0 1 1 18.6 7ZM6 13h12a4 4 0 0 1 4 4v0a4 4 0 0 1 -4 4h-12a4 4 0 0 1 -4 -4v0a4 4 0 0 1 4 -4ZM6 14.6h12a2.4 2.4 0 0 1 2.4 2.4v0a2.4 2.4 0 0 1 -2.4 2.4h-12a2.4 2.4 0 0 1 -2.4 -2.4v-0a2.4 2.4 0 0 1 2.4 -2.4ZM10.2 17A2.2 2.2 0 1 1 5.8 17A2.2 2.2 0 1 1 10.2 17Z'/%3E%3C/svg%3E"); }
+:root[data-skin="retro"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M8 0h2v2h-2ZM10 0h2v2h-2ZM12 0h2v2h-2ZM14 0h2v2h-2ZM2 2h2v2h-2ZM4 2h2v2h-2ZM8 2h2v2h-2ZM10 2h2v2h-2ZM12 2h2v2h-2ZM14 2h2v2h-2ZM18 2h2v2h-2ZM20 2h2v2h-2ZM2 4h2v2h-2ZM4 4h2v2h-2ZM6 4h2v2h-2ZM8 4h2v2h-2ZM10 4h2v2h-2ZM12 4h2v2h-2ZM14 4h2v2h-2ZM16 4h2v2h-2ZM18 4h2v2h-2ZM20 4h2v2h-2ZM4 6h2v2h-2ZM6 6h2v2h-2ZM8 6h2v2h-2ZM14 6h2v2h-2ZM16 6h2v2h-2ZM18 6h2v2h-2ZM0 8h2v2h-2ZM2 8h2v2h-2ZM4 8h2v2h-2ZM6 8h2v2h-2ZM16 8h2v2h-2ZM18 8h2v2h-2ZM20 8h2v2h-2ZM22 8h2v2h-2ZM0 10h2v2h-2ZM2 10h2v2h-2ZM4 10h2v2h-2ZM18 10h2v2h-2ZM20 10h2v2h-2ZM22 10h2v2h-2ZM0 12h2v2h-2ZM2 12h2v2h-2ZM4 12h2v2h-2ZM18 12h2v2h-2ZM20 12h2v2h-2ZM22 12h2v2h-2ZM0 14h2v2h-2ZM2 14h2v2h-2ZM4 14h2v2h-2ZM6 14h2v2h-2ZM16 14h2v2h-2ZM18 14h2v2h-2ZM20 14h2v2h-2ZM22 14h2v2h-2ZM4 16h2v2h-2ZM6 16h2v2h-2ZM8 16h2v2h-2ZM14 16h2v2h-2ZM16 16h2v2h-2ZM18 16h2v2h-2ZM2 18h2v2h-2ZM4 18h2v2h-2ZM6 18h2v2h-2ZM8 18h2v2h-2ZM10 18h2v2h-2ZM12 18h2v2h-2ZM14 18h2v2h-2ZM16 18h2v2h-2ZM18 18h2v2h-2ZM20 18h2v2h-2ZM2 20h2v2h-2ZM4 20h2v2h-2ZM8 20h2v2h-2ZM10 20h2v2h-2ZM12 20h2v2h-2ZM14 20h2v2h-2ZM18 20h2v2h-2ZM20 20h2v2h-2ZM8 22h2v2h-2ZM10 22h2v2h-2ZM12 22h2v2h-2ZM14 22h2v2h-2Z'/%3E%3C/svg%3E"); }
+:root[data-skin="fantasy"], :root[data-skin="fantasy-dark"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M13.4 7.2A6.2 6.2 0 1 1 1 7.2A6.2 6.2 0 1 1 13.4 7.2ZM10.6 7.2A3.4 3.4 0 1 1 3.8 7.2A3.4 3.4 0 1 1 10.6 7.2ZM12.75 10.77L22.19 20.21L20.21 22.19L10.77 12.75ZM17.49 19.47L19.26 21.24L16.43 24.06L14.66 22.3ZM14.66 16.64L16.43 18.41L14.45 20.39L12.68 18.62Z'/%3E%3C/svg%3E"); }
+:root[data-skin="armour"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M21.53 17.5L12 23L2.47 17.5L2.47 6.5L12 1L21.53 6.5ZM18.4 12A6.4 6.4 0 1 1 5.6 12A6.4 6.4 0 1 1 18.4 12ZM16.2 12A4.2 4.2 0 1 1 7.8 12A4.2 4.2 0 1 1 16.2 12ZM21.5 12A0.9 0.9 0 1 1 19.7 12A0.9 0.9 0 1 1 21.5 12ZM17.2 19.45A0.9 0.9 0 1 1 15.4 19.45A0.9 0.9 0 1 1 17.2 19.45ZM8.6 19.45A0.9 0.9 0 1 1 6.8 19.45A0.9 0.9 0 1 1 8.6 19.45ZM4.3 12A0.9 0.9 0 1 1 2.5 12A0.9 0.9 0 1 1 4.3 12ZM8.6 4.55A0.9 0.9 0 1 1 6.8 4.55A0.9 0.9 0 1 1 8.6 4.55ZM17.2 4.55A0.9 0.9 0 1 1 15.4 4.55A0.9 0.9 0 1 1 17.2 4.55Z'/%3E%3C/svg%3E"); }
+:root[data-skin="cairn"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M8.5 10h7v11h-7ZM12 1.5C9.4 4.6 9.3 6.9 12 8.8C14.7 6.9 14.6 4.6 12 1.5ZM5.2 20.5h13.6a1.2 1.2 0 0 1 1.2 1.2v0.1a1.2 1.2 0 0 1 -1.2 1.2h-13.6a1.2 1.2 0 0 1 -1.2 -1.2v-0.1a1.2 1.2 0 0 1 1.2 -1.2Z'/%3E%3C/svg%3E"); }
+:root[data-skin="cyber"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M5 5h14v14h-14ZM8 8h8v8h-8ZM10 10h4v4h-4ZM7 1.5h2v3.5h-2ZM7 19h2v3.5h-2ZM1.5 7h3.5v2h-3.5ZM19 7h3.5v2h-3.5ZM11 1.5h2v3.5h-2ZM11 19h2v3.5h-2ZM1.5 11h3.5v2h-3.5ZM19 11h3.5v2h-3.5ZM15 1.5h2v3.5h-2ZM15 19h2v3.5h-2ZM1.5 15h3.5v2h-3.5ZM19 15h3.5v2h-3.5Z'/%3E%3C/svg%3E"); }
+:root[data-skin="talon"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M19 12A7 7 0 1 1 5 12A7 7 0 1 1 19 12ZM17.4 12A5.4 5.4 0 1 1 6.6 12A5.4 5.4 0 1 1 17.4 12ZM13.6 12A1.6 1.6 0 1 1 10.4 12A1.6 1.6 0 1 1 13.6 12ZM7.47 8.61L15.39 16.53L16.53 15.39L8.61 7.47ZM8.61 16.53L16.53 8.61L15.39 7.47L7.47 15.39ZM18.8 12.55L23.5 12.33L23.5 11.67L18.8 11.45ZM17.61 15.88L21.79 18.04L22.12 17.46L18.16 14.92ZM14.92 18.16L17.46 22.12L18.04 21.79L15.88 17.61ZM11.45 18.8L11.67 23.5L12.33 23.5L12.55 18.8ZM8.12 17.61L5.96 21.79L6.54 22.12L9.08 18.16ZM5.84 14.92L1.88 17.46L2.21 18.04L6.39 15.88ZM5.2 11.45L0.5 11.67L0.5 12.33L5.2 12.55ZM6.39 8.12L2.21 5.96L1.88 6.54L5.84 9.08ZM9.08 5.84L6.54 1.88L5.96 2.21L8.12 6.39ZM12.55 5.2L12.33 0.5L11.67 0.5L11.45 5.2ZM15.88 6.39L18.04 2.21L17.46 1.88L14.92 5.84ZM18.16 9.08L22.12 6.54L21.79 5.96L17.61 8.12Z'/%3E%3C/svg%3E"); }
+:root[data-skin="moss"] { --set-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M16.6 13L16.6 13.16L16.59 13.32L16.57 13.48L16.56 13.64L16.53 13.8L16.5 13.96L16.46 14.11L16.72 14.35L16.99 14.62L17.23 14.9L17.45 15.2L17.63 15.51L17.77 15.82L17.87 16.12L17.93 16.42L17.93 16.71L17.89 16.98L17.81 17.22L17.67 17.43L17.5 17.61L17.28 17.76L17.03 17.86L16.75 17.92L16.45 17.94L16.13 17.92L15.8 17.86L15.45 17.76L15.11 17.62L14.78 17.45L14.45 17.25L14.16 17.06L14.02 17.13L13.87 17.2L13.72 17.27L13.57 17.32L13.42 17.37L13.27 17.42L13.11 17.46L12.96 17.5L12.8 17.53L12.64 17.56L12.48 17.57L12.32 17.59L12.16 17.6L12 17.6L11.84 17.6L11.68 17.59L11.52 17.57L11.36 17.56L11.2 17.53L11.04 17.5L10.89 17.46L10.73 17.42L10.58 17.37L10.43 17.32L10.28 17.27L10.13 17.2L9.98 17.13L9.84 17.06L9.55 17.25L9.22 17.45L8.89 17.62L8.55 17.76L8.2 17.86L7.87 17.92L7.55 17.94L7.25 17.92L6.97 17.86L6.72 17.76L6.5 17.61L6.33 17.43L6.19 17.22L6.11 16.98L6.07 16.71L6.07 16.42L6.13 16.12L6.23 15.82L6.37 15.51L6.55 15.2L6.77 14.9L7.01 14.62L7.28 14.35L7.54 14.11L7.5 13.96L7.47 13.8L7.44 13.64L7.43 13.48L7.41 13.32L7.4 13.16L7.4 13L7.09 12.83L6.69 12.63L6.31 12.4L5.94 12.15L5.6 11.87L5.29 11.57L5.02 11.26L4.8 10.93L4.62 10.6L4.5 10.27L4.43 9.94L4.42 9.63L4.47 9.33L4.58 9.06L4.75 8.81L4.97 8.6L5.23 8.43L5.54 8.31L5.89 8.22L6.26 8.18L6.66 8.19L7.07 8.24L7.49 8.33L7.91 8.45L8.32 8.62L8.72 8.81L9.11 9.02L9.43 9.19L9.56 9.1L9.5 8.67L9.43 8.16L9.38 7.63L9.37 7.1L9.4 6.56L9.46 6.02L9.56 5.5L9.7 5L9.89 4.53L10.11 4.1L10.36 3.72L10.65 3.4L10.96 3.14L11.3 2.95L11.65 2.84L12 2.8L12.35 2.84L12.7 2.95L13.04 3.14L13.35 3.4L13.64 3.72L13.89 4.1L14.11 4.53L14.3 5L14.44 5.5L14.54 6.02L14.6 6.56L14.63 7.1L14.62 7.63L14.57 8.16L14.5 8.67L14.44 9.1L14.57 9.19L14.89 9.02L15.28 8.81L15.68 8.62L16.09 8.45L16.51 8.33L16.93 8.24L17.34 8.19L17.74 8.18L18.11 8.22L18.46 8.31L18.77 8.43L19.03 8.6L19.25 8.81L19.42 9.06L19.53 9.33L19.58 9.63L19.57 9.94L19.5 10.27L19.38 10.6L19.2 10.93L18.98 11.26L18.71 11.57L18.4 11.87L18.06 12.15L17.69 12.4L17.31 12.63L16.91 12.83ZM12.5 13L12 5.66L11.5 13ZM12.23 13.44L17.34 10.16L11.77 12.56ZM11.69 13.39L16.09 16.19L12.31 12.61ZM11.69 12.61L7.91 16.19L12.31 13.39ZM12.23 12.56L6.66 10.16L11.77 13.44ZM11.3 17.4L12.7 17.4L13.3 23.5L12.1 23.5Z'/%3E%3C/svg%3E"); }
+.setbtn { position: relative; width: 34px; height: 34px; display: inline-grid; place-items: center; padding: 0; border: 1.5px solid var(--hair); border-radius: 4px;
+  background: transparent; color: var(--brass); cursor: pointer; }
+.top:not(:has(.viewseg)) .setbtn { margin-left: auto; }
+.setbtn:hover, .setbtn:focus-visible, .setbtn[aria-pressed="true"] { border-color: var(--brass); }
+.setbtn[aria-pressed="true"] { background: var(--sunk); }
+.seticon { width: 20px; height: 20px; background: currentColor; -webkit-mask: var(--set-icon) center / contain no-repeat; mask: var(--set-icon) center / contain no-repeat; }
+@media (hover: hover) { .setbtn[data-tip]:hover::after, .setbtn[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
+  white-space: nowrap; padding: 5px 9px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 600 12px/1.3 system-ui, sans-serif; pointer-events: none; } }
+@media (max-width: 560px) { .top .setbtn { margin-left: auto; } }
+/* Settings page */
+.sethead { display: flex; align-items: center; gap: 14px; margin: 18px 0 2px; }
+.sethead h1 { margin: 0; font-size: 28px; }
+.setrow { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 0; border-top: 1px solid var(--hair); }
+.setrows .setrow:first-child, .frame > .setrow:first-of-type { border-top: 0; padding-top: 0; }
+.setrow > div:first-child { display: grid; gap: 3px; min-width: 0; }
+.setname { font: 600 14px/1.3 var(--f-head); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); }
+.setrow .seg, .setrow .skinpick select { min-width: 230px; }
+.setrow > .row { flex-wrap: nowrap; }
+@media (max-width: 560px) {
+  .setrow { flex-direction: column; align-items: stretch; gap: 8px; }
+  .setrow .seg, .setrow .skinpick select { min-width: 0; width: 100%; }
+  .setrow > .btn { align-self: flex-start; }
+}
+.settings a.btn { color: inherit; text-decoration: none; display: inline-block; }
+.delchar { display: flex; justify-content: flex-end; margin-top: 6px; }
+/* Text size "Larger" (Settings): the whole page scales up a step. */
+html[data-text="large"] .wrap { zoom: 1.15; }
 .installhelp { position: fixed; z-index: 9500; max-width: min(300px, calc(100vw - 24px)); padding: 10px 12px; border-radius: 6px; background: #1b130b; color: #ffe2a8;
   border: 1px solid #b88a3c; font: 14px/1.4 system-ui, sans-serif; box-shadow: 0 8px 28px rgb(0 0 0 / .45); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
@@ -214,6 +253,29 @@ html[data-install] .installbtn { display: inline-grid; place-items: center; }
 :root[data-skin="retro"] .tabswap[data-dir] { animation: tabFlicker .28s steps(1, end); }
 :root[data-skin="retro"] .tabswap[data-dir=""] { animation: none; }
 @keyframes tabFlicker { 0% { opacity: 0; } 25% { opacity: .7; } 40% { opacity: .15; } 60% { opacity: 1; } 75% { opacity: .6; } }
+/* Crafting unlocks (craft.js forgeIn): the tab rises out of the rule glowing like hot metal, cools to its colour, and
+   throws a burst of sparks. A new bench button in Crafting does the same. Nothing moves for reduced motion. */
+.forging { animation: forgeRise 2.2s cubic-bezier(.2, .8, .3, 1) both; position: relative; z-index: 2; }
+@keyframes forgeRise {
+  0% { transform: translateY(110%); opacity: 0; filter: brightness(2.6) saturate(1.6); box-shadow: 0 0 0 0 transparent; }
+  22% { transform: translateY(-4px); opacity: 1; filter: brightness(2.2) saturate(1.5); box-shadow: 0 0 22px 6px color-mix(in srgb, #ffb347 70%, transparent), inset 0 0 14px #fff3c4; }
+  30% { transform: translateY(0); }
+  55% { filter: brightness(1.5) saturate(1.3); box-shadow: 0 0 16px 3px color-mix(in srgb, #ff7a2e 55%, transparent), inset 0 0 8px color-mix(in srgb, #ffcf7a 60%, transparent); }
+  100% { transform: none; filter: none; }
+}
+.forge-wait { opacity: 0; }
+.forgeburst { position: absolute; z-index: 70; left: 0; top: 0; width: 100%; overflow: hidden; pointer-events: none; }
+.forgeat { position: absolute; width: 0; height: 0; }
+.forgeburst i { position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; border-radius: 50%; opacity: 0;
+  background: #fff1b8; box-shadow: 0 0 6px 2px #ffae42, 0 0 12px 3px color-mix(in srgb, #ff6a1a 60%, transparent);
+  animation: forgeSpark 1s cubic-bezier(.15, .7, .4, 1) both; }
+@keyframes forgeSpark {
+  0% { opacity: 0; transform: translate(0, 0) scale(1.2); }
+  6% { opacity: 1; }
+  60% { opacity: 1; transform: translate(var(--dx), var(--dy)) scale(.9); background: #ffd27a; }
+  100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + var(--fall))) scale(.4); background: #c2410c; }
+}
+@media (prefers-reduced-motion: reduce) { .forging { animation: none; } .forgeburst { display: none; } .forge-wait { opacity: 1; } }
 .tabicon { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: var(--tc); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
 .tabpane { padding-top: 26px; display: grid; gap: 46px; grid-template-columns: minmax(0, 1fr); }
 .tabpane > *, .frame, .two > *, .meters > * { min-width: 0; }
@@ -1078,6 +1140,13 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .forgebtn { display: inline-flex; align-items: center; gap: 9px; }
 .forgebtn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
 .ptwhy { text-align: center; margin: 0; max-width: 44ch; }
+.ptplanh { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.ptplanh .lbl { margin: 0; }
+.ptreset { font-size: 11px; padding: 3px 10px; }
+.ptbody { display: contents; }
+.ptagain { justify-content: center; gap: 8px; }
+.ptopt.row-opt:has(.brdel) { grid-template-columns: minmax(0, 1fr) auto auto; }
+.ptopt.row-opt .brdel { margin-right: 6px; }
 .ptread { width: 100%; max-width: 470px; border: 1.5px solid var(--rule); background: var(--card); padding: 12px 14px; display: grid; gap: 10px; }
 .ptstep { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ptstep b { flex: 1; font: 600 15px var(--f-head); letter-spacing: .05em; text-transform: uppercase; min-width: 0; }
 .ptdet { display: inline-flex; gap: 6px; }
@@ -1196,6 +1265,33 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .rnmun .rn-smoke circle { fill: #3a3631; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .rnmun.failed .rn-smoke circle, .rnmun.shatter .rn-smoke circle { animation: brsmoke 2.4s var(--d) ease-out infinite; }
 .rnalso { margin: 12px 0 0; font-size: 13px; }
+/* the workshop: jobs between players */
+.shoph { margin: 10px 0 2px; }
+/* Workshop on the Gear cards: send a weapon or suit to a smith, with a payment. */
+.shopbtn { justify-self: start; }
+.shopgear { display: grid; gap: 10px; padding-top: 10px; border-top: 1.5px dashed var(--hair); min-width: 0; }
+.shopgear .muted { font-size: 13px; margin: 0; }
+.shophead { justify-content: space-between; }
+.shophead b { font: 600 13px/1.2 var(--f-head); letter-spacing: .08em; text-transform: uppercase; }
+.shoppay { display: grid; gap: 8px; padding: 10px; background: color-mix(in srgb, var(--sunk) 70%, transparent); border: 1px solid var(--hair); }
+.shoppay .grid2 { gap: 8px 12px; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); }
+.shoppay .mini.wide { grid-column: 1 / -1; }
+/* An item at a smith's bench stays on its card, greyed out and locked until it's back. */
+.wlock { display: contents; border: 0; margin: 0; padding: 0; min-width: 0; }
+.wcard.away .wlock > * { opacity: .5; }
+.shopgear.away { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.shopgear.away > span { flex: 1 1 200px; font-size: 13px; color: var(--ink-2); }
+.shoppaid { display: block; font-size: 12.5px; color: var(--brass); }
+.shopnote { width: min(460px, 100%); }
+.shopnote p { margin: 0; }
+.shopnotefacts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; border-top: 1.5px solid var(--rule); padding-top: 8px; }
+.shopnotefacts .fact { border: 0; padding: 0; }
+.shopnotefacts .fact p { margin: 2px 0 0; font-size: 15px; line-height: 1.35; }
+.ptopt.row-opt .shopback { margin-right: 8px; white-space: nowrap; }
+.wpbase { margin-top: 6px; }
+.rnlib { margin-top: 12px; display: grid; gap: 6px; }
+.rnlib .lbl { margin: 0; }
+.brform .ammode { margin: 0; }
 .rneff { display: grid; gap: 8px; }
 .rneff .ammode { margin: 0; }
 .rnpay { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
@@ -1627,7 +1723,25 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-skin="moss"] .frame:nth-of-type(3n)::after { display: none; }
 /* the living ivy (fx-moss.js) grows its own longer vines, moss and hide patches; the CSS vines above are its stand-in */
 .mh-ivy-layer { position: absolute; left: 0; top: 0; z-index: 2; overflow: hidden; pointer-events: none; }
-.mh-ivy { position: absolute; overflow: visible; pointer-events: none; }
+.mh-ivy { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; will-change: transform; }
+/* switching sections: a gust of leaves wipes the old section away and the new one appears in its wake (fx-moss.js) */
+:root.has-ivy[data-skin="moss"] .tabswap[data-dir]:not(.mh-wipe-in) { animation: none; }
+.mh-ghost { position: absolute; z-index: 3; margin: 0; padding: 0; max-width: none; overflow: hidden; pointer-events: none; }
+.mh-ghost :is(.tabswap, .viewswap) { animation: none; }
+.mh-ghost.mh-wipe-out, :root :is(.tabswap, .viewswap).mh-wipe-in { -webkit-mask-size: 300% 100%; mask-size: 300% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; animation: mhWipe .95s cubic-bezier(.4, .05, .35, 1) both; }
+.mh-ghost.mh-wipe-out.wind-l { -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 55%); mask-image: linear-gradient(90deg, #000 45%, transparent 55%); --m0: 20%; --m1: 82%; }
+:root :is(.tabswap, .viewswap).mh-wipe-in.wind-l { -webkit-mask-image: linear-gradient(90deg, transparent 45%, #000 55%); mask-image: linear-gradient(90deg, transparent 45%, #000 55%); --m0: 20%; --m1: 82%; }
+.mh-ghost.mh-wipe-out.wind-r { -webkit-mask-image: linear-gradient(90deg, transparent 45%, #000 55%); mask-image: linear-gradient(90deg, transparent 45%, #000 55%); --m0: 82%; --m1: 20%; }
+:root :is(.tabswap, .viewswap).mh-wipe-in.wind-r { -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 55%); mask-image: linear-gradient(90deg, #000 45%, transparent 55%); --m0: 82%; --m1: 20%; }
+.mh-wipe-out { filter: saturate(.7); }
+@keyframes mhWipe { from { -webkit-mask-position: var(--m0) 0; mask-position: var(--m0) 0; } to { -webkit-mask-position: var(--m1) 0; mask-position: var(--m1) 0; } }
+.mh-gust { position: fixed; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+.mh-gust svg { position: absolute; left: 0; top: 0; overflow: visible; filter: drop-shadow(0 2px 2px rgb(0 0 0 / .45)); }
+.mh-ivy.mh-leave { animation: mhLeave .7s ease-in forwards; }
+.mh-ivy.mh-grow { animation: mhGrow .7s .38s cubic-bezier(.2, .7, .3, 1) both; }
+@keyframes mhLeave { to { opacity: 0; translate: calc(var(--wind, -1) * 70px) -14px; } }
+@keyframes mhGrow { from { opacity: 0; scale: .97; } }
+@media (prefers-reduced-motion: reduce) { .mh-ivy.mh-leave, .mh-ivy.mh-grow, .mh-ghost.mh-wipe-out, :root :is(.tabswap, .viewswap).mh-wipe-in { animation: none; } .mh-gust { display: none; } }
 :root.has-ivy[data-skin="moss"] .frame::before, :root.has-ivy[data-skin="moss"] .frame::after { display: none; }
 
 :root[data-skin="moss"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel, .member, .gx-attr, .gx-road, .gx-pick, .ptread, .pled, .ptopt, .ptel, .ptstage, .ptlabel) {
