@@ -2131,21 +2131,33 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
 
   // ---- the install-app button (data-install-btn, in the header and on the sign-in screen) ----
-  // It shows only when installing is possible: Chrome/Edge/Android offer an install prompt; iPhone and iPad have no
-  // prompt, so there the button explains Share → Add to Home Screen. Already installed: no button.
+  // It shows only when installing is possible. Chrome, Edge and Android offer an install prompt the button opens.
+  // iPhone/iPad, Firefox (Windows, Android) and Mac Safari have their own install option instead, so there the button
+  // says where to find it. Already installed: no button.
   const root = document.documentElement;
   const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-  const apple = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const ua = navigator.userAgent, apple = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  // Browsers with no install dialog a page can open: the button explains where their own install option is.
+  // (Firefox on Mac and Linux can't install sites at all, so no button there.)
+  const manual = apple ? "ios"
+    : /Firefox\//.test(ua) && /Android/.test(ua) ? "firefox-android"
+    : /Firefox\//.test(ua) && /Windows/.test(ua) ? "firefox-windows"
+    : /Macintosh/.test(ua) && /Version\/(1[7-9]|[2-9]\d)[.\d]* Safari\//.test(ua) && !/Chrome|Chromium|Edg\//.test(ua) ? "safari-mac" : "";
+  const HOW = {
+    "ios": "To install: tap <b>Share</b> <span aria-hidden=\"true\">⬆︎</span>, then <b>Add to Home Screen</b>.",
+    "firefox-android": "To install: open Firefox's menu <b>⋮</b> and choose <b>Add app to Home screen</b> (or <b>Install</b>).",
+    "firefox-windows": "To install: click the <b>web apps</b> button at the right end of Firefox's address bar. It needs Firefox 143 or newer.",
+    "safari-mac": "To install: in Safari's menu bar choose <b>File → Add to Dock</b>.",
+  };
   let offer = null;
   const mark = v => { if (v && !standalone()) root.dataset.install = v; else delete root.dataset.install; };
-  if (apple) mark("ios");
+  if (manual) mark(manual);
   addEventListener("beforeinstallprompt", e => { e.preventDefault(); offer = e; mark("prompt"); });
   addEventListener("appinstalled", () => { offer = null; mark(""); });
   const help = btn => {
     const old = document.querySelector(".installhelp"); if (old) { old.remove(); return; }
     const tip = document.createElement("div"); tip.className = "installhelp"; tip.setAttribute("role", "status");
-    tip.innerHTML = apple ? "To install: tap <b>Share</b> <span aria-hidden=\"true\">⬆︎</span>, then <b>Add to Home Screen</b>."
-                          : "To install: open your browser's menu and choose <b>Install app</b> (or <b>Add to Home screen</b>).";
+    tip.innerHTML = HOW[manual] || "To install: open your browser's menu and choose <b>Install app</b> (or <b>Add to Home screen</b>).";
     document.body.appendChild(tip);
     const r = btn.getBoundingClientRect(), w = tip.offsetWidth;
     tip.style.top = Math.min(innerHeight - tip.offsetHeight - 8, r.bottom + 8) + "px";
@@ -2157,7 +2169,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
     e.preventDefault();
     if (!offer) { help(btn); return; }
     const o = offer; offer = null;
-    try { await o.prompt(); const r = await o.userChoice; mark(r && r.outcome === "accepted" ? "" : apple ? "ios" : ""); } catch { mark(""); }
+    try { await o.prompt(); const r = await o.userChoice; mark(r && r.outcome === "accepted" ? "" : manual); } catch { mark(""); }
   });
 })();
 </script>
