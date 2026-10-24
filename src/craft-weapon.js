@@ -364,7 +364,7 @@ function WCraftSide({ c, rc, cp, st, focus, setRc, busy }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>${focus === "type" ? "Weapon" : focus === "av" ? "Base stats" : "Changes"}</span><small>${focus === "extra" ? `${cp.dc}%` : rc.skill}</small></h3>
     ${body}
-    <div class="ptplan"><h3 class="lbl">The craft</h3><ol>
+    <div class="ptplan"><${PlanHead} title="The craft" busy=${busy} onReset=${() => setRc(r => refill(r, R.blankCharacter().craft.weapon.recipe))} /><ol>
       <li><span>Materials: ${cp.cost} g of weapon materials</span><span class="muted">5 × repair (${R.weaponRepairCost(rc)} g)</span></li>
       <li><span>Roll under ${cp.dc}%</span><span class="muted">${cp.chance}% to land · each failure adds a random flaw and rolls again; failure ${st.maxFails + 1} loses it all</span></li>
       <li><span>Eight hours</span><span class="muted">${cp.props.length < 2 ? "Fewer than 2 properties: it gains 2 at random. " : ""}It joins your Weapons on the Gear tab.</span></li></ol></div>
