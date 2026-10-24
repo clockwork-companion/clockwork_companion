@@ -1187,6 +1187,119 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   [data-skin="cyber"] .h { font-size: 21px; } [data-skin="cyber"] .frame { padding: 22px 14px 24px; } [data-skin="cyber"] .namefield { font-size: 27px; }
 }
 
+/* ----- Talon Saga (extended): the central Mongolian steppe. A living landscape behind the sheet (fx-steppe.js),
+   panels of felt and carved stone, khadag-blue silk for the open tab, Old Turkic runes. Where the sheet gets
+   "complex" (Karma, attributes, skills, perks, crafting, the side panel), a runecore layer shows through:
+   a teal crystal in the corner, glowing ley lines and carved runes. Hextech's cousin, but of the open steppe. ----- */
+:root[data-skin="talon"] {
+  --paper: #f6f0e1; --card: #fbf7ec; --sunk: #ece3cf; --ink: #2b241b; --ink-2: #4f4535; --ink-3: #85786a;
+  --rule: #a8803a; --bracket: #2f5e9e; --hair: #d9cdb4; --brass: #b5462b; --brass-ink: #fff6e4; --brass-soft: #f1d9cf;
+  --seal: #8e877a; --seal-2: #b8b1a3; --blood: #b03a26; --blood-soft: #f2d6cf; --tox: #4f8a2c; --tox-soft: #dcebcf;
+  --hunger: #b8862a; --hunger-soft: #f3e4c4; --life: #2f6fb8; --life-soft: #d6e5f5; --warn: #b8862a; --bad: #b03a26; --good: #4f8a2c;
+  --rune: #23c6b8; --rune-deep: #0b7c74; --khadag: #4a8fd8; --felt: rgb(250 246 236 / .93); --stone: linear-gradient(180deg, #cfcabd, #b1ab9d);
+  --f-display: "Marcellus SC", "Marcellus", Georgia, serif; --f-head: "Marcellus", Georgia, serif; --f-body: "Alegreya Sans", "Segoe UI", sans-serif; --f-mono: "Marcellus", Georgia, serif;
+  --f-rune: "Noto Sans Old Turkic", sans-serif;
+  --scroll: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='12'%3E%3Cpath d='M0 9c4 0 6-2 6-4.5S4 1 2.5 2.5 3 6 5 5.5M6 4.5C6 7 9 9 14 9s8-2 8-4.5S20 1 18.5 2.5 19 6 21 5.5M22 4.5c0 2.5 2 4.5 6 4.5' fill='none' stroke='%23a8803a' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E"); --crystal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23d9fffa'/%3E%3Cstop offset='.45' stop-color='%2337d6c6'/%3E%3Cstop offset='1' stop-color='%23097a73'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M10 0l9 9-2 17-7 6-7-6-2-17z' fill='url(%23g)'/%3E%3Cpath d='M10 0v32M1 9h18M10 0L3 26M10 0l7 26' stroke='%23ffffff' stroke-opacity='.45' stroke-width='.6' fill='none'/%3E%3C/svg%3E");
+  --leyline: linear-gradient(var(--rune), var(--rune)) 0 0 / 1.5px 100% no-repeat, linear-gradient(90deg, var(--rune), rgb(35 198 184 / 0) 70%) 0 100% / 100% 1.5px no-repeat,
+    radial-gradient(circle, #e6fffb 0 1.5px, var(--rune) 2.5px, rgb(35 198 184 / 0) 6px) -5px calc(100% + 5px) / 12px 12px no-repeat;
+  color-scheme: light;
+}
+/* before the canvas paints (or without it): a plain sky over grass */
+[data-skin="talon"] body { font-size: 16.5px; background: linear-gradient(180deg, #2f6bbd 0%, #8db8e3 45%, #d7e8f2 60%, #86b84a 60.5%, #4b8a2a 100%) fixed; color: var(--ink); }
+.steppe { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+:root[data-skin="talon"] .sigil { display: none; }
+/* the header and character block sit on felt so they read over the sky */
+:root[data-skin="talon"] .top { background: var(--felt); border: 0; border-bottom: 3px solid var(--khadag); padding: 12px 18px; border-radius: 0 0 10px 10px; box-shadow: 0 6px 18px rgb(30 40 60 / .2); margin-top: -1px; }
+:root[data-skin="talon"] .brand { font: 400 30px/1 var(--f-display); letter-spacing: .06em; color: var(--ink); }
+:root[data-skin="talon"] .brand small { font: 400 13px var(--f-head); color: var(--khadag); letter-spacing: .2em; }
+:root[data-skin="talon"] .brand small::after { content: " \10C45\10C2D\10C3C\10C03"; font-family: var(--f-rune); color: var(--rule); letter-spacing: .1em; }
+:root[data-skin="talon"] :is(.roster .rbar, .head, .banner) { background: var(--felt); border-radius: 10px; box-shadow: 0 6px 18px rgb(30 40 60 / .18); }
+:root[data-skin="talon"] .roster .rbar { padding: 8px 12px; width: fit-content; max-width: 100%; }
+:root[data-skin="talon"] .head { padding: 18px; margin-top: 10px; }
+:root[data-skin="talon"] .namefield { font: 400 34px var(--f-display); letter-spacing: .03em; border-bottom: 2px solid var(--rule); }
+:root[data-skin="talon"] :is(.lbl, .field label, .mini label, .stat span, .fact span, .wstats span, .legend b, th, .seg button, .btn, .pbox small) { font-family: var(--f-head); letter-spacing: .1em; text-transform: uppercase; }
+:root[data-skin="talon"] :is(.attr .nm, .sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3, .gx-title, .ornate, .gx-an b, .sphead h2, .meter .t) { font-family: var(--f-display); font-weight: 400; letter-spacing: .04em; }
+:root[data-skin="talon"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3) { border-bottom: 1.5px solid var(--rule); color: var(--ink); }
+:root[data-skin="talon"] :is(.attr .val, .stat b, .meter .v, .loadnum b, .wound .cnt, .fact b, .wstats b, .statin, .srow .m) { font-family: var(--f-mono); font-weight: 400; }
+/* headings: a carved stele plaque with a rounded top; the rule after it is the stele's scroll band */
+:root[data-skin="talon"] .h { font: 400 22px var(--f-display); letter-spacing: .06em; }
+:root[data-skin="talon"] .h > span:not(.orn) { padding: 9px 20px 6px; background: var(--stone); color: #3b362d; border-radius: 22px 22px 3px 3px;
+  text-shadow: 0 1px 0 rgb(255 255 255 / .55), 0 -1px 0 rgb(0 0 0 / .18); box-shadow: inset 0 1px 0 rgb(255 255 255 / .5), inset 0 -2px 0 rgb(0 0 0 / .08), 0 2px 4px rgb(0 0 0 / .12); }
+:root[data-skin="talon"] .orn::before { border: 0; height: 12px; top: 2px; right: 22px; background: var(--scroll) 0 50% / 28px 12px repeat-x; opacity: .75; }
+:root[data-skin="talon"] .orn::after { width: 10px; height: 10px; border-radius: 50%; transform: none; top: 3px; right: 6px; border: 1.5px solid var(--rule); background: transparent; }
+:root[data-skin="talon"] .diamond::before { border-color: var(--rule); background: transparent; }
+:root[data-skin="talon"] .diamond.on::before { background: var(--rune); border-color: var(--rune-deep); box-shadow: 0 0 8px var(--rune); }
+/* the rules marker is a carved rune (Old Turkic "t"), in place of the book */
+:root[data-skin="talon"] .hlink .hbook { display: none; }
+:root[data-skin="talon"] .hlink::after { content: "\10C45"; font: 400 .8em var(--f-rune); color: var(--rune-deep); opacity: .65; margin-left: .15em; transition: opacity .15s, text-shadow .15s; }
+:root[data-skin="talon"] .hlink:hover::after, :root[data-skin="talon"] .hlink:focus-visible::after { opacity: 1; text-shadow: 0 0 8px var(--rune); }
+/* panels: felt */
+:root[data-skin="talon"] .frame { position: relative; border: 1px solid rgb(90 70 40 / .18); border-radius: 10px; padding: 22px 24px 24px; background: var(--felt); box-shadow: 0 8px 24px rgb(30 40 60 / .18); }
+:root[data-skin="talon"] .frame::before, :root[data-skin="talon"] .frame::after { display: none; }
+:root[data-skin="talon"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel, .member, .gx-attr, .gx-road, .gx-pick, .gx-choose) {
+  border: 1px solid var(--hair); border-radius: 8px; background: var(--card); box-shadow: 0 1px 0 rgb(255 255 255 / .8) inset; }
+/* tabs: a band of deep-blue felt with gold stitching; the open tab is khadag silk with a fringe */
+:root[data-skin="talon"] .tabs { border: 0; gap: 4px; padding: 6px; border-radius: 10px; background: #1f3f6e; box-shadow: inset 0 0 0 2px #1f3f6e, inset 0 0 0 3px rgb(222 186 110 / .7), 0 6px 18px rgb(30 40 60 / .25); width: max-content; max-width: 100%; }
+:root[data-skin="talon"] .tabs button { border: 0; border-radius: 6px; padding: 10px 16px 12px; color: #efe4c8; background: transparent; font: 400 16px var(--f-display); letter-spacing: .05em; box-shadow: none; }
+:root[data-skin="talon"] .tabs button:hover { background: rgb(255 255 255 / .08); color: #fff; }
+:root[data-skin="talon"] .tabs button[aria-selected="true"] { color: #fff; text-shadow: 0 1px 0 rgb(0 0 0 / .25);
+  background: repeating-linear-gradient(90deg, rgb(255 255 255 / .55) 0 1px, transparent 1px 4px) 0 100% / 100% 5px no-repeat, linear-gradient(180deg, #7fb4ec, var(--khadag) 60%, #3a78c0); box-shadow: inset 0 1px 0 rgb(255 255 255 / .35); }
+:root[data-skin="talon"] .tabicon { stroke: currentColor; opacity: .85; }
+/* cells and pips: carved slots; natural points in gold, Karma-bought points glow with rune light */
+:root[data-skin="talon"] .cell { border: 1px solid #b9ab8e; background: #efe7d4; border-radius: 3px; box-shadow: inset 0 1px 2px rgb(0 0 0 / .12); }
+:root[data-skin="talon"] .cell.up { background: linear-gradient(180deg, #e2b860, #b8862a); border-color: #9a6e1e; }
+:root[data-skin="talon"] .cell.bought { background: linear-gradient(180deg, #8ff3ea, var(--rune)); border-color: var(--rune-deep); box-shadow: 0 0 8px rgb(35 198 184 / .55); }
+:root[data-skin="talon"] .cell.miss { background: linear-gradient(180deg, #d0654d, var(--bad)); border-color: #7e2516; }
+:root[data-skin="talon"] .cell.have { background: #cfc4ad; }
+:root[data-skin="talon"] .cell.sealed { background: repeating-linear-gradient(45deg, #9a9384 0 2px, #c4bdae 2px 5px); border-color: #8e877a; }
+:root[data-skin="talon"] .mid { border-radius: 50%; border: 1.5px solid var(--rule); background: var(--card); color: var(--ink); font-family: var(--f-mono); }
+:root[data-skin="talon"] .mid.at { background: var(--rule); color: #fff; }
+:root[data-skin="talon"] .pip { border: 1.5px solid #a3967c; background: #efe7d4; box-shadow: inset 0 1px 2px rgb(0 0 0 / .15); }
+:root[data-skin="talon"] .pip.on { background: radial-gradient(circle at 40% 35%, #e6fffb, var(--rune) 55%, var(--rune-deep)); border-color: var(--rune-deep); box-shadow: 0 0 6px rgb(35 198 184 / .6); }
+:root[data-skin="talon"] .track, :root[data-skin="talon"] .mtrack { border-radius: 6px; border-color: #c9bb9c; }
+/* controls: felt with stitched edges; the main action is a red deel with gold thread */
+:root[data-skin="talon"] .btn { border: 1px solid #b9ab8e; border-radius: 6px; background: #f3ecdc; color: var(--ink); outline: 1px dashed rgb(120 95 55 / .35); outline-offset: -4px; }
+:root[data-skin="talon"] .btn:hover { background: #fff8e8; }
+:root[data-skin="talon"] .btn.primary, :root[data-skin="talon"] .seg button[aria-pressed="true"] { background: linear-gradient(180deg, #c45334, #9e3a22); color: #ffe9b8; border-color: #7e2a16; outline-color: rgb(255 220 150 / .55); }
+:root[data-skin="talon"] .seg { border: 1px solid #b9ab8e; border-radius: 6px; overflow: hidden; background: #f3ecdc; }
+:root[data-skin="talon"] :is(.field input, .field select, .mini input, .mini select, .inp, .autotext, .field textarea) { background: rgb(255 252 244 / .9); border-color: #cdbf9f; border-radius: 4px; }
+:root[data-skin="talon"] .portrait { border: 4px solid #b1ab9d; border-radius: 48% 48% 6px 6px / 28% 28% 6px 6px; background: var(--stone); box-shadow: inset 0 0 0 2px rgb(255 255 255 / .4), 0 6px 14px rgb(0 0 0 / .2); }
+:root[data-skin="talon"] .hovercard { background: #fbf7ec; color: var(--ink); border: 1px solid var(--hair); border-top: 3px solid var(--khadag); border-radius: 8px; }
+:root[data-skin="talon"] .flag { border-radius: 4px; }
+:root[data-skin="talon"] .d8::before { background: linear-gradient(160deg, #e6e1d4 0%, #b1ab9d 55%, #6f6a5f 100%); }
+
+/* ----- the runecore layer, where the sheet gets complex ----- */
+:root[data-skin="talon"] :is(.frame:has(.attrs), .frame:has(.skillcols), .frame:has(.perkcards), .panel.karma, .spanel, .gx-dice) { position: relative; }
+/* ley lines: a glowing teal line down the left and along the bottom, meeting at a lit node */
+:root[data-skin="talon"] :is(.frame:has(.attrs), .frame:has(.skillcols), .frame:has(.perkcards), .tabpane:has(> .craftnav) > .frame) { background: var(--leyline), var(--felt); box-shadow: 0 8px 24px rgb(30 40 60 / .18), -3px 0 14px -6px rgb(35 198 184 / .7); }
+:root[data-skin="talon"] .panel.karma { background: var(--leyline), var(--card); }
+/* a rune crystal in the top corner, slowly breathing */
+:root[data-skin="talon"] :is(.frame:has(.attrs), .frame:has(.skillcols), .frame:has(.perkcards), .tabpane:has(> .craftnav) > .frame, .panel.karma)::after {
+  content: ""; display: block; position: absolute; top: 10px; right: 12px; left: auto; bottom: auto; width: 16px; height: 26px; border: 0;
+  background: var(--crystal) center / contain no-repeat; filter: drop-shadow(0 0 5px rgb(35 198 184 / .9)); animation: tlCrystal 5s ease-in-out infinite; }
+@keyframes tlCrystal { 50% { filter: drop-shadow(0 0 10px rgb(35 198 184 / 1)); transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { :root[data-skin="talon"] *::after { animation: none !important; } }
+/* carved runes along the bottom edge */
+:root[data-skin="talon"] :is(.frame:has(.attrs), .frame:has(.skillcols), .frame:has(.perkcards))::before {
+  content: "\10C45\10C2D\10C3C\10C03 : \10C34\10C0D\10C23 : \10C0B\10C0F"; display: block; position: absolute; left: auto; right: 22px; top: auto; bottom: 5px; width: auto; height: auto; border: 0; background: none;
+  font: 400 13px var(--f-rune); letter-spacing: .35em; color: var(--rune-deep); opacity: .5; text-shadow: 0 0 6px rgb(35 198 184 / .6); }
+:root[data-skin="talon"] .frame:has(.attrs) .h > span:not(.orn), :root[data-skin="talon"] .frame:has(.skillcols) .h > span:not(.orn), :root[data-skin="talon"] .frame:has(.perkcards) .h > span:not(.orn) {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .5), inset 0 -2px 0 var(--rune), 0 2px 4px rgb(0 0 0 / .12), 0 4px 10px -4px rgb(35 198 184 / .8); }
+/* perk cards: the level sits in a carved tablet inlaid with rune light */
+:root[data-skin="talon"] .pbox { background: var(--stone); border: 1px solid #8e877a; border-radius: 10px 10px 3px 3px; box-shadow: inset 0 0 0 2px rgb(35 198 184 / .5), 0 0 10px -2px rgb(35 198 184 / .6); }
+:root[data-skin="talon"] .pbox b { color: var(--rune-deep); text-shadow: 0 1px 0 rgb(255 255 255 / .5); }
+:root[data-skin="talon"] .perkcard { position: relative; }
+:root[data-skin="talon"] .usetick { border-color: var(--rune-deep); background: #e9fbf8; border-radius: 50%; }
+:root[data-skin="talon"] .usetick.spent { background: #b1ab9d; border-color: #8e877a; }
+/* the side panel and crafting benches carry a ley line too */
+:root[data-skin="talon"] .spanel { background: var(--leyline), #fbf7ec; border-left: 3px solid var(--rune-deep); box-shadow: -10px 0 30px rgb(30 40 60 / .25), -4px 0 16px -4px rgb(35 198 184 / .6); }
+:root[data-skin="talon"] .craftnav button { border-radius: 8px; background: var(--felt); }
+:root[data-skin="talon"] .craftnav button[aria-pressed="true"] { background: var(--leyline), linear-gradient(180deg, #2a4f86, #1f3f6e); border-color: var(--rune-deep); color: #efe4c8; box-shadow: 0 0 12px -2px rgb(35 198 184 / .7); }
+@media (max-width: 560px) {
+  [data-skin="talon"] .tabs { width: auto; } [data-skin="talon"] .tabs button { padding: 9px 9px 11px; font-size: 13px; }
+  [data-skin="talon"] .frame { padding: 20px 14px 26px; } [data-skin="talon"] .h { font-size: 19px; }
+}
+
 /* ---------- website build: players panel, companions ---------- */
 .members { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 12px; }
 .member { background: var(--card); border: 1.5px solid var(--hair); padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }

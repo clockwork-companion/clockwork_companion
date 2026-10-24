@@ -58,6 +58,7 @@ python3 src/build.py                  # src/clockwork-companion.html, the claude
 | `rules-info.js` | The plain-language rules shown when a section heading is clicked (`RULES_INFO`). |
 | `app.js` | The UI (Preact + htm, no build step): sheet, vitals, Skills & Talents, gear, tabletop, themes. |
 | `fx-blackwall.js` | The Cyberpunk theme's animated Blackwall: a WebGL shader on a canvas behind the page. It only runs while that theme is on; without WebGL the CSS stand-in in `app.css` shows instead. |
+| `fx-steppe.js` | The Talon Saga theme's living landscape: central Mongolian steppe, gers, ancestral stones, a galloping herd and an eagle at random intervals, drawn on a 2D canvas behind the page. It only runs while that theme is on. |
 | `craft.js` | The Crafting tab: one section per craft, and the Powdertinkering bench (munition drawings with callouts, forge animation, supplies, ledger). |
 | `craft-armor.js` | Crafting → Armor upkeep: the Repair and Craft benches (suit drawings on a stand, hammer and forge animations). |
 | `genesis.js` | Guided character creation. |
