@@ -1494,6 +1494,14 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .gx-choose { position: relative; width: min(640px, 100%); background: var(--card); border: 1.5px solid var(--rule); padding: 28px 26px 22px; display: grid; gap: 18px; box-shadow: 0 24px 60px rgb(0 0 0 / .45); }
 .gx-choose h2 { margin: 0; font-size: 28px; text-align: center; }
 .gx-x { position: absolute; right: 10px; top: 10px; }
+.dice-veil { z-index: 60; }   /* above the creation guide */
+.dice-ask { width: min(420px, 100%); gap: 12px; padding: 22px 22px 18px; text-align: center; }
+.dice-ask h2 { font-size: 22px; }
+.dice-ask p { margin: 0; }
+.dice-in { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.dice-in .inp { width: 3.6em; text-align: center; font-size: 22px; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }
+.dice-in .inp::-webkit-inner-spin-button, .dice-in .inp::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.dice-btns { justify-content: center; }
 .gx-roads { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .gx-road { display: grid; justify-items: center; text-align: center; gap: 8px; padding: 20px 16px 18px; background: var(--paper); border: 1.5px solid var(--hair); cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s; }
 .gx-road:hover { border-color: var(--brass); transform: translateY(-2px); box-shadow: 0 10px 24px rgb(0 0 0 / .18); }
@@ -2554,11 +2562,12 @@ const CW = (() => {
     if (refreshUses(c, true)) lines.push("Short-rest abilities recharged");
     return lines.length ? "Short rest: " + lines.join(" · ") : "Short rest";
   }
-  function longRest(c) {
+  // cleanse: the cleansing dice total when it was rolled at the table; rolled here when left out.
+  function longRest(c, cleanse) {
     const d = derived(c); const v = c.vitals; const parts = [];
     const hp = Math.min(d.max.hp, d.cur.hp + d.hpRegen); parts.push(`HP +${hp - d.cur.hp}`); v.hp = hp;
     const bp = Math.min(d.max.bp, d.cur.bp + d.bpRegen); parts.push(`Blood +${bp - d.cur.bp}`); v.bp = bp;
-    let roll = rollDie(6); for (let i = 0; i < d.cleanseDice.d4; i++) roll += rollDie(4);
+    let roll = num(cleanse); if (cleanse == null) { roll = rollDie(6); for (let i = 0; i < d.cleanseDice.d4; i++) roll += rollDie(4); }
     const tox = Math.max(0, d.cur.tox - roll); parts.push(`Toxicity −${d.cur.tox - tox} (rolled ${roll})`); v.tox = tox;
     const st = Math.max(0, num(v.exhaustion) - 2 - (sk(c, "Conditioning") >= 7 ? 2 : 0));
     if (st !== num(v.exhaustion)) parts.push(`Stamina ${num(v.exhaustion)} → ${st} lost`); setStamina(c, st);
@@ -2567,8 +2576,9 @@ const CW = (() => {
   }
 
   // The rulebook roll for one attribute: 3d8, set the lowest die aside, add the other two; never below 6.
-  function rollAttributeDetail() {
-    const dice = [rollDie(8), rollDie(8), rollDie(8)];
+  // dice: three d8 results rolled at the table; rolled here when left out.
+  function rollAttributeDetail(given) {
+    const dice = given && given.length === 3 ? given.slice() : [rollDie(8), rollDie(8), rollDie(8)];
     const low = dice.indexOf(Math.min(...dice));
     const sum = dice.reduce((s, d, i) => (i === low ? s : s + d), 0);
     return { dice, low, sum, total: Math.max(6, sum) };
@@ -3376,6 +3386,60 @@ function SkinPicker() {
     </select></label>`;
 }
 
+/* ================= dice: the app rolls, or the player types a roll made at the table ================= */
+// Per browser, like the theme: "app" (default) or "own" (rolled elsewhere, e.g. in Tabletop Simulator, and typed in).
+// askRoll(spec) resolves to the dice results, or to null when the player cancels.
+//   spec: { title, dice: [{ n, sides }], each (type every die; otherwise one total), note, cancel (offer Cancel) }
+// With own rolls and no "each", it resolves to a one-item array holding the total.
+const Dice = { mode: lsGet("cw-dice", "app"), open: null };
+const diceLabel = dice => dice.filter(d => d.n > 0).map(d => `${d.n}d${d.sides}`).join(" + ");
+const autoRoll = spec => spec.dice.flatMap(d => Array.from({ length: d.n }, () => R.rollDie(d.sides)));
+function askRoll(spec) {
+  if (Dice.mode !== "own" || !Dice.open || !spec.dice.some(d => d.n > 0)) return Promise.resolve(autoRoll(spec));
+  return new Promise(res => Dice.open({ spec, res }));
+}
+function DicePicker() {
+  const [mode, setMode] = useState(Dice.mode);
+  return html`<label class="skinpick" title="Roll in the app, or roll at your table (Tabletop Simulator) and type the result"><span class="lbl">Dice</span>
+    <select value=${mode} onChange=${e => { Dice.mode = e.target.value; lsSet("cw-dice", Dice.mode); setMode(Dice.mode); }}>
+      <option value="app">App rolls</option><option value="own">My own rolls</option></select></label>`;
+}
+// The box that asks for a roll. Mounted once in App; askRoll() opens it.
+function DiceAsk() {
+  const [ask, setAsk] = useState(null), [vals, setVals] = useState([]), [err, setErr] = useState("");
+  const first = useRef(null);
+  useEffect(() => { Dice.open = a => { setAsk(a); setVals([]); setErr(""); }; return () => { Dice.open = null; }; }, []);
+  useEffect(() => { if (ask && first.current) first.current.focus(); }, [ask]);
+  if (!ask) return null;
+  const { spec } = ask, each = !!spec.each;
+  const dice = spec.dice.filter(d => d.n > 0);
+  const slots = each ? dice.flatMap(d => Array.from({ length: d.n }, () => ({ lo: 1, hi: d.sides, ph: `d${d.sides}` })))
+    : [{ lo: dice.reduce((s, d) => s + d.n, 0), hi: dice.reduce((s, d) => s + d.n * d.sides, 0), ph: dice.length === 1 && dice[0].n === 1 ? `d${dice[0].sides}` : "total" }];
+  const single = !each && dice.length === 1 && dice[0].n === 1;
+  const done = r => { setAsk(null); ask.res(r); };
+  const submit = e => {
+    e.preventDefault();
+    const nums = slots.map((s, i) => Number(vals[i]));
+    const bad = slots.findIndex((s, i) => !Number.isInteger(nums[i]) || nums[i] < s.lo || nums[i] > s.hi);
+    if (bad >= 0) { setErr(`Type a whole number from ${slots[bad].lo} to ${slots[bad].hi}.`); return; }
+    done(nums);
+  };
+  const cancel = () => { if (spec.cancel) done(null); };
+  return html`<div class="gx-veil dice-veil" onClick=${e => { if (e.target === e.currentTarget) cancel(); }} onKeyDown=${e => { if (e.key === "Escape") cancel(); }}>
+    <form class="gx-choose dice-ask" role="dialog" aria-modal="true" aria-label=${spec.title} onSubmit=${submit} novalidate>
+      <h2 class="ornate">${spec.title}</h2>
+      <p>Roll <b>${diceLabel(dice)}</b> at your table and type ${each ? (slots.length > 1 ? "each die" : "the die") : single ? "the result" : "the total"}.</p>
+      ${spec.note && html`<p class="muted">${spec.note}</p>`}
+      <div class="dice-in">${slots.map((s, i) => html`<input class="inp" type="number" inputmode="numeric" min=${s.lo} max=${s.hi} placeholder=${s.ph}
+        aria-label=${each ? `Die ${i + 1} (${s.ph})` : `Result (${s.lo} to ${s.hi})`} ref=${i === 0 ? first : null} value=${vals[i] == null ? "" : vals[i]}
+        onInput=${e => { const v = vals.slice(); v[i] = e.target.value; setVals(v); setErr(""); }} />`)}</div>
+      ${err && html`<p class="flag bad" role="alert">${err}</p>`}
+      <div class="row dice-btns"><button class="btn primary" type="submit">Use this roll</button>
+        <button class="btn" type="button" onClick=${() => { const r = autoRoll(spec); done(each ? r : [r.reduce((a, b) => a + b, 0)]); }}>Let the app roll</button>
+        ${spec.cancel && html`<button class="btn" type="button" onClick=${cancel}>Cancel</button>`}</div>
+    </form></div>`;
+}
+
 /* ================= app ================= */
 function App() {
   const [, force] = useState(0);
@@ -3445,7 +3509,7 @@ function App() {
       ${gm && html`<div class="seg viewseg" role="group" aria-label="View">
         <button aria-pressed=${view === "chars"} onClick=${() => setView("chars")}>Characters</button>
         <button aria-pressed=${view === "gm"} onClick=${() => setView("gm")}>GM table</button></div>`}
-      <${SkinPicker} />
+      <${SkinPicker} /><${DicePicker} />
       <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button><button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
     </header>
@@ -3467,7 +3531,7 @@ function App() {
           <p class="muted">Walk through creation step by step, or start from a blank sheet.</p></div>`}`}
     ${making === "choose" && html`<${NewChoice} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")} onBlank=${() => { setMaking(null); create(false); }} />`}
     ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
-    <${Toaster} /><${HoverCard} />
+    <${Toaster} /><${HoverCard} /><${DiceAsk} />
   </div>`;
 }
 
@@ -3963,8 +4027,10 @@ function VitalsTab({ c, d, update }) {
           <datalist id="cw-conds">${["Stunned", "Entangled", "Frightened", "Blinded", "Prone", "Poisoned", "Charmed", "Paralyzed", "Deafened", "Unconscious", "On Death's Door"].map(o => html`<option value=${o}></option>`)}</datalist>
           <button class="btn small" type="submit">Add</button></form></div>
       <div class="frame"><${Sigils} seed="rest" n=${1} side="l" /><${Head} title="Rest" topic="rest" />
-        <div class="row"><button class="btn" onClick=${() => { markRest(); update(x => addLog(x, R.shortRest(x))); }}>Short rest</button>
-          ${confirmLong ? html`<span class="confirm" style="padding:6px 10px">Roll ${d.cleanse} and apply? <button class="btn small primary" onClick=${() => { markRest(); update(x => { const m = R.longRest(x); addLog(x, m); toast(m); }); setConfirmLong(false); }}>Long rest</button><button class="btn small" onClick=${() => setConfirmLong(false)}>Cancel</button></span>`
+        <div class="row"><button class="btn" onClick=${() => update(x => addLog(x, R.shortRest(x)))}>Short rest</button>
+          ${confirmLong ? html`<span class="confirm" style="padding:6px 10px">Roll ${d.cleanse} and apply? <button class="btn small primary" onClick=${() => { setConfirmLong(false);
+            askRoll({ title: "Long rest", dice: [{ n: 1, sides: 6 }, { n: d.cleanseDice.d4, sides: 4 }], note: "The cleansing dice: Toxicity goes down by the total.", cancel: true })
+              .then(r => { if (r) update(x => { const m = R.longRest(x, r.reduce((a, b) => a + b, 0)); addLog(x, m); toast(m); }); }); }}>Long rest</button><button class="btn small" onClick=${() => setConfirmLong(false)}>Cancel</button></span>`
             : html`<button class="btn primary" onClick=${() => setConfirmLong(true)}>Long rest</button>`}</div>
         <p class="muted">Long rest: +${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${num(c.skills.Conditioning) >= 7 ? 4 : 2} Stamina, recharge every ability. Short rest: recover ${num(c.skills.Conditioning) >= 6 ? 2 : 1} Stamina, recharge short-rest abilities.</p>
         <div class="log">${(c.log || []).slice(0, 12).map(l => html`<div><time>${new Date(l.t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>${l.m}</div>`)}</div></div>
@@ -4290,12 +4356,12 @@ function TableTab({ c, update, onDelete }) {
 }
 /* ================= the Blackwall (Cyberpunk theme only) =================
    A living firewall of red and violet data, drawn with a WebGL fragment shader on a canvas behind the page.
-   It only exists while the Cyberpunk theme is on. The pieces:
-   - a curtain of vertical data streaks in three depths (a far, faintly pixelated violet layer behind red and magenta
-     ones), each swaying and flickering at its own pace;
-   - an upper edge that heaves in slow swells;
-   - soft waves that ripple out from three points wandering slowly along the whole wall, bending the streaks;
-   - now and then, for a fraction of a second, a few thin bands tear sideways, some briefly blocky.
+   It only exists while the Cyberpunk theme is on. Modelled on stills of the Blackwall:
+   - straight, solid bars like jail bars, crowding together toward a magenta haze on the right, as if seen in perspective;
+   - a colour wave rolling across them, crimson to violet and back, with a dim glow between the bars;
+   - a near layer of thicker bars rising to uneven, shifting heights, like an equaliser or a spiked wall, each tipped with light;
+   - soft plasma on the right edge, streaked outward and slowly reshaping;
+   - a dark, jagged fringe along the bottom, the odd flickering scan row, and rare, brief tearing.
    It is cheap by design: drawn at half resolution, capped at 30 frames a second, paused when the tab is hidden,
    and frozen into a single still frame for anyone who asks their device for reduced motion. Without WebGL, the
    theme's CSS stand-in (in app.css) is used instead. */
@@ -4307,55 +4373,66 @@ float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 float noise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
 float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 3; i++) { v += a * noise(p); p = p * 2.07 + 13.1; a *= 0.5; } return v; }
-// One layer of the curtain at depth z (0 = near, 1 = far). Far layers are denser, slower and dimmer.
-float curtain(vec2 uv, float z, float rip) {
-  float sc = mix(1.0, 2.4, z), sp = mix(1.0, 0.4, z);
-  float warp = fbm(vec2(uv.x * 3.0 * sc, uv.y * 2.0 - t * 0.06 * sp + z * 7.0)) - 0.5;
-  float x = uv.x + warp * 0.04 * (1.0 - 0.5 * z) + rip * 0.012 * (1.0 - z);
-  float s1 = pow(abs(sin(x * 240.0 * sc + z * 5.0)), 22.0) * (0.45 + 0.55 * noise(vec2(x * 50.0 * sc, t * 0.7 * sp + z * 3.0)));
-  float s2 = pow(abs(sin(x * 90.0 * sc + 1.3 + z * 2.0)), 34.0) * noise(vec2(x * 20.0 * sc + 5.0, t * 0.35 * sp + uv.y * 1.5));
-  float s = s1 * 0.6 + s2 * 1.1;
-  return s * (0.55 + 0.45 * noise(vec2(x * 80.0 * sc, uv.y * 14.0 + t * 1.2 * sp)));   // data packets running down
-}
+// a straight vertical bar centred in each cell; w is the half-width as a share of the cell
+float barShape(float f, float w) { return 1.0 - smoothstep(w, w + 0.09, abs(f - 0.5)); }
 void main() {
   vec2 uv = gl_FragCoord.xy / res;
   float asp = res.x / res.y;
-  // tearing: now and then, for a fraction of a second, a few thin horizontal bands slip sideways
-  float ev = floor(t * 4.0);                                 // quarter-second slots
-  float on = step(0.95, hash(vec2(ev, 3.1)));               // about one slot in twenty
+  // rare tearing: for a quarter of a second, a few thin bands slip sideways
+  float ev = floor(t * 4.0);
+  float on = step(0.95, hash(vec2(ev, 3.1)));
   float band = floor(gl_FragCoord.y / (4.0 + 9.0 * hash(vec2(ev, 1.7))));
   float torn = on * step(0.72, hash(vec2(band, ev)));
-  vec2 p = uv; p.x += torn * (hash(vec2(band + 3.0, ev)) - 0.5) * 0.035;
-  // a little pixelation inside some torn bands
-  float blocky = torn * step(0.75, hash(vec2(band + 9.0, ev)));
-  vec2 cell = vec2(3.0) / res;
-  p = mix(p, (floor(p / cell) + 0.5) * cell, blocky);
-  // ripples from three sources that wander slowly along the whole wall; soft, no bright spot
-  float rip = 0.0;
-  for (int i = 0; i < 3; i++) {
-    float fi = float(i);
-    vec2 src = vec2(0.5 + 0.45 * sin(t * (0.021 + 0.009 * fi) + fi * 2.1), 0.10 + 0.06 * sin(t * 0.047 + fi * 1.3));
-    float r = length((p - src) * vec2(asp, 1.0));
-    rip += sin(r * 24.0 - t * (1.1 + 0.25 * fi) - fi * 2.0) * exp(-r * 2.6);
-  }
-  rip /= 3.0;
-  // the heaving top edge
-  float edge = 0.30 + 0.08 * fbm(vec2(p.x * 2.0 + t * 0.035, t * 0.05)) + 0.03 * sin(p.x * 7.0 - t * 0.45) + rip * 0.03;
-  float body = smoothstep(edge + 0.18, edge - 0.08, p.y);
-  // depth: a far, faintly pixelated violet layer, a middle layer, and a near layer that the ripples light up
-  vec2 pf = (floor(p * res / 3.0) + 0.5) * 3.0 / res;
-  float far = curtain(pf, 0.9, rip), mid = curtain(p + vec2(0.13, 0.0), 0.45, rip), near = curtain(p + vec2(0.37, 0.0), 0.0, rip);
-  near *= 0.85 + 0.3 * rip;
-  vec3 cFar = vec3(0.42, 0.22, 0.92), cMid = mix(vec3(0.85, 0.08, 0.3), vec3(0.9, 0.2, 0.65), p.x), cNear = mix(vec3(1.0, 0.1, 0.24), vec3(1.0, 0.28, 0.66), smoothstep(0.2, 1.0, p.x));
-  float wF = far * 0.32, wM = mid * 0.55, wN = near * 0.85;
-  float a = wF + wM + wN;
-  vec3 col = (cFar * wF + cMid * wM + cNear * wN) / max(a, 0.001);
-  // the wall's own dim glow, swelling where waves pass
-  a += 0.07 * (0.7 + 0.3 * rip) * smoothstep(0.0, 0.5, 1.0 - p.y);
-  col = mix(col, vec3(0.3, 0.85, 1.0), torn * 0.35);      // torn bands flash faintly cyan
-  float breathe = 0.85 + 0.15 * sin(t * 0.5) * sin(t * 0.19 + 1.0);
-  a = clamp(a * body * breathe, 0.0, 1.0) * 0.6;         // kept in the background
-  gl_FragColor = vec4(col * a, a);
+  vec2 p = uv; p.x += torn * (hash(vec2(band + 3.0, ev)) - 0.5) * 0.014;
+  float x = p.x, y = p.y;
+  // the wall's upper edge, heaving slowly
+  float edge = 0.38 + 0.06 * fbm(vec2(x * 2.0 + t * 0.03, t * 0.05));
+  float body = smoothstep(edge + 0.2, edge - 0.12, y);
+  // 1. the bars: straight and solid like jail bars, crowding together toward the haze on the right (perspective)
+  float ph = 34.0 * x + 120.0 * x * x;
+  float idx = floor(ph), fr = fract(ph);
+  float bar = barShape(fr, 0.16);
+  // the colour wave: crimson and violet roll across the bars from left to right
+  float cw = 0.5 + 0.5 * sin(idx * 0.42 - t * 1.25 + 2.2 * noise(vec2(idx * 0.08, t * 0.15)));
+  vec3 barCol = mix(vec3(0.95, 0.07, 0.22), vec3(0.42, 0.2, 0.95), cw);
+  float bb = (0.4 + 0.45 * hash(vec2(idx, 7.0))) * (0.8 + 0.2 * noise(vec2(idx, y * 5.0 - t * 0.3)));
+  // the glow between the bars, tinted by the same wave
+  vec3 back = mix(vec3(0.32, 0.05, 0.16), vec3(0.16, 0.08, 0.42), cw);
+  // a magenta haze where the bars crowd, breathing
+  float haze = exp(-pow((x - 0.66) / 0.1, 2.0)) * (0.75 + 0.25 * sin(t * 0.6));
+  // scan rows: now and then a thin horizontal row of the bars flickers brighter
+  float row = floor(y * 70.0);
+  float scan = step(0.975, hash(vec2(row, floor(t * 5.0))));
+  // 2. the near layer: thicker bars rising to uneven heights, like an equaliser or a spiked wall, each tipped with light
+  float ph2 = 24.0 * x + 46.0 * x * x;
+  float i2 = floor(ph2), f2 = fract(ph2);
+  float h = 0.08 + 0.17 * pow(noise(vec2(i2 * 0.41, t * 0.45)), 1.6) + 0.06 * noise(vec2(i2 * 2.3, t * 1.1));
+  h *= 0.45 + 0.55 * smoothstep(0.95, 0.35, x);
+  float nshape = barShape(f2, 0.13 * (1.0 - 0.75 * clamp(y / h, 0.0, 1.0)));      // each spike tapers toward its tip
+  float nb = nshape * smoothstep(h + 0.004, h - 0.01, y) * (0.35 + 0.65 * smoothstep(0.0, h, y));
+  float cap = barShape(f2, 0.06) * exp(-abs(y - h) * 90.0);
+  float cw2 = 0.5 + 0.5 * sin(i2 * 0.6 - t * 1.25);
+  vec3 nearCol = mix(vec3(1.0, 0.14, 0.3), vec3(1.0, 0.38, 0.75), cw2);
+  // 3. the plasma on the right: soft, streaked outward, slowly reshaping
+  vec2 q = (p - vec2(1.0, 0.16)) * vec2(asp * 0.55, 1.0);
+  float pr = length(q);
+  float streaks = fbm(vec2(x * 3.0 - t * 0.22, y * 22.0 + 4.0 * fbm(vec2(y * 3.0, t * 0.15))));
+  float plasma = exp(-pr * 2.8) * (0.35 + 0.65 * streaks) * (0.85 + 0.15 * sin(t * 0.4));
+  // compose (premultiplied light)
+  vec3 col = back * 0.35 * body; float a = 0.22 * body;
+  float B = bar * bb * body * (1.0 - 0.35 * haze);
+  col += barCol * B; a += B * 0.85;
+  col += barCol * scan * bar * body * 0.35; a += scan * bar * body * 0.25;
+  col += vec3(0.85, 0.25, 0.62) * haze * body * 0.55; a += haze * body * 0.35;
+  col += nearCol * nb * 0.7 + vec3(1.0, 0.75, 0.9) * cap * 0.6; a += nb * 0.6 + cap * 0.5;
+  col += vec3(1.0, 0.32, 0.58) * plasma * 0.85; a += plasma * 0.6;
+    // a dark, jagged fringe along the very bottom
+  float jag = 0.015 + 0.03 * noise(vec2(x * 90.0, t * 0.3)) * noise(vec2(x * 13.0, 1.0));
+  float dark = smoothstep(jag + 0.004, jag - 0.004, y);
+  col *= 1.0 - dark; a = mix(a, 0.85, dark);
+  float k = 0.48;                                          // kept in the background
+  a = clamp(a, 0.0, 1.0) * k; col = min(col * k, vec3(a));
+  gl_FragColor = vec4(col, a);
 }`;
   const VERT = "attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }";
   let cv = null, gl = null, prog = null, raf = 0, last = 0, t0 = 0, uRes, uT;
@@ -4727,9 +4804,12 @@ function Powdertinkering({ c, update }) {
     }
     const have = num(cr.supplies[s.mat]) - num(f.spent[s.mat]);
     if (have < R.PT_GRAMS) { patch({ idx, phase: "short", roll: null }); return; }
-    patch(g => ({ idx, phase: "rolling", roll: null, spent: Object.assign({}, g.spent, { [s.mat]: num(g.spent[s.mat]) + R.PT_GRAMS }) }));
+    patch({ idx, phase: "asking", roll: null });
+    askRoll({ title: s.label, dice: [{ n: 1, sides: 100 }], note: `Powdertinkering: d100 − ${f.mod}, under ${s.dc} and it holds.` }).then(([r]) => {
+    if (!fRef.current) return;
+    patch(g => ({ phase: "rolling", spent: Object.assign({}, g.spent, { [s.mat]: num(g.spent[s.mat]) + R.PT_GRAMS }) }));
     later(() => {
-      const r = R.rollDie(100), total = r - f.mod, ok = total < s.dc;
+      const total = r - f.mod, ok = total < s.dc;
       patch(g => {
         const det = g.det + (ok ? 0 : 1);
         const roll = { key: s.key, label: s.label, r, total, dc: s.dc, ok };
@@ -4739,7 +4819,8 @@ function Powdertinkering({ c, update }) {
       const g = fRef.current;
       if (ok) later(() => next(idx), 750);
       else if (g.phase === "scrapping") later(() => finish(true), 1100);
-    }, 1050);
+    }, Dice.mode === "own" ? 600 : 1050);
+    });
   };
   const next = idx => { const f = fRef.current; if (!f) return; if (idx + 1 >= f.steps.length) finish(false); else { patch({ idx: idx + 1, phase: "next" }); later(() => attempt(idx + 1), 350); } };
   const skip = () => { const f = fRef.current; patch(g => ({ res: Object.assign({}, g.res, { [f.steps[f.idx].key]: g.res[f.steps[f.idx].key] === "fail" ? "fail" : "skip" }) })); next(f.idx); };
@@ -4881,7 +4962,7 @@ function ForgeReadout({ f, st, matName, supplies, onRetry, onSkip, onKeep, onIgn
     <div class="ptstep"><span class="lbl">Step ${f.idx + 1} of ${f.steps.length}</span><b>${f.phase === "intro" ? "Firing up the bench…" : s.label}</b>${pips}</div>
     ${f.phase !== "intro" && f.phase !== "short" && html`<div class=${"ptdice" + (f.phase === "rolling" ? " rolling" : r ? (r.ok ? " ok" : " fail") : "")}>
       <span class="d100">${shown}</span>
-      <span class="ptmath">${f.phase === "rolling" ? html`d100 − ${f.mod} · under ${s.dc}` : r && html`${r.r} − ${f.mod} = <b>${r.total}</b> ${r.ok ? "<" : "≥"} ${s.dc} · ${r.ok ? "it holds" : "a Detriment"}`}</span></div>`}
+      <span class="ptmath">${f.phase === "rolling" || f.phase === "asking" ? html`d100 − ${f.mod} · under ${s.dc}` : r && html`${r.r} − ${f.mod} = <b>${r.total}</b> ${r.ok ? "<" : "≥"} ${s.dc} · ${r.ok ? "it holds" : "a Detriment"}`}</span></div>`}
     ${f.phase === "short" && html`<p class="flag bad">Out of ${matName(s.mat)}: ${Math.max(0, num(supplies[s.mat]) - num(f.spent[s.mat]))} g left, 200 g needed.</p>`}
     ${(f.phase === "choice" || f.phase === "short") && html`<div class="row ptchoices">
       ${f.phase === "choice" && html`<button class="btn primary" onClick=${onRetry}>Try again · 200 g</button>`}
@@ -5286,22 +5367,30 @@ function ArmorUpkeep({ c, update }) {
   const addLedger = (x, e) => { x.craft.armor.ledger = [Object.assign({ id: rid(), t: Date.now(), note: "" }, e), ...x.craft.armor.ledger].slice(0, 20); };
 
   /* ---------- repair: one check, then one hammer strike per Repair Die ---------- */
-  const startRepair = () => {
+  const startRepair = async () => {
     if (!suit || rp.block) return;
-    const plan = rp, id = suit.id; setSel(id);
+    const plan = rp, id = suit.id;
+    const first = await askRoll({ title: "Armor repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
+      note: `d100 − ${st.mod}. Repair Count = 10 − check ÷ 10: that many ${plan.die} restore Soak.` });
+    if (!first) return;
+    setSel(id);
     setRun({ kind: "repair", phase: "rolling", id, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod });
     later(() => {
-      const r = R.rollDie(100), check = r - st.mod, count = R.repairCount(check);
-      const dice = Array.from({ length: count }, () => R.rollDie(plan.sides));
-      patch({ phase: "counted", r, check, count, dice });
-      const strike = i => {
-        if (i >= count) return later(() => finishRepair(), 450);
-        patch({ phase: "strike", strike: i });
-        later(() => patch(g => ({ shown: i + 1, gained: Math.min(plan.missing, g.gained + dice[i]) })), 230);
-        later(() => strike(i + 1), 560);
-      };
-      later(() => strike(0), 1100);
-    }, 1100);
+      const r = first[0], check = r - st.mod, count = R.repairCount(check);
+      patch({ phase: "counted", r, check, count, dice: [] });
+      // Rolled at the table, the Repair Dice come back as one total: one strike for the lot.
+      askRoll({ title: `Repair Dice: ${count}${plan.die}`, dice: [{ n: count, sides: plan.sides }], note: "Soak goes back up by the total." }).then(dice => {
+        if (!runRef.current) return;
+        patch({ dice });
+        const strike = i => {
+          if (i >= dice.length) return later(() => finishRepair(), 450);
+          patch({ phase: "strike", strike: i });
+          later(() => patch(g => ({ shown: i + 1, gained: Math.min(plan.missing, g.gained + dice[i]) })), 230);
+          later(() => strike(i + 1), 560);
+        };
+        later(() => strike(0), 1100);
+      });
+    }, Dice.mode === "own" ? 500 : 1100);
   };
   const finishRepair = () => {
     const f = runRef.current; if (!f) return;
@@ -5311,21 +5400,27 @@ function ArmorUpkeep({ c, update }) {
       a.soak = num(a.soak) + gained;
       x.craft.supplies[f.plan.mat] = Math.max(0, num(x.craft.supplies[f.plan.mat]) - f.plan.cost);
       const txt = `${a.name || T[a.type].label + " armor"}: Soak ${f.plan.soak} → ${f.plan.soak + gained}`;
-      addLedger(x, { kind: "repair", name: f.plan.broken ? `Rebuilt ${txt}` : `Repaired ${txt}`, rolls: [`check ${f.r}−${f.mod}=${f.check} → ${f.count} × ${f.plan.die}${f.count ? ": " + f.dice.join(" + ") + " = " + total : ""}`] });
+      addLedger(x, { kind: "repair", name: f.plan.broken ? `Rebuilt ${txt}` : `Repaired ${txt}`, rolls: [`check ${f.r}−${f.mod}=${f.check} → ${f.count} × ${f.plan.die}${f.count ? ": " + (f.dice.length > 1 ? f.dice.join(" + ") + " = " : "") + total : ""}`] });
       addLog(x, `Armor repair: ${txt} (${f.plan.cost} g ${f.plan.mat} materials, ${f.count}${f.plan.die})`);
     });
     patch({ done: true, phase: "done", total, gainedFinal: gained });
   };
 
   /* ---------- craft: up to two rolls; a failure leaves a flaw, a second loses the suit ---------- */
-  const startCraft = () => {
+  const startCraft = async () => {
     if (cp.block) return;
     const plan = cp, name = (rc.name || "").trim() || `${plan.t.label} armor`;
+    const ask = n => askRoll({ title: n ? "Armor craft: second try" : "Armor craft check", dice: [{ n: 1, sides: 100 }], cancel: !n,
+      note: `d100 − ${st.mod}, under ${plan.dc}.${n ? " A second failure loses the suit." : " A failure leaves a flaw and gives one more try."}` });
+    const first = await ask(0);
+    if (!first) return;
     setRun({ kind: "craft", phase: "heat", plan, name, rolls: [], flaws: 0, mod: st.mod });
-    const roll = n => {
+    const roll = async n => {
+      const r = n ? (await ask(1))[0] : first[0];
+      if (!runRef.current) return;
       patch({ phase: "rolling", roll: null });
       later(() => {
-        const r = R.rollDie(100), ok = r - st.mod < plan.dc;
+        const ok = r - st.mod < plan.dc;
         patch(g => ({ roll: { r, total: r - st.mod, ok }, rolls: [...g.rolls, { r, total: r - st.mod, ok }] }));
         if (ok) later(() => finishCraft(true), 500);
         else if (n === 0) later(() => { patch(g => ({ phase: "flaw", flaws: g.flaws + 1 })); later(() => roll(1), 1500); }, 600);
@@ -5411,7 +5506,7 @@ function AmReadout({ run, onClose }) {
     const p = run.plan;
     if (run.done) return html`<div class=${"ptread end " + (run.gainedFinal ? "done" : "nothing")} role="status">
       <p class="ptbig">${run.gainedFinal ? `+${run.gainedFinal} Soak` : "No soak recovered"}</p>
-      <p>${run.count ? `${run.count} × ${p.die}: ${run.dice.join(" + ")} = ${run.total}${run.total > run.gainedFinal ? ` (the suit was full at ${p.max})` : ""}` : "The check was too high for even one Repair Die."}</p>
+      <p>${run.count ? `${run.count} × ${p.die}: ${run.dice.length > 1 ? run.dice.join(" + ") + " = " : ""}${run.total}${run.total > run.gainedFinal ? ` (the suit was full at ${p.max})` : ""}` : "The check was too high for even one Repair Die."}</p>
       <p class="muted">${p.cost} g of ${p.mat} materials used · an hour's work.</p>
       <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
     return html`<div class="ptread" role="status" aria-live="polite">
@@ -5653,15 +5748,18 @@ function StepRoll({ g, up, next, back }) {
   const cur = g.sets.length ? g.sets[g.sets.length - 1] : [];
   const full = cur.length === 7;
   const canSecond = g.sets.length === 1 && full && num(g.karma) >= 10;
-  const rollOne = () => new Promise(res => {
+  // Resolves true once a roll is in, false if the player cancelled typing their own.
+  const rollOne = async n => {
+    const given = await askRoll({ title: `Roll ${n == null ? cur.length + 1 : n} of 7`, dice: [{ n: 3, sides: 8 }], each: true, cancel: true,
+      note: "Type all three dice. The lowest is set aside and the other two are added." });
+    if (!given) return false;
     setRolling(true);
-    setTimeout(() => {
-      const r = R.rollAttributeDetail();
-      up(x => { const sets = x.sets.length ? x.sets.map(s => s.slice()) : [[]]; sets[sets.length - 1].push(r); return { sets }; });
-      setLast(r); setRolling(false); res();
-    }, 950);
-  });
-  const rollRest = async () => { const left = 7 - cur.length; for (let i = 0; i < left; i++) { await rollOne(); await new Promise(r => setTimeout(r, 450)); } };
+    await new Promise(res => setTimeout(res, 950));
+    const r = R.rollAttributeDetail(given);
+    up(x => { const sets = x.sets.length ? x.sets.map(s => s.slice()) : [[]]; sets[sets.length - 1].push(r); return { sets }; });
+    setLast(r); setRolling(false); return true;
+  };
+  const rollRest = async () => { const done = cur.length; for (let i = done; i < 7; i++) { if (!(await rollOne(i + 1))) return; await new Promise(r => setTimeout(r, 450)); } };
   const second = () => { up(x => ({ sets: [...x.sets, []] })); setLast(null); };
   const setRow = (s, idx) => html`<div class="gx-set"><span class="lbl">${g.sets.length > 1 ? (idx ? "Second set" : "First set") : "Your rolls"}</span>
     <div class="gx-slots">${ROMAN.map((n, i) => html`<div class=${"gx-slot " + (s[i] ? "got " + toneOf(s[i].total) : "") + (i === s.length && !rolling && s === cur && !full ? " next" : "")}>
@@ -5673,7 +5771,7 @@ function StepRoll({ g, up, next, back }) {
     <p class="gx-lede">Seven rolls, one for each attribute. Each is three eight-sided dice: the lowest is set aside and the other two are added, never less than 6. Ten is the measure of common folk; you'll decide which roll goes where.</p>
     <${DiceTray} roll=${rolling ? null : last} rolling=${rolling} />
     <div class="gx-rollbtns">
-      ${!full && html`<button class="btn primary big" disabled=${rolling} onClick=${rollOne}>${rolling ? "Rolling…" : `Roll ${ROMAN[cur.length] || "I"}`}</button>
+      ${!full && html`<button class="btn primary big" disabled=${rolling} onClick=${() => rollOne()}>${rolling ? "Rolling…" : `Roll ${ROMAN[cur.length] || "I"}`}</button>
         ${cur.length > 0 && html`<button class="btn" disabled=${rolling} onClick=${rollRest}>Roll the rest</button>`}`}
       ${canSecond && html`<button class="btn" onClick=${second}>Roll a second set (−10 Karma)</button>`}
     </div>

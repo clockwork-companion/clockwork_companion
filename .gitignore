@@ -1,0 +1,3 @@
+# Built by src/build.py on every publish; its version line changes with every build, so committing it
+# would conflict in almost every pull request. The publish workflow writes a fresh one.
+/sw.js

@@ -163,15 +163,18 @@ function StepRoll({ g, up, next, back }) {
   const cur = g.sets.length ? g.sets[g.sets.length - 1] : [];
   const full = cur.length === 7;
   const canSecond = g.sets.length === 1 && full && num(g.karma) >= 10;
-  const rollOne = () => new Promise(res => {
+  // Resolves true once a roll is in, false if the player cancelled typing their own.
+  const rollOne = async n => {
+    const given = await askRoll({ title: `Roll ${n == null ? cur.length + 1 : n} of 7`, dice: [{ n: 3, sides: 8 }], each: true, cancel: true,
+      note: "Type all three dice. The lowest is set aside and the other two are added." });
+    if (!given) return false;
     setRolling(true);
-    setTimeout(() => {
-      const r = R.rollAttributeDetail();
-      up(x => { const sets = x.sets.length ? x.sets.map(s => s.slice()) : [[]]; sets[sets.length - 1].push(r); return { sets }; });
-      setLast(r); setRolling(false); res();
-    }, 950);
-  });
-  const rollRest = async () => { const left = 7 - cur.length; for (let i = 0; i < left; i++) { await rollOne(); await new Promise(r => setTimeout(r, 450)); } };
+    await new Promise(res => setTimeout(res, 950));
+    const r = R.rollAttributeDetail(given);
+    up(x => { const sets = x.sets.length ? x.sets.map(s => s.slice()) : [[]]; sets[sets.length - 1].push(r); return { sets }; });
+    setLast(r); setRolling(false); return true;
+  };
+  const rollRest = async () => { const done = cur.length; for (let i = done; i < 7; i++) { if (!(await rollOne(i + 1))) return; await new Promise(r => setTimeout(r, 450)); } };
   const second = () => { up(x => ({ sets: [...x.sets, []] })); setLast(null); };
   const setRow = (s, idx) => html`<div class="gx-set"><span class="lbl">${g.sets.length > 1 ? (idx ? "Second set" : "First set") : "Your rolls"}</span>
     <div class="gx-slots">${ROMAN.map((n, i) => html`<div class=${"gx-slot " + (s[i] ? "got " + toneOf(s[i].total) : "") + (i === s.length && !rolling && s === cur && !full ? " next" : "")}>
@@ -183,7 +186,7 @@ function StepRoll({ g, up, next, back }) {
     <p class="gx-lede">Seven rolls, one for each attribute. Each is three eight-sided dice: the lowest is set aside and the other two are added, never less than 6. Ten is the measure of common folk; you'll decide which roll goes where.</p>
     <${DiceTray} roll=${rolling ? null : last} rolling=${rolling} />
     <div class="gx-rollbtns">
-      ${!full && html`<button class="btn primary big" disabled=${rolling} onClick=${rollOne}>${rolling ? "Rolling…" : `Roll ${ROMAN[cur.length] || "I"}`}</button>
+      ${!full && html`<button class="btn primary big" disabled=${rolling} onClick=${() => rollOne()}>${rolling ? "Rolling…" : `Roll ${ROMAN[cur.length] || "I"}`}</button>
         ${cur.length > 0 && html`<button class="btn" disabled=${rolling} onClick=${rollRest}>Roll the rest</button>`}`}
       ${canSecond && html`<button class="btn" onClick=${second}>Roll a second set (−10 Karma)</button>`}
     </div>
