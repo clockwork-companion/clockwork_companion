@@ -205,6 +205,15 @@ button { cursor: pointer; }
 .tabs .tab-table { --tc: var(--life); --ts: var(--life-soft); }
 .tabs button:hover { background: color-mix(in srgb, var(--ts) 75%, var(--sunk)); color: var(--ink); }
 .tabs button[aria-selected="true"] { background: var(--rule); border-color: var(--rule); color: var(--paper); box-shadow: inset 0 4px 0 var(--tc); }
+/* Tab swaps: the new page slides in from the side of the tab you picked (no slide on first load). */
+.tabswap[data-dir="r"] { animation: tabInR .24s cubic-bezier(.2, .7, .3, 1); }
+.tabswap[data-dir="l"] { animation: tabInL .24s cubic-bezier(.2, .7, .3, 1); }
+@keyframes tabInR { from { opacity: 0; transform: translateX(28px); } }
+@keyframes tabInL { from { opacity: 0; transform: translateX(-28px); } }
+/* Retro terminal: the screen flickers on instead of sliding. */
+:root[data-skin="retro"] .tabswap[data-dir] { animation: tabFlicker .28s steps(1, end); }
+:root[data-skin="retro"] .tabswap[data-dir=""] { animation: none; }
+@keyframes tabFlicker { 0% { opacity: 0; } 25% { opacity: .7; } 40% { opacity: .15; } 60% { opacity: 1; } 75% { opacity: .6; } }
 .tabicon { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: var(--tc); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
 .tabpane { padding-top: 26px; display: grid; gap: 46px; grid-template-columns: minmax(0, 1fr); }
 .tabpane > *, .frame, .two > *, .meters > * { min-width: 0; }
@@ -3230,18 +3239,27 @@ function Character({ c, update, tab, setTab, onDelete }) {
   const openPanel = (kind, name) => setPanel(p => (p && p.kind === kind && p.name === name ? null : { kind, name }));
   openRuleFn = name => openPanel("rule", name);
   const skillTabs = tab === "sheet" || tab === "talents";
+  // Which way the page slides when the tab changes: in from the right when moving to a tab further along, from the
+  // left when going back. Worked out once per change (not on every redraw), so the slide never replays mid-edit.
+  const nav = useRef({ tab, dir: "" });
+  if (nav.current.tab !== tab) {
+    const order = tabs.map(t => t[0]);
+    nav.current = { tab, dir: order.indexOf(tab) > order.indexOf(nav.current.tab) ? "r" : "l" };
+  }
   return html`
     <${Header} c=${c} d=${d} update=${update} mode=${mode} setMode=${setMode} canFree=${canFree} />
     <div class="tabs" role="tablist">${tabs.map(([k, n]) => html`<button role="tab" class=${"tab-" + k} aria-selected=${tab === k} onClick=${() => setTab(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${TAB_ICONS[k]}</svg>${n}</button>`)}</div>
-    ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
     ${panel && panel.kind === "rule" && html`<${RulePanel} topic=${panel.name} onClose=${() => setPanel(null)} />`}
     ${panel && panel.kind !== "rule" && skillTabs && html`<${SkillPanel} c=${c} kind=${panel.kind} name=${panel.name} mode=${mode} update=${update} onClose=${() => setPanel(null)} />`}
-    ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
-    ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
-    ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
-    ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
-    ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}`;
+    <div class="tabswap" key=${tab} data-dir=${nav.current.dir}>
+      ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
+      ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
+      ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
+      ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
+      ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
+      ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}
+    </div>`;
 }
 
 // Small line icons that tell the tabs apart at a glance.
