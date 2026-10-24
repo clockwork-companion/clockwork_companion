@@ -129,11 +129,11 @@ const CW = (() => {
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
-               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] },
+               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
                brew: { bonus: 0, known: [], recipes: [], catalysts: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
                rune: { bonus: 0, effects: [], order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
                        second: null, hoax: false, pay: "hp", hours: 1 }, ledger: [] },
-               weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" } }, ledger: [] } },
+               weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" }, for: "" }, ledger: [] }, jobsDone: [] },
       talents: [], uses: {},
     };
   }
@@ -175,6 +175,7 @@ const CW = (() => {
     out.craft.rune = Object.assign({}, b.craft.rune, out.craft.rune);
     out.craft.rune.order = Object.assign({}, b.craft.rune.order, out.craft.rune.order);
     ["effects", "ledger"].forEach(k => { if (!Array.isArray(out.craft.rune[k])) out.craft.rune[k] = []; });
+    if (!Array.isArray(out.craft.jobsDone)) out.craft.jobsDone = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
     out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
@@ -594,7 +595,8 @@ const CW = (() => {
   // Everything a repair of suit a needs: cost, materials, dice, and why it can't happen yet (if so).
   function repairPlan(c, a) {
     const st = amState(c), t = ARMOR[a.type] || ARMOR.light, chk = armorCheck(c, a);
-    const max = chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
+    // A suit sent by another player carries its wearer's own maximum (their Armor Mastery bonus included).
+    const max = a.jobMax != null ? num(a.jobMax) : chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
     const cost = t.repairPerAV * Math.max(1, num(a.av)) * (broken ? 2 : 1);
     const sides = +String(t.repairDie).slice(1);
     const have = num(c.craft && c.craft.supplies && c.craft.supplies[a.type]);

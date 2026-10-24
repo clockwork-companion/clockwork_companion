@@ -1125,6 +1125,13 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .rnmun .rn-smoke circle { fill: #3a3631; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .rnmun.failed .rn-smoke circle, .rnmun.shatter .rn-smoke circle { animation: brsmoke 2.4s var(--d) ease-out infinite; }
 .rnalso { margin: 12px 0 0; font-size: 13px; }
+/* the workshop: jobs between players */
+.shopsend { margin-top: 18px; display: grid; gap: 6px; }
+.shopsend .lbl, .shoph { margin: 10px 0 2px; }
+.shopaway { gap: 8px; align-items: center; justify-content: space-between; }
+.shopaway > span { flex: 1 1 220px; font-size: 13px; color: var(--ink-2); }
+.ptopt.row-opt .shopback { margin-right: 8px; white-space: nowrap; }
+.wpbase { margin-top: 6px; }
 .rnlib { margin-top: 12px; display: grid; gap: 6px; }
 .rnlib .lbl { margin: 0; }
 .brform .ammode { margin: 0; }
@@ -2120,6 +2127,13 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
       return name === "characters" && me.role !== "gm" ? ref.where("players", "array-contains", me.uid) : ref;
     },
     doc: path => fs.doc(`${root}/${path}`),
+    // Workshop jobs: a GM sees them all; a player sees the ones they sent or that wait on their bench.
+    jobs: (cb, err) => {
+      const docs = s => s.docs.map(d => Object.assign({}, d.data(), { id: d.id })), ref = fs.collection(`${root}/jobs`);
+      if (me.role === "gm") return ref.onSnapshot(s => cb(docs(s)), err);
+      const part = { from: [], to: [] }, out = () => { const m = new Map(); [...part.from, ...part.to].forEach(j => m.set(j.id, j)); cb([...m.values()]); };
+      ["from", "to"].forEach(k => ref.where(`${k}.uids`, "array-contains", me.uid).onSnapshot(s => { part[k] = docs(s); out(); }, err));
+    },
   };
   const assets = {
     async upload(file, previousId) {
@@ -2544,11 +2558,11 @@ const CW = (() => {
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
-               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] },
+               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
                brew: { bonus: 0, known: [], recipes: [], catalysts: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
                rune: { bonus: 0, effects: [], order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
                        second: null, hoax: false, pay: "hp", hours: 1 }, ledger: [] },
-               weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" } }, ledger: [] } },
+               weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" }, for: "" }, ledger: [] }, jobsDone: [] },
       talents: [], uses: {},
     };
   }
@@ -2590,6 +2604,7 @@ const CW = (() => {
     out.craft.rune = Object.assign({}, b.craft.rune, out.craft.rune);
     out.craft.rune.order = Object.assign({}, b.craft.rune.order, out.craft.rune.order);
     ["effects", "ledger"].forEach(k => { if (!Array.isArray(out.craft.rune[k])) out.craft.rune[k] = []; });
+    if (!Array.isArray(out.craft.jobsDone)) out.craft.jobsDone = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
     out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
@@ -3009,7 +3024,8 @@ const CW = (() => {
   // Everything a repair of suit a needs: cost, materials, dice, and why it can't happen yet (if so).
   function repairPlan(c, a) {
     const st = amState(c), t = ARMOR[a.type] || ARMOR.light, chk = armorCheck(c, a);
-    const max = chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
+    // A suit sent by another player carries its wearer's own maximum (their Armor Mastery bonus included).
+    const max = a.jobMax != null ? num(a.jobMax) : chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
     const cost = t.repairPerAV * Math.max(1, num(a.av)) * (broken ? 2 : 1);
     const sides = +String(t.repairDie).slice(1);
     const have = num(c.craft && c.craft.supplies && c.craft.supplies[a.type]);
@@ -3470,23 +3486,25 @@ const RULES_INFO = {
     "Armor Maintenance 3 lets you mend a suit's Soak Pool. You need a blacksmithing kit; heavy and plate armor also need a forge.",
     { t: { cols: ["Type", "Materials per attempt", "Repair Die"], rows: [["Light", "50 g × AV", "d6"], ["Medium", "70 g × AV", "d8"], ["Heavy", "100 g × AV", "d10"], ["Plate", "150 g × AV", "d12"]] } },
     { h: "How a repair goes" }, { ul: ["Roll an Armor Maintenance check: d100 minus your modifier (3% × Armor Maintenance).", "Repair Count = 10 − check ÷ 10, rounded down. A check of 32 gives 6.", "Roll the Repair Die that many times. The total goes back into the Soak Pool.", "Each attempt takes an hour."] },
-    { note: "The app's readings: the Repair Count never goes above 10 dice (Utku). A broken suit (Soak 0) needs a skilled craftsman; the app counts Armor Maintenance 5 as skilled and charges double materials to rebuild it. This last one is a draft to confirm." } ] },
+    { h: "Working for other players" }, { ul: ["A player picks their item on the Repair bench and sends it to a smith at the table (Maintenance 3 or more). The item stays in their Gear.", "The smith sees only that item, under \"Jobs from other players\", and repairs it with their own roll and materials. They can also send it back.", "The result lands on the owner's item the next time the owner's app is open.", "On the Craft bench, \"Made for\" sends a finished piece straight to another player's Gear."] },
+    { note: "The app's readings: the Repair Count never goes above 10 dice (Utku). A suit repaired for someone else fills up to its wearer's own Soak maximum. A broken suit (Soak 0) needs a skilled craftsman; the app counts Armor Maintenance 5 as skilled and charges double materials to rebuild it. This last one is a draft to confirm." } ] },
   armorCraft: { kicker: "Crafting", title: "Crafting armor", body: [
     "Armor Maintenance 4 lets you make mundane suits; 8 adds Artisan properties. The 2020.1 book names armor crafting but doesn't give its steps yet, so the app follows the book's weapon crafting.",
     { h: "How a craft goes (our reading)" }, { ul: ["The GM gives the suit's type, Armor Value and Soak Pool.", "Materials: 5 × the suit's repair cost, of its type.", "Difficulty 70%. Roll d100 minus your modifier; under 70, the suit is made.", "A failure gives the suit a flaw (the GM decides it) and you roll again. A second failure loses the suit and every material.", "Crafting takes 8 hours. Heavy and plate need a forge."] },
     { h: "Extras (our reading)" }, { t: { cols: ["Extra", "Difficulty"], rows: [["Armor Value +1 (within the type's range)", "−10%"], ["Soak Pool +5", "−5%"]] } },
-    { note: "Changed from weapon crafting: the stat extras use armor's two numbers in place of the weapon table; the 'two random positive properties' step is left out because armor has no property list; a new suit's Soak Pool defaults to 10 × AV, from the book's chain-mail example. Artisan properties (level 8) aren't written in the book yet." } ] },
+    { note: "Changed from weapon crafting: the stat extras use armor's two numbers in place of the weapon table; the 'two random positive properties' step is left out because armor has no property list; a new suit's Soak Pool defaults to 10 × AV, from the book's chain-mail example. The base Armor Value and Soak Pool come from the GM, so on a table only a GM can set them; players raise them with the extras (Utku). Artisan properties (level 8) aren't written in the book yet." } ] },
   weaponRepair: { kicker: "Crafting", title: "Repairing weapons", body: [
     "Weapon Maintenance 3 lets you craft, repair and salvage mundane weapons. You need a blacksmithing kit or a forge.",
     { t: { cols: ["Weapon", "Materials per attempt"], rows: [["One-handed", "400 g"], ["Two-handed", "800 g"], ["Unwieldy", "+400 g"]] } },
     { h: "How a repair goes" }, { ul: ["Roll a Weapon Maintenance check: d100 minus your modifier (3% × Weapon Maintenance).", "Repair Count = 10 − check ÷ 10, rounded down. A check of 32 gives 6.", "Roll a d10 that many times. The total goes back into the weapon's Durability.", "Each attempt takes an hour."] },
+    { h: "Working for other players" }, { ul: ["A player picks their item on the Repair bench and sends it to a smith at the table (Maintenance 3 or more). The item stays in their Gear.", "The smith sees only that item, under \"Jobs from other players\", and repairs it with their own roll and materials. They can also send it back.", "The result lands on the owner's item the next time the owner's app is open.", "On the Craft bench, \"Made for\" sends a finished piece straight to another player's Gear."] },
     { note: "The app's readings: the Repair Count never goes above 10 dice, as for armor (Utku). A weapon at 0 durability can be repaired like any other; the flaw it gained for breaking stays until a weaponsmith removes it." } ] },
   weaponCraft: { kicker: "Crafting", title: "Crafting weapons", body: [
     "Weapon Maintenance 3 lets you craft mundane weapons; 5 adds exotic materials; 7 a second chosen property and one more failure.",
     { h: "How a craft goes" }, { ul: ["Ask the GM for the weapon's base stats: damage, accuracy, critical chance, durability and durability die.", "Materials: 5 × the weapon's repair materials.", "Difficulty 70%, made harder by any changes you add (below). Roll d100 minus your modifier; under the difficulty, it's made.", "If it has fewer than 2 properties, it gains 2 random positive ones.", "A failure gives the weapon a random flaw and you roll again. A second failure (third from Weapon Maintenance 7) loses the weapon and every material.", "Crafting takes 8 hours."] },
     { h: "Changes you can add" }, { t: { cols: ["Change", "Difficulty"], rows: [["Damage +1", "−10%"], ["Accuracy +1%", "−2%"], ["Critical chance +1%", "−2%"], ["A weapon property", "−10%"], ["Durability +1", "−1%"], ["Higher durability die", "−5%"]] } },
     "Exotic materials (unusual metals, monster parts) change the difficulty either way, as the GM says, and all their properties go onto the weapon.",
-    { note: "The app's readings: the random properties and flaws are drawn from those that fit the weapon (melee or ranged), and the GM sets any Rating. A ranged weapon's clip and ranges are set afterwards on its card. Tuning, Runecarving and Masterworking aren't on the bench yet." } ] },
+    { note: "The app's readings: the random properties and flaws are drawn from those that fit the weapon (melee or ranged), and the GM sets any Rating. A ranged weapon's clip and ranges are set afterwards on its card. Base stats come from the GM, so on a table only a GM can set them on the bench; players raise them with the changes above (Utku). Tuning, Runecarving and Masterworking aren't on the bench yet." } ] },
   brewing: { kicker: "Crafting", title: "Brewing", body: [
     "Brewing 3 lets you brew potions. You need a brewing kit, herbs or monster parts (the GM tells you their effects), and a flask.",
     { h: "How a brew goes" }, { ul: ["Your modifier is 3% × Brewing, plus any item bonus.", "Roll d100 and subtract your modifier. Under the brew's difficulty, it holds; otherwise the materials are lost.", "On a success, roll its toxicity and write the brew's stats down.", "A brew takes an hour."] },
@@ -3570,12 +3588,15 @@ const Store = {
       toast(err && err.code === "invalid_argument" ? "You can watch the initiative deck but not change it." : "Couldn't save the initiative deck just now. Try that again.");
     });
   },
-  queues: {}, timers: {},
+  queues: {}, timers: {}, pending: {},
   save(c, delay = 650) {
-    clearTimeout(this.timers[c.id]);
+    clearTimeout(this.timers[c.id]); this.pending[c.id] = c;
     this.timers[c.id] = setTimeout(() => this.flush(c), delay);
   },
+  // Save a character's waiting change now (the workshop clears a job only once the result is safely stored).
+  flushNow(id) { const c = this.pending[id]; if (!c) return Promise.resolve(); clearTimeout(this.timers[id]); return this.flush(c); },
   flush(c) {
+    if (this.pending[c.id] === c) delete this.pending[c.id];
     const body = clean(c); delete body.id;
     if (this.mode !== "live") { this.chars = Object.assign({}, this.chars, { [c.id]: Object.assign(body, { id: c.id }) }); lsSet(LS_KEY, this.chars); this.emit(); return Promise.resolve(); }
     const prev = this.queues[c.id] || Promise.resolve();
@@ -3588,6 +3609,7 @@ const Store = {
     this.queues[c.id] = p; return p;
   },
   async remove(id) {
+    Shop.forget(id);
     if (this.mode !== "live") { const n = Object.assign({}, this.chars); delete n[id]; this.chars = n; lsSet(LS_KEY, n); this.emit(); return; }
     await this.db.doc("characters/" + id).delete();
   },
@@ -3962,6 +3984,7 @@ function App() {
     Store.save(next);
   };
   const update = fn => { if (current) updateChar(current.id, fn); };
+  Shop.updater = updateChar; Shop.start();   // the workshop writes finished jobs onto this app's characters
   const openChar = id => { setSel(id); setView("chars"); setTab("sheet"); window.scrollTo(0, 0); };
 
   // A new character belongs to the player who made it. A companion belongs to whoever plays its master.
@@ -6169,6 +6192,186 @@ function Munition({ m, rc, sum, st, focus, partState, forging, phase, onPick }) 
         <span class="v">${!s.access ? "Not on this munition" : locked ? `Powdertinker ${st.unlockAt[p]}` : s.value || (p === "status" && !(rc.core && rc.core.el) ? "Needs a core" : "None")}</span></button>`; })}
   </div>`;
 }
+/* ================= crafting: the workshop (jobs between players) ================= */
+// A weaponsmith or armorsmith can repair another player's weapon or suit, or craft one for them, without the item
+// changing hands in the app. The owner sends a copy of one item (a "job"); it shows on the smith's Repair bench; the
+// smith rolls with their own skill and materials; then the owner's app writes the result onto the real item and
+// clears the job. A weapon or suit "made for" someone becomes a gift job that the recipient's app adds to their Gear.
+// The roster (one card per character: name, who plays it, Weapon and Armor Maintenance) says who can take jobs.
+// Players can't open each other's characters, so only the owner's (or recipient's) app ever changes their sheet.
+const SHOP_MIN = 3;   // Weapon/Armor Maintenance needed to take jobs (the book's repairs start at 3)
+const SHOP_SKILL = { weapon: "Weapon Maintenance", armor: "Armor Maintenance" };
+
+const Shop = {
+  started: false, jobs: [], roster: [], err: "", listeners: new Set(), cards: {}, busy: new Set(), updater: null,
+  emit() { this.listeners.forEach(f => f()); },
+  live() { return Store.mode === "live"; },
+  start() {
+    if (this.started || Store.mode === "loading") return;
+    this.started = true;
+    if (!this.live()) { this.jobs = lsGet("cw-jobs", []); Store.listeners.add(() => this.sync()); this.sync(); return; }
+    const db = Store.db, docs = s => s.docs.map(d => Object.assign({}, d.data(), { id: d.id }));
+    db.collection("roster").onSnapshot(s => { this.roster = docs(s); this.err = ""; this.emit(); this.publish(); }, () => this.fail());
+    const onJobs = list => { this.jobs = list; this.sync(); };
+    if (db.jobs) db.jobs(onJobs, () => this.fail());
+    else db.collection("jobs").onSnapshot(s => onJobs(docs(s)), () => this.fail());
+    Store.listeners.add(() => { this.publish(); this.sync(); });
+    this.publish();
+  },
+  fail() { this.err = "The table's database rules don't allow the workshop yet. Ask the GM (Sinan) to update them."; this.emit(); },
+
+  /* ---------- who's who ---------- */
+  me() { return Store.table ? Store.table.uid : null; },
+  // This app may change a character's sheet on its owner's behalf: in this browser, on claude.ai, by its player,
+  // or by a GM for a character nobody plays.
+  owns(char, uids) {
+    if (!Store.chars[char]) return false;
+    if (!Store.table) return true;
+    const u = uids || [];
+    return u.includes(this.me()) || (u.length === 0 && Store.table.role === "gm");
+  },
+  cardOf(c) { const n = norm(c); return { name: n.name || "Unnamed", uids: playersOf(n), weapon: R.wmState(n).lvl, armor: R.amState(n).lvl }; },
+  // Everyone at the table (characters, not companions).
+  list() {
+    const local = Object.values(Store.chars).filter(c => !c.companionOf).map(c => Object.assign(this.cardOf(c), { id: c.id }));
+    if (!this.live()) return local;
+    const byId = {}; this.roster.forEach(r => (byId[r.id] = r));
+    local.forEach(r => (byId[r.id] = r));   // what this app can see is fresher than the cards
+    return Object.values(byId).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  },
+  smiths(kind, notId) { return this.list().filter(r => r.id !== notId && num(r[kind]) >= SHOP_MIN); },
+  card(id) { return this.list().find(r => r.id === id) || null; },
+  // Keep this app's characters on the roster (only when something changed).
+  publish() {
+    if (!this.live() || this.err) return;
+    Object.values(Store.chars).forEach(c => {
+      if (c.companionOf || !(!Store.table || Store.table.role === "gm" || playersOf(c).includes(this.me()))) return;
+      const card = this.cardOf(c), key = JSON.stringify(card), have = this.roster.find(r => r.id === c.id);
+      if (this.cards[c.id] === key || (have && JSON.stringify({ name: have.name, uids: have.uids, weapon: have.weapon, armor: have.armor }) === key)) { this.cards[c.id] = key; return; }
+      this.cards[c.id] = key;
+      Store.db.doc("roster/" + c.id).set(card).catch(() => this.fail());
+    });
+  },
+  forget(id) {
+    this.jobs.filter(j => j.from.char === id || j.to.char === id).forEach(j => this.del(j.id));
+    if (this.live()) Store.db.doc("roster/" + id).delete().catch(() => {});
+  },
+
+  /* ---------- jobs ---------- */
+  put(job) {
+    const body = clean(job); delete body.id;
+    if (!this.live()) { this.jobs = [...this.jobs.filter(j => j.id !== job.id), Object.assign(body, { id: job.id })]; lsSet("cw-jobs", this.jobs); this.emit(); this.sync(); return Promise.resolve(); }
+    return Store.db.doc("jobs/" + job.id).set(body).catch(() => { toast("Couldn't reach the workshop just now. Try again."); this.fail(); });
+  },
+  del(id) {
+    if (!this.live()) { this.jobs = this.jobs.filter(j => j.id !== id); lsSet("cw-jobs", this.jobs); this.emit(); return; }
+    Store.db.doc("jobs/" + id).delete().catch(() => {});
+  },
+  party(c) { const k = this.cardOf(c); return { char: c.id, name: k.name, uids: k.uids }; },
+  // The owner sends one item to a smith.
+  send(kind, c, item, smith) {
+    const it = clean(item);
+    if (kind === "armor") it.jobMax = R.armorCheck(norm(c), item).soakMax;   // the wearer's own Soak maximum
+    return this.put({ id: "j" + rid(), kind, mode: "repair", from: this.party(c), to: { char: smith.id, name: smith.name, uids: smith.uids || [] }, item: it, status: "open", t: Date.now() });
+  },
+  // The smith hands a finished craft to someone.
+  gift(kind, c, item, to) {
+    return this.put({ id: "j" + rid(), kind, mode: "gift", from: this.party(c), to: { char: to.id, name: to.name, uids: to.uids || [] }, item: clean(item), status: "open", t: Date.now() });
+  },
+  // The smith reports back (done or declined).
+  answer(job, status, result) {
+    if (!this.jobs.some(j => j.id === job.id)) return false;
+    this.put(Object.assign({}, job, { status, result: result || null, at: Date.now() }));
+    return true;
+  },
+  find(pred) { return this.jobs.find(pred) || null; },
+  // Open jobs waiting on this character's bench.
+  incoming(c, kind) { return this.jobs.filter(j => j.kind === kind && j.mode === "repair" && j.status === "open" && j.to.char === c.id); },
+  outgoing(c, kind, itemId) { return this.find(j => j.kind === kind && j.mode === "repair" && j.from.char === c.id && j.item.id === itemId && j.status === "open"); },
+
+  // Write finished jobs onto the sheets this app looks after, then clear them.
+  sync() {
+    this.emit();
+    if (!this.updater) return;
+    this.jobs.forEach(j => {
+      if (this.busy.has(j.id)) return;
+      const repairBack = j.mode === "repair" && j.status !== "open" && this.owns(j.from.char, j.from.uids);
+      const giftIn = j.mode === "gift" && this.owns(j.to.char, j.to.uids);
+      if (!repairBack && !giftIn) return;
+      this.busy.add(j.id);
+      const target = repairBack ? j.from.char : j.to.char;
+      this.updater(target, x => {
+        if (!Array.isArray(x.craft.jobsDone)) x.craft.jobsDone = [];
+        if (x.craft.jobsDone.includes(j.id)) return;
+        x.craft.jobsDone = [j.id, ...x.craft.jobsDone].slice(0, 40);
+        const label = j.item.name || (j.kind === "weapon" ? "Weapon" : `${(R.ARMOR[j.item.type] || R.ARMOR.light).label} armor`);
+        if (giftIn) {
+          if (j.kind === "weapon") x.weapons.push(Object.assign({}, j.item, { id: rid(), where: "pack" }));
+          else x.armor.push(Object.assign({}, j.item, { id: rid(), worn: false }));
+          addLog(x, `${j.from.name} made ${label} for you; it's in your Gear now`);
+          return;
+        }
+        if (j.status === "declined") { addLog(x, `${j.to.name} sent ${label} back without repairing it`); return; }
+        const r = j.result || {}, gained = num(r.gained);
+        if (j.kind === "weapon") { const w = x.weapons.find(y => y.id === j.item.id); if (w) w.dur = Math.min(num(w.durMax), num(w.dur) + gained); }
+        else { const a = x.armor.find(y => y.id === j.item.id); if (a) a.soak = Math.min(num(j.item.jobMax) || Infinity, num(a.soak) + gained); }
+        addLog(x, `${j.to.name} repaired ${label}: +${gained} ${j.kind === "weapon" ? "Durability" : "Soak"}${r.roll ? ` (${r.roll})` : ""}`);
+      });
+      toast(giftIn ? `${j.from.name} sent you ${j.item.name || "a new item"}.` : j.status === "declined" ? `${j.to.name} sent ${j.item.name || "it"} back.` : `${j.to.name} repaired ${j.item.name || "your item"}.`);
+      Store.flushNow(target).then(() => this.del(j.id));
+    });
+  },
+};
+
+function useShop() {
+  const [, tick] = useState(0);
+  useEffect(() => { const f = () => tick(n => n + 1); Shop.listeners.add(f); Shop.start(); return () => Shop.listeners.delete(f); }, []);
+  return Shop;
+}
+
+// On the owner's Repair bench, under the picked item: send it to a smith, or see that it's away.
+function ShopSend({ c, kind, item, busy }) {
+  useShop();
+  if (!item) return null;
+  const out = Shop.outgoing(c, kind, item.id), smiths = Shop.smiths(kind, c.id), skill = SHOP_SKILL[kind];
+  return html`<div class="shopsend">
+    <h3 class="lbl">Or send it to a ${kind === "weapon" ? "weaponsmith" : "armorsmith"}</h3>
+    ${Shop.err ? html`<p class="muted ptrule">${Shop.err}</p>`
+      : out ? html`<div class="row shopaway"><span><span class="flag brass">At ${out.to.name}'s bench</span> Waiting for them to repair it. It stays in your Gear meanwhile.</span>
+          <button class="btn small" disabled=${busy} onClick=${() => Shop.del(out.id)}>Take it back</button></div>`
+      : smiths.length === 0 ? html`<p class="muted ptrule">Nobody else at the table has ${skill} ${SHOP_MIN} or more.</p>`
+      : html`<p class="muted ptrule">They see only this ${kind === "weapon" ? "weapon" : "suit"}, repair it with their own roll and materials, and it comes back here.</p>
+        <div class="ptopts brchips">${smiths.map(s => html`<button type="button" class="ptopt" disabled=${busy} onClick=${() => { Shop.send(kind, c, item, s); toast(`Sent to ${s.name}.`); }}>
+          <b>Send to ${s.name}</b><span>${skill} ${s[kind]}</span></button>`)}</div>`}
+  </div>`;
+}
+
+// On the smith's Repair bench: other players' items waiting for them.
+function ShopJobs({ c, kind, selId, pick, busy }) {
+  useShop();
+  const jobs = Shop.incoming(c, kind);
+  if (!jobs.length) return null;
+  return html`<h3 class="lbl shoph">Jobs from other players</h3>
+    <div class="ptopts amsuits">${jobs.map(j => { const it = j.item, wpn = kind === "weapon";
+      const now = wpn ? num(it.dur) : num(it.soak), max = wpn ? num(it.durMax) : num(it.jobMax) || num(it.soakMax);
+      return html`<div class=${"ptopt row-opt" + (selId === "job:" + j.id ? " on" : "")}>
+        <button type="button" class="ptcheck" aria-pressed=${selId === "job:" + j.id} disabled=${busy} onClick=${() => pick("job:" + j.id)}>
+          <b>${j.from.name}'s ${it.name || (wpn ? "weapon" : "armor")}</b><span>${wpn ? `${it.shield ? "Shield" : it.skill} · Durability` : `${(R.ARMOR[it.type] || R.ARMOR.light).label} · AV ${num(it.av)} · Soak`} ${now}/${max}</span>
+          <i class="amtrack"><i style=${`width:${max ? (now / max) * 100 : 0}%`}></i></i></button>
+        <button class="btn small shopback" disabled=${busy} title="Send it back without repairing it" onClick=${() => Shop.answer(j, "declined")}>Send back</button></div>`; })}</div>
+    <h3 class="lbl shoph">Your own</h3>`;
+}
+
+// On a craft bench: who the finished piece is for.
+function MadeFor({ c, value, onSet, busy }) {
+  useShop();
+  const others = Shop.list().filter(r => r.id !== c.id);
+  if (!others.length) return null;
+  return html`<div class="row ptbatch"><label for=${"mf-" + c.id}>Made for</label>
+    <select id=${"mf-" + c.id} class="inp" value=${value || ""} disabled=${busy} onChange=${e => onSet(e.target.value)}>
+      <option value="">Me (my Gear)</option>${others.map(r => html`<option value=${r.id}>${r.name}</option>`)}</select>
+    <span class="muted">It goes straight to their Gear; your materials pay for it.</span></div>`;
+}
 /* ================= crafting: armor upkeep (Armor Maintenance) ================= */
 // Two benches in one: Repair (the book's procedure) and Craft (our reading, built on the book's weapon crafting).
 // The suit stands on a mannequin. Repair hammers out its dents one Repair Die at a time; crafting forges it from a ghost outline.
@@ -6284,10 +6487,14 @@ function ArmorUpkeep({ c, update }) {
   useEffect(() => { stop(); setRun(null); setSel(""); }, [c.id]);
   const busy = !!run && !run.done;
   // The suit to repair: the one picked, else the most damaged.
+  useShop();
   const suits = c.armor;
   const byNeed = [...suits].sort((a, b) => R.repairPlan(c, b).missing - R.repairPlan(c, a).missing);
-  const suit = suits.find(a => a.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
-  const rp = suit ? R.repairPlan(c, suit) : null;
+  // Another player's suit on this bench (a workshop job), else one of this character's own.
+  const job = run && run.kind === "repair" ? run.job : selId.startsWith("job:") ? Shop.incoming(c, "armor").find(j => "job:" + j.id === selId) || null : null;
+  const suit = job ? job.item : suits.find(a => a.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
+  const away = !job && suit ? Shop.outgoing(c, "armor", suit.id) : null;   // sent to a smith: they repair it, not us
+  const rp = suit ? Object.assign(R.repairPlan(c, suit), away ? { block: `It's at ${away.to.name}'s bench. Take it back to repair it yourself.` } : {}) : null;
   const rc = ca.recipe, cp = R.craftPlan(c, rc);
   const setRc = fn => update(x => fn(x.craft.armor.recipe));
   const T = R.ARMOR;
@@ -6296,12 +6503,12 @@ function ArmorUpkeep({ c, update }) {
   /* ---------- repair: one check, then one hammer strike per Repair Die ---------- */
   const startRepair = async () => {
     if (!suit || rp.block) return;
-    const plan = rp, id = suit.id;
-    const first = await askRoll({ title: "Armor repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
+    const plan = rp, id = suit.id, theJob = job;
+    const first = await askRoll({ title: theJob ? `Armor repair check: ${theJob.from.name}'s ${suit.name || "armor"}` : "Armor repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
       note: `d100 − ${st.mod}. Repair Count = 10 − check ÷ 10: that many ${plan.die} restore Soak.` });
     if (!first) return;
-    setSel(id);
-    setRun({ kind: "repair", phase: "rolling", id, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod });
+    setSel(theJob ? "job:" + theJob.id : id);
+    setRun({ kind: "repair", phase: "rolling", id, job: theJob, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod });
     later(() => {
       const r = first[0], check = r - st.mod, count = R.repairCount(check);
       patch({ phase: "counted", r, check, count, dice: [] });
@@ -6322,6 +6529,19 @@ function ArmorUpkeep({ c, update }) {
   const finishRepair = () => {
     const f = runRef.current; if (!f) return;
     const total = f.dice.reduce((s, x) => s + x, 0), gained = Math.min(f.plan.missing, total);
+    if (f.job) {
+      // Another player's suit: the result goes back to them; this smith pays the materials.
+      const roll = `check ${f.r}−${f.mod}=${f.check} → ${f.count} × ${f.plan.die}${f.count ? ": " + total : ""}`;
+      if (!Shop.answer(f.job, "done", { gained, roll, by: c.name || "" })) { toast(`${f.job.from.name} took it back before you finished.`); patch({ done: true, phase: "done", total, gainedFinal: 0, gone: true }); return; }
+      update(x => {
+        x.craft.supplies[f.plan.mat] = Math.max(0, num(x.craft.supplies[f.plan.mat]) - f.plan.cost);
+        const txt = `${f.job.from.name}'s ${f.job.item.name || T[f.job.item.type].label + " armor"}: Soak ${f.plan.soak} → ${f.plan.soak + gained}`;
+        addLedger(x, { kind: "repair", name: `${f.plan.broken ? "Rebuilt" : "Repaired"} ${txt}`, rolls: [roll] });
+        addLog(x, `Armor repair for ${f.job.from.name}: ${txt} (${f.plan.cost} g ${f.plan.mat} materials)`);
+      });
+      patch({ done: true, phase: "done", total, gainedFinal: gained });
+      return;
+    }
     update(x => {
       const a = x.armor.find(y => y.id === f.id); if (!a) return;
       a.soak = num(a.soak) + gained;
@@ -6341,7 +6561,7 @@ function ArmorUpkeep({ c, update }) {
       note: `d100 − ${st.mod}, under ${plan.dc}.${n ? " A second failure loses the suit." : " A failure leaves a flaw and gives one more try."}` });
     const first = await ask(0);
     if (!first) return;
-    setRun({ kind: "craft", phase: "heat", plan, name, rolls: [], flaws: 0, mod: st.mod });
+    setRun({ kind: "craft", phase: "heat", plan, name, for: rc.for || "", rolls: [], flaws: 0, mod: st.mod });
     const roll = async n => {
       const r = n ? (await ask(1))[0] : first[0];
       if (!runRef.current) return;
@@ -6359,14 +6579,17 @@ function ArmorUpkeep({ c, update }) {
   const finishCraft = ok => {
     const f = runRef.current; if (!f) return;
     const nm = f.name + (f.flaws ? ` · ${f.flaws} flaw` : "");
+    const forWho = ok && f.for && f.for !== c.id ? Shop.card(f.for) : null;
     update(x => {
       x.craft.supplies[f.plan.type] = Math.max(0, num(x.craft.supplies[f.plan.type]) - f.plan.cost);
-      if (ok) x.armor.push({ id: rid(), name: nm, type: f.plan.type, av: f.plan.finalAV, soak: f.plan.finalSoak, soakMax: f.plan.finalSoak, worn: false, where: "pack" });
-      addLedger(x, { kind: "craft", name: ok ? `Crafted ${nm} (AV ${f.plan.finalAV}, Soak ${f.plan.finalSoak})` : `Lost ${f.name} in the forge`, scrap: !ok, det: ok ? f.flaws : 0,
+      const made = ok && { id: rid(), name: nm, type: f.plan.type, av: f.plan.finalAV, soak: f.plan.finalSoak, soakMax: f.plan.finalSoak, worn: false, where: "pack" };
+      if (made && !forWho) x.armor.push(made);
+      if (made && forWho) Shop.gift("armor", c, made, forWho);
+      addLedger(x, { kind: "craft", name: ok ? `Crafted ${nm}${forWho ? ` for ${forWho.name}` : ""} (AV ${f.plan.finalAV}, Soak ${f.plan.finalSoak})` : `Lost ${f.name} in the forge`, scrap: !ok, det: ok ? f.flaws : 0,
         rolls: f.rolls.map(r => `${r.r}−${f.mod}=${r.total} vs ${f.plan.dc} ${r.ok ? "✓" : "✗"}`) });
       addLog(x, ok ? `Armor crafting: made ${nm} (${f.plan.cost} g ${f.plan.type} materials)` : `Armor crafting: the suit was lost (${f.plan.cost} g ${f.plan.type} materials)`);
     });
-    patch({ done: true, phase: ok ? "made" : "lost" });
+    patch({ done: true, phase: ok ? "made" : "lost", forName: forWho ? forWho.name : "" });
   };
   const close = () => { stop(); setRun(null); };
 
@@ -6397,7 +6620,7 @@ function ArmorUpkeep({ c, update }) {
             ${run && html`<${AmReadout} run=${run} onClose=${close} />`}
           </div>
         </div>
-        <div class="ptside">${mode === "repair" ? html`<${RepairSide} c=${c} suits=${suits} suit=${suit} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
+        <div class="ptside">${mode === "repair" ? html`<${RepairSide} c=${c} suits=${suits} suit=${suit} job=${job} selId=${selId} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
           : html`<${CraftSide} c=${c} rc=${rc} cp=${cp} st=${st} focus=${focus} setFocus=${setFocus} setRc=${setRc} busy=${busy} />`}</div>
       </div>
     </section>
@@ -6434,7 +6657,7 @@ function AmReadout({ run, onClose }) {
     if (run.done) return html`<div class=${"ptread end " + (run.gainedFinal ? "done" : "nothing")} role="status">
       <p class="ptbig">${run.gainedFinal ? `+${run.gainedFinal} Soak` : "No soak recovered"}</p>
       <p>${run.count ? `${run.count} × ${p.die}: ${run.dice.length > 1 ? run.dice.join(" + ") + " = " : ""}${run.total}${run.total > run.gainedFinal ? ` (the suit was full at ${p.max})` : ""}` : "The check was too high for even one Repair Die."}</p>
-      <p class="muted">${p.cost} g of ${p.mat} materials used · an hour's work.</p>
+      <p class="muted">${run.gone ? "Nothing was spent." : `${p.cost} g of ${p.mat} materials used · an hour's work.`}${run.job && !run.gone ? ` It goes back to ${run.job.from.name}'s Gear.` : ""}</p>
       <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
     return html`<div class="ptread" role="status" aria-live="polite">
       <div class="ptstep"><span class="lbl">${run.phase === "rolling" ? "Armor Maintenance check" : "Repair Dice"}</span>
@@ -6449,7 +6672,7 @@ function AmReadout({ run, onClose }) {
   if (run.done) return html`<div class=${"ptread end " + (run.phase === "made" ? "done" : "scrap")} role="status">
     <p class="ptbig">${run.phase === "made" ? "Forged" : "Lost in the forge"}</p>
     <p>${run.phase === "made" ? `${run.name}: ${p.t.label}, AV ${p.finalAV}, Soak ${p.finalSoak}${run.flaws ? ", with a flaw for the GM to decide" : ""}.` : "Two failures: the suit and every material in it are gone."}</p>
-    ${run.phase === "made" && html`<p class="muted">Added to Armor on the Gear tab. Eight hours at the anvil.</p>`}
+    ${run.phase === "made" && html`<p class="muted">${run.forName ? `Sent to ${run.forName}'s Gear` : "Added to Armor on the Gear tab"}. Eight hours at the anvil.</p>`}
     <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
   return html`<div class="ptread" role="status" aria-live="polite">
     <div class="ptstep"><span class="lbl">Roll ${Math.min(2, (run.rolls || []).length + ((run.phase === "rolling" && !r) || run.phase === "flaw" ? 1 : 0)) || 1} of 2 at most</span>
@@ -6461,12 +6684,13 @@ function AmReadout({ run, onClose }) {
   </div>`;
 }
 
-function RepairSide({ c, suits, suit, rp, st, busy, pick }) {
+function RepairSide({ c, suits, suit, job, selId, rp, st, busy, pick }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>Suits</span></h3>
+    <${ShopJobs} c=${c} kind="armor" selId=${selId} pick=${pick} busy=${busy} />
     ${suits.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${suits.map(a => { const p = R.repairPlan(c, a);
-      return html`<button type="button" class="ptopt amsuit" aria-pressed=${suit && suit.id === a.id} disabled=${busy} onClick=${() => pick(a.id)}>
-        <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}</b>
+      return html`<button type="button" class="ptopt amsuit" aria-pressed=${!job && suit && suit.id === a.id} disabled=${busy} onClick=${() => pick(a.id)}>
+        <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}${Shop.outgoing(c, "armor", a.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "armor", a.id).to.name}'s</span>` : ""}</b>
         <span>${R.ARMOR[a.type].label} · AV ${num(a.av)} · Soak ${p.soak}/${p.max}</span>
         <i class="amtrack"><i style=${`width:${p.max ? (p.soak / p.max) * 100 : 0}%`}></i></i></button>`; })}</div>`}
     ${suit && html`<div class="ptplan"><h3 class="lbl">The repair</h3><ol>
@@ -6474,6 +6698,7 @@ function RepairSide({ c, suits, suit, rp, st, busy, pick }) {
       <li><span>Check: d100 − ${st.mod}</span><span class="muted">Repair Count = 10 − check ÷ 10, rounded down, at most 10</span></li>
       <li><span>Roll ${rp.die} that many times</span><span class="muted">The total goes back into the Soak Pool (up to ${rp.max}). An hour per attempt.</span></li></ol>
       <p class="ptdc">Check 0 or less: 10 × ${rp.die} · check 40: 6 × ${rp.die} · check 90: 1 × ${rp.die}</p></div>`}
+    ${suit && !job && html`<${ShopSend} c=${c} kind="armor" item=${suit} busy=${busy} />`}
   </div>`;
 }
 
@@ -6485,7 +6710,9 @@ function CraftSide({ c, rc, cp, st, focus, setFocus, setRc, busy }) {
   if (focus === "type") body = html`<p class="muted ptrule">The GM tells you what kind of suit can be made here.</p><div class="ptopts">${Object.entries(T).map(([k, x]) => html`<button type="button" class="ptopt" aria-pressed=${cp.type === k} disabled=${busy}
       onClick=${() => setRc(r => { r.type = k; r.av = x.av[0]; r.soak = 10 * x.av[0]; r.plusAV = 0; })}><b>${x.label} · AV ${x.av[0]}–${x.av[1]}</b>
       <span>${5 * x.repairPerAV} g × AV of ${x.label.toLowerCase()} materials${R.AM_FORGE.includes(k) ? " · needs a forge" : ""}</span></button>`)}</div>`;
-  else if (focus === "av" || focus === "soak") body = html`<p class="muted ptrule">The suit's base numbers, from the GM.</p>
+  else if (focus === "av" || focus === "soak") body = !isGM() ? html`<p class="muted ptrule">The suit's base numbers come from the GM, so only a GM can set them here (they can open your sheet). To raise them yourself, use Extras: each step makes the roll harder.</p>
+    <div class="facts wpbase">${[["Armor Value", cp.av], ["Soak Pool", cp.soak], ["Range for " + t.label.toLowerCase(), `${t.av[0]}–${t.av[1]}`]].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>`
+  : html`<p class="muted ptrule">The suit's base numbers, from the GM. Only a GM can change these; players raise them through Extras.</p>
     <div class="row ptrate"><span><b>Armor Value ${cp.av}</b> · ${t.label} runs ${t.av[0]}–${t.av[1]}</span>
       <${Step} label="Armor Value" value=${cp.av} min=${t.av[0]} max=${t.av[1]} onSet=${v => setRc(r => { r.av = v; r.plusAV = Math.min(num(r.plusAV), t.av[1] - v); })} /></div>
     <div class="row ptrate"><span><b>Soak Pool ${cp.soak}</b> · usually 10 × AV</span>
@@ -6507,7 +6734,8 @@ function CraftSide({ c, rc, cp, st, focus, setFocus, setRc, busy }) {
       <li><span>Roll under ${cp.dc}%</span><span class="muted">${cp.chance}% to land · a failure leaves a flaw and you roll again; two failures lose it all</span></li>
       <li><span>Eight hours${R.AM_FORGE.includes(cp.type) ? " at a forge" : ""}</span><span class="muted">The suit joins your Armor on the Gear tab.</span></li></ol>
       <div class="row ptbatch"><label for=${"amn-" + c.id}>Name</label>
-        <input id=${"amn-" + c.id} class="inp" placeholder=${`${t.label} armor`} value=${rc.name || ""} disabled=${busy} onInput=${e => setRc(r => { r.name = e.target.value; })} /></div></div>
+        <input id=${"amn-" + c.id} class="inp" placeholder=${`${t.label} armor`} value=${rc.name || ""} disabled=${busy} onInput=${e => setRc(r => { r.name = e.target.value; })} /></div>
+      <${MadeFor} c=${c} value=${rc.for} busy=${busy} onSet=${v => setRc(r => { r.for = v; })} /></div>
   </div>`;
 }
 /* ================= crafting: weapon upkeep (Weapon Maintenance) ================= */
@@ -6639,10 +6867,14 @@ function WeaponUpkeep({ c, update }) {
   useEffect(() => () => stop(), []);
   useEffect(() => { stop(); setRun(null); setSel(""); }, [c.id]);
   const busy = !!run && !run.done;
+  useShop();
   const ws = c.weapons.filter(w => num(w.durMax) > 0 || w.name);
   const byNeed = [...ws].sort((a, b) => R.wRepairPlan(c, b).missing - R.wRepairPlan(c, a).missing);
-  const weapon = ws.find(w => w.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
-  const rp = weapon ? R.wRepairPlan(c, weapon) : null;
+  // Another player's weapon on this bench (a workshop job), else one of this character's own.
+  const job = run && run.kind === "repair" ? run.job : selId.startsWith("job:") ? Shop.incoming(c, "weapon").find(j => "job:" + j.id === selId) || null : null;
+  const weapon = job ? job.item : ws.find(w => w.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
+  const away = !job && weapon ? Shop.outgoing(c, "weapon", weapon.id) : null;   // sent to a smith: they repair it, not us
+  const rp = weapon ? Object.assign(R.wRepairPlan(c, weapon), away ? { block: `It's at ${away.to.name}'s bench. Take it back to repair it yourself.` } : {}) : null;
   const rc = cw.recipe, cp = R.wCraftPlan(c, rc);
   const setRc = fn => update(x => fn(x.craft.weapon.recipe));
   const addLedger = (x, e) => { x.craft.weapon.ledger = [Object.assign({ id: rid(), t: Date.now(), note: "" }, e), ...x.craft.weapon.ledger].slice(0, 20); };
@@ -6651,12 +6883,12 @@ function WeaponUpkeep({ c, update }) {
   /* ---------- repair: one check, then one hammer strike per d10 ---------- */
   const startRepair = async () => {
     if (!weapon || rp.block) return;
-    const plan = rp, id = weapon.id;
-    const first = await askRoll({ title: "Weapon repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
+    const plan = rp, id = weapon.id, theJob = job;
+    const first = await askRoll({ title: theJob ? `Weapon repair check: ${theJob.from.name}'s ${weapon.name || "weapon"}` : "Weapon repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
       note: `d100 − ${st.mod}. Repair Count = 10 − check ÷ 10: that many d10 restore Durability.` });
     if (!first) return;
-    setSel(id);
-    setRun({ kind: "repair", phase: "rolling", id, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod, flaws: [] });
+    setSel(theJob ? "job:" + theJob.id : id);
+    setRun({ kind: "repair", phase: "rolling", id, job: theJob, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod, flaws: [] });
     later(() => {
       const r = first[0], check = r - st.mod, count = R.repairCount(check);
       patch({ phase: "counted", r, check, count, dice: [] });
@@ -6677,6 +6909,19 @@ function WeaponUpkeep({ c, update }) {
   const finishRepair = () => {
     const f = runRef.current; if (!f) return;
     const total = f.dice.reduce((s, x) => s + x, 0), gained = Math.min(f.plan.missing, total);
+    if (f.job) {
+      // Another player's weapon: the result goes back to them; this smith pays the materials.
+      const roll = `check ${f.r}−${f.mod}=${f.check} → ${f.count} × d10${f.count ? ": " + total : ""}`;
+      if (!Shop.answer(f.job, "done", { gained, roll, by: c.name || "" })) { toast(`${f.job.from.name} took it back before you finished.`); patch({ done: true, phase: "done", total, gainedFinal: 0, gone: true }); return; }
+      update(x => {
+        x.craft.supplies.weapon = Math.max(0, num(x.craft.supplies.weapon) - f.plan.cost);
+        const txt = `${f.job.from.name}'s ${f.job.item.name || "weapon"}: Durability ${f.plan.dur} → ${f.plan.dur + gained}`;
+        addLedger(x, { kind: "repair", name: `Repaired ${txt}`, rolls: [roll] });
+        addLog(x, `Weapon repair for ${f.job.from.name}: ${txt} (${f.plan.cost} g weapon materials)`);
+      });
+      patch({ done: true, phase: "done", total, gainedFinal: gained });
+      return;
+    }
     update(x => {
       const w = x.weapons.find(y => y.id === f.id); if (!w) return;
       w.dur = num(w.dur) + gained;
@@ -6719,17 +6964,20 @@ function WeaponUpkeep({ c, update }) {
     const extra = ok && p.props.length < 2 ? R.randomTraits(R.WEAPON_PROPS, p.kind, p.props, 2) : [];
     const exotic = p.ex ? [`${p.ex.name}${p.ex.note ? ` (${p.ex.note})` : ""}`] : [];
     const props = [...chosen, ...extra, ...exotic, ...(r.unwieldy ? ["Unwieldy"] : []), ...f.flaws];
+    const forWho = ok && r.for && r.for !== c.id ? Shop.card(r.for) : null;
     update(x => {
       x.craft.supplies.weapon = Math.max(0, num(x.craft.supplies.weapon) - p.cost);
-      if (ok) x.weapons.push({ id: rid(), name: f.name, skill: r.skill, shield: r.skill === "Shield", hands: num(r.hands) === 2 ? 2 : 1,
+      const made = ok && { id: rid(), name: f.name, skill: r.skill, shield: r.skill === "Shield", hands: num(r.hands) === 2 ? 2 : 1,
         size: r.skill === "Shield" || num(r.hands) === 2 ? "large" : "medium", damage: p.final.damage, crit: p.final.crit, accuracy: p.final.accuracy,
         dur: p.final.durMax, durMax: p.final.durMax, durDie: p.final.durDie, clip: 0, clipMax: 0, rangeOpt: 0, rangeMax: 0, reload: 0,
-        props: props.join(", "), where: "pack", final: true });
-      addLedger(x, { kind: "craft", name: ok ? `Crafted ${f.name}${f.flaws.length ? ` · ${f.flaws.length} flaw${f.flaws.length > 1 ? "s" : ""}` : ""}` : `Lost ${f.name} in the forge`,
+        props: props.join(", "), where: "pack", final: true };
+      if (made && !forWho) x.weapons.push(made);
+      if (made && forWho) Shop.gift("weapon", c, made, forWho);
+      addLedger(x, { kind: "craft", name: ok ? `Crafted ${f.name}${forWho ? ` for ${forWho.name}` : ""}${f.flaws.length ? ` · ${f.flaws.length} flaw${f.flaws.length > 1 ? "s" : ""}` : ""}` : `Lost ${f.name} in the forge`,
         scrap: !ok, det: ok && props.some(t => /Rating: GM/.test(t)) ? 1 : 0, rolls: f.rolls.map(q => `${q.r}−${f.mod}=${q.total} vs ${p.dc} ${q.ok ? "✓" : "✗"}`) });
       addLog(x, ok ? `Weapon crafting: made ${f.name} (${p.cost} g weapon materials)` : `Weapon crafting: the weapon was lost (${p.cost} g weapon materials)`);
     });
-    patch({ done: true, phase: ok ? "made" : "lost", gotProps: ok ? [...chosen, ...extra, ...exotic] : [], extra });
+    patch({ done: true, phase: ok ? "made" : "lost", gotProps: ok ? [...chosen, ...extra, ...exotic] : [], extra, forName: forWho ? forWho.name : "" });
   };
   const close = () => { stop(); setRun(null); };
 
@@ -6762,7 +7010,7 @@ function WeaponUpkeep({ c, update }) {
             ${run && html`<${WmReadout} run=${run} onClose=${close} />`}
           </div>
         </div>
-        <div class="ptside">${mode === "repair" ? html`<${WRepairSide} c=${c} ws=${ws} weapon=${weapon} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
+        <div class="ptside">${mode === "repair" ? html`<${WRepairSide} c=${c} ws=${ws} weapon=${weapon} job=${job} selId=${selId} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
           : html`<${WCraftSide} c=${c} rc=${rc} cp=${cp} st=${st} focus=${focus} setRc=${setRc} busy=${busy} />`}</div>
       </div>
     </section>
@@ -6797,7 +7045,7 @@ function WmReadout({ run, onClose }) {
     if (run.done) return html`<div class=${"ptread end " + (run.gainedFinal ? "done" : "nothing")} role="status">
       <p class="ptbig">${run.gainedFinal ? `+${run.gainedFinal} Durability` : "No durability recovered"}</p>
       <p>${run.count ? `${run.count} × d10: ${run.dice.length > 1 ? run.dice.join(" + ") + " = " : ""}${run.total}${run.total > run.gainedFinal ? ` (it was full at ${p.max})` : ""}` : "The check was too high for even one die."}</p>
-      <p class="muted">${p.cost} g of weapon materials used · an hour's work.${p.broken ? " The flaw it gained for breaking stays until a weaponsmith removes it." : ""}</p>
+      <p class="muted">${run.gone ? "Nothing was spent." : `${p.cost} g of weapon materials used · an hour's work.`}${run.job && !run.gone ? ` It goes back to ${run.job.from.name}'s Gear.` : ""}${p.broken ? " The flaw it gained for breaking stays until a weaponsmith removes it." : ""}</p>
       <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
     return html`<div class="ptread" role="status" aria-live="polite">
       <div class="ptstep"><span class="lbl">${run.phase === "rolling" ? "Weapon Maintenance check" : "Repair dice"}</span><b>${run.phase === "rolling" ? "Looking it over…" : `${run.count} × d10`}</b></div>
@@ -6810,7 +7058,7 @@ function WmReadout({ run, onClose }) {
   if (run.done) return html`<div class=${"ptread end " + (run.phase === "made" ? "done" : "scrap")} role="status">
     <p class="ptbig">${run.phase === "made" ? "Forged" : "Lost in the forge"}</p>
     <p>${run.phase === "made" ? `${run.name}: damage ${p.final.damage}, crit ${p.final.crit}%, accuracy ${p.final.accuracy >= 0 ? "+" : ""}${p.final.accuracy}%, durability ${p.final.durMax} (${p.final.durDie}).` : "Too many failures: the weapon and every material in it are gone."}</p>
-    ${run.phase === "made" && html`<p class="muted">${run.extra && run.extra.length ? "It had fewer than 2 properties, so it gained 2 at random. " : ""}Added to Weapons on the Gear tab${R.RANGED_WEAPONS.includes(run.recipe.skill) ? "; set its clip and ranges there" : ""}. Eight hours at the anvil.</p>`}
+    ${run.phase === "made" && html`<p class="muted">${run.extra && run.extra.length ? "It had fewer than 2 properties, so it gained 2 at random. " : ""}${run.forName ? `Sent to ${run.forName}'s Gear` : "Added to Weapons on the Gear tab"}${R.RANGED_WEAPONS.includes(run.recipe.skill) ? "; set its clip and ranges there" : ""}. Eight hours at the anvil.</p>`}
     <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
   return html`<div class="ptread" role="status" aria-live="polite">
     <div class="ptstep"><span class="lbl">Roll ${Math.min(maxRolls, run.rolls.length + ((run.phase === "rolling" && !r) || run.phase === "flaw" ? 1 : 0)) || 1} of ${maxRolls} at most</span>
@@ -6822,12 +7070,13 @@ function WmReadout({ run, onClose }) {
   </div>`;
 }
 
-function WRepairSide({ c, ws, weapon, rp, st, busy, pick }) {
+function WRepairSide({ c, ws, weapon, job, selId, rp, st, busy, pick }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>Weapons</span></h3>
+    <${ShopJobs} c=${c} kind="weapon" selId=${selId} pick=${pick} busy=${busy} />
     ${ws.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${ws.map(w => { const p = R.wRepairPlan(c, w);
-      return html`<button type="button" class="ptopt amsuit" aria-pressed=${weapon && weapon.id === w.id} disabled=${busy} onClick=${() => pick(w.id)}>
-        <b>${w.name || "Unnamed weapon"}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}</b>
+      return html`<button type="button" class="ptopt amsuit" aria-pressed=${!job && weapon && weapon.id === w.id} disabled=${busy} onClick=${() => pick(w.id)}>
+        <b>${w.name || "Unnamed weapon"}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}${Shop.outgoing(c, "weapon", w.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "weapon", w.id).to.name}'s</span>` : ""}</b>
         <span>${w.shield ? "Shield" : w.skill} · ${num(w.hands) === 2 ? "two-handed" : "one-handed"} · Durability ${p.dur}/${p.max}</span>
         <i class="amtrack"><i style=${`width:${p.max ? (p.dur / p.max) * 100 : 0}%`}></i></i></button>`; })}</div>`}
     ${weapon && html`<div class="ptplan"><h3 class="lbl">The repair</h3><ol>
@@ -6835,6 +7084,7 @@ function WRepairSide({ c, ws, weapon, rp, st, busy, pick }) {
       <li><span>Check: d100 − ${st.mod}</span><span class="muted">Repair Count = 10 − check ÷ 10, rounded down, at most 10</span></li>
       <li><span>Roll d10 that many times</span><span class="muted">The total goes back into Durability (up to ${rp.max}). An hour per attempt.</span></li></ol>
       <p class="ptdc">Check 0 or less: 10 × d10 · check 40: 6 × d10 · check 90: 1 × d10</p></div>`}
+    ${weapon && !job && html`<${ShopSend} c=${c} kind="weapon" item=${weapon} busy=${busy} />`}
   </div>`;
 }
 
@@ -6852,8 +7102,11 @@ function WCraftSide({ c, rc, cp, st, focus, setRc, busy }) {
         <optgroup label="Ranged">${R.RANGED_WEAPONS.map(t => html`<option>${t}</option>`)}</optgroup><optgroup label="Other"><option>Shield</option></optgroup></select></div>
       <div class="mini"><label for=${"wc-h" + c.id}>Hands</label><select id=${"wc-h" + c.id} value=${rc.hands} disabled=${busy} onChange=${e => setRc(r => { r.hands = +e.target.value; })}><option value="1">One</option><option value="2">Two</option></select></div></div>
     <label class="amforge"><input type="checkbox" checked=${!!rc.unwieldy} disabled=${busy} onChange=${e => setRc(r => { r.unwieldy = e.target.checked; })} /> Unwieldy <span class="muted">(the GM says; +400 g to repair, so ×5 to craft)</span></label>
-    <div class="row ptbatch"><label for=${"wc-n" + c.id}>Name</label><input id=${"wc-n" + c.id} class="inp" placeholder="Name it" value=${rc.name || ""} disabled=${busy} onInput=${e => setRc(r => { r.name = e.target.value; })} /></div>`;
-  else if (focus === "av") body = html`<p class="muted ptrule">The base stats, from the GM.</p>
+    <div class="row ptbatch"><label for=${"wc-n" + c.id}>Name</label><input id=${"wc-n" + c.id} class="inp" placeholder="Name it" value=${rc.name || ""} disabled=${busy} onInput=${e => setRc(r => { r.name = e.target.value; })} /></div>
+    <${MadeFor} c=${c} value=${rc.for} busy=${busy} onSet=${v => setRc(r => { r.for = v; })} />`;
+  else if (focus === "av") body = !isGM() ? html`<p class="muted ptrule">The base stats come from the GM, so only a GM can set them here (they can open your sheet). To raise them yourself, use Changes: each step makes the roll harder.</p>
+    <div class="facts wpbase">${[["Damage", rc.damage], ["Crit", `${num(rc.crit)}%`], ["Accuracy", `${num(rc.accuracy) >= 0 ? "+" : ""}${num(rc.accuracy)}%`], ["Durability", rc.dur], ["Durability die", rc.durDie]].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>`
+  : html`<p class="muted ptrule">The base stats, from the GM. Only a GM can change these; players raise them through Changes.</p>
     <div class="grid2">${numIn("damage", "Damage")}${numIn("crit", "Crit %")}${numIn("accuracy", "Accuracy ±")}${numIn("dur", "Durability", 5)}
       <div class="mini"><label for=${"wc-d" + c.id}>Durability die</label><select id=${"wc-d" + c.id} value=${rc.durDie} disabled=${busy} onChange=${e => setRc(r => { r.durDie = e.target.value; r.plus = Object.assign({}, r.plus, { die: 0 }); })}>${R.DUR_DICE.map(d => html`<option>${d}</option>`)}</select></div></div>`;
   else {

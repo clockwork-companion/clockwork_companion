@@ -59,12 +59,15 @@ const Store = {
       toast(err && err.code === "invalid_argument" ? "You can watch the initiative deck but not change it." : "Couldn't save the initiative deck just now. Try that again.");
     });
   },
-  queues: {}, timers: {},
+  queues: {}, timers: {}, pending: {},
   save(c, delay = 650) {
-    clearTimeout(this.timers[c.id]);
+    clearTimeout(this.timers[c.id]); this.pending[c.id] = c;
     this.timers[c.id] = setTimeout(() => this.flush(c), delay);
   },
+  // Save a character's waiting change now (the workshop clears a job only once the result is safely stored).
+  flushNow(id) { const c = this.pending[id]; if (!c) return Promise.resolve(); clearTimeout(this.timers[id]); return this.flush(c); },
   flush(c) {
+    if (this.pending[c.id] === c) delete this.pending[c.id];
     const body = clean(c); delete body.id;
     if (this.mode !== "live") { this.chars = Object.assign({}, this.chars, { [c.id]: Object.assign(body, { id: c.id }) }); lsSet(LS_KEY, this.chars); this.emit(); return Promise.resolve(); }
     const prev = this.queues[c.id] || Promise.resolve();
@@ -77,6 +80,7 @@ const Store = {
     this.queues[c.id] = p; return p;
   },
   async remove(id) {
+    Shop.forget(id);
     if (this.mode !== "live") { const n = Object.assign({}, this.chars); delete n[id]; this.chars = n; lsSet(LS_KEY, n); this.emit(); return; }
     await this.db.doc("characters/" + id).delete();
   },
@@ -451,6 +455,7 @@ function App() {
     Store.save(next);
   };
   const update = fn => { if (current) updateChar(current.id, fn); };
+  Shop.updater = updateChar; Shop.start();   // the workshop writes finished jobs onto this app's characters
   const openChar = id => { setSel(id); setView("chars"); setTab("sheet"); window.scrollTo(0, 0); };
 
   // A new character belongs to the player who made it. A companion belongs to whoever plays its master.
