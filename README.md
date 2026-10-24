@@ -1,7 +1,7 @@
 # Clockwork Companion — website
 
-**Live site: [vansinan101.github.io/clockwork_companion](https://vansinan101.github.io/clockwork_companion/)**  
-**Dev page: [vansinan101.github.io/clockwork_companion/dev](https://vansinan101.github.io/clockwork_companion/dev/)** (test build from the Dev branch)
+**Live site: [clockwork-companion.github.io/clockwork_companion](https://clockwork-companion.github.io/clockwork_companion/)**  
+**Dev page: [clockwork-companion.github.io/clockwork_companion/dev](https://clockwork-companion.github.io/clockwork_companion/dev/)** (test build from the Dev branch)
 
 Character sheets, Karma, vitals, gear and the GM initiative deck for *Clockwork: Tales of Steam and Magick*.
 Players sign in with a username and password. The GM sees every character and runs the initiative deck;
@@ -73,8 +73,8 @@ When a new version is published, the app shows "A new version of the app is read
 - **SinanDev**, **BedoDev**, … are personal branches. Start them from main, and pull main into them regularly.
 
 **Pages:**
-- Live site: `https://vansinan101.github.io/clockwork_companion/`
-- Dev page: `https://vansinan101.github.io/clockwork_companion/dev/` (red **DEV** ribbon in the corner).
+- Live site: `https://clockwork-companion.github.io/clockwork_companion/`
+- Dev page: `https://clockwork-companion.github.io/clockwork_companion/dev/` (red **DEV** ribbon in the corner).
 
 The Dev page uses the same database as the live site. Join it with a **test table password**, so real characters are never touched while testing.
 
