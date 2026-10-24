@@ -1,0 +1,54 @@
+# Runs on every pull request into Dev or main (and by hand from the Actions tab).
+# A red check means: don't merge yet. The log says what failed; screenshots are attached to the run.
+name: Checks
+on:
+  pull_request:
+    branches: [Dev, main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+
+      - name: Source files parse
+        run: for f in src/*.js; do node --check "$f" || exit 1; done
+
+      - name: Build the website
+        run: python3 src/build.py --web "$RUNNER_TEMP/site"
+
+      - name: index.html matches src/ (run "python3 src/build.py --web ." if this fails)
+        run: |
+          if [ -f index.html ] && ! cmp -s "$RUNNER_TEMP/site/index.html" index.html; then
+            echo "::error file=index.html::index.html is out of date with src/. Run: python3 src/build.py --web . and commit the result."
+            exit 1
+          fi
+
+      - name: Built page scripts parse
+        run: python3 tests/check_scripts.py "$RUNNER_TEMP/site/index.html"
+
+      - name: Install the test browser
+        run: |
+          pip install "playwright>=1.44,<2"
+          python -m playwright install --with-deps chromium
+
+      - name: Smoke test (desktop and 390 px, light and dark theme)
+        run: python3 tests/smoke.py "$RUNNER_TEMP/site" smoke-shots
+
+      - name: Keep the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshots
+          path: smoke-shots
+          if-no-files-found: ignore
