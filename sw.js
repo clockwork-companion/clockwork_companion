@@ -3,7 +3,7 @@
    - Icons, the hidden games' art, the Firebase code and fonts: kept after the first load and served from the saved copy.
    - Never touches Firebase's database or sign-in traffic; Firestore keeps its own offline copy of characters.
    build.py replaces the version string on every build, so a new release replaces the old saved files. */
-const VERSION = "a104d641ddfc";
+const VERSION = "0f6183bbfffb";
 const CACHE = "clockwork-" + VERSION;
 const SCOPE = new URL(self.registration.scope).pathname;
 const SHELL = ["./", "index.html", "firebase-config.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/favicon-48.png"];
