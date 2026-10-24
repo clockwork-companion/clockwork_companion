@@ -1,10 +1,11 @@
 /* ================= the Blackwall (Cyberpunk theme only) =================
    A living firewall of red and violet data, drawn with a WebGL fragment shader on a canvas behind the page.
-   It only exists while the Cyberpunk theme is on. The pieces:
-   - a curtain of vertical data streaks that sway and flicker;
-   - an upper edge that heaves in slow swells;
-   - a pink-white heart low on the right that pulses;
-   - waves that ripple out from the heart through the curtain, bending the streaks as they pass.
+   It only exists while the Cyberpunk theme is on. Modelled on stills of the Blackwall:
+   - straight, solid bars like jail bars, crowding together toward a magenta haze on the right, as if seen in perspective;
+   - a colour wave rolling across them, crimson to violet and back, with a dim glow between the bars;
+   - a near layer of thicker bars rising to uneven, shifting heights, like an equaliser or a spiked wall, each tipped with light;
+   - soft plasma on the right edge, streaked outward and slowly reshaping;
+   - a dark, jagged fringe along the bottom, the odd flickering scan row, and rare, brief tearing.
    It is cheap by design: drawn at half resolution, capped at 30 frames a second, paused when the tab is hidden,
    and frozen into a single still frame for anyone who asks their device for reduced motion. Without WebGL, the
    theme's CSS stand-in (in app.css) is used instead. */
@@ -15,43 +16,67 @@ uniform vec2 res; uniform float t;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
-float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { v += a * noise(p); p = p * 2.03 + 11.7; a *= 0.5; } return v; }
+float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 3; i++) { v += a * noise(p); p = p * 2.07 + 13.1; a *= 0.5; } return v; }
+// a straight vertical bar centred in each cell; w is the half-width as a share of the cell
+float barShape(float f, float w) { return 1.0 - smoothstep(w, w + 0.09, abs(f - 0.5)); }
 void main() {
-  vec2 uv = gl_FragCoord.xy / res;                   // 0..1, y up from the bottom of the screen
+  vec2 uv = gl_FragCoord.xy / res;
   float asp = res.x / res.y;
-  vec2 heart = vec2(0.84, 0.06);
-  vec2 d = (uv - heart) * vec2(asp, 1.0);
-  float r = length(d);
-  // waves rippling outward from the heart: two trains at different speeds, fading with distance
-  float rip = sin(r * 34.0 - t * 1.9) * exp(-r * 2.4) + 0.55 * sin(r * 19.0 - t * 1.15 + 1.7) * exp(-r * 1.6);
-  // the living sway: slow warping noise, plus the ripple pushing the streaks sideways
-  float warp = fbm(vec2(uv.x * 3.0, uv.y * 2.2 - t * 0.07)) - 0.5;
-  float x = uv.x + warp * 0.035 + rip * 0.006;
-  // the curtain: vertical streaks at three densities, each flickering at its own pace
-  float s1 = pow(abs(sin(x * 420.0)), 26.0) * (0.55 + 0.45 * noise(vec2(x * 60.0, t * 0.9)));
-  float s2 = pow(abs(sin(x * 170.0 + 1.3)), 14.0) * (0.5 + 0.5 * noise(vec2(x * 30.0 + 5.0, t * 0.5)));
-  float s3 = pow(abs(sin(x * 61.0 + 0.4)), 40.0) * noise(vec2(x * 12.0, t * 0.3 + uv.y * 2.0));
-  float streak = s1 * 0.55 + s2 * 0.7 + s3 * 1.3;
-  // breaks travelling down the streaks, like data packets
-  streak *= 0.65 + 0.35 * noise(vec2(x * 90.0, uv.y * 18.0 + t * 1.4));
-  // the heaving upper edge
-  float edge = 0.30 + 0.07 * fbm(vec2(uv.x * 2.2 + t * 0.04, t * 0.06)) + 0.025 * sin(uv.x * 8.0 - t * 0.55) + rip * 0.02;
-  float body = smoothstep(edge + 0.16, edge - 0.08, uv.y);
-  float breathe = 0.82 + 0.18 * sin(t * 0.55) * sin(t * 0.21 + 1.0);
-  // colour: deep red on the left warming to magenta and pink toward the heart, with violet threads
-  vec3 red = vec3(0.95, 0.08, 0.22), mag = vec3(1.0, 0.22, 0.62), vio = vec3(0.45, 0.25, 1.0);
-  vec3 col = mix(red, mag, smoothstep(0.25, 0.95, uv.x));
-  col = mix(col, vio, s3 * 0.45);
-  float a = streak * body * breathe;
-  a += body * 0.10 * (0.6 + 0.4 * rip);                   // the faint glow of the wall itself, lit by each passing wave
-  // the heart: a pulsing bloom with tendrils
-  float pulse = 0.75 + 0.25 * sin(t * 1.3);
-  float tend = fbm(vec2(atan(d.y, d.x) * 3.0, r * 6.0 - t * 0.35));
-  float bloom = exp(-r * 7.5) * pulse + exp(-r * 3.2) * 0.35 * tend * pulse;
-  col = mix(col, vec3(1.0, 0.72, 0.92), clamp(bloom * 0.9, 0.0, 1.0));
-  a += bloom * 0.85;
-  a = clamp(a, 0.0, 1.0) * 0.62;                          // keep it in the background
-  gl_FragColor = vec4(col * a, a);
+  // rare tearing: for a quarter of a second, a few thin bands slip sideways
+  float ev = floor(t * 4.0);
+  float on = step(0.95, hash(vec2(ev, 3.1)));
+  float band = floor(gl_FragCoord.y / (4.0 + 9.0 * hash(vec2(ev, 1.7))));
+  float torn = on * step(0.72, hash(vec2(band, ev)));
+  vec2 p = uv; p.x += torn * (hash(vec2(band + 3.0, ev)) - 0.5) * 0.014;
+  float x = p.x, y = p.y;
+  // the wall's upper edge, heaving slowly
+  float edge = 0.38 + 0.06 * fbm(vec2(x * 2.0 + t * 0.03, t * 0.05));
+  float body = smoothstep(edge + 0.2, edge - 0.12, y);
+  // 1. the bars: straight and solid like jail bars, crowding together toward the haze on the right (perspective)
+  float ph = 34.0 * x + 120.0 * x * x;
+  float idx = floor(ph), fr = fract(ph);
+  float bar = barShape(fr, 0.16);
+  // the colour wave: crimson and violet roll across the bars from left to right
+  float cw = 0.5 + 0.5 * sin(idx * 0.42 - t * 1.25 + 2.2 * noise(vec2(idx * 0.08, t * 0.15)));
+  vec3 barCol = mix(vec3(0.95, 0.07, 0.22), vec3(0.42, 0.2, 0.95), cw);
+  float bb = (0.4 + 0.45 * hash(vec2(idx, 7.0))) * (0.8 + 0.2 * noise(vec2(idx, y * 5.0 - t * 0.3)));
+  // the glow between the bars, tinted by the same wave
+  vec3 back = mix(vec3(0.32, 0.05, 0.16), vec3(0.16, 0.08, 0.42), cw);
+  // a magenta haze where the bars crowd, breathing
+  float haze = exp(-pow((x - 0.66) / 0.1, 2.0)) * (0.75 + 0.25 * sin(t * 0.6));
+  // scan rows: now and then a thin horizontal row of the bars flickers brighter
+  float row = floor(y * 70.0);
+  float scan = step(0.975, hash(vec2(row, floor(t * 5.0))));
+  // 2. the near layer: thicker bars rising to uneven heights, like an equaliser or a spiked wall, each tipped with light
+  float ph2 = 24.0 * x + 46.0 * x * x;
+  float i2 = floor(ph2), f2 = fract(ph2);
+  float h = 0.08 + 0.17 * pow(noise(vec2(i2 * 0.41, t * 0.45)), 1.6) + 0.06 * noise(vec2(i2 * 2.3, t * 1.1));
+  h *= 0.45 + 0.55 * smoothstep(0.95, 0.35, x);
+  float nshape = barShape(f2, 0.13 * (1.0 - 0.75 * clamp(y / h, 0.0, 1.0)));      // each spike tapers toward its tip
+  float nb = nshape * smoothstep(h + 0.004, h - 0.01, y) * (0.35 + 0.65 * smoothstep(0.0, h, y));
+  float cap = barShape(f2, 0.06) * exp(-abs(y - h) * 90.0);
+  float cw2 = 0.5 + 0.5 * sin(i2 * 0.6 - t * 1.25);
+  vec3 nearCol = mix(vec3(1.0, 0.14, 0.3), vec3(1.0, 0.38, 0.75), cw2);
+  // 3. the plasma on the right: soft, streaked outward, slowly reshaping
+  vec2 q = (p - vec2(1.0, 0.16)) * vec2(asp * 0.55, 1.0);
+  float pr = length(q);
+  float streaks = fbm(vec2(x * 3.0 - t * 0.22, y * 22.0 + 4.0 * fbm(vec2(y * 3.0, t * 0.15))));
+  float plasma = exp(-pr * 2.8) * (0.35 + 0.65 * streaks) * (0.85 + 0.15 * sin(t * 0.4));
+  // compose (premultiplied light)
+  vec3 col = back * 0.35 * body; float a = 0.22 * body;
+  float B = bar * bb * body * (1.0 - 0.35 * haze);
+  col += barCol * B; a += B * 0.85;
+  col += barCol * scan * bar * body * 0.35; a += scan * bar * body * 0.25;
+  col += vec3(0.85, 0.25, 0.62) * haze * body * 0.55; a += haze * body * 0.35;
+  col += nearCol * nb * 0.7 + vec3(1.0, 0.75, 0.9) * cap * 0.6; a += nb * 0.6 + cap * 0.5;
+  col += vec3(1.0, 0.32, 0.58) * plasma * 0.85; a += plasma * 0.6;
+    // a dark, jagged fringe along the very bottom
+  float jag = 0.015 + 0.03 * noise(vec2(x * 90.0, t * 0.3)) * noise(vec2(x * 13.0, 1.0));
+  float dark = smoothstep(jag + 0.004, jag - 0.004, y);
+  col *= 1.0 - dark; a = mix(a, 0.85, dark);
+  float k = 0.48;                                          // kept in the background
+  a = clamp(a, 0.0, 1.0) * k; col = min(col * k, vec3(a));
+  gl_FragColor = vec4(col, a);
 }`;
   const VERT = "attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }";
   let cv = null, gl = null, prog = null, raf = 0, last = 0, t0 = 0, uRes, uT;
