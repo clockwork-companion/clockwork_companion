@@ -19,6 +19,10 @@ your feature branch ──PR──▶ Dev ──(tested on the Dev page)──PR
   only by a pull request from Dev.
 - **Dev is the shared test branch.** Merge into Dev through a pull request, then check the result on the Dev page.
   Don't force-push Dev.
+- **Never delete Dev**, and never use Dev as the *head* of a pull request (to bring Dev into your branch, merge it locally
+  and push your branch). If Dev is deleted, GitHub silently moves every open pull request aimed at Dev onto another branch,
+  the Dev page stops updating, and the live site's publish fails. On 2026-10-24 that happened once: a "Dev → feature branch"
+  pull request was merged with "Delete branch" ticked, and Dev was then restored from the branch that had absorbed its pull requests.
 - **Work on a branch of your own**, made from the latest main: a personal branch (`SinanDev`, `BedoDev`) or,
   better, one branch per feature (`sinan/initiative-dock`, `bedo/crafting`). Small branches are easy to review and to drop.
 - **Pull main into your branch before each work session** and before opening a PR. Resolve conflicts on your branch, not on Dev.
