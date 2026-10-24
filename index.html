@@ -7406,18 +7406,18 @@ function RuneEffect({ e, set, label, busy, cid }) {
 }
 
 // Effects the GM gave, saved for later (like Brewing's GM recipes): pick one to fill in an effect.
-function RuneLibrary({ c, busy, update, slot }) {
+function RuneLibrary({ c, busy, update, slot, canPick = true }) {
   const [adding, setAdding] = useState(false);
   const put = (x, f) => { const o = x.craft.rune.order, v = { effect: f.n, kind: f.kind, dc: f.kind === "manifest" ? f.dc : 50, note: [f.uses, f.what].filter(Boolean).join(". ") };
     if (slot === "second") o.second = Object.assign({}, o.second, v); else Object.assign(o, v); };
   const list = c.craft.rune.effects;
   return html`<div class="rnlib">
     ${list.length > 0 && html`<h3 class="lbl">Saved effects</h3><div class="ptopts">${list.map(f => html`<div class="ptopt row-opt">
-      <button type="button" class="ptcheck" disabled=${busy} onClick=${() => update(x => put(x, f))}>
+      <button type="button" class="ptcheck" disabled=${busy || !canPick} onClick=${() => update(x => put(x, f))}>
         <b>${f.n} · ${f.kind === "manifest" ? `manifesting, under ${f.dc}%` : "enhancing"}</b><span>${[f.uses, f.what].filter(Boolean).join(". ") || "No notes."}</span></button>
       <button class="iconbtn brdel" aria-label=${`Remove ${f.n}`} disabled=${busy} onClick=${() => update(x => { x.craft.rune.effects = x.craft.rune.effects.filter(y => y.k !== f.k); })}>×</button></div>`)}</div>`}
     ${!adding ? html`<button class="btn small" style="margin-top:8px" disabled=${busy} onClick=${() => setAdding(true)}>+ A custom effect</button>`
-      : html`<${EffectForm} onSave=${f => { update(x => { x.craft.rune.effects.push(f); put(x, f); }); setAdding(false); }} onCancel=${() => setAdding(false)} />`}
+      : html`<${EffectForm} onSave=${f => { update(x => { x.craft.rune.effects.push(f); if (canPick) put(x, f); }); setAdding(false); }} onCancel=${() => setAdding(false)} />`}
   </div>`;
 }
 function EffectForm({ onSave, onCancel }) {
@@ -7464,13 +7464,13 @@ function RuneSide({ c, st, plan, o, setO, focus, busy, update }) {
     <div class="row ptrate"><span><b>Lasts ${plan.lasts} hour${plan.lasts > 1 ? "s" : ""}</b> · each hour costs the life force again</span>
       <span class="ptstepper"><button class="iconbtn" aria-label="Fewer hours" disabled=${busy || plan.lasts <= 1} onClick=${() => setO(x => { x.hours = Math.max(1, num(x.hours) - 1); })}>−</button>
       <button class="iconbtn" aria-label="More hours" disabled=${busy || plan.lasts >= 24} onClick=${() => setO(x => { x.hours = num(x.hours) + 1; })}>+</button></span></div>`
-    : !st.potent ? html`<p class="ptlocked">A second effect (a Potent Runestone) unlocks at Runecrafting 7.</p>`
-    : !plan.precious ? html`<p class="ptlocked">A semi-precious gem holds one effect. Pick a precious gem for a Potent Runestone.</p>`
-    : html`<div class="seg two ammode" role="group" aria-label="Second effect"><button type="button" aria-pressed=${!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = null; })}>One effect</button>
+    : html`${!st.potent ? html`<p class="ptlocked">A second effect (a Potent Runestone) unlocks at Runecrafting 7. You can still save effects for later.</p>`
+      : !plan.precious ? html`<p class="ptlocked">A semi-precious gem holds one effect. Pick a precious gem (Vessel) for a Potent Runestone.</p>`
+      : html`<div class="seg two ammode" role="group" aria-label="Second effect"><button type="button" aria-pressed=${!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = null; })}>One effect</button>
         <button type="button" aria-pressed=${!!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = x.second || { kind: "enhance", effect: "", dc: 50 }; })}>Two effects</button></div>
       ${o.second && html`<${RuneEffect} e=${o.second} busy=${busy} cid=${c.id} label="Second effect" set=${v => setO(x => { x.second = Object.assign({}, x.second, v); })} />
-        <${RuneLibrary} c=${c} busy=${busy} update=${update} slot="second" />
-        <p class="muted ptrule">Two rolls, twice the time. If either fails, both effects, the gem and the materials are lost. The same effect twice stacks.</p>`}`;
+        <p class="muted ptrule">Two rolls, twice the time. If either fails, both effects, the gem and the materials are lost. The same effect twice stacks.</p>`}`}
+      <${RuneLibrary} c=${c} busy=${busy} update=${update} slot="second" canPick=${st.potent && plan.precious} />`;
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>${focus === "extra" && plan.hoax ? "Hoaxstone" : RN_NAMES[focus]}</span></h3>
     <div class="ptbody" key=${focus}>${body}</div>
