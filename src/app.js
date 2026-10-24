@@ -454,6 +454,14 @@ function App() {
   const list = rosterOrder(Object.values(all));
   const gm = isGM();
   if (!gm && view === "gm") setView("chars");
+  // Which page is showing (characters, GM table, settings) and which way we moved, for themes that animate the
+  // change (Mossheart blows a gust of leaves across). Order matches the top bar: Characters, GM table, Settings.
+  const page = settings ? "settings" : view === "gm" && gm ? "gm" : "chars";
+  const pageNav = useRef({ page, dir: "" });
+  if (pageNav.current.page !== page) {
+    const order = ["chars", "gm", "settings"];
+    pageNav.current = { page, dir: order.indexOf(page) > order.indexOf(pageNav.current.page) ? "r" : "l" };
+  }
   const current = sel && all[sel] ? norm(all[sel]) : null;
   useEffect(() => { if (!current && list.length) setSel(list[0].id); }, [list.length, !!current]);
   useEffect(() => lsSet("cw-sel", sel), [sel]);
@@ -507,6 +515,7 @@ function App() {
       : "Shared saving isn't available in this view, so characters are kept in this browser only. Open the published page while signed in to share them with your table."}</div>`}
     ${Store.readOnly && html`<div class="banner">You're viewing these characters read-only. To edit, ask the owner to invite you as an Editor.</div>`}
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
+    <div class="viewswap" key=${page} data-dir=${pageNav.current.dir}>
     ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} onBack=${() => openSettings(false)} />`
       : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
     <${Roster} list=${list} all=${all} sel=${sel} setSel=${setSel} current=${current} create=${create} startNew=${startNew} />
@@ -518,6 +527,7 @@ function App() {
             : "You don't have a character here yet. Roll one up below, or ask your GM to hand you an existing one."}</p>
           <div class="row"><button class="btn primary" onClick=${startNew}>Create a character</button></div>
           <p class="muted">Walk through creation step by step, or start from a blank sheet.</p></div>`}`}
+    </div>
     ${making === "choose" && html`<${NewChoice} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")} onBlank=${() => { setMaking(null); create(false); }} />`}
     ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
     <${Toaster} /><${HoverCard} /><${DiceAsk} />

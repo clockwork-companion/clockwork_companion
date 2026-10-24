@@ -5,7 +5,7 @@
    It only exists while the Mossheart theme is on. Nothing animates unless the pointer moves; it stops while
    the tab is hidden, and holds still for anyone who asks their device for reduced motion. Without it, the
    theme's CSS vines (in app.css) are used instead.
-   Switching sections (Sheet, Vitals, …): the ivy is measured the moment the new section is inserted, before it
+   Switching sections (Sheet, Vitals, …, and the pages: Characters, GM table, Settings): the ivy is measured the moment the new section is inserted, before it
    is painted, and each section's ivy is kept, so it never lags behind. A gust of leaves then blows across: the
    old section is wiped away behind it and the new one appears in its wake, in the direction you moved. */
 (function () {
@@ -216,7 +216,8 @@
     clearTimeout(gust.t); gust.ghost.remove(); gust.g.remove(); gust.nu.classList.remove("mh-wipe-in", gust.dirCls);
     gust = null; swapping = 0; queue();
   }
-  const isSwap = n => n.nodeType === 1 && n.classList.contains("tabswap");
+  // A new section: a tab (Sheet, Vitals, …) or a whole page (Characters, GM table, Settings).
+  const isSwap = n => n.nodeType === 1 && (n.classList.contains("tabswap") || n.classList.contains("viewswap"));
   // Watch the page: a new section → measure now (and maybe blow a gust); anything else → measure shortly.
   function watch(records) {
     let gone = null, came = null;

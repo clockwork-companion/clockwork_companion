@@ -142,12 +142,12 @@ CSS = f'''/* ----- Mossheart (extended): Batbayar's theme. A dark, old forest: i
 /* switching sections: a gust of leaves wipes the old section away and the new one appears in its wake (fx-moss.js) */
 :root.has-ivy[data-skin="moss"] .tabswap[data-dir]:not(.mh-wipe-in) {{ animation: none; }}
 .mh-ghost {{ position: absolute; z-index: 3; margin: 0; padding: 0; max-width: none; overflow: hidden; pointer-events: none; }}
-.mh-ghost > .tabswap {{ animation: none; }}
-.mh-ghost.mh-wipe-out, :root .tabswap.mh-wipe-in {{ -webkit-mask-size: 300% 100%; mask-size: 300% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; animation: mhWipe .95s cubic-bezier(.4, .05, .35, 1) both; }}
+.mh-ghost :is(.tabswap, .viewswap) {{ animation: none; }}
+.mh-ghost.mh-wipe-out, :root :is(.tabswap, .viewswap).mh-wipe-in {{ -webkit-mask-size: 300% 100%; mask-size: 300% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; animation: mhWipe .95s cubic-bezier(.4, .05, .35, 1) both; }}
 .mh-ghost.mh-wipe-out.wind-l {{ -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 55%); mask-image: linear-gradient(90deg, #000 45%, transparent 55%); --m0: 20%; --m1: 82%; }}
-:root .tabswap.mh-wipe-in.wind-l {{ -webkit-mask-image: linear-gradient(90deg, transparent 45%, #000 55%); mask-image: linear-gradient(90deg, transparent 45%, #000 55%); --m0: 20%; --m1: 82%; }}
+:root :is(.tabswap, .viewswap).mh-wipe-in.wind-l {{ -webkit-mask-image: linear-gradient(90deg, transparent 45%, #000 55%); mask-image: linear-gradient(90deg, transparent 45%, #000 55%); --m0: 20%; --m1: 82%; }}
 .mh-ghost.mh-wipe-out.wind-r {{ -webkit-mask-image: linear-gradient(90deg, transparent 45%, #000 55%); mask-image: linear-gradient(90deg, transparent 45%, #000 55%); --m0: 82%; --m1: 20%; }}
-:root .tabswap.mh-wipe-in.wind-r {{ -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 55%); mask-image: linear-gradient(90deg, #000 45%, transparent 55%); --m0: 82%; --m1: 20%; }}
+:root :is(.tabswap, .viewswap).mh-wipe-in.wind-r {{ -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 55%); mask-image: linear-gradient(90deg, #000 45%, transparent 55%); --m0: 82%; --m1: 20%; }}
 .mh-wipe-out {{ filter: saturate(.7); }}
 @keyframes mhWipe {{ from {{ -webkit-mask-position: var(--m0) 0; mask-position: var(--m0) 0; }} to {{ -webkit-mask-position: var(--m1) 0; mask-position: var(--m1) 0; }} }}
 .mh-gust {{ position: fixed; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }}
@@ -156,7 +156,7 @@ CSS = f'''/* ----- Mossheart (extended): Batbayar's theme. A dark, old forest: i
 .mh-ivy.mh-grow {{ animation: mhGrow .7s .38s cubic-bezier(.2, .7, .3, 1) both; }}
 @keyframes mhLeave {{ to {{ opacity: 0; translate: calc(var(--wind, -1) * 70px) -14px; }} }}
 @keyframes mhGrow {{ from {{ opacity: 0; scale: .97; }} }}
-@media (prefers-reduced-motion: reduce) {{ .mh-ivy.mh-leave, .mh-ivy.mh-grow, .mh-ghost.mh-wipe-out, :root .tabswap.mh-wipe-in {{ animation: none; }} .mh-gust {{ display: none; }} }}
+@media (prefers-reduced-motion: reduce) {{ .mh-ivy.mh-leave, .mh-ivy.mh-grow, .mh-ghost.mh-wipe-out, :root :is(.tabswap, .viewswap).mh-wipe-in {{ animation: none; }} .mh-gust {{ display: none; }} }}
 :root.has-ivy[data-skin="moss"] .frame::before, :root.has-ivy[data-skin="moss"] .frame::after {{ display: none; }}
 
 :root[data-skin="moss"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel, .member, .gx-attr, .gx-road, .gx-pick, .ptread, .pled, .ptopt, .ptel, .ptstage, .ptlabel) {{
