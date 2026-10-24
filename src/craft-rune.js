@@ -304,8 +304,8 @@ function RuneSide({ c, st, plan, o, setO, focus, busy, update }) {
       <button class="iconbtn" aria-label="More hours" disabled=${busy || plan.lasts >= 24} onClick=${() => setO(x => { x.hours = num(x.hours) + 1; })}>+</button></span></div>`
     : html`${!st.potent ? html`<p class="ptlocked">A second effect (a Potent Runestone) unlocks at Runecrafting 7. You can still save effects for later.</p>`
       : !plan.precious ? html`<p class="ptlocked">A semi-precious gem holds one effect. Pick a precious gem (Vessel) for a Potent Runestone.</p>`
-      : html`<div class="seg two ammode" role="group" aria-label="Second effect"><button type="button" aria-pressed=${!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = null; })}>One effect</button>
-        <button type="button" aria-pressed=${!!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = x.second || { kind: "enhance", effect: "", dc: 50 }; })}>Two effects</button></div>
+      : html`<div class="ptopts brchips"><button type="button" class="ptopt" aria-pressed=${!o.second} disabled=${busy} onClick=${() => setO(x => { x.second = null; })}><b>None</b></button></div>
+      ${!o.second && html`<p class="muted ptrule">None: the stone has one effect. Pick a saved effect below, or make a new one, for a Potent Runestone.</p>`}
       ${o.second && html`<${RuneEffect} e=${o.second} busy=${busy} cid=${c.id} label="Second effect" set=${v => setO(x => { x.second = Object.assign({}, x.second, v); })} />
         <p class="muted ptrule">Two rolls, twice the time. If either fails, both effects, the gem and the materials are lost. The same effect twice stacks.</p>`}`}
       <${RuneLibrary} c=${c} busy=${busy} update=${update} slot="second" canPick=${st.potent && plan.precious} />`;
