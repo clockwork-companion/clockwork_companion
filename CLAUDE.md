@@ -4,9 +4,11 @@ This repo is the **Clockwork Companion**, a web character sheet and GM tool for 
 a homebrew tabletop RPG. Three people work on it, each with their own Claude. Read this whole file before changing
 anything. When this file and an instruction from your own person disagree, ask them before acting.
 
-- **People:** Sinan (owner of the repo, co-GM), Bedo, and one more collaborator. Address them in plain language.
-- **Live site:** https://vansinan101.github.io/clockwork_companion/
-- **Dev page:** https://vansinan101.github.io/clockwork_companion/dev/ (red DEV ribbon)
+- **People:** Sinan (co-GM), Bedo and Utku. All three are **owners** of the `clockwork-companion` GitHub organization,
+  which owns the repo. Address them in plain language.
+- **Repo:** https://github.com/clockwork-companion/clockwork_companion (moved from `vansinan101` on 2026-10-24; old links forward)
+- **Live site:** https://clockwork-companion.github.io/clockwork_companion/
+- **Dev page:** https://clockwork-companion.github.io/clockwork_companion/dev/ (red DEV ribbon)
 
 ## 1. Branches: how work moves
 
@@ -19,12 +21,21 @@ your feature branch ──PR──▶ Dev ──(tested on the Dev page)──PR
   only by a pull request from Dev.
 - **Dev is the shared test branch.** Merge into Dev through a pull request, then check the result on the Dev page.
   Don't force-push Dev.
+- **Never delete Dev**, and never use Dev as the *head* of a pull request, except the release pull request Dev → main
+  (to bring Dev into your branch, merge it locally and push your branch). If Dev is deleted, GitHub silently moves every
+  open pull request aimed at Dev onto another branch, the Dev page stops updating, and the live site's publish fails.
+  On 2026-10-24 that happened once: a "Dev → feature branch" pull request was merged with "Delete branch" ticked, and Dev
+  was then restored from the branch that had absorbed its pull requests.
+- **GitHub enforces this now.** A repository ruleset, "Protect main and Dev", covers both branches: they can't be deleted
+  or force-pushed, and they change only through a pull request whose **check** job (`.github/workflows/checks.yml`)
+  has passed. The Merge button stays grey until it's green. Org owners may bypass it for pull requests only, in an
+  emergency. If a push to Dev or main is refused, that's the ruleset working: open a pull request instead.
 - **Work on a branch of your own**, made from the latest main: a personal branch (`SinanDev`, `BedoDev`) or,
   better, one branch per feature (`sinan/initiative-dock`, `bedo/crafting`). Small branches are easy to review and to drop.
 - **Pull main into your branch before each work session** and before opening a PR. Resolve conflicts on your branch, not on Dev.
 - **Never push to someone else's branch** unless they asked you to.
 - **One PR per feature.** The PR description says, in plain words, what changed for the user and how to test it.
-- When main changes and Dev is behind, bring Dev up to main (a fast-forward or a merge PR) so the Dev page
+- When main changes and Dev is behind, bring Dev up to main (a pull request from main into Dev) so the Dev page
   isn't testing something older than the live site.
 
 ## 2. Publishing (don't break this)
@@ -150,3 +161,5 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-24:** Workshop: a weaponsmith or armorsmith (Maintenance 3+) repairs other players' items through jobs (a copy of one item; the owner's app applies the result) and can craft items "made for" another player. The smith's materials are used. Utku.
 - **2026-10-24:** On the craft benches the base stats (weapon damage, crit, accuracy, durability, die; armor AV and Soak) come from the GM: on a table only a GM can set them. Players raise them through the paid changes/extras. Utku.
 - **2026-10-24:** Dice: a top-bar switch (per browser, like the theme) between "App rolls" and "My own rolls". With own rolls, every roll the app makes (long rest cleansing, creation 3d8, Powdertinkering, Armor repair and craft, Weapon repair and craft, Brewing, Runecrafting) asks for the number rolled at the table, e.g. in Tabletop Simulator; new rolls go through `askRoll()` in `app.js`. Utku.
+- **2026-10-24:** The repo moved to the free `clockwork-companion` organization, with Sinan, Bedo and Utku as owners. The site moved to clockwork-companion.github.io/clockwork_companion/; the old address forwards to it. Sinan.
+- **2026-10-24:** The "Protect main and Dev" ruleset is on: no deleting or force-pushing either branch, changes only by a pull request with a green check. Sinan.

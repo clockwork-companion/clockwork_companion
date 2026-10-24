@@ -15,11 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with: { python-version: "3.12" }
-      - uses: actions/setup-node@v4
-        with: { node-version: "20" }
+      - uses: actions/setup-node@v5
+        with: { node-version: "24" }
 
       - name: sw.js is not committed (it's generated on every build)
         run: |
@@ -49,7 +49,7 @@ jobs:
           pip install "playwright>=1.44,<2"
           python -m playwright install --with-deps chromium
 
-      - name: Smoke test (desktop and 390 px, light and dark theme)
+      - name: Smoke test (every theme, desktop and 390 px)
         run: python3 tests/smoke.py "$RUNNER_TEMP/site" smoke-shots
 
       - name: Workshop jobs between players (Firebase stand-in)
@@ -57,7 +57,7 @@ jobs:
 
       - name: Keep the screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: smoke-screenshots
           path: smoke-shots
