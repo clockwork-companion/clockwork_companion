@@ -263,6 +263,29 @@ html[data-text="large"] .wrap { zoom: 1.15; }
 :root[data-skin="retro"] .tabswap[data-dir] { animation: tabFlicker .28s steps(1, end); }
 :root[data-skin="retro"] .tabswap[data-dir=""] { animation: none; }
 @keyframes tabFlicker { 0% { opacity: 0; } 25% { opacity: .7; } 40% { opacity: .15; } 60% { opacity: 1; } 75% { opacity: .6; } }
+/* Crafting unlocks (craft.js forgeIn): the tab rises out of the rule glowing like hot metal, cools to its colour, and
+   throws a burst of sparks. A new bench button in Crafting does the same. Nothing moves for reduced motion. */
+.forging { animation: forgeRise 2.2s cubic-bezier(.2, .8, .3, 1) both; position: relative; z-index: 2; }
+@keyframes forgeRise {
+  0% { transform: translateY(110%); opacity: 0; filter: brightness(2.6) saturate(1.6); box-shadow: 0 0 0 0 transparent; }
+  22% { transform: translateY(-4px); opacity: 1; filter: brightness(2.2) saturate(1.5); box-shadow: 0 0 22px 6px color-mix(in srgb, #ffb347 70%, transparent), inset 0 0 14px #fff3c4; }
+  30% { transform: translateY(0); }
+  55% { filter: brightness(1.5) saturate(1.3); box-shadow: 0 0 16px 3px color-mix(in srgb, #ff7a2e 55%, transparent), inset 0 0 8px color-mix(in srgb, #ffcf7a 60%, transparent); }
+  100% { transform: none; filter: none; }
+}
+.forge-wait { opacity: 0; }
+.forgeburst { position: absolute; z-index: 70; left: 0; top: 0; width: 100%; overflow: hidden; pointer-events: none; }
+.forgeat { position: absolute; width: 0; height: 0; }
+.forgeburst i { position: absolute; left: -2px; top: -2px; width: 4px; height: 4px; border-radius: 50%; opacity: 0;
+  background: #fff1b8; box-shadow: 0 0 6px 2px #ffae42, 0 0 12px 3px color-mix(in srgb, #ff6a1a 60%, transparent);
+  animation: forgeSpark 1s cubic-bezier(.15, .7, .4, 1) both; }
+@keyframes forgeSpark {
+  0% { opacity: 0; transform: translate(0, 0) scale(1.2); }
+  6% { opacity: 1; }
+  60% { opacity: 1; transform: translate(var(--dx), var(--dy)) scale(.9); background: #ffd27a; }
+  100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + var(--fall))) scale(.4); background: #c2410c; }
+}
+@media (prefers-reduced-motion: reduce) { .forging { animation: none; } .forgeburst { display: none; } .forge-wait { opacity: 1; } }
 .tabicon { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: var(--tc); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
 .tabpane { padding-top: 26px; display: grid; gap: 46px; grid-template-columns: minmax(0, 1fr); }
 .tabpane > *, .frame, .two > *, .meters > * { min-width: 0; }
@@ -4200,7 +4223,23 @@ function Character({ c, update, tab, setTab, onDelete }) {
   // Free edit is always there for a GM; a player gets it only when the GM switches it on for this sheet.
   const canFree = isGM() || !!c.freeEdit;
   const mode = canFree ? chosenMode : "karma";
-  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ["craft", "Crafting"]];
+  // Crafting only appears once the character has points in a crafting skill (and then only those benches).
+  const crafts = craftsOpen(c).map(x => x[0]);
+  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ...(crafts.length ? [["craft", "Crafting"]] : [])];
+  useEffect(() => { if (tab === "craft" && !crafts.length) setTab("sheet"); }, [tab, crafts.length]);
+  // Spot crafts unlocking on this character (not when another character is opened) and celebrate them.
+  const known = useRef({ id: c.id, keys: crafts });
+  useEffect(() => {
+    const k = known.current;
+    if (k.id !== c.id) { known.current = { id: c.id, keys: crafts }; return; }
+    const fresh = crafts.filter(x => !k.keys.includes(x));
+    known.current = { id: c.id, keys: crafts };
+    if (!fresh.length) return;
+    const names = fresh.map(x => CRAFTS.find(y => y[0] === x)[1]);
+    if (k.keys.length) { CraftFresh.keys = (CraftFresh.char === c.id ? CraftFresh.keys : []).concat(fresh); CraftFresh.char = c.id; }   // new benches: forged in when Crafting opens
+    if (!k.keys.length) { toast(`The forge is lit: Crafting unlocked (${names.join(", ")}).`); forgeIn(document.querySelector(".tabs .tab-craft")); }
+    else toast(`New bench in Crafting: ${names.join(", ")}.`);
+  }, [c.id, crafts.join()]);
   const [panel, setPanel] = useState(null);
   const [invested, setInvested] = useState(() => { const v = lsGet("cw-invested2", null); return v && typeof v === "object" ? v : { skills: false, weapons: false, sec: false }; });
   useEffect(() => lsSet("cw-invested2", invested), [invested]);
@@ -5898,14 +5937,56 @@ const CRAFT_ICONS = {
   armor: html`<path d="M10 2.5l6 2.2v4.8c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V4.7z M10 2.5v15" />`,
 };
 
+// The crafts this character has put points into. The Crafting tab, and each bench in it, only appear once they have.
+const craftsOpen = c => CRAFTS.filter(([, , skill]) => num((c.skills || {})[skill]) > 0);
+// Benches that unlocked on the open character (set by the Character view) and haven't been shown yet: their buttons
+// are forged in the next time the Crafting tab is open. The tab itself forges in when it first appears.
+const CraftFresh = { char: "", keys: [], take(id, k) { if (this.char !== id || !this.keys.includes(k)) return false; this.keys = this.keys.filter(x => x !== k); return true; } };
+
+// The Crafting tab arriving, or a new bench in it: the button rises out of the rule glowing like hot metal,
+// with a burst of sparks. Nothing moves for reduced motion; the toast says what unlocked either way.
+// If the button is off screen (a skill is usually raised further down the sheet), it waits until it scrolls into view.
+function forgeIn(el) {
+  if (!el || reduceMotion()) return;
+  const r0 = el.getBoundingClientRect();
+  if (r0.bottom < 0 || r0.top > innerHeight) {
+    el.classList.add("forge-wait");   // hidden until it rises
+    const io = new IntersectionObserver(es => { if (es.some(e => e.intersectionRatio > .6)) { io.disconnect(); el.classList.remove("forge-wait"); forgeIn(el); } }, { threshold: [.6] });
+    io.observe(el);
+    return;
+  }
+  el.classList.remove("forging"); void el.offsetWidth; el.classList.add("forging");
+  setTimeout(() => el.classList.remove("forging"), 2300);
+  // Sparks live in a page-sized layer that clips them, so they never make the page scroll sideways.
+  const r = el.getBoundingClientRect(), burst = document.createElement("div"), at = document.createElement("div");
+  burst.className = "forgeburst"; burst.setAttribute("aria-hidden", "true"); burst.style.height = document.documentElement.scrollHeight + "px";
+  at.className = "forgeat"; at.style.left = r.left + scrollX + r.width / 2 + "px"; at.style.top = r.top + scrollY + r.height * .6 + "px"; burst.appendChild(at);
+  for (let i = 0; i < 26; i++) {
+    const a = -Math.PI * (.05 + Math.random() * .9), v = 40 + Math.random() * 110, sp = document.createElement("i");
+    sp.style.setProperty("--dx", (Math.cos(a) * v * (Math.random() < .5 ? 1 : -1) * 1.4).toFixed(0) + "px");
+    sp.style.setProperty("--dy", (Math.sin(a) * v).toFixed(0) + "px");
+    sp.style.setProperty("--fall", (30 + Math.random() * 60).toFixed(0) + "px");
+    sp.style.animationDelay = (380 + Math.random() * 160).toFixed(0) + "ms";
+    sp.style.animationDuration = (650 + Math.random() * 600).toFixed(0) + "ms";
+    at.appendChild(sp);
+  }
+  document.body.appendChild(burst);
+  setTimeout(() => burst.remove(), 2200);
+}
+
 function CraftTab({ c, update }) {
-  const [sub, setSub] = useState(() => lsGet("cw-craft-sub", "powder"));
+  const open = craftsOpen(c);
+  const [chosen, setSub] = useState(() => lsGet("cw-craft-sub", "powder"));
+  const sub = open.some(x => x[0] === chosen) ? chosen : (open[0] || CRAFTS[0])[0];   // a hidden bench falls back to the first open one
   useEffect(() => lsSet("cw-craft-sub", sub), [sub]);
+  // A bench that just unlocked while this tab is open: forge its button in.
+  const nav = useRef(null);
+  useEffect(() => { if (!nav.current) return; open.forEach(([k]) => { if (CraftFresh.take(c.id, k)) forgeIn(nav.current.querySelector(".cn-" + k)); }); }, [c.id, open.map(x => x[0]).join()]);
   const shop = useShop();   // the "new job" notice can send the smith to the Weapon or Armor upkeep bench
   useEffect(() => { const f = shop.focus; if (f && f.char === c.id) setSub(f.kind); }, [shop.focusSeq, c.id]);
   const cur = CRAFTS.find(x => x[0] === sub) || CRAFTS[0];
   return html`<div class="tabpane">
-    <nav class="craftnav" aria-label="Crafts">${CRAFTS.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} class=${"cn-" + k} onClick=${() => setSub(k)}>
+    <nav class="craftnav" aria-label="Crafts" ref=${nav}>${open.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} class=${"cn-" + k} onClick=${() => setSub(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${CRAFT_ICONS[k]}</svg><span>${n}</span>
       <small>${num(c.skills[skill]) ? `${skill} ${num(c.skills[skill])}` : ""}</small></button>`)}</nav>
     ${sub === "powder" ? html`<${Powdertinkering} c=${c} update=${update} />` : sub === "brew" ? html`<${Brewing} c=${c} update=${update} />` : sub === "rune" ? html`<${Runecrafting} c=${c} update=${update} />` : sub === "armor" ? html`<${ArmorUpkeep} c=${c} update=${update} />` : sub === "weapon" ? html`<${WeaponUpkeep} c=${c} update=${update} />` : html`<${UnderConstruction} c=${c} craft=${cur} />`}
