@@ -349,11 +349,21 @@ applySkin(lsGet("cw-skin", "ledger"));   // before the first paint, so the page 
 function SkinPicker() {
   const [skin, setSkin] = useState(() => lsGet("cw-skin", "ledger"));
   useEffect(() => { applySkin(skin); lsSet("cw-skin", skin); }, [skin]);
-  return html`<label class="skinpick"><span class="lbl">Theme</span>
-    <select value=${skin} onChange=${e => setSkin(e.target.value)}>
+  return html`<label class="skinpick">
+    <select id="set-theme" value=${skin} onChange=${e => setSkin(e.target.value)}>
       <optgroup label="Themes">${SKINS.filter(x => !x[3]).map(([k, n]) => html`<option value=${k}>${n}</option>`)}</optgroup>
       <optgroup label="Extended">${SKINS.filter(x => x[3] === "extended").map(([k, n]) => html`<option value=${k}>${n}</option>`)}</optgroup>
     </select></label>`;
+}
+
+/* ================= text size: per browser, like the theme ================= */
+const TEXT_SIZES = [["normal", "Normal"], ["large", "Larger"]];
+function applyText(key) { if (key === "large") document.documentElement.dataset.text = "large"; else delete document.documentElement.dataset.text; }
+applyText(lsGet("cw-text", "normal"));
+function TextSizePicker() {
+  const [size, setSize] = useState(() => lsGet("cw-text", "normal"));
+  useEffect(() => { applyText(size); lsSet("cw-text", size); }, [size]);
+  return html`<div class="seg" role="group" aria-labelledby="set-text">${TEXT_SIZES.map(([k, n]) => html`<button type="button" aria-pressed=${size === k} onClick=${() => setSize(k)}>${n}</button>`)}</div>`;
 }
 
 /* ================= dice: the app rolls, or the player types a roll made at the table ================= */
@@ -370,9 +380,10 @@ function askRoll(spec) {
 }
 function DicePicker() {
   const [mode, setMode] = useState(Dice.mode);
-  return html`<label class="skinpick" title="Roll in the app, or roll at your table (Tabletop Simulator) and type the result"><span class="lbl">Dice</span>
-    <select value=${mode} onChange=${e => { Dice.mode = e.target.value; lsSet("cw-dice", Dice.mode); setMode(Dice.mode); }}>
-      <option value="app">App rolls</option><option value="own">My own rolls</option></select></label>`;
+  const pick = m => { Dice.mode = m; lsSet("cw-dice", m); setMode(m); };
+  return html`<div class="seg" role="group" aria-labelledby="set-dice">
+    <button type="button" aria-pressed=${mode !== "own"} onClick=${() => pick("app")}>App rolls</button>
+    <button type="button" aria-pressed=${mode === "own"} onClick=${() => pick("own")}>My own rolls</button></div>`;
 }
 // The box that asks for a roll. Mounted once in App; askRoll() opens it.
 function DiceAsk() {
@@ -415,7 +426,9 @@ function App() {
   const [, force] = useState(0);
   const [drafts, setDrafts] = useState({});
   const [sel, setSel] = useState(() => lsGet("cw-sel", null));
-  const [tab, setTab] = useState(() => (["sheet", "vitals", "gear", "table"].includes(location.hash.slice(1)) ? location.hash.slice(1) : lsGet("cw-tab", "sheet")));
+  const [tab, setTab] = useState(() => { const t = CHAR_TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : lsGet("cw-tab", "sheet"); return CHAR_TABS.includes(t) ? t : "sheet"; });
+  const [settings, setSettings] = useState(() => location.hash === "#settings");
+  const openSettings = on => { setSettings(on); window.scrollTo(0, 0); };
   const lastEdit = useRef({});
   const [view, setView] = useState(() => (location.hash === "#gm" ? "gm" : lsGet("cw-view", "chars")));
   useEffect(() => lsSet("cw-view", view), [view]);
@@ -451,7 +464,7 @@ function App() {
     Store.save(next);
   };
   const update = fn => { if (current) updateChar(current.id, fn); };
-  const openChar = id => { setSel(id); setView("chars"); setTab("sheet"); window.scrollTo(0, 0); };
+  const openChar = id => { setSel(id); setView("chars"); setSettings(false); setTab("sheet"); window.scrollTo(0, 0); };
 
   // A new character belongs to the player who made it. A companion belongs to whoever plays its master.
   // fill(c): the creation guide's choices, applied to the new character before it's saved.
@@ -477,11 +490,11 @@ function App() {
     <header class="top">
       <div class="brand">Clockwork<small>Companion</small></div>
       ${gm && html`<div class="seg viewseg" role="group" aria-label="View">
-        <button aria-pressed=${view === "chars"} onClick=${() => setView("chars")}>Characters</button>
-        <button aria-pressed=${view === "gm"} onClick=${() => setView("gm")}>GM table</button></div>`}
-      <${SkinPicker} /><${DicePicker} />
-      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button><button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
+        <button aria-pressed=${!settings && view === "chars"} onClick=${() => { setView("chars"); setSettings(false); }}>Characters</button>
+        <button aria-pressed=${!settings && view === "gm"} onClick=${() => { setView("gm"); setSettings(false); }}>GM table</button></div>`}
+      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
+      <button type="button" class="setbtn" aria-pressed=${settings} aria-label="Settings" data-tip="Settings" onClick=${() => openSettings(!settings)}><i class="seticon" aria-hidden="true"></i></button>
     </header>
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
       ? (window.CW_WEB.reason === "offline" ? "Couldn't reach the shared save, so for now characters are kept in this browser only. Check your connection and reload."
@@ -489,7 +502,8 @@ function App() {
       : "Shared saving isn't available in this view, so characters are kept in this browser only. Open the published page while signed in to share them with your table."}</div>`}
     ${Store.readOnly && html`<div class="banner">You're viewing these characters read-only. To edit, ask the owner to invite you as an Editor.</div>`}
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
-    ${view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
+    ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} onBack=${() => openSettings(false)} />`
+      : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
     <${Roster} list=${list} all=${all} sel=${sel} setSel=${setSel} current=${current} create=${create} startNew=${startNew} />
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
       : Store.mode === "loading" ? html`<div class="empty"><p class="muted">Opening the character ledger…</p></div>`
@@ -558,6 +572,7 @@ function Roster({ list, all, sel, setSel, current, create, startNew }) {
 }
 
 /* ================= character ================= */
+const CHAR_TABS = ["sheet", "vitals", "talents", "gear", "craft"];
 function Character({ c, update, tab, setTab, onDelete }) {
   animScope = c.id;   // animations only play for changes on this character, not when another one is opened
   const d = derive(c);
@@ -566,7 +581,7 @@ function Character({ c, update, tab, setTab, onDelete }) {
   // Free edit is always there for a GM; a player gets it only when the GM switches it on for this sheet.
   const canFree = isGM() || !!c.freeEdit;
   const mode = canFree ? chosenMode : "karma";
-  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ["craft", "Crafting"], ["table", "Tabletop"]];
+  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ["craft", "Crafting"]];
   const [panel, setPanel] = useState(null);
   const [invested, setInvested] = useState(() => { const v = lsGet("cw-invested2", null); return v && typeof v === "object" ? v : { skills: false, weapons: false, sec: false }; });
   useEffect(() => lsSet("cw-invested2", invested), [invested]);
@@ -590,12 +605,11 @@ function Character({ c, update, tab, setTab, onDelete }) {
     ${panel && panel.kind === "rule" && html`<${RulePanel} topic=${panel.name} onClose=${() => setPanel(null)} />`}
     ${panel && panel.kind !== "rule" && skillTabs && html`<${SkillPanel} c=${c} kind=${panel.kind} name=${panel.name} mode=${mode} update=${update} onClose=${() => setPanel(null)} />`}
     <div class="tabswap" key=${tab} data-dir=${nav.current.dir}>
-      ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
+      ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} onDelete=${onDelete} />`}
       ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
       ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
       ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
       ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
-      ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}
     </div>`;
 }
 
@@ -773,7 +787,7 @@ function AttrRow({ c, a, mode, set }) {
 }
 
 /* ================= sheet tab ================= */
-function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill }) {
+function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill, onDelete }) {
   // The brass diamond on a section heading: filled shows only invested skills, hollow shows them all.
   const diamond = (k, what) => html`<span class="orn has-btn"><button type="button" class=${"diamond" + (invested[k] ? " on" : "")} aria-pressed=${invested[k]}
     aria-label=${invested[k] ? `Show all ${what}` : `Show only invested ${what}`} onClick=${() => toggleInv(k)}
@@ -823,7 +837,15 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill }) {
     <section class="frame"><${Sigils} seed="notes" n=${1} lead="note" side="r" /><h2 class="h"><span>Notes</span><i class="orn" aria-hidden="true"></i></h2>
       <div class="field"><label for=${"notes-" + c.id}>Backstory, anything else</label>
       <textarea id=${"notes-" + c.id} rows="5" value=${c.notes} onInput=${e => update(x => { x.notes = e.target.value; })}></textarea></div></section>
+    <${DeleteCharacter} c=${c} onDelete=${onDelete} />
   </div>`;
+}
+function DeleteCharacter({ c, onDelete }) {
+  const [del, setDel] = useState(false);
+  useEffect(() => setDel(false), [c.id]);
+  return html`<div class="delchar">${del ? html`<div class="confirm"><span>Delete <b>${c.name || "this character"}</b> for everyone? This can't be undone.</span>
+      <button class="btn small danger" onClick=${() => onDelete(c.id)}>Delete</button><button class="btn small" onClick=${() => setDel(false)}>Keep</button></div>`
+    : html`<button class="btn small danger" onClick=${() => setDel(true)}>Delete character</button>`}</div>`;
 }
 
 /* ================= skill side panel ================= */
@@ -1273,11 +1295,12 @@ function WeaponCard({ c, w, i, update }) {
   </div>`;
 }
 
-/* ================= tabletop tab ================= */
-function TableTab({ c, update, onDelete }) {
+/* ================= Tabletop Simulator: send a character to the table and bring changes back (in Settings) ================= */
+function TabletopPanel({ c, update }) {
   const data = useMemo(() => R.toTabletop(c), [c]);
   const code = useMemo(() => JSON.stringify(data), [data]);
-  const ta = useRef(); const [paste, setPaste] = useState(""); const [preview, setPreview] = useState(null); const [err, setErr] = useState(""); const [del, setDel] = useState(false);
+  const ta = useRef(); const [paste, setPaste] = useState(""); const [preview, setPreview] = useState(null); const [err, setErr] = useState("");
+  useEffect(() => { setPaste(""); setPreview(null); setErr(""); }, [c.id]);
   const copy = async () => {
     try { await navigator.clipboard.writeText(code); toast("Code copied. Paste it into the sheet's code box in Tabletop Simulator."); }
     catch { ta.current.focus(); ta.current.select(); toast("Selected the code. Press Ctrl+C (or Cmd+C) to copy it."); }
@@ -1299,14 +1322,13 @@ function TableTab({ c, update, onDelete }) {
       setPreview({ n, changes });
     } catch (e) { setErr(e instanceof SyntaxError ? "That doesn't look like a complete code. Copy the whole text from the sheet's Export box." : e.message); }
   };
-  return html`<div class="tabpane">
-    <section class="two">
-      <div class="frame"><${Sigils} seed="send to the table" n=${1} side="r" /><h2 class="h"><span>Send to the table</span><i class="orn" aria-hidden="true"></i></h2>
+  return html`<section class="two">
+      <div class="frame"><${Sigils} seed="send to the table" n=${1} side="r" /><h2 class="h"><span>Send ${c.name || "this character"} to the table</span><i class="orn" aria-hidden="true"></i></h2>
         <ol class="steps"><li>Copy this character's code.</li><li>In Tabletop Simulator, click <b>Load code</b> under your Clockwork sheet and paste it into the box.</li><li>Click <b>Apply</b>. Pips, vitals and your portrait fill in.</li></ol>
         <textarea ref=${ta} class="codebox" readonly aria-label="Tabletop code" value=${code} onFocus=${e => e.target.select()}></textarea>
         <div class="row"><button class="btn primary" onClick=${copy}>Copy code</button><button class="btn" onClick=${save}>Save as file</button>
           <span class="muted">${code.length.toLocaleString()} characters</span></div>
-        ${!c.portraitUrl && html`<p class="muted">Tip: add a public image link under "Portrait link for Tabletop" so the sheet in TTS shows your art.</p>`}</div>
+        ${!c.portraitUrl && html`<p class="muted">Tip: add a public image link under "Portrait link for Tabletop" on the Sheet so the sheet in TTS shows your art.</p>`}</div>
       <div class="frame"><h2 class="h"><span>Bring changes back</span><i class="orn" aria-hidden="true"></i></h2>
         <p class="muted" style="margin-top:0">After a session, click <b>Export</b> on the TTS sheet, copy its code and paste it here to update vitals, pips and Karma.</p>
         <textarea class="codebox" aria-label="Code from Tabletop Simulator" placeholder='{"cw":1, …}' value=${paste} onInput=${e => { setPaste(e.target.value); setPreview(null); setErr(""); }}></textarea>
@@ -1317,10 +1339,51 @@ function TableTab({ c, update, onDelete }) {
           <div class="row"><button class="btn primary" onClick=${() => { update(x => { Object.assign(x, preview.n, { id: x.id }); addLog(x, "Updated from Tabletop Simulator"); }); setPaste(""); setPreview(null); toast("Updated from the table."); }}>Apply changes</button>
             <button class="btn" onClick=${() => setPreview(null)}>Cancel</button></div>` : html`<p style="margin:0">Nothing differs from this character.</p>`}</div>`}
       </div>
+    </section>`;
+}
+
+/* ================= settings ================= */
+// Per-browser choices (theme, text size, dice), the Tabletop code for the open character, the table backup (GM),
+// signing out, and a little about the app. Everything stored per browser starts with "cw-"; Reset clears only
+// the display choices below, never characters, the sign-in or an encounter in progress.
+const RESET_KEYS = ["cw-skin", "cw-text", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp"];
+const REPO = "https://github.com/clockwork-companion/clockwork_companion";
+function SettingsView({ c, update, chars, gm, onBack }) {
+  const [reset, setReset] = useState(false);
+  const dev = !!document.querySelector(".devflag");
+  const live = Store.mode === "live" && Store.table && window.CW_WEB;
+  const doReset = () => { RESET_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch {} }); location.reload(); };
+  return html`<div class="tabpane settings">
+    <div class="sethead"><button type="button" class="btn small" onClick=${onBack}>← Back</button><h1 class="ornate">Settings</h1></div>
+
+    <section class="frame"><h2 class="h"><span>This browser</span><i class="orn" aria-hidden="true"></i></h2>
+      <p class="sub">These choices are saved on this device only, so each player can set their own.</p>
+      <div class="setrows">
+        <div class="setrow"><div><label class="setname" for="set-theme">Theme</label><span class="muted">Colours, type and artwork for the whole app.</span></div><${SkinPicker} /></div>
+        <div class="setrow"><div><span class="setname" id="set-text">Text size</span><span class="muted">Larger is easier to read across the table.</span></div><${TextSizePicker} /></div>
+        <div class="setrow"><div><span class="setname" id="set-dice">Dice</span><span class="muted">Roll in the app, or roll at your table (for example in Tabletop Simulator) and type the result.</span></div><${DicePicker} /></div>
+        <div class="setrow"><div><span class="setname">Reset</span><span class="muted">Puts the theme, text size, dice and remembered tabs back to how they start. Characters aren't touched.</span></div>
+          ${reset ? html`<div class="row"><button class="btn small danger" onClick=${doReset}>Reset and reload</button><button class="btn small" onClick=${() => setReset(false)}>Keep</button></div>`
+            : html`<button class="btn small" onClick=${() => setReset(true)}>Reset…</button>`}</div>
+      </div>
     </section>
-    <section class="frame"><h2 class="h"><span>Character</span><i class="orn" aria-hidden="true"></i></h2>
-      ${del ? html`<div class="confirm"><span>Delete <b>${c.name || "this character"}</b> for everyone? This can't be undone.</span>
-          <button class="btn small danger" onClick=${() => onDelete(c.id)}>Delete</button><button class="btn small" onClick=${() => setDel(false)}>Keep</button></div>`
-        : html`<button class="btn danger" onClick=${() => setDel(true)}>Delete character</button>`}</section>
+
+    ${c ? html`<${TabletopPanel} c=${c} update=${update} />`
+      : html`<section class="frame"><h2 class="h"><span>Tabletop Simulator</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Open a character first, then come back here to send them to the table.</p></section>`}
+
+    ${gm && html`<${BackupPanel} chars=${chars} />`}
+
+    <section class="frame"><h2 class="h"><span>About</span><i class="orn" aria-hidden="true"></i></h2>
+      <p class="sub">${dev ? "This is the Dev test page. Use a test table password so real characters stay untouched." : "This is the live Companion your table plays with."}</p>
+      <div class="row">
+        <a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>
+        <a class="btn small" href=${`${REPO}/issues/new`} target="_blank" rel="noopener">Report a problem</a></div>
+      <p class="muted">Reporting a problem needs a free GitHub account.</p>
+    </section>
+
+    ${live && html`<section class="frame"><h2 class="h"><span>Account</span><i class="orn" aria-hidden="true"></i></h2>
+      <div class="setrow"><div><span class="setname">Signed in to ${Store.table.name}</span><span class="muted">Signing out leaves this table on this device. Your characters stay saved.</span></div>
+        <button class="btn small" onClick=${() => window.CW_WEB.leave()}>Sign out</button></div>
+    </section>`}
   </div>`;
 }
