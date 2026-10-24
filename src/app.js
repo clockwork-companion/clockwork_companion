@@ -280,7 +280,7 @@ const SKINS = [
   ["armour", "Power armour", GF + "Orbitron:wght@600;700;800&family=Chakra+Petch:wght@500;600;700&family=Exo+2:wght@400;500;600&family=Nixie+One"],
   // Extended themes: heavier artwork and their own furniture.
   ["cairn", "Cairn-style gothic", GF + "UnifrakturCook:wght@700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Grenze:wght@500;600;700", "extended"],
-  ["cyber", "Cyberpunk", GF + "Michroma&family=Oxanium:wght@400;500;600;700;800", "extended"],
+  ["cyber", "Cyberpunk", GF + "Tomorrow:wght@500;600;700&family=Oxanium:wght@400;500;600;700;800", "extended"],
 ];
 // The install-app icon (shown only when the browser can install the site; see web/pwa.js).
 const INSTALL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v10.5m0 0-4.2-4.2M12 14l4.2-4.2M4.5 14.5v3.2A2.3 2.3 0 0 0 6.8 20h10.4a2.3 2.3 0 0 0 2.3-2.3v-3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -467,18 +467,27 @@ function Character({ c, update, tab, setTab, onDelete }) {
   const openPanel = (kind, name) => setPanel(p => (p && p.kind === kind && p.name === name ? null : { kind, name }));
   openRuleFn = name => openPanel("rule", name);
   const skillTabs = tab === "sheet" || tab === "talents";
+  // Which way the page slides when the tab changes: in from the right when moving to a tab further along, from the
+  // left when going back. Worked out once per change (not on every redraw), so the slide never replays mid-edit.
+  const nav = useRef({ tab, dir: "" });
+  if (nav.current.tab !== tab) {
+    const order = tabs.map(t => t[0]);
+    nav.current = { tab, dir: order.indexOf(tab) > order.indexOf(nav.current.tab) ? "r" : "l" };
+  }
   return html`
     <${Header} c=${c} d=${d} update=${update} mode=${mode} setMode=${setMode} canFree=${canFree} />
     <div class="tabs" role="tablist">${tabs.map(([k, n]) => html`<button role="tab" class=${"tab-" + k} aria-selected=${tab === k} onClick=${() => setTab(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${TAB_ICONS[k]}</svg>${n}</button>`)}</div>
-    ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
     ${panel && panel.kind === "rule" && html`<${RulePanel} topic=${panel.name} onClose=${() => setPanel(null)} />`}
     ${panel && panel.kind !== "rule" && skillTabs && html`<${SkillPanel} c=${c} kind=${panel.kind} name=${panel.name} mode=${mode} update=${update} onClose=${() => setPanel(null)} />`}
-    ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
-    ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
-    ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
-    ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
-    ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}`;
+    <div class="tabswap" key=${tab} data-dir=${nav.current.dir}>
+      ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
+      ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
+      ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
+      ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
+      ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
+      ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}
+    </div>`;
 }
 
 // Small line icons that tell the tabs apart at a glance.
