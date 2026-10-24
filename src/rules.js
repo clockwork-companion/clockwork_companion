@@ -129,7 +129,8 @@ const CW = (() => {
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
-               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] } },
+               armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "" }, ledger: [] },
+               weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" } }, ledger: [] } },
       talents: [], uses: {},
     };
   }
@@ -159,6 +160,12 @@ const CW = (() => {
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
+    out.craft.weapon = Object.assign({}, b.craft.weapon, out.craft.weapon);
+    out.craft.weapon.recipe = Object.assign({}, b.craft.weapon.recipe, out.craft.weapon.recipe);
+    const wr = out.craft.weapon.recipe;
+    wr.plus = Object.assign({}, wr.plus); wr.exotic = Object.assign({ name: "", dc: 0, note: "" }, wr.exotic);
+    if (!Array.isArray(wr.props)) wr.props = [];
+    if (!Array.isArray(out.craft.weapon.ledger)) out.craft.weapon.ledger = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
     out.items = out.items.map(it => (it.per > 1 && (it.size || "small") === "small" ? Object.assign({}, it, { size: it.per >= 50 ? "ammo" : "bundle", per: undefined }) : it));
@@ -607,6 +614,67 @@ const CW = (() => {
     return { type: r.type in ARMOR ? r.type : "medium", av, plusAV, soak, plusSoak, finalAV, finalSoak, dc, cost, chance: clamp(dc + st.mod - 1, 0, 100), block, st, t };
   }
 
+  // ---------- Weapon Maintenance (rulebook 16.4) ----------
+  // Repair: 400 g (one-handed) or 800 g (two-handed), +400 g if Unwieldy; roll a check; Repair Count = 10 − check ÷ 10
+  // (rounded down, capped at 10 like armor); roll that many d10 and add it to Durability. An hour per attempt.
+  // Craft: 5 × the repair materials; difficulty 70%; the GM gives the base stats; optional changes from the book's
+  // Weapons Modification Table; exotic materials (Weapon Maintenance 5) move the difficulty as the GM says.
+  // A failure adds a random flaw and rolls again; a second failure (third from level 7) loses everything.
+  // On a success, a weapon with fewer than 2 properties gets 2 random positive ones. Eight hours.
+  // [name, has a Rating, melee | ranged | both]
+  const WEAPON_PROPS = [["Defensive", 1, "both"], ["Durable", 1, "both"], ["Fast", 0, "both"], ["Finesse", 0, "both"], ["Gore", 0, "both"], ["Impact", 0, "both"],
+    ["Impale", 0, "both"], ["Penetrating", 1, "both"], ["Reliable", 1, "both"], ["Bladebreaker", 1, "melee"], ["Entangle", 0, "melee"], ["Hack", 0, "melee"],
+    ["Light", 0, "melee"], ["Pummel", 1, "melee"], ["Reach", 0, "melee"], ["Shield", 1, "melee"], ["Accurate", 1, "ranged"], ["Blast", 1, "ranged"],
+    ["Overbearing", 1, "ranged"], ["Pistol", 0, "ranged"], ["Precise", 1, "ranged"]];
+  const WEAPON_FLAWS = [["Brittle", 1, "both"], ["Impotent", 0, "both"], ["Slow", 0, "both"], ["Unwieldy", 0, "both"], ["Poorly Weighed", 0, "melee"],
+    ["Undamaging", 0, "melee"], ["Inaccurate", 1, "ranged"], ["Experimental", 0, "ranged"]];
+  const DUR_DICE = ["d4", "d6", "d8", "d10", "d12", "d20"];
+  // [key, label, difficulty change per step, step size]
+  const WEAPON_MODS = [["damage", "Damage +1", 10, 1], ["accuracy", "Accuracy +1%", 2, 1], ["crit", "Critical chance +1%", 2, 1], ["dur", "Durability +1", 1, 1], ["die", "Higher durability die", 5, 1]];
+  const WM_CRAFT_DC = 70;
+  function wmState(c) {
+    const lvl = sk(c, "Weapon Maintenance"), w = (c.craft && c.craft.weapon) || {};
+    return { lvl, mod: skillModifier(c, "Weapon Maintenance") + num(w.bonus), bonus: num(w.bonus),
+             repair: lvl >= 3, craft: lvl >= 3, exotic: lvl >= 5, props: lvl >= 7 ? 2 : 1, maxFails: lvl >= 7 ? 2 : 1, masterwork: lvl >= 9 };
+  }
+  const isUnwieldy = w => /unwieldy/i.test(String(w.props || "")) || !!w.unwieldy;
+  const weaponRepairCost = w => (num(w.hands) === 2 ? 800 : 400) + (isUnwieldy(w) ? 400 : 0);
+  const fitsKind = (kind, k) => k === "both" || k === kind;
+  function wRepairPlan(c, w) {
+    const st = wmState(c), max = num(w.durMax), dur = clamp(num(w.dur), 0, max), cost = weaponRepairCost(w);
+    const have = num(c.craft && c.craft.supplies && c.craft.supplies.weapon);
+    let block = "";
+    if (!st.repair) block = `Repairing weapons needs Weapon Maintenance 3 ("Is that a dent?"). This character has ${st.lvl}.`;
+    else if (!max) block = "This weapon has no durability set. Give it one on the Gear tab.";
+    else if (dur >= max) block = "This weapon's durability is already full.";
+    else if (have < cost) block = `Needs ${cost} g of weapon materials (have ${have}).`;
+    return { cost, dur, max, missing: max - dur, broken: max > 0 && dur <= 0, die: "d10", sides: 10, block, st };
+  }
+  // A crafting order: { name, skill, hands, unwieldy, damage, crit, accuracy, dur, durDie, plus: {damage, accuracy, crit, dur, die}, props: [], exotic: {name, dc, note} }
+  function wCraftPlan(c, r) {
+    const st = wmState(c), plus = r.plus || {}, kind = weaponKind({ skill: r.skill }) === "ranged" ? "ranged" : "melee";
+    const props = (r.props || []).filter(p => WEAPON_PROPS.some(x => x[0] === p && fitsKind(kind, x[2]))).slice(0, st.props);
+    const di = Math.max(0, DUR_DICE.indexOf(r.durDie || "d10")), dieUp = clamp(num(plus.die), 0, DUR_DICE.length - 1 - di);
+    const ex = st.exotic && r.exotic && String(r.exotic.name || "").trim() ? r.exotic : null;
+    let dc = WM_CRAFT_DC - 10 * num(plus.damage) - 2 * num(plus.accuracy) - 2 * num(plus.crit) - num(plus.dur) - 5 * dieUp - 10 * props.length;
+    if (ex) dc += num(ex.dc);
+    const cost = 5 * weaponRepairCost(r);
+    const have = num(c.craft && c.craft.supplies && c.craft.supplies.weapon);
+    let block = "";
+    if (!st.craft) block = `Crafting weapons needs Weapon Maintenance 3. This character has ${st.lvl}.`;
+    else if (dc <= 0) block = "Those changes make the difficulty 0% or lower: it can't succeed. Take some away.";
+    else if (have < cost) block = `Needs ${cost} g of weapon materials (have ${have}).`;
+    return { kind, props, dieUp, ex, dc, cost, block, st, chance: clamp(dc + st.mod - 1, 0, 100),
+             final: { damage: num(r.damage) + num(plus.damage), accuracy: num(r.accuracy) + num(plus.accuracy), crit: num(r.crit) + num(plus.crit),
+                      durMax: num(r.dur) + num(plus.dur), durDie: DUR_DICE[di + dieUp] } };
+  }
+  // Pick n random entries of a list that fit the weapon and aren't taken yet. A Rating is left for the GM.
+  function randomTraits(list, kind, taken, n) {
+    const pool = list.filter(([k, , t]) => fitsKind(kind, t) && !taken.includes(k) && k !== "Shield"), out = [];
+    while (out.length < n && pool.length) out.push(pool.splice(rollDie(pool.length) - 1, 1)[0]);
+    return out.map(([k, rated]) => (rated ? `${k} (Rating: GM)` : k));
+  }
+
   // ---------- Tabletop Simulator export ----------
   function toTabletop(c) {
     const d = derived(c);
@@ -654,6 +722,7 @@ const CW = (() => {
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
-           AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan };
+           AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
+           WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits };
 })();
 if (typeof module !== "undefined") module.exports = CW;
