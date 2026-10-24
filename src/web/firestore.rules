@@ -67,7 +67,7 @@ service cloud.firestore {
 
     // Jobs: only between two characters of the same campaign (a campaign must be set).
     // The sender (the owner, or the smith handing over a new item) creates one; both sides can read it;
-    // either side can update its status and result but not who it's between or the item; either side can clear it.
+    // either side can update its status and result but not who it's between, the item or the payment; either side can clear it.
     match /tables/{t}/jobs/{id} {
       allow read: if isGM(t) || (isMember(t) && (plays(resource.data.from.uids) || plays(resource.data.to.uids)));
       allow create: if isMember(t) && request.resource.data.status == "open"
@@ -79,7 +79,8 @@ service cloud.firestore {
       allow update: if isMember(t) && (isGM(t) || plays(resource.data.from.uids) || plays(resource.data.to.uids))
                     && request.resource.data.from == resource.data.from && request.resource.data.to == resource.data.to
                     && request.resource.data.item == resource.data.item && request.resource.data.kind == resource.data.kind
-                    && request.resource.data.mode == resource.data.mode;
+                    && request.resource.data.mode == resource.data.mode
+                    && request.resource.data.get("pay", null) == resource.data.get("pay", null);
       allow delete: if isGM(t) || (isMember(t) && (plays(resource.data.from.uids) || plays(resource.data.to.uids)));
     }
 

@@ -531,6 +531,7 @@ function App() {
     ${making === "choose" && html`<${NewChoice} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")} onBlank=${() => { setMaking(null); create(false); }} />`}
     ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
     <${Toaster} /><${HoverCard} /><${DiceAsk} />
+    <${ShopNotice} go=${id => { setSel(id); setView("chars"); setSettings(false); setTab("craft"); window.scrollTo(0, 0); }} />
   </div>`;
 }
 
@@ -1146,6 +1147,7 @@ function TalentsTab({ c, update, openSkill }) {
 
 /* ================= gear tab ================= */
 function GearTab({ c, d, update }) {
+  useShop();   // armor cards lock while a suit is at a smith's bench
   const e = d.enc;
   // needle position: 3 fifths of the bar cover 0→3×unit, then one fifth per tier
   const pos = (() => { const L = e.load, u = e.unit || 1; if (L <= 3 * u) return (L / (3 * u)) * 60; const extra = Math.min(4, (L - 3 * u) / u); return 60 + extra * 10; })();
@@ -1169,8 +1171,9 @@ function GearTab({ c, d, update }) {
     </section>
 
     <section class="frame"><${Head} title="Armor" topic="armor" /><p class="sub">Only one suit is worn at a time. Heavy armor counts as a large item, plate as huge.</p>
-      <div class="cards">${c.armor.map((a, i) => { const chk = R.armorCheck(c, a); const t = R.ARMOR[a.type] || R.ARMOR.light;
-        return html`<div class=${"wcard" + (a.worn ? " worn" : "")}>
+      <div class="cards">${c.armor.map((a, i) => { const chk = R.armorCheck(c, a); const t = R.ARMOR[a.type] || R.ARMOR.light, away = !!Shop.outgoing(c, "armor", a.id);
+        return html`<div class=${"wcard" + (a.worn ? " worn" : "") + (away ? " away" : "")}>
+          <fieldset class="wlock" disabled=${away}>
           <div class="title"><input aria-label="Armor name" placeholder="Armor name" value=${a.name} onInput=${ev => ar(i, "name")(ev.target.value)} />
             <button class=${"btn small" + (a.worn ? " primary" : "")} onClick=${() => update(x => { x.armor.forEach((y, j) => (y.worn = j === i ? !y.worn : false)); })}>${a.worn ? "Worn" : "Wear"}</button></div>
           <div class="grid2">
@@ -1182,8 +1185,10 @@ function GearTab({ c, d, update }) {
           <div class="track" style="background:var(--sunk)"><i style=${`width:${chk.soakMax ? Math.min(100, (num(a.soak) / chk.soakMax) * 100) : 0}%;background:var(--ink-2)`}></i></div>
           <div class="calc">Soak ${num(a.soak)}/${chk.soakMax}${chk.soakBonus ? ` (incl. +${chk.soakBonus} Armor Mastery)` : ""} · repair ${chk.repairCost} g, ${chk.repairDie}</div>
           ${!chk.ok && html`<div class="chips">${chk.problems.map(p => html`<span class="flag bad">${p}</span>`)}</div>`}
-          <div class="row" style="justify-content:space-between"><span class="muted">${a.type === "light" ? "Casting −2×AV" : a.type === "medium" ? "Stealth −AV, casting −2×AV" : a.type === "heavy" ? "Dex skills −AV, Stealth disadv., Entrada −2×AV" : "Dex skills and saves −AV, Stealth disadv."}</span>
-            <button class="btn small danger" onClick=${() => update(x => { x.armor.splice(i, 1); })}>Remove</button></div></div>`; })}
+          </fieldset>
+          <${ShopGear} c=${c} kind="armor" item=${a} update=${update} />
+          <fieldset class="wlock" disabled=${away}><div class="row" style="justify-content:space-between"><span class="muted">${a.type === "light" ? "Casting −2×AV" : a.type === "medium" ? "Stealth −AV, casting −2×AV" : a.type === "heavy" ? "Dex skills −AV, Stealth disadv., Entrada −2×AV" : "Dex skills and saves −AV, Stealth disadv."}</span>
+            <button class="btn small danger" onClick=${() => update(x => { x.armor.splice(i, 1); })}>Remove</button></div></fieldset></div>`; })}
         <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addArmor}>+ Add armor</button></div></div>
     </section>
 
@@ -1245,7 +1250,9 @@ function WeaponCard({ c, w, i, update }) {
   const card = useRef(), clipBox = useRef(), scope = w.id + animScope;
   useChange(isFinal, () => replay(card.current, isFinal ? "settle" : "unfold", 0, ["settle", "unfold"]), scope);
   useChange(inClip, (from, to) => replay(clipBox.current, to < from ? "recoil" : to === clipSize && to - from > 1 ? "reload" : "bump", 0, ["recoil", "reload", "bump"]), scope);
-  if (isFinal) return html`<div ref=${card} class=${"wcard final kind-" + kind}>
+  useShop(); const away = !!Shop.outgoing(c, "weapon", w.id);   // at a smith's bench: locked until it's back
+  if (isFinal) return html`<div ref=${card} class=${"wcard final kind-" + kind + (away ? " away" : "")}>
+    <fieldset class="wlock" disabled=${away}>
     <div class="title"><b class="wname">${w.name || "Unnamed weapon"}</b>
       <span class="flag brass">${kind === "shield" ? "Shield" : wl.proficiency}</span>
       <button class="iconbtn" aria-label=${`Edit ${w.name || "weapon"}`} title="Edit" onClick=${() => set("final", false)}>${PENCIL}</button></div>
@@ -1272,6 +1279,8 @@ function WeaponCard({ c, w, i, update }) {
       ${durMax > 0 && dur <= 0 && html`<span class="flag bad">Broken: gains a flaw</span>`}
     </div>
     ${w.props && html`<p class="wprops">${w.props}</p>`}
+    </fieldset>
+    <${ShopGear} c=${c} kind="weapon" item=${w} update=${update} />
   </div>`;
   return html`<div ref=${card} class="wcard editing">
     <div class="title"><input aria-label="Weapon name" placeholder=${kind === "shield" ? "Shield name" : "Weapon name"} value=${w.name} onInput=${ev => set("name", ev.target.value)} />

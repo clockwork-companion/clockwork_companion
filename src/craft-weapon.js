@@ -126,6 +126,9 @@ function WeaponUpkeep({ c, update }) {
   const stop = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   useEffect(() => () => stop(), []);
   useEffect(() => { stop(); setRun(null); setSel(""); }, [c.id]);
+  // The "new job" notice asked to open a job on this bench.
+  const shop = useShop();
+  useEffect(() => { const f = shop.focus; if (f && f.kind === "weapon" && f.char === c.id && !runRef.current) { shop.focus = null; setMode("repair"); setSel(f.sel); } }, [shop.focusSeq, c.id]);
   const busy = !!run && !run.done;
   useShop();
   const ws = c.weapons.filter(w => num(w.durMax) > 0 || w.name);
@@ -134,7 +137,7 @@ function WeaponUpkeep({ c, update }) {
   const job = run && run.kind === "repair" ? run.job : selId.startsWith("job:") ? Shop.incoming(c, "weapon").find(j => "job:" + j.id === selId) || null : null;
   const weapon = job ? job.item : ws.find(w => w.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
   const away = !job && weapon ? Shop.outgoing(c, "weapon", weapon.id) : null;   // sent to a smith: they repair it, not us
-  const rp = weapon ? Object.assign(R.wRepairPlan(c, weapon), away ? { block: `It's at ${away.to.name}'s bench. Take it back to repair it yourself.` } : {}) : null;
+  const rp = weapon ? Object.assign(R.wRepairPlan(c, weapon), away ? { block: `It's at ${away.to.name}'s bench. Take it back on the Gear tab to repair it yourself.` } : {}) : null;
   const rc = cw.recipe, cp = R.wCraftPlan(c, rc);
   const setRc = fn => update(x => fn(x.craft.weapon.recipe));
   const addLedger = (x, e) => { x.craft.weapon.ledger = [Object.assign({ id: rid(), t: Date.now(), note: "" }, e), ...x.craft.weapon.ledger].slice(0, 20); };
@@ -174,6 +177,7 @@ function WeaponUpkeep({ c, update }) {
       const roll = `check ${f.r}−${f.mod}=${f.check} → ${f.count} × d10${f.count ? ": " + total : ""}`;
       if (!Shop.answer(f.job, "done", { gained, roll, by: c.name || "" })) { toast(`${f.job.from.name} took it back before you finished.`); patch({ done: true, phase: "done", total, gainedFinal: 0, gone: true }); return; }
       update(x => {
+        if (f.job.pay) { Shop.give(x, f.job.pay); if (Shop.hasPay(f.job.pay) || f.job.pay.note) addLog(x, `Paid by ${f.job.from.name}: ${Shop.payText(f.job.pay)}`); }
         x.craft.supplies.weapon = Math.max(0, num(x.craft.supplies.weapon) - f.plan.cost);
         const txt = `${f.job.from.name}'s ${f.job.item.name || "weapon"}: Durability ${f.plan.dur} → ${f.plan.dur + gained}`;
         addLedger(x, { kind: "repair", name: `Repaired ${txt}`, rolls: [roll] });
@@ -344,7 +348,6 @@ function WRepairSide({ c, ws, weapon, job, selId, rp, st, busy, pick }) {
       <li><span>Check: d100 − ${st.mod}</span><span class="muted">Repair Count = 10 − check ÷ 10, rounded down, at most 10</span></li>
       <li><span>Roll d10 that many times</span><span class="muted">The total goes back into Durability (up to ${rp.max}). An hour per attempt.</span></li></ol>
       <p class="ptdc">Check 0 or less: 10 × d10 · check 40: 6 × d10 · check 90: 1 × d10</p></div>`}
-    ${weapon && !job && html`<${ShopSend} c=${c} kind="weapon" item=${weapon} busy=${busy} />`}
   </div>`;
 }
 

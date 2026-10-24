@@ -1155,10 +1155,27 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .rnmun.failed .rn-smoke circle, .rnmun.shatter .rn-smoke circle { animation: brsmoke 2.4s var(--d) ease-out infinite; }
 .rnalso { margin: 12px 0 0; font-size: 13px; }
 /* the workshop: jobs between players */
-.shopsend { margin-top: 18px; display: grid; gap: 6px; }
-.shopsend .lbl, .shoph { margin: 10px 0 2px; }
-.shopaway { gap: 8px; align-items: center; justify-content: space-between; }
-.shopaway > span { flex: 1 1 220px; font-size: 13px; color: var(--ink-2); }
+.shoph { margin: 10px 0 2px; }
+/* Workshop on the Gear cards: send a weapon or suit to a smith, with a payment. */
+.shopbtn { justify-self: start; }
+.shopgear { display: grid; gap: 10px; padding-top: 10px; border-top: 1.5px dashed var(--hair); min-width: 0; }
+.shopgear .muted { font-size: 13px; margin: 0; }
+.shophead { justify-content: space-between; }
+.shophead b { font: 600 13px/1.2 var(--f-head); letter-spacing: .08em; text-transform: uppercase; }
+.shoppay { display: grid; gap: 8px; padding: 10px; background: color-mix(in srgb, var(--sunk) 70%, transparent); border: 1px solid var(--hair); }
+.shoppay .grid2 { gap: 8px 12px; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); }
+.shoppay .mini.wide { grid-column: 1 / -1; }
+/* An item at a smith's bench stays on its card, greyed out and locked until it's back. */
+.wlock { display: contents; border: 0; margin: 0; padding: 0; min-width: 0; }
+.wcard.away .wlock > * { opacity: .5; }
+.shopgear.away { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.shopgear.away > span { flex: 1 1 200px; font-size: 13px; color: var(--ink-2); }
+.shoppaid { display: block; font-size: 12.5px; color: var(--brass); }
+.shopnote { width: min(460px, 100%); }
+.shopnote p { margin: 0; }
+.shopnotefacts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; border-top: 1.5px solid var(--rule); padding-top: 8px; }
+.shopnotefacts .fact { border: 0; padding: 0; }
+.shopnotefacts .fact p { margin: 2px 0 0; font-size: 15px; line-height: 1.35; }
 .ptopt.row-opt .shopback { margin-right: 8px; white-space: nowrap; }
 .wpbase { margin-top: 6px; }
 .rnlib { margin-top: 12px; display: grid; gap: 6px; }

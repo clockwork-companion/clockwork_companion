@@ -111,6 +111,9 @@ function ArmorUpkeep({ c, update }) {
   const stop = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   useEffect(() => () => stop(), []);
   useEffect(() => { stop(); setRun(null); setSel(""); }, [c.id]);
+  // The "new job" notice asked to open a job on this bench.
+  const shop = useShop();
+  useEffect(() => { const f = shop.focus; if (f && f.kind === "armor" && f.char === c.id && !runRef.current) { shop.focus = null; setMode("repair"); setSel(f.sel); } }, [shop.focusSeq, c.id]);
   const busy = !!run && !run.done;
   // The suit to repair: the one picked, else the most damaged.
   useShop();
@@ -120,7 +123,7 @@ function ArmorUpkeep({ c, update }) {
   const job = run && run.kind === "repair" ? run.job : selId.startsWith("job:") ? Shop.incoming(c, "armor").find(j => "job:" + j.id === selId) || null : null;
   const suit = job ? job.item : suits.find(a => a.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
   const away = !job && suit ? Shop.outgoing(c, "armor", suit.id) : null;   // sent to a smith: they repair it, not us
-  const rp = suit ? Object.assign(R.repairPlan(c, suit), away ? { block: `It's at ${away.to.name}'s bench. Take it back to repair it yourself.` } : {}) : null;
+  const rp = suit ? Object.assign(R.repairPlan(c, suit), away ? { block: `It's at ${away.to.name}'s bench. Take it back on the Gear tab to repair it yourself.` } : {}) : null;
   const rc = ca.recipe, cp = R.craftPlan(c, rc);
   const setRc = fn => update(x => fn(x.craft.armor.recipe));
   const T = R.ARMOR;
@@ -160,6 +163,7 @@ function ArmorUpkeep({ c, update }) {
       const roll = `check ${f.r}−${f.mod}=${f.check} → ${f.count} × ${f.plan.die}${f.count ? ": " + total : ""}`;
       if (!Shop.answer(f.job, "done", { gained, roll, by: c.name || "" })) { toast(`${f.job.from.name} took it back before you finished.`); patch({ done: true, phase: "done", total, gainedFinal: 0, gone: true }); return; }
       update(x => {
+        if (f.job.pay) { Shop.give(x, f.job.pay); if (Shop.hasPay(f.job.pay) || f.job.pay.note) addLog(x, `Paid by ${f.job.from.name}: ${Shop.payText(f.job.pay)}`); }
         x.craft.supplies[f.plan.mat] = Math.max(0, num(x.craft.supplies[f.plan.mat]) - f.plan.cost);
         const txt = `${f.job.from.name}'s ${f.job.item.name || T[f.job.item.type].label + " armor"}: Soak ${f.plan.soak} → ${f.plan.soak + gained}`;
         addLedger(x, { kind: "repair", name: `${f.plan.broken ? "Rebuilt" : "Repaired"} ${txt}`, rolls: [roll] });
@@ -324,7 +328,6 @@ function RepairSide({ c, suits, suit, job, selId, rp, st, busy, pick }) {
       <li><span>Check: d100 − ${st.mod}</span><span class="muted">Repair Count = 10 − check ÷ 10, rounded down, at most 10</span></li>
       <li><span>Roll ${rp.die} that many times</span><span class="muted">The total goes back into the Soak Pool (up to ${rp.max}). An hour per attempt.</span></li></ol>
       <p class="ptdc">Check 0 or less: 10 × ${rp.die} · check 40: 6 × ${rp.die} · check 90: 1 × ${rp.die}</p></div>`}
-    ${suit && !job && html`<${ShopSend} c=${c} kind="armor" item=${suit} busy=${busy} />`}
   </div>`;
 }
 
