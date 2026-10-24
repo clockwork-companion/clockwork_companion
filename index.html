@@ -1197,6 +1197,152 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   [data-skin="cyber"] .h { font-size: 21px; } [data-skin="cyber"] .frame { padding: 22px 14px 24px; } [data-skin="cyber"] .namefield { font-size: 27px; }
 }
 
+/* ----- Mossheart (extended): Batbayar's theme. A dark, old forest: ivy with woody stems and moss creeping round the
+   sections, a carved-stone title face, slow drifting spores. Below it all rises the Zhoung, the corrupting darkness: a
+   violet-black shadow of roots that breathes and sometimes opens its eyes, held back by a faint line of warding runes ----- */
+:root[data-skin="moss"] {
+  --paper: #070c08; --card: #0d1510; --sunk: #050806; --ink: #dde4d0; --ink-2: #a9b69a; --ink-3: #6f7f66;
+  --rule: #6c8f4a; --bracket: #3f5a2c; --hair: #1f2e22; --brass: #9cba5e; --brass-ink: #0a120b; --brass-soft: #18241a;
+  --seal: #050308; --seal-2: #6a3f96; --blood: #c9654f; --blood-soft: #2e1611; --tox: #86b85a; --tox-soft: #15240f;
+  --hunger: #c9a64e; --hunger-soft: #2a220d; --life: #5fae9c; --life-soft: #0f2722; --warn: #c9a64e; --bad: #c9654f; --good: #86b85a; --forge: #c9804a;
+  --shadow: #6a3f96; --moss: #3f5a2c; --leaf: #8fae62;
+  --f-display: "Marcellus SC", "Palatino Linotype", serif; --f-head: "Cormorant Garamond", "Palatino Linotype", serif; --f-body: "Crimson Pro", Georgia, serif; --f-mono: "Crimson Pro", Georgia, serif;
+  --vine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='204' height='168' viewBox='0 0 204 168'%3E%3Cdefs%3E%3ClinearGradient id='lg' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2346683a'/%3E%3Cstop offset='.55' stop-color='%232c4a22'/%3E%3Cstop offset='1' stop-color='%231a2e15'/%3E%3C/linearGradient%3E%3ClinearGradient id='lg2' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233a5a2c'/%3E%3Cstop offset='1' stop-color='%2316260f'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M26 26 C66 29 96 22 134 29' stroke='%23211c12' stroke-width='3.8' fill='none' stroke-linecap='round'/%3E%3Cpath d='M26 26 C66 29 96 22 134 29' stroke='%235a5236' stroke-opacity='.55' stroke-width='1.3' fill='none' stroke-linecap='round' transform='translate(-.4 -.5)'/%3E%3Cpath d='M134 29 C156 33 168 25 186 24' stroke='%23211c12' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3Cpath d='M134 29 C156 33 168 25 186 24' stroke='%235a5236' stroke-opacity='.55' stroke-width='0.8' fill='none' stroke-linecap='round' transform='translate(-.4 -.5)'/%3E%3Cpath d='M26 26 C29 62 23 90 30 120' stroke='%23211c12' stroke-width='3.8' fill='none' stroke-linecap='round'/%3E%3Cpath d='M26 26 C29 62 23 90 30 120' stroke='%235a5236' stroke-opacity='.55' stroke-width='1.3' fill='none' stroke-linecap='round' transform='translate(-.4 -.5)'/%3E%3Cpath d='M30 120 C33 132 28 142 27 152' stroke='%23211c12' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3Cpath d='M30 120 C33 132 28 142 27 152' stroke='%235a5236' stroke-opacity='.55' stroke-width='0.8' fill='none' stroke-linecap='round' transform='translate(-.4 -.5)'/%3E%3Cpath d='M26 28 C44 20 56 36 76 28 C92 21 108 35 124 27' stroke='%232a2617' stroke-width='1.3' fill='none'/%3E%3Cpath d='M28 26 C20 44 36 56 28 76 C22 90 34 102 28 114' stroke='%232a2617' stroke-width='1.3' fill='none'/%3E%3Cpath d='M186 24 c6 -2 8 5 3 7 c-3 1 -4 -2 -2 -3' stroke='%2346583a' stroke-width='.9' fill='none'/%3E%3Cpath d='M27 152 c-3 5 3 9 6 5 c1 -2 -1 -4 -3 -3' stroke='%2346583a' stroke-width='.9' fill='none'/%3E%3Cpath d='M25.3 27.5 l1.3 3.2' stroke='%232f4a22' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M31.2 28.0 l1.6 0.4' stroke='%232f4a22' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M25.4 25.8 l-1.1 -3.0' stroke='%232f4a22' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M17.4 32.5 l-1.6 -0.1' stroke='%234f7034' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M19.9 24.4 l-2.6 -1.8' stroke='%232f4a22' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M23.4 22.9 l-3.1 0.0' stroke='%232f4a22' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M20.2 26.1 l-3.8 0.3' stroke='%2326391c' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M26.0 28.0 l2.9 2.5' stroke='%234f7034' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M31.7 20.3 l2.3 0.4' stroke='%232f4a22' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M27.9 29.2 l2.7 3.3' stroke='%232f4a22' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M17.4 21.7 l-1.6 -1.8' stroke='%2326391c' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M17.1 28.5 l-4.1 1.4' stroke='%232f4a22' stroke-width='0.7' stroke-linecap='round'/%3E%3Cpath d='M23.9 19.2 l1.5 -4.2' stroke='%234f7034' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M28.9 23.5 l2.3 -3.6' stroke='%232f4a22' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M26.6 29.1 l1.5 3.4' stroke='%2326391c' stroke-width='0.7' stroke-linecap='round'/%3E%3Cpath d='M20.3 27.9 l-3.9 -1.3' stroke='%234f7034' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M33.5 25.4 l2.1 -1.5' stroke='%232f4a22' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M26.3 28.6 l-0.2 2.9' stroke='%234f7034' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M29.6 30.7 l2.8 1.7' stroke='%233d5c2a' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M19.2 25.3 l-2.5 2.5' stroke='%2326391c' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M21.8 29.3 l-0.8 2.6' stroke='%233d5c2a' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M31.1 30.2 l1.2 1.3' stroke='%232f4a22' stroke-width='1.3' stroke-linecap='round'/%3E%3Cpath d='M25.4 25.5 l-1.9 -1.0' stroke='%234f7034' stroke-width='1.3' stroke-linecap='round'/%3E%3Cpath d='M21.8 22.9 l-1.5 -1.1' stroke='%2326391c' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M25.4 27.5 l-2.9 2.4' stroke='%2326391c' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M26.1 26.2 l2.1 3.8' stroke='%233d5c2a' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M33.2 21.7 l2.3 -0.6' stroke='%232f4a22' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M25.7 30.0 l-1.2 1.6' stroke='%234f7034' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M19.4 20.3 l-3.8 -0.4' stroke='%233d5c2a' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M25.8 23.5 l-1.1 -2.9' stroke='%232f4a22' stroke-width='1.3' stroke-linecap='round'/%3E%3Cpath d='M27.3 21.0 l0.9 -1.9' stroke='%234f7034' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M36.0 21.8 l3.4 -2.7' stroke='%233d5c2a' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M22.4 26.7 l-2.1 -2.1' stroke='%232f4a22' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M21.0 18.8 l-0.5 -1.7' stroke='%2326391c' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M26.0 20.7 l1.1 -1.7' stroke='%234f7034' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M33.5 23.4 l2.9 0.4' stroke='%232f4a22' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M26.7 27.2 l-0.6 1.9' stroke='%233d5c2a' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M21.7 23.0 l-4.3 0.4' stroke='%233d5c2a' stroke-width='0.7' stroke-linecap='round'/%3E%3Cpath d='M28.4 18.4 l1.3 -1.2' stroke='%233d5c2a' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M32.3 19.4 l0.6 -2.1' stroke='%234f7034' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M26.3 22.4 l2.1 -2.3' stroke='%232f4a22' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M22.9 30.0 l-3.2 0.4' stroke='%2326391c' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M27.0 25.0 l1.4 -1.3' stroke='%2326391c' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M19.4 20.6 l-1.9 0.1' stroke='%232f4a22' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M23.4 31.1 l-2.7 1.6' stroke='%232f4a22' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M28.0 26.7 l1.5 -0.7' stroke='%2326391c' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M26.6 16.0 l0.8 -2.7' stroke='%233d5c2a' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M20.4 27.7 l-2.4 -1.6' stroke='%234f7034' stroke-width='1.3' stroke-linecap='round'/%3E%3Cpath d='M27.7 24.6 l1.9 -2.1' stroke='%2326391c' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M28.4 27.2 l1.2 1.2' stroke='%232f4a22' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M30.5 32.5 l3.4 0.9' stroke='%233d5c2a' stroke-width='1.3' stroke-linecap='round'/%3E%3Cpath d='M28.0 36.3 l0.6 2.6' stroke='%233d5c2a' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M20.8 28.4 l-1.3 2.2' stroke='%234f7034' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M23.5 28.8 l-2.6 1.2' stroke='%2326391c' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M22.0 22.0 l0.3 -1.7' stroke='%233d5c2a' stroke-width='1.3' stroke-linecap='round'/%3E%3Cpath d='M28.3 27.8 l0.6 1.5' stroke='%234f7034' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M30.0 17.5 l3.4 -0.8' stroke='%2326391c' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M31.5 22.9 l0.9 -3.5' stroke='%232f4a22' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M30.0 35.0 l2.3 0.4' stroke='%232f4a22' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M34.1 30.7 l0.5 1.6' stroke='%2326391c' stroke-width='0.7' stroke-linecap='round'/%3E%3Cpath d='M30.6 25.8 l4.2 0.9' stroke='%232f4a22' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M26.1 27.2 l1.6 1.1' stroke='%233d5c2a' stroke-width='1.3' stroke-linecap='round'/%3E%3Cpath d='M22.0 21.8 l-1.6 -1.4' stroke='%233d5c2a' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M29.6 15.7 l-0.9 -1.3' stroke='%233d5c2a' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M26.1 30.9 l-0.9 3.3' stroke='%2326391c' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M34.2 19.1 l0.7 -2.3' stroke='%233d5c2a' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M29.8 19.2 l1.1 -3.2' stroke='%234f7034' stroke-width='1.3' stroke-linecap='round'/%3E%3Cpath d='M26.1 25.9 l3.3 -0.9' stroke='%2326391c' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M34.0 30.7 l2.6 3.1' stroke='%234f7034' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M25.8 25.5 l-1.5 -1.4' stroke='%232f4a22' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M80.7 25.8 l2.3 -2.1' stroke='%234f7034' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M76.7 28.5 l1.3 1.1' stroke='%233d5c2a' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M76.1 26.6 l-2.1 -3.4' stroke='%232f4a22' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M75.0 30.0 l-1.7 0.6' stroke='%233d5c2a' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M75.1 22.7 l-1.4 -2.3' stroke='%2326391c' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M75.5 23.8 l0.8 -1.4' stroke='%2326391c' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M76.3 26.4 l1.2 -2.8' stroke='%232f4a22' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M72.1 24.8 l-2.2 -2.8' stroke='%233d5c2a' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M79.1 27.8 l4.4 0.1' stroke='%2326391c' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M73.8 24.7 l-2.5 -2.5' stroke='%232f4a22' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M80.2 29.0 l3.9 -1.5' stroke='%232f4a22' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M72.0 27.7 l-3.1 2.6' stroke='%233d5c2a' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M74.6 25.1 l-4.0 -0.4' stroke='%234f7034' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M73.6 24.8 l-1.7 -0.1' stroke='%234f7034' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M74.9 24.1 l-0.7 -1.8' stroke='%2326391c' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M74.4 23.9 l-2.8 -2.2' stroke='%234f7034' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M75.4 27.1 l-2.9 3.0' stroke='%232f4a22' stroke-width='1.3' stroke-linecap='round'/%3E%3Cpath d='M78.3 27.3 l2.0 3.4' stroke='%2326391c' stroke-width='1.3' stroke-linecap='round'/%3E%3Cpath d='M23.5 81.0 l-0.0 4.3' stroke='%232f4a22' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M22.3 77.3 l-1.3 -1.4' stroke='%234f7034' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M26.7 76.9 l-1.3 -4.0' stroke='%232f4a22' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M30.2 76.9 l2.7 0.4' stroke='%2326391c' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M25.3 81.8 l-1.2 0.9' stroke='%2326391c' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M30.2 76.4 l2.7 -3.2' stroke='%234f7034' stroke-width='0.7' stroke-linecap='round'/%3E%3Cpath d='M23.6 80.8 l-1.7 -0.3' stroke='%234f7034' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M27.0 78.3 l-1.6 3.1' stroke='%233d5c2a' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M26.7 80.5 l0.3 2.0' stroke='%2326391c' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M28.2 75.1 l4.1 -1.3' stroke='%233d5c2a' stroke-width='1.1' stroke-linecap='round'/%3E%3Cpath d='M30.5 79.1 l2.0 2.1' stroke='%234f7034' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M29.3 76.6 l1.5 -1.3' stroke='%234f7034' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M26.7 73.1 l0.5 -2.2' stroke='%234f7034' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M26.7 77.5 l-3.4 -0.7' stroke='%2326391c' stroke-width='1.0' stroke-linecap='round'/%3E%3Cpath d='M25.4 78.5 l-3.4 1.6' stroke='%233d5c2a' stroke-width='0.8' stroke-linecap='round'/%3E%3Cpath d='M28.3 80.5 l1.7 1.8' stroke='%233d5c2a' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M27.0 75.9 l0.1 -2.7' stroke='%2326391c' stroke-width='0.9' stroke-linecap='round'/%3E%3Cpath d='M27.0 75.5 l-0.8 -3.1' stroke='%233d5c2a' stroke-width='0.8' stroke-linecap='round'/%3E%3Cg transform='translate(46 22) rotate(-14) scale(0.9750000000000001)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(68 34) rotate(168) scale(0.75)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg2)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(94 20) rotate(12) scale(0.8999999999999999)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(116 34) rotate(196) scale(0.6875)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg2)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(150 24) rotate(-8) scale(0.75)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(172 31) rotate(172) scale(0.5625)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg2)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(20 48) rotate(-78) scale(0.925)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(33 66) rotate(96) scale(0.7000000000000001)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg2)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(21 92) rotate(-84) scale(0.8250000000000001)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(34 112) rotate(100) scale(0.625)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg2)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(24 138) rotate(-80) scale(0.55)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(22 20) rotate(-45) scale(1.125)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Ccircle cx='108' cy='38' r='2.3' fill='%23121218'/%3E%3Ccircle cx='107.3' cy='37.3' r='.6' fill='%239aa0b0' fill-opacity='.5'/%3E%3Ccircle cx='111' cy='41' r='2.3' fill='%23121218'/%3E%3Ccircle cx='110.3' cy='40.3' r='.6' fill='%239aa0b0' fill-opacity='.5'/%3E%3Ccircle cx='106' cy='42' r='2.3' fill='%23121218'/%3E%3Ccircle cx='105.3' cy='41.3' r='.6' fill='%239aa0b0' fill-opacity='.5'/%3E%3Ccircle cx='110' cy='44' r='2.3' fill='%23121218'/%3E%3Ccircle cx='109.3' cy='43.3' r='.6' fill='%239aa0b0' fill-opacity='.5'/%3E%3C/svg%3E"); --vine-rule: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='18' viewBox='0 0 72 18'%3E%3Cdefs%3E%3ClinearGradient id='lg' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2346683a'/%3E%3Cstop offset='.55' stop-color='%232c4a22'/%3E%3Cstop offset='1' stop-color='%231a2e15'/%3E%3C/linearGradient%3E%3ClinearGradient id='lg2' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233a5a2c'/%3E%3Cstop offset='1' stop-color='%2316260f'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 10 C12 7 24 12 36 10 S60 7 72 10' stroke='%232a2617' stroke-width='1.5' fill='none'/%3E%3Cg transform='translate(18 8) rotate(-20) scale(0.4)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cg transform='translate(52 12) rotate(160) scale(0.36)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg2)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3Cpath d='M36 10 c2 -4 6 -3 5 0' stroke='%2346583a' stroke-width='.7' fill='none'/%3E%3C/svg%3E"); --sprig: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cdefs%3E%3ClinearGradient id='lg' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2346683a'/%3E%3Cstop offset='.55' stop-color='%232c4a22'/%3E%3Cstop offset='1' stop-color='%231a2e15'/%3E%3C/linearGradient%3E%3ClinearGradient id='lg2' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233a5a2c'/%3E%3Cstop offset='1' stop-color='%2316260f'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg transform='translate(12 20) rotate(8) scale(0.78)'%3E%3Cpath d='M0 0 L0 6' stroke='%233a3a22' stroke-width='1.3'/%3E%3Cpath d='M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z' fill='url(%23lg)' stroke='%230f1a0c' stroke-width='.7'/%3E%3Cpath d='M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12' stroke='%237f9a5c' stroke-opacity='.55' stroke-width='.6' fill='none'/%3E%3Cpath d='M-9 -5 C-7 -9 -4 -14 0 -20' stroke='%23fff' stroke-opacity='.07' stroke-width='1.6' fill='none'/%3E%3C/g%3E%3C/svg%3E"); --tendrils: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='220' viewBox='0 0 600 220'%3E%3Cg fill='%23050308'%3E%3Cpath d='M8 220 C21 166 36 130 44 100 C49 134 41 172 52 220Z'/%3E%3Cpath d='M44 100 c-6 -8 -14 -4 -10 4' stroke='%23050308' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M65 220 C83 134 61 78 69 30 C74 83 110 144 125 220Z'/%3E%3Cpath d='M69 30 c6 -8 14 -4 10 4' stroke='%23050308' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M136 220 C144 184 152 160 160 140 C165 162 157 188 164 220Z'/%3E%3Cpath d='M160 140 c-6 -8 -14 -4 -10 4' stroke='%23050308' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M184 220 C200 152 232 108 240 70 C245 112 223 160 236 220Z'/%3E%3Cpath d='M240 70 c-6 -8 -14 -4 -10 4' stroke='%23050308' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M257 220 C268 173 255 141 263 115 C268 144 284 178 293 220Z'/%3E%3Cpath d='M263 115 c6 -8 14 -4 10 4' stroke='%23050308' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M296 220 C316 130 344 70 352 20 C357 76 347 140 364 220Z'/%3E%3Cpath d='M352 20 c-6 -8 -14 -4 -10 4' stroke='%23050308' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M379 220 C389 180 379 152 387 130 C392 155 403 184 411 220Z'/%3E%3Cpath d='M387 130 c6 -8 14 -4 10 4' stroke='%23050308' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M422 220 C439 146 412 96 420 55 C425 101 464 154 478 220Z'/%3E%3Cpath d='M420 55 c6 -8 14 -4 10 4' stroke='%23050308' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M498 220 C511 166 530 130 538 100 C543 134 531 172 542 220Z'/%3E%3Cpath d='M538 100 c-6 -8 -14 -4 -10 4' stroke='%23050308' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Cpath d='M561 220 C569 188 573 168 581 150 C586 170 582 192 589 220Z'/%3E%3Cpath d='M581 150 c-6 -8 -14 -4 -10 4' stroke='%23050308' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Crect x='0' y='196' width='600' height='24'/%3E%3C/g%3E%3C/svg%3E"); --ward: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='20' viewBox='0 0 240 20'%3E%3Cg stroke='%23b9e39a' stroke-opacity='.26' stroke-width='1.1' fill='%23b9e39a' fill-opacity='.0' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath transform='translate(8 1)' d='M3 18V2M3 3L9 0M3 8L9 5'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='26' cy='10' r='1'/%3E%3Cpath transform='translate(38 1)' d='M3 18V2L9 6L3 10L9 18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='56' cy='10' r='1'/%3E%3Cpath transform='translate(68 1)' d='M6 18V2M6 8L1 2M6 8L11 2'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='86' cy='10' r='1'/%3E%3Cpath transform='translate(98 1)' d='M6 0L11 6L6 12L1 6Z M1 18L11 12M11 18L1 12'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='116' cy='10' r='1'/%3E%3Cpath transform='translate(128 1)' d='M3 18V2M9 18V2M3 6L9 12'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='146' cy='10' r='1'/%3E%3Cpath transform='translate(158 1)' d='M6 18V0M1 5L11 11'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='176' cy='10' r='1'/%3E%3Cpath transform='translate(188 1)' d='M2 2L10 18M10 2L2 18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='206' cy='10' r='1'/%3E%3Cpath transform='translate(218 1)' d='M3 18V2L9 8V18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='236' cy='10' r='1'/%3E%3C/g%3E%3C/svg%3E");
+  --leafy: 14px 4px 14px 4px; --leafy-s: 8px 3px 8px 3px;
+  --menu-bg: #0d1510; --menu-ink: #dde4d0;
+  color-scheme: dark;
+}
+[data-skin="moss"] body { font-size: 16.5px; background:
+  radial-gradient(800px 420px at 20% -8%, rgb(120 150 110 / .07), transparent 70%),
+  radial-gradient(1200px 600px at 50% 125%, rgb(48 14 70 / .5), transparent 70%), #070c08; background-attachment: fixed; }
+[data-skin="moss"] :is(.tabpane, .stat b, .fact b, .meter .v, .loadnum b, .attr .val, .wstats b, .d100, .statin) { font-variant-numeric: lining-nums tabular-nums; }
+/* spores drifting in the dark */
+:root[data-skin="moss"]::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(circle at 16% 24%, rgb(190 215 150 / .45) 0 1px, transparent 3px),
+    radial-gradient(circle at 74% 18%, rgb(190 215 150 / .35) 0 1px, transparent 3px),
+    radial-gradient(circle at 58% 52%, rgb(190 215 150 / .3) 0 .9px, transparent 3px),
+    radial-gradient(circle at 31% 66%, rgb(190 215 150 / .4) 0 1px, transparent 3px),
+    radial-gradient(circle at 88% 61%, rgb(190 215 150 / .3) 0 .9px, transparent 3px);
+  animation: mhFly 40s ease-in-out infinite alternate; }
+@keyframes mhFly { 0% { transform: translate(0, 0); opacity: .6; } 50% { transform: translate(-18px, -40px); opacity: 1; } 100% { transform: translate(12px, -70px); opacity: .5; } }
+/* the Zhoung: root-like tendrils rising from the bottom, breathing; a faint line of warding runes along its edge holds it back */
+[data-skin="moss"] body::after { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 34vh; z-index: -1; pointer-events: none;
+  background: var(--ward) 0 0 / 200px 17px repeat-x, var(--tendrils) 0 100% / 600px 220px repeat-x, var(--tendrils) 280px 100% / 420px 154px repeat-x,
+    linear-gradient(0deg, rgb(5 3 8 / .97), rgb(34 12 50 / .5) 45%, transparent);
+  filter: drop-shadow(0 -6px 16px rgb(106 63 150 / .3)); opacity: .9; transform-origin: 50% 100%;
+  animation: mhBreathe 11s ease-in-out infinite; }
+@keyframes mhBreathe { 0%, 100% { opacity: .74; transform: scaleY(.95); } 50% { opacity: 1; transform: scaleY(1.04); } 52% { opacity: .86; } 54% { opacity: 1; } }
+/* now and then, two eyes open in the dark */
+[data-skin="moss"] #app::after { content: ""; position: fixed; z-index: 0; pointer-events: none; left: 14%; bottom: 8vh; width: 64px; height: 16px;
+  background: radial-gradient(ellipse 8px 4px at 12px 8px, #e6d6ff, #9a6ae0 45%, rgb(106 63 150 / .6) 70%, transparent 85%),
+    radial-gradient(ellipse 8px 4px at 52px 8px, #e6d6ff, #9a6ae0 45%, rgb(106 63 150 / .6) 70%, transparent 85%);
+  filter: drop-shadow(0 0 9px rgb(150 90 220 / .85)) drop-shadow(0 0 20px rgb(106 63 150 / .6)); opacity: 0; mix-blend-mode: screen; animation: mhEyes 21s ease-in-out infinite; }
+@keyframes mhEyes { 0%, 62% { opacity: 0; transform: scaleY(.2); } 68% { opacity: .6; transform: scaleY(1); } 80% { opacity: .6; transform: scaleY(1); }
+  81.5% { opacity: .6; transform: scaleY(.1); } 83% { opacity: .6; transform: scaleY(1); } 90%, 100% { opacity: 0; transform: scaleY(.2); } }
+
+:root[data-skin="moss"] .sigil { display: none; }
+:root[data-skin="moss"] .top { border-bottom: 0; padding-bottom: 20px; background: var(--vine-rule) 0 100% / 72px 18px repeat-x; }
+:root[data-skin="moss"] .brand { font: 400 30px/1 var(--f-display); letter-spacing: .04em; color: var(--ink); }
+:root[data-skin="moss"] .brand small { font: 500 15px var(--f-head); letter-spacing: .12em; text-transform: none; color: var(--rule); }
+:root[data-skin="moss"] .brand small::after { content: " · Mossheart"; color: var(--ink-3); }
+:root[data-skin="moss"] .namefield { font: 400 30px var(--f-display); letter-spacing: .04em; text-transform: none; border-bottom: 1px solid var(--moss); }
+:root[data-skin="moss"] :is(.lbl, .field label, .mini label, .stat span, .fact span, .wstats span, .legend b, th, .seg button, .btn, .pbox small) { font-family: var(--f-display); font-weight: 400; letter-spacing: .07em; }
+:root[data-skin="moss"] :is(.field label, .mini label, .fact span, .stat span, th) { color: var(--rule); }
+:root[data-skin="moss"] :is(.attr .nm, .gx-title, .ornate, .sphead h2) { font-family: var(--f-display); font-weight: 400; text-transform: none; letter-spacing: .04em; }
+:root[data-skin="moss"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3, .meter .t, .ptpickh, .ptbig, .ptstep b, .craftnav button span, .pttypes button) { font-family: var(--f-head); font-weight: 600; text-transform: none; letter-spacing: .02em; }
+:root[data-skin="moss"] :is(.sgroup h3, .spgroup h3, .perkgroup h3, .rulebody h3) { border-bottom: 0; padding-bottom: 10px; background: var(--vine-rule) 0 100% / 54px 14px repeat-x; font-size: 1.15em; }
+:root[data-skin="moss"] :is(.attr .val, .stat b, .meter .v, .loadnum b, .wound .cnt, .gx-sum b, .gx-slot b, .gx-av b, .gx-fa b, .wstats b, .statin, .fact b, .srow .m, .d100) { font-family: var(--f-body); font-weight: 600; }
+
+/* headings: one ivy leaf (it replaces the rules book icon, CLAUDE.md), then an ivy rule */
+:root[data-skin="moss"] .h { font: 600 27px var(--f-head); text-transform: none; letter-spacing: .01em; color: var(--ink); }
+:root[data-skin="moss"] .h > span:not(.orn)::before { content: ""; display: inline-block; width: 24px; height: 24px; margin-right: 8px; vertical-align: -3px; background: var(--sprig) 0 0 / contain no-repeat; }
+:root[data-skin="moss"] .hlink .hbook { display: none; }
+:root[data-skin="moss"] .h > span:has(.hlink)::before { transform-origin: 50% 90%; transition: filter .2s; }
+:root[data-skin="moss"] .h > span:has(.hlink:hover)::before, :root[data-skin="moss"] .h > span:has(.hlink:focus-visible)::before { animation: mhSway 1.2s ease-in-out infinite alternate; filter: brightness(1.4); }
+@keyframes mhSway { from { transform: rotate(-7deg); } to { transform: rotate(8deg); } }
+:root[data-skin="moss"] .orn::before { border: 0; height: 18px; top: -1px; right: 22px; background: var(--vine-rule) 0 0 / 72px 18px repeat-x; }
+:root[data-skin="moss"] .orn::after, :root[data-skin="moss"] .diamond::before { width: 10px; height: 10px; top: 3px; border: 0; border-radius: 0 80% 0 80%; background: var(--rule); transform: rotate(-45deg); }
+:root[data-skin="moss"] .diamond::before { inset: 3px; width: auto; height: auto; top: 3px; background: transparent; border: 1.5px solid var(--rule); }
+:root[data-skin="moss"] .diamond.on::before { background: var(--leaf); border-color: var(--leaf); }
+
+/* sections: ivy creeping round two corners (alternating), rooted in moss */
+:root[data-skin="moss"] .frame { border: 1px solid rgb(108 143 74 / .18); border-radius: var(--leafy); padding: 34px 26px 28px;
+  background: linear-gradient(165deg, rgb(30 48 30 / .5), rgb(8 13 9 / .9) 55%); box-shadow: inset 0 0 50px rgb(0 0 0 / .45), 0 14px 34px -22px #000; }
+:root[data-skin="moss"] .frame::before, :root[data-skin="moss"] .frame::after { width: 204px; height: 168px; left: -26px; top: -26px; bottom: auto; border: 0; z-index: 2; pointer-events: none;
+  background: var(--vine) 0 0 / 204px 168px no-repeat; }
+:root[data-skin="moss"] .frame::after { left: auto; top: auto; right: -26px; bottom: -26px; transform: rotate(180deg); }
+:root[data-skin="moss"] .frame:nth-of-type(even)::before { left: auto; right: -26px; transform: scaleX(-1); }
+:root[data-skin="moss"] .frame:nth-of-type(even)::after { right: auto; left: -26px; transform: scaleY(-1); }
+:root[data-skin="moss"] .frame:nth-of-type(3n)::after { display: none; }
+/* the living ivy (fx-moss.js) grows its own longer vines, moss and hide patches; the CSS vines above are its stand-in */
+.mh-ivy-layer { position: absolute; left: 0; top: 0; z-index: 2; overflow: hidden; pointer-events: none; }
+.mh-ivy { position: absolute; overflow: visible; pointer-events: none; }
+:root.has-ivy[data-skin="moss"] .frame::before, :root.has-ivy[data-skin="moss"] .frame::after { display: none; }
+
+:root[data-skin="moss"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .exrow, .perkcard, .spbox, .sptable, .rnow, .rcard, .rpanel, .member, .gx-attr, .gx-road, .gx-pick, .ptread, .pled, .ptopt, .ptel, .ptstage, .ptlabel) {
+  border-radius: var(--leafy-s); }
+:root[data-skin="moss"] :is(.panel, .meter, .wcard, .wound, .pcard, .icard, .legend, .addpanel, .perkcard, .spbox, .rcard, .member, .ptread, .pled) { background: rgb(13 21 16 / .92); border-color: var(--hair); }
+
+/* tabs */
+:root[data-skin="moss"] .tabs { border-bottom: 2px solid var(--moss); gap: 6px; }
+:root[data-skin="moss"] .tabs button { border: 1px solid var(--hair); border-bottom: 0; border-radius: 12px 3px 0 0; background: linear-gradient(180deg, color-mix(in srgb, var(--ts) 25%, #0f1812), #0a110c);
+  font: 600 16px var(--f-head); text-transform: none; letter-spacing: .02em; color: var(--ink-2); box-shadow: inset 0 2px 0 color-mix(in srgb, var(--tc) 55%, transparent); }
+:root[data-skin="moss"] .tabs button:hover { color: var(--ink); background: #132017; }
+:root[data-skin="moss"] .tabs button[aria-selected="true"] { color: #0a120b; border-color: var(--leaf); background: linear-gradient(180deg, #a4c07a, #6c8f4a); }
+:root[data-skin="moss"] .tabicon { stroke: currentColor; }
+
+:root[data-skin="moss"] .stat { background: rgb(108 143 74 / .05); border: 1px solid var(--hair); border-radius: var(--leafy-s); }
+:root[data-skin="moss"] .pbox { background: #080d09; border: 1px solid var(--moss); border-radius: 8px; }
+:root[data-skin="moss"] .pbox b { color: var(--leaf); }
+
+/* attribute cells: natural points are moss, bought points are amber sap, broken ones belong to the Zhoung */
+:root[data-skin="moss"] .cell { border: 1px solid #18251b; background: #050806; border-radius: 4px; }
+:root[data-skin="moss"] .cell.up { background: linear-gradient(180deg, #7ea25a, #46672f); border-color: #587c3c; }
+:root[data-skin="moss"] .cell.bought { background: linear-gradient(180deg, #d9b763, #9a772c); border-color: #b08c3c; }
+:root[data-skin="moss"] .cell.miss { background: linear-gradient(180deg, #74479f, #2e1745); border-color: #5c3a82; box-shadow: 0 0 8px rgb(106 63 150 / .45); }
+:root[data-skin="moss"] .cell.have { background: #213422; }
+:root[data-skin="moss"] .cell.sealed { background: repeating-linear-gradient(135deg, rgb(106 63 150 / .5) 0 2px, transparent 2px 6px), #050308; border-color: #4a2e6a; }
+:root[data-skin="moss"] .skull { color: var(--shadow); --sk-eye: #050308; }
+:root[data-skin="moss"] .skullcell.miss .skull { color: #050308; --sk-eye: #c9a8ff; }
+:root[data-skin="moss"] .mid { border-radius: 50%; width: 36px; height: 36px; border: 1px solid var(--rule); background: radial-gradient(circle, #0d1510 55%, rgb(108 143 74 / .18)); color: var(--ink); }
+:root[data-skin="moss"] .mid.at { background: var(--rule); color: #0a120b; }
+:root[data-skin="moss"] .pip { border: 1.5px solid #3f5a2c; background: transparent; }
+:root[data-skin="moss"] .pip.on { border-color: #6c8f4a; background: radial-gradient(circle at 35% 30%, #c4d99a, #7fa552 45%, #2f4a22); }
+:root[data-skin="moss"] .pip.capped { border-color: #162219; }
+:root[data-skin="moss"] .usetick { border-color: var(--rule); border-radius: 50%; }
+:root[data-skin="moss"] .usetick.spent { background: var(--shadow); border-color: var(--shadow); }
+:root[data-skin="moss"] .track, :root[data-skin="moss"] .mtrack { background: #050806 !important; border: 1px solid #18251b; border-radius: 4px; overflow: hidden; }
+:root[data-skin="moss"] .track i, :root[data-skin="moss"] .mtrack i { border-radius: 4px; }
+
+:root[data-skin="moss"] .btn { border: 1px solid rgb(108 143 74 / .5); border-radius: 6px; background: rgb(108 143 74 / .05); color: var(--ink); font-size: 13px; }
+:root[data-skin="moss"] .btn:hover { background: rgb(108 143 74 / .14); }
+:root[data-skin="moss"] .btn.primary, :root[data-skin="moss"] .seg button[aria-pressed="true"] { background: linear-gradient(180deg, #a4c07a, #6c8f4a); border-color: var(--leaf); color: #0a120b; }
+:root[data-skin="moss"] .btn.danger { border-color: var(--bad); color: var(--bad); }
+:root[data-skin="moss"] .seg { border: 1px solid rgb(108 143 74 / .5); border-radius: 6px; overflow: hidden; }
+:root[data-skin="moss"] .seg button { color: var(--ink-2); }
+:root[data-skin="moss"] :is(.field input, .field select, .mini input, .mini select, .inp, .autotext, .field textarea) { background: rgb(5 8 6 / .75); border: 0; border-bottom: 1px solid rgb(108 143 74 / .4); border-radius: 4px 4px 0 0; color: var(--ink); }
+:root[data-skin="moss"] :is(.field input, .mini input, .inp, .autotext, .field textarea):focus { outline: none; border-bottom-color: var(--leaf); box-shadow: 0 1px 0 var(--leaf); }
+:root[data-skin="moss"] .portrait { border: 2px solid var(--moss); border-radius: 46% 54% 50% 50% / 52% 48% 52% 48%; overflow: hidden; box-shadow: 0 0 0 5px #0a110c, 0 0 0 6px rgb(108 143 74 / .35), 0 10px 30px -10px #000; }
+:root[data-skin="moss"] .hovercard { background: #080d09; color: var(--ink); border: 1px solid var(--moss); border-radius: 8px 3px 8px 3px; }
+:root[data-skin="moss"] .hovercard em { color: var(--leaf); }
+:root[data-skin="moss"] .d8::before { background: linear-gradient(160deg, #a4c07a 0%, #4f7034 55%, #142410 100%); }
+:root[data-skin="moss"] .banner { background: rgb(106 63 150 / .09); border-left: 2px solid var(--shadow); color: var(--ink); }
+:root[data-skin="moss"] .spanel { border-left: 1px solid var(--moss); background: linear-gradient(180deg, #0c1510, #070c08); box-shadow: -12px 0 40px rgb(0 0 0 / .55); }
+:root[data-skin="moss"] .craftnav button { border-radius: var(--leafy-s); }
+:root[data-skin="moss"] .craftnav button[aria-pressed="true"] { background: linear-gradient(180deg, #a4c07a, #6c8f4a); border-color: var(--leaf); color: #0a120b; box-shadow: none; }
+:root[data-skin="moss"] .ptstage { background: radial-gradient(ellipse at 50% 40%, rgb(40 64 36 / .35), transparent 70%), #080d09; border-color: var(--hair); }
+@media (max-width: 560px) {
+  [data-skin="moss"] .tabs button { padding: 9px 6px 8px; font-size: 14px; }
+  [data-skin="moss"] .h { font-size: 23px; } [data-skin="moss"] .frame { padding: 30px 14px 22px; } [data-skin="moss"] .namefield { font-size: 24px; }
+  [data-skin="moss"] .frame::before, [data-skin="moss"] .frame::after { width: 143px; height: 118px; background-size: 143px 118px; left: -18px; top: -18px; }
+  [data-skin="moss"] .frame::after { left: auto; top: auto; right: -18px; bottom: -18px; }
+  [data-skin="moss"] .frame:nth-of-type(even)::before { left: auto; right: -18px; }
+  [data-skin="moss"] .frame:nth-of-type(even)::after { right: auto; left: -18px; }
+  [data-skin="moss"] body::after { height: 26vh; background-size: 170px 14px, 420px 154px, 300px 110px, auto; }
+  [data-skin="moss"] #app::after { left: 10%; }
+}
+/* ----- end Mossheart ----- */
 /* ---------- website build: players panel, companions ---------- */
 .members { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 12px; }
 .member { background: var(--card); border: 1.5px solid var(--hair); padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
@@ -3127,6 +3273,7 @@ const SKINS = [
   // Extended themes: heavier artwork and their own furniture.
   ["cairn", "Cairn-style gothic", GF + "UnifrakturCook:wght@700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Grenze:wght@500;600;700", "extended"],
   ["cyber", "Cyberpunk", GF + "Tomorrow:wght@500;600;700&family=Oxanium:wght@400;500;600;700;800", "extended"],
+  ["moss", "Mossheart (forest)", GF + "Marcellus+SC&family=Cormorant+Garamond:wght@500;600;700&family=Crimson+Pro:wght@400;600;700", "extended"],
 ];
 // The install-app icon (shown only when the browser can install the site; see web/pwa.js).
 const INSTALL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v10.5m0 0-4.2-4.2M12 14l4.2-4.2M4.5 14.5v3.2A2.3 2.3 0 0 0 6.8 20h10.4a2.3 2.3 0 0 0 2.3-2.3v-3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -4154,6 +4301,200 @@ void main() {
   new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin"] });
   document.addEventListener("visibilitychange", () => { if (!document.hidden && cv && cv.isConnected && !raf) raf = requestAnimationFrame(draw); });
   addEventListener("resize", () => { if (cv && cv.isConnected && !raf) raf = requestAnimationFrame(draw); });
+  if (document.body) sync(); else document.addEventListener("DOMContentLoaded", sync);
+})();
+/* ================= living ivy (Mossheart theme only) =================
+   Grows ivy along two corners of every section (alternating, like the CSS stand-in), sized to the section,
+   with a few moss clumps and the odd stitched hide patch on the edges. Each leaf hangs on its stalk like a
+   small spring: when the cursor (or a finger) passes nearby, leaves lean the way it moved, then settle back.
+   It only exists while the Mossheart theme is on. Nothing animates unless the pointer moves; it stops while
+   the tab is hidden, and holds still for anyone who asks their device for reduced motion. Without it, the
+   theme's CSS vines (in app.css) are used instead. */
+(function () {
+  const NS = "http://www.w3.org/2000/svg";
+  const IVY = "M0 0 C-3 -1 -8 0 -11 -4 C-9 -6 -8 -8 -8 -11 C-5 -10 -3 -12 -2 -16 C-1 -18 0 -20 0 -22 C0 -20 1 -18 2 -16 C3 -12 5 -10 8 -11 C8 -8 9 -6 11 -4 C8 0 3 -1 0 0Z";
+  const VEINS = "M0 0 L0 -19 M0 -2 L-9 -5 M0 -2 L9 -5 M0 -6 L-5 -12 M0 -6 L5 -12";
+  const PAD = 40, REACH = 110, MAX_LEAN = 10;
+  let layer = null, leaves = [], active = new Set(), raf = 0, sig = "", timer = 0, mo = null;
+  let px = -1e5, py = -1e5, vx = 0, vy = 0, lastT = 0;
+  const still = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const on = () => document.documentElement.dataset.skin === "moss";
+  // A small seeded random, so each section grows the same ivy every time it is drawn.
+  const rng = seed => { let s = (seed * 2654435761) >>> 0 || 7; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); };
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+  // A smooth path through points (Catmull-Rom turned into cubic Béziers).
+  function smooth(p) {
+    let d = `M${p[0][0].toFixed(1)} ${p[0][1].toFixed(1)}`;
+    for (let i = 0; i < p.length - 1; i++) {
+      const a = p[i - 1] || p[i], b = p[i], c = p[i + 1], e = p[i + 2] || c;
+      d += ` C${(b[0] + (c[0] - a[0]) / 6).toFixed(1)} ${(b[1] + (c[1] - a[1]) / 6).toFixed(1)} ${(c[0] - (e[0] - b[0]) / 6).toFixed(1)} ${(c[1] - (e[1] - b[1]) / 6).toFixed(1)} ${c[0].toFixed(1)} ${c[1].toFixed(1)}`;
+    }
+    return d;
+  }
+  function defs() {
+    const s = el("svg", { width: 0, height: 0, "aria-hidden": "true", style: "position:absolute" });
+    const d = el("defs", {}, s);
+    const g = (id, stops, x2 = 1, y2 = 1) => { const lg = el("linearGradient", { id, x1: 0, y1: 0, x2, y2 }, d); stops.forEach(([o, c]) => el("stop", { offset: o, "stop-color": c }, lg)); };
+    g("mh-lg", [[0, "#46683a"], [.55, "#2c4a22"], [1, "#1a2e15"]]);
+    g("mh-lg2", [[0, "#3a5a2c"], [1, "#16260f"]]);
+    g("mh-hide", [[0, "#6a4a2c"], [.5, "#4f3520"], [1, "#352314"]]);
+    return s;
+  }
+  // Moss: many short strands around a centre, stretched along an edge, with a few stalked spore capsules.
+  function moss(g, r, cx, cy, n, rx, ry, caps) {
+    for (let i = 0; i < n; i++) {
+      const a = r() * Math.PI * 2, d = Math.sqrt(r()), x = cx + Math.cos(a) * rx * d, y = cy + Math.sin(a) * ry * d;
+      const t = a + (r() - .5) * 2, l = 1.5 + r() * 3.5;
+      el("path", { d: `M${x.toFixed(1)} ${y.toFixed(1)} l${(Math.cos(t) * l).toFixed(1)} ${(Math.sin(t) * l).toFixed(1)}`,
+        stroke: ["#2f4a22", "#3d5c2a", "#4f7034", "#26391c", "#5a7a3a"][Math.floor(r() * 5)], "stroke-width": (.7 + r() * .6).toFixed(1), "stroke-linecap": "round" }, g);
+    }
+    for (let i = 0; i < caps; i++) {
+      const x = cx + (r() - .5) * rx * 1.4, y = cy + (r() - .5) * ry * .8, h = 6 + r() * 6, lean = (r() - .5) * 5;
+      el("path", { d: `M${x.toFixed(1)} ${y.toFixed(1)} q${(lean / 2).toFixed(1)} ${(-h / 2).toFixed(1)} ${lean.toFixed(1)} ${(-h).toFixed(1)}`, stroke: "#6a5a32", "stroke-width": ".6", fill: "none" }, g);
+      el("ellipse", { cx: (x + lean).toFixed(1), cy: (y - h - 1).toFixed(1), rx: "1", ry: "1.7", fill: "#8a7440", transform: `rotate(${(lean * 6).toFixed(0)} ${(x + lean).toFixed(1)} ${(y - h - 1).toFixed(1)})` }, g);
+    }
+  }
+  // A stitched patch of hide, overlapping the section's edge.
+  function hide(g, r, cx, cy, rot) {
+    const w = 30 + r() * 12, h = 22 + r() * 8, j = () => (r() - .5) * 5;
+    const pts = [[-w / 2 + j(), -h / 2 + j()], [w / 2 + j(), -h / 2 + j()], [w / 2 + j(), h / 2 + j()], [-w / 2 + j(), h / 2 + j()]];
+    const pg = el("g", { transform: `translate(${cx.toFixed(1)} ${cy.toFixed(1)}) rotate(${rot.toFixed(1)})` }, g);
+    el("path", { d: "M" + pts.map(p => p.map(v => v.toFixed(1)).join(" ")).join(" L") + "Z", fill: "url(#mh-hide)", stroke: "#24170c", "stroke-width": "1.2", "stroke-linejoin": "round" }, pg);
+    el("path", { d: "M" + pts.map(p => p.map(v => (v * .78).toFixed(1)).join(" ")).join(" L") + "Z", fill: "none", stroke: "#cdb88a", "stroke-opacity": ".75", "stroke-width": ".9", "stroke-dasharray": "2.6 2.4" }, pg);
+    el("path", { d: `M${(-w * .3).toFixed(1)} ${(-h * .1).toFixed(1)} q${(w * .2).toFixed(1)} -3 ${(w * .45).toFixed(1)} 2`, stroke: "#000", "stroke-opacity": ".25", "stroke-width": "1", fill: "none" }, pg);
+  }
+  // One corner's ivy, drawn in the corner's own frame of reference: x runs along the horizontal edge, y down the side.
+  function corner(svg, r, cx, cy, sx, sy, lenX, lenY) {
+    const g = el("g", { transform: `translate(${cx} ${cy}) scale(${sx} ${sy})` }, svg);
+    const top = [], side = [];
+    for (let x = 0; x <= lenX; x += 16) top.push([x, Math.sin(x / 37 + r() * .6) * 3 + (r() - .5) * 2]);
+    for (let y = 0; y <= lenY; y += 16) side.push([Math.sin(y / 31 + r() * .6) * 3 + (r() - .5) * 2, y]);
+    const stem = (p, w) => { const d = smooth(p);
+      el("path", { d, stroke: "#211c12", "stroke-width": w, fill: "none", "stroke-linecap": "round" }, g);
+      el("path", { d, stroke: "#5a5236", "stroke-opacity": ".5", "stroke-width": (w * .35).toFixed(1), fill: "none", "stroke-linecap": "round", transform: "translate(-.4 -.5)" }, g); };
+    [top, side].forEach(p => { const a = Math.ceil(p.length * .4), b = Math.ceil(p.length * .75);
+      stem(p.slice(0, a + 1), 4); stem(p.slice(a, b + 1), 2.8); stem(p.slice(b), 1.7); });
+    // a thinner stem twining round the first part of each
+    [[top, 0], [side, 1]].forEach(([p, axis]) => { const q = p.slice(0, Math.ceil(p.length * .6)).map(([x, y], i) => axis ? [x + Math.sin(i * 1.4) * 4, y] : [x, y + Math.sin(i * 1.4) * 4]);
+      el("path", { d: smooth(q), stroke: "#2a2617", "stroke-width": "1.2", fill: "none" }, g); });
+    // tendril curls at the tips
+    const [tx, ty] = top[top.length - 1], [ux, uy] = side[side.length - 1];
+    el("path", { d: `M${tx} ${ty} c6 -3 9 4 4 7 c-3 2 -5 -1 -3 -3`, stroke: "#46583a", "stroke-width": ".9", fill: "none" }, g);
+    el("path", { d: `M${ux} ${uy} c-3 6 3 9 6 5 c1 -3 -1 -5 -3 -4`, stroke: "#46583a", "stroke-width": ".9", fill: "none" }, g);
+    moss(g, r, 0, 0, 70, 13, 12, 3);
+    // leaves, alternating sides, larger near the root
+    const grow = (p, axis) => {
+      for (let i = 1; i < p.length; i++) {
+        if (r() < .18) continue;
+        const [x, y] = p[i], t = i / p.length, side = i % 2 ? -1 : 1;
+        const out = axis ? (side < 0 ? -90 : 90) : (side < 0 ? 0 : 180);           // pointing away from the stem
+        const a = out + (axis ? (side < 0 ? 1 : -1) : side) * (15 + r() * 25) * (axis ? -1 : 1) + (r() - .5) * 20;
+        const s = (1.15 - t * .5) * (.75 + r() * .4) * (side > 0 ? .82 : 1);
+        const base = el("g", { transform: `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${a.toFixed(1)})` }, g);
+        const sw = el("g", {}, base);
+        el("path", { d: "M0 0 L0 -6", stroke: "#3a3a22", "stroke-width": "1.3" }, sw);
+        const lg = el("g", { transform: `translate(0 -6) scale(${s.toFixed(2)})` }, sw);
+        el("path", { d: IVY, fill: `url(#${r() < .5 ? "mh-lg" : "mh-lg2"})`, stroke: "#0f1a0c", "stroke-width": ".7" }, lg);
+        el("path", { d: VEINS, stroke: "#7f9a5c", "stroke-opacity": ".55", "stroke-width": ".6", fill: "none" }, lg);
+        leaves.push({ el: sw, lx: x, ly: y, a, sx, sy, cx, cy, svg, th: 0, om: 0 });
+      }
+    };
+    grow(top, 0); grow(side, 1);
+    // a few black ivy berries
+    const [bx, by] = top[Math.floor(top.length * .55)];
+    [[0, 6], [3, 9], [-2, 10], [2, 12]].forEach(([dx, dy]) => { el("circle", { cx: bx + dx, cy: by + dy, r: 2.3, fill: "#121218" }, g); el("circle", { cx: bx + dx - .7, cy: by + dy - .7, r: .6, fill: "#9aa0b0", "fill-opacity": ".5" }, g); });
+  }
+  // Sections in the order CSS counts them (nth-of-type among their siblings), so the corners alternate the same way.
+  function nth(f) { let n = 1, s = f; while ((s = s.previousElementSibling)) if (s.tagName === f.tagName) n++; return n; }
+  function layout() {
+    timer = 0;
+    if (!layer) return;
+    const frames = [...document.querySelectorAll(".frame")].filter(f => f.offsetParent !== null);
+    const rects = frames.map(f => f.getBoundingClientRect());
+    const sx0 = scrollX, sy0 = scrollY;
+    const key = rects.map(r => [r.left + sx0, r.top + sy0, r.width, r.height].map(Math.round).join(",")).join(";") + "|" + document.documentElement.clientWidth;
+    if (key === sig) return;
+    sig = key; leaves = []; active.clear();
+    [...layer.querySelectorAll("svg.mh-ivy")].forEach(s => s.remove());
+    // the layer covers the page (not more), so leaves past a section's edge never cause sideways scrolling
+    const app = document.getElementById("app"), bottom = app ? app.getBoundingClientRect().bottom + sy0 + PAD : 0;
+    layer.style.width = document.documentElement.clientWidth + "px"; layer.style.height = Math.max(0, bottom) + "px";
+    frames.forEach((f, i) => {
+      const r0 = rects[i], n = nth(f), r = rng(n * 97 + Math.round(r0.width / 40));
+      const W = r0.width, H = r0.height, x0 = r0.left + sx0 - PAD, y0 = r0.top + sy0 - PAD;
+      const svg = el("svg", { class: "mh-ivy", width: W + 2 * PAD, height: H + 2 * PAD, viewBox: `0 0 ${W + 2 * PAD} ${H + 2 * PAD}`, "aria-hidden": "true" });
+      svg.style.left = x0 + "px"; svg.style.top = y0 + "px";
+      svg._x = x0; svg._y = y0;
+      const lenX = Math.max(140, Math.min(460, W * .42)), lenY = Math.max(100, Math.min(320, H * .55));
+      const C = { tl: [PAD, PAD, 1, 1], tr: [W + PAD, PAD, -1, 1], br: [W + PAD, H + PAD, -1, -1], bl: [PAD, H + PAD, 1, -1] };
+      const pair = n % 2 ? ["tl", "br"] : ["tr", "bl"];
+      corner(svg, r, ...C[pair[0]], lenX, lenY);
+      if (n % 3) corner(svg, r, ...C[pair[1]], lenX * .8, lenY * .8);
+      // moss on an edge away from the ivy, and now and then a hide patch
+      const g = el("g", {}, svg);
+      const edgeY = pair[0] === "tl" ? H + PAD : PAD, mx = PAD + W * (.35 + r() * .3);
+      moss(g, r, mx, edgeY, 90, 22 + r() * 14, 5, 4);
+      if (H > 240) moss(g, r, pair[0] === "tl" ? W + PAD : PAD, PAD + H * (.3 + r() * .2), 55, 4, 16, 2);
+      if (n % 3 === 1 && W > 300) hide(g, r, PAD + W * (.62 + r() * .2), pair[0] === "tl" ? H + PAD - 2 : PAD + 2, (r() - .5) * 16);
+      layer.appendChild(svg);
+    });
+  }
+  const queue = () => { if (!timer) timer = setTimeout(layout, 140); };
+  // Sections slide in when a tab opens; measure again once anything inside the app finishes animating.
+  const settle = e => { if (e.target && e.target.closest && e.target.closest("#app") && !e.target.closest(".mh-ivy-layer")) queue(); };
+  // Leaves are springs: a nearby pointer pushes them the way it moved; they sway back and settle.
+  function tick() {
+    raf = 0;
+    if (!layer || document.hidden) return;
+    const now = performance.now(), moving = now - lastT < 80;
+    if (moving) for (const L of leaves) {
+      const x = L.svg._x + L.cx + L.sx * L.lx, y = L.svg._y + L.cy + L.sy * L.ly, d = Math.hypot(px - x, py - y);
+      if (d < REACH) active.add(L);
+    }
+    for (const L of active) {
+      const x = L.svg._x + L.cx + L.sx * L.lx, y = L.svg._y + L.cy + L.sy * L.ly, d = Math.hypot(px - x, py - y);
+      if (moving && d < REACH) {
+        const rad = (L.a * Math.PI) / 180, dx = L.sx * Math.sin(rad), dy = -L.sy * Math.cos(rad);   // the leaf's direction on the page
+        const push = (dx * vy - dy * vx) * L.sx * L.sy, fall = (1 - d / REACH) ** 2;
+        L.om += Math.max(-3, Math.min(3, push * .22)) * fall;
+      }
+      L.om += -.07 * L.th; L.om *= .86; L.th = Math.max(-MAX_LEAN, Math.min(MAX_LEAN, L.th + L.om));
+      if (Math.abs(L.th) < .03 && Math.abs(L.om) < .03 && !(moving && d < REACH)) { L.th = 0; L.om = 0; active.delete(L); }
+      L.el.setAttribute("transform", L.th ? `rotate(${L.th.toFixed(2)})` : "");
+    }
+    if (active.size || moving) raf = requestAnimationFrame(tick);
+  }
+  function move(e) {
+    const now = performance.now(), dt = Math.max(8, now - lastT);
+    const nx = e.pageX, ny = e.pageY;
+    if (now - lastT < 200) { vx = ((nx - px) / dt) * 16; vy = ((ny - py) / dt) * 16; } else { vx = vy = 0; }
+    px = nx; py = ny; lastT = now;
+    if (!raf && !still() && !document.hidden) raf = requestAnimationFrame(tick);
+  }
+  function start() {
+    if (layer) return;
+    layer = document.createElement("div"); layer.className = "mh-ivy-layer"; layer.setAttribute("aria-hidden", "true");
+    layer.appendChild(defs());
+    document.body.appendChild(layer);
+    document.documentElement.classList.add("has-ivy");
+    sig = ""; layout();
+    mo = new MutationObserver(queue); mo.observe(document.getElementById("app") || document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "open"] });
+    addEventListener("resize", queue); addEventListener("pointermove", move, { passive: true });
+    document.addEventListener("animationend", settle, true); document.addEventListener("transitionend", settle, true);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(queue);
+  }
+  function stop() {
+    if (!layer) return;
+    if (raf) cancelAnimationFrame(raf); raf = 0;
+    if (mo) mo.disconnect(); mo = null;
+    removeEventListener("resize", queue); removeEventListener("pointermove", move);
+    document.removeEventListener("animationend", settle, true); document.removeEventListener("transitionend", settle, true);
+    layer.remove(); layer = null; leaves = []; active.clear(); sig = "";
+    document.documentElement.classList.remove("has-ivy");
+  }
+  const sync = () => (on() && document.body ? start() : stop());
+  new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin"] });
+  document.addEventListener("visibilitychange", () => { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = 0; } });
   if (document.body) sync(); else document.addEventListener("DOMContentLoaded", sync);
 })();
 /* ================= crafting tab ================= */
