@@ -59,6 +59,16 @@ button { cursor: pointer; }
 .brand { font-family: var(--f-display); font-size: 30px; line-height: 1; letter-spacing: .02em; }
 .brand small { font-family: var(--f-head); font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3); margin-left: 8px; vertical-align: middle; }
 .status { font-size: 13px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; }
+/* Install-app icon: hidden unless the browser can install the site (web/pwa.js sets html[data-install]). */
+.installbtn { display: none; position: relative; width: 30px; height: 30px; padding: 0; border: 1.5px solid var(--hair); border-radius: 4px; background: transparent; color: var(--brass); cursor: pointer; }
+html[data-install] .installbtn { display: inline-grid; place-items: center; }
+.installbtn svg { width: 18px; height: 18px; }
+.installbtn:hover, .installbtn:focus-visible { border-color: var(--brass); }
+.installbtn[data-tip]:hover::after, .installbtn[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
+  white-space: nowrap; padding: 5px 9px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 600 12px/1.3 system-ui, sans-serif; pointer-events: none; }
+@media (max-width: 700px) { .status .installbtn[data-tip]:hover::after, .status .installbtn[data-tip]:focus-visible::after { left: 0; right: auto; } }
+.installhelp { position: fixed; z-index: 9500; max-width: min(300px, calc(100vw - 24px)); padding: 10px 12px; border-radius: 6px; background: #1b130b; color: #ffe2a8;
+  border: 1px solid #b88a3c; font: 14px/1.4 system-ui, sans-serif; box-shadow: 0 8px 28px rgb(0 0 0 / .45); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
 .dot.live { background: var(--good); }
 .dot.local { background: var(--warn); }
@@ -1257,6 +1267,10 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   animation: gateRise var(--d) linear infinite; animation-delay: var(--delay); opacity: 0; }
 @keyframes gateRise { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: .9; } 70% { opacity: .55; } 100% { transform: translate(var(--w), -105vh); opacity: 0; } }
 
+.gate .gate-install { position: absolute; top: 14px; right: 14px; z-index: 3; width: 38px; height: 38px; border-color: #6b4a20; background: rgb(20 13 8 / .7); color: #f0c470; }
+.gate .gate-install:hover, .gate .gate-install:focus-visible { border-color: #f0c470; box-shadow: 0 0 12px rgb(255 170 80 / .35); }
+.gate .gate-install svg { width: 22px; height: 22px; }
+.gate .gate-install[data-tip]:hover::after, .gate .gate-install[data-tip]:focus-visible::after { background: #f0c470; color: #1b130b; }
 .gate-wrap { position: relative; z-index: 1; min-height: 100%; display: grid; justify-items: center; align-content: center; gap: 14px; padding: 36px 16px 28px; }
 .gate-crest { display: grid; justify-items: center; text-align: center; }
 .gate .crest { width: 118px; height: 118px; filter: drop-shadow(0 0 18px rgb(255 160 70 / .35)) drop-shadow(0 4px 0 #000); }
@@ -1802,6 +1816,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
       <linearGradient id="gate-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbe7b0"/><stop offset=".5" stop-color="#d49a45"/><stop offset="1" stop-color="#8a5a22"/></linearGradient>
       <radialGradient id="gate-gem" cx=".45" cy=".35" r=".7"><stop offset="0" stop-color="#fff4d2"/><stop offset=".35" stop-color="#ffb04a"/><stop offset="1" stop-color="#8f2a0c"/></radialGradient>
     </defs></svg>
+    <button type="button" class="installbtn gate-install" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v10.5m0 0-4.2-4.2M12 14l4.2-4.2M4.5 14.5v3.2A2.3 2.3 0 0 0 6.8 20h10.4a2.3 2.3 0 0 0 2.3-2.3v-3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <main class="gate-wrap">
       <header class="gate-crest">
         <svg class="crest" viewBox="0 0 200 200" aria-hidden="true">
@@ -1960,6 +1975,36 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
     document.body.appendChild(bar);
   });
   addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(() => {}); });
+
+  // ---- the install-app button (data-install-btn, in the header and on the sign-in screen) ----
+  // It shows only when installing is possible: Chrome/Edge/Android offer an install prompt; iPhone and iPad have no
+  // prompt, so there the button explains Share → Add to Home Screen. Already installed: no button.
+  const root = document.documentElement;
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const apple = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  let offer = null;
+  const mark = v => { if (v && !standalone()) root.dataset.install = v; else delete root.dataset.install; };
+  if (apple) mark("ios");
+  addEventListener("beforeinstallprompt", e => { e.preventDefault(); offer = e; mark("prompt"); });
+  addEventListener("appinstalled", () => { offer = null; mark(""); });
+  const help = btn => {
+    const old = document.querySelector(".installhelp"); if (old) { old.remove(); return; }
+    const tip = document.createElement("div"); tip.className = "installhelp"; tip.setAttribute("role", "status");
+    tip.innerHTML = apple ? "To install: tap <b>Share</b> <span aria-hidden=\"true\">⬆︎</span>, then <b>Add to Home Screen</b>."
+                          : "To install: open your browser's menu and choose <b>Install app</b> (or <b>Add to Home screen</b>).";
+    document.body.appendChild(tip);
+    const r = btn.getBoundingClientRect(), w = tip.offsetWidth;
+    tip.style.top = Math.min(innerHeight - tip.offsetHeight - 8, r.bottom + 8) + "px";
+    tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.right - w)) + "px";
+    setTimeout(() => document.addEventListener("pointerdown", function off(ev) { if (!tip.contains(ev.target)) { tip.remove(); document.removeEventListener("pointerdown", off); } }), 0);
+  };
+  document.addEventListener("click", async e => {
+    const btn = e.target.closest && e.target.closest("[data-install-btn]"); if (!btn) return;
+    e.preventDefault();
+    if (!offer) { help(btn); return; }
+    const o = offer; offer = null;
+    try { await o.prompt(); const r = await o.userChoice; mark(r && r.outcome === "accepted" ? "" : apple ? "ios" : ""); } catch { mark(""); }
+  });
 })();
 </script>
 <script>
@@ -3164,6 +3209,8 @@ const SKINS = [
   ["cairn", "Cairn-style gothic", GF + "UnifrakturCook:wght@700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Grenze:wght@500;600;700", "extended"],
   ["cyber", "Cyberpunk", GF + "Tomorrow:wght@500;600;700&family=Oxanium:wght@400;500;600;700;800", "extended"],
 ];
+// The install-app icon (shown only when the browser can install the site; see web/pwa.js).
+const INSTALL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v10.5m0 0-4.2-4.2M12 14l4.2-4.2M4.5 14.5v3.2A2.3 2.3 0 0 0 6.8 20h10.4a2.3 2.3 0 0 0 2.3-2.3v-3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function applySkin(key) {
   const skin = SKINS.find(x => x[0] === key) || SKINS[0], root = document.documentElement;
   if (skin[0] === "ledger") delete root.dataset.skin; else root.dataset.skin = skin[0];
@@ -3252,7 +3299,7 @@ function App() {
         <button aria-pressed=${view === "chars"} onClick=${() => setView("chars")}>Characters</button>
         <button aria-pressed=${view === "gm"} onClick=${() => setView("gm")}>GM table</button></div>`}
       <${SkinPicker} />
-      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
+      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button><button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
     </header>
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
