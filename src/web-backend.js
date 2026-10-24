@@ -232,6 +232,9 @@
   document.head.appendChild(gateFonts);
   firebase.initializeApp(cfg);
   fs = firebase.firestore();
+  // Keep a copy of this table's data on the device, so sheets open and edits queue up when the connection drops.
+  // (Fails quietly in private windows or when another tab already owns the copy.)
+  try { fs.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch {}
   auth = firebase.auth();
   window.claude = {
     use(name) {
