@@ -4749,15 +4749,28 @@ function AddPanel({ e, party, charMap, act }) {
 /* ---------- who is at the table (website only): roles and which characters each player sees ---------- */
 function MembersPanel({ chars, updateChar }) {
   const [confirm, setConfirm] = useState(null);
+  const [move, setMove] = useState(null);   // { from, to }: moving every character from one account to another
   const me = Store.table.uid;
   const members = Store.members.slice().sort((a, b) => (a.role === b.role ? (a.name || "").localeCompare(b.name || "") : a.role === "gm" ? -1 : 1));
   const give = (cid, uid) => updateChar(cid, x => { x.players = [...new Set([...playersOf(x), uid])]; });
   const take = (cid, uid) => updateChar(cid, x => { x.players = playersOf(x).filter(u => u !== uid); });
   const act = p => p.catch(() => toast("Couldn't change that just now. Try again."));
   const nobody = chars.filter(c => !playersOf(c).length);
+  const nameOf = uid => (Store.members.find(m => m.uid === uid) || {}).name || "that account";
+  // A forgotten password can't be reset (accounts have no real email), so the player makes a new account and the
+  // GM moves everything across: every character and companion that lists the old account now lists the new one.
+  const moveAll = async ({ from, to }) => {
+    const list = chars.filter(c => playersOf(c).includes(from));
+    try {
+      for (const c of list) await updateChar(c.id, x => { x.players = [...new Set(playersOf(x).map(u => (u === from ? to : u)))]; });
+      toast(`Moved ${list.length} ${list.length === 1 ? "character" : "characters"} to ${nameOf(to)}. You can remove ${nameOf(from)} from the table now.`);
+    } catch { toast("Couldn't move them just now. Try again."); }
+    setMove(null);
+  };
   return html`<section class="frame"><${Sigils} seed="players" n=${1} lead="note" side="r" />
     <h2 class="h"><span>Players at the table</span><i class="orn" aria-hidden="true"></i></h2>
-    <p class="sub">Players see only the characters you give them. GMs see everyone and run the deck.</p>
+    <p class="sub">Players see only the characters you give them. GMs see everyone and run the deck.
+      Forgot a password? The player makes a new account and joins with the table password, then you move their characters to it.</p>
     <div class="members">${members.map(m => { const mine = chars.filter(c => playersOf(c).includes(m.uid));
       return html`<div class="member">
         <div class="mhead"><b>${m.name}</b><span class=${"flag" + (m.role === "gm" ? " brass" : "")}>${m.role === "gm" ? "GM" : "Player"}</span>${m.uid === me && html`<span class="muted">you</span>`}
@@ -4767,7 +4780,13 @@ function MembersPanel({ chars, updateChar }) {
               <button class="btn small danger" onClick=${() => setConfirm(m.uid)}>Remove</button>`}</span>`}</div>
         <div class="chips">${mine.map(c => html`<span class="cond">${c.name || "Unnamed"}<button aria-label=${`Take ${c.name || "this character"} from ${m.name}`} onClick=${() => take(c.id, m.uid)}>×</button></span>`)}
           <select class="inp give" aria-label=${`Give ${m.name} a character`} value="" onChange=${e => { const v = e.target.value; e.target.value = ""; if (v) give(v, m.uid); }}>
-            <option value="">+ Give a character…</option>${chars.filter(c => !playersOf(c).includes(m.uid)).map(c => html`<option value=${c.id}>${c.name || "Unnamed"}${c.companionOf ? " (companion)" : ""}</option>`)}</select></div>
+            <option value="">+ Give a character…</option>${chars.filter(c => !playersOf(c).includes(m.uid)).map(c => html`<option value=${c.id}>${c.name || "Unnamed"}${c.companionOf ? " (companion)" : ""}</option>`)}</select>
+          ${mine.length > 0 && members.length > 1 && (!move || move.from !== m.uid) && html`<select class="inp give" aria-label=${`Move all of ${m.name}'s characters to another account`} value=""
+            onChange=${e => { const v = e.target.value; e.target.value = ""; if (v) setMove({ from: m.uid, to: v }); }}>
+            <option value="">Move all to…</option>${members.filter(o => o.uid !== m.uid).map(o => html`<option value=${o.uid}>${o.name}</option>`)}</select>`}</div>
+        ${move && move.from === m.uid && html`<div class="mact">
+          <span class="muted">Move ${mine.length} ${mine.length === 1 ? "character" : "characters"} from ${m.name} to ${nameOf(move.to)}?</span>
+          <button class="btn small primary" onClick=${() => moveAll(move)}>Move</button><button class="btn small" onClick=${() => setMove(null)}>Cancel</button></div>`}
       </div>`; })}</div>
     ${nobody.length > 0 && html`<p class="muted">Not given to anyone yet: ${nobody.map(c => c.name || "Unnamed").join(", ")}.</p>`}
   </section>`;
