@@ -6,7 +6,7 @@ const CRAFTS = [
   ["brew", "Brewing", "Brewing", "Potions, catalysts, increments and potent brews."],
   ["rune", "Runecrafting", "Runecrafting", "Runestones bound to a vessel through ritual."],
   ["weapon", "Weapon upkeep", "Weapon Maintenance", "Repairing, crafting and masterworking weapons."],
-  ["armor", "Armor upkeep", "Armor Maintenance", "Repairing soak and tuning armor."],
+  ["armor", "Armor upkeep", "Armor Maintenance", "Repairing and crafting suits of armor."],
 ];
 const CRAFT_ICONS = {
   powder: html`<path d="M10 2.5c1.6 1.4 2.4 3.4 2.4 5.6V15H7.6V8.1c0-2.2.8-4.2 2.4-5.6z M7.6 15h4.8v2.5H7.6z M7.6 10.5h4.8" />`,
@@ -23,8 +23,8 @@ function CraftTab({ c, update }) {
   return html`<div class="tabpane">
     <nav class="craftnav" aria-label="Crafts">${CRAFTS.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} class=${"cn-" + k} onClick=${() => setSub(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${CRAFT_ICONS[k]}</svg><span>${n}</span>
-      <small>${num(c.skills[skill]) ? `${skill} ${num(c.skills[skill])}` : k === "powder" ? "" : "soon"}</small></button>`)}</nav>
-    ${sub === "powder" ? html`<${Powdertinkering} c=${c} update=${update} />` : html`<${UnderConstruction} c=${c} craft=${cur} />`}
+      <small>${num(c.skills[skill]) ? `${skill} ${num(c.skills[skill])}` : ["powder", "armor"].includes(k) ? "" : "soon"}</small></button>`)}</nav>
+    ${sub === "powder" ? html`<${Powdertinkering} c=${c} update=${update} />` : sub === "armor" ? html`<${ArmorUpkeep} c=${c} update=${update} />` : html`<${UnderConstruction} c=${c} craft=${cur} />`}
   </div>`;
 }
 
@@ -181,7 +181,7 @@ function Powdertinkering({ c, update }) {
 
   return html`
     <section class="frame ptbench">
-      <h2 class="h"><span>Powdertinkering</span><i class="orn" aria-hidden="true"></i></h2>
+      <${Head} title="Powdertinkering" topic="powdertinkering" />
       <p class="sub">Pick a munition, click a part of it to choose what goes there, then forge. Each part is one roll: d100 minus your modifier, under the difficulty.</p>
       <div class="facts ptfacts">${[
         ["Powdertinker", `${st.lvl}${st.lvl < 3 ? " · not proficient" : ""}`],
