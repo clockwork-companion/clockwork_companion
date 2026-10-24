@@ -14,9 +14,9 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { ref: main, path: site-main }
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { ref: Dev, path: site-dev }
       - name: Build main at / and Dev at /dev/ from src
         run: |
