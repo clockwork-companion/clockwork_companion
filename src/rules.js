@@ -398,11 +398,12 @@ const CW = (() => {
     if (refreshUses(c, true)) lines.push("Short-rest abilities recharged");
     return lines.length ? "Short rest: " + lines.join(" · ") : "Short rest";
   }
-  function longRest(c) {
+  // cleanse: the cleansing dice total when it was rolled at the table; rolled here when left out.
+  function longRest(c, cleanse) {
     const d = derived(c); const v = c.vitals; const parts = [];
     const hp = Math.min(d.max.hp, d.cur.hp + d.hpRegen); parts.push(`HP +${hp - d.cur.hp}`); v.hp = hp;
     const bp = Math.min(d.max.bp, d.cur.bp + d.bpRegen); parts.push(`Blood +${bp - d.cur.bp}`); v.bp = bp;
-    let roll = rollDie(6); for (let i = 0; i < d.cleanseDice.d4; i++) roll += rollDie(4);
+    let roll = num(cleanse); if (cleanse == null) { roll = rollDie(6); for (let i = 0; i < d.cleanseDice.d4; i++) roll += rollDie(4); }
     const tox = Math.max(0, d.cur.tox - roll); parts.push(`Toxicity −${d.cur.tox - tox} (rolled ${roll})`); v.tox = tox;
     const st = Math.max(0, num(v.exhaustion) - 2 - (sk(c, "Conditioning") >= 7 ? 2 : 0));
     if (st !== num(v.exhaustion)) parts.push(`Stamina ${num(v.exhaustion)} → ${st} lost`); setStamina(c, st);
@@ -411,8 +412,9 @@ const CW = (() => {
   }
 
   // The rulebook roll for one attribute: 3d8, set the lowest die aside, add the other two; never below 6.
-  function rollAttributeDetail() {
-    const dice = [rollDie(8), rollDie(8), rollDie(8)];
+  // dice: three d8 results rolled at the table; rolled here when left out.
+  function rollAttributeDetail(given) {
+    const dice = given && given.length === 3 ? given.slice() : [rollDie(8), rollDie(8), rollDie(8)];
     const low = dice.indexOf(Math.min(...dice));
     const sum = dice.reduce((s, d, i) => (i === low ? s : s + d), 0);
     return { dice, low, sum, total: Math.max(6, sum) };

@@ -123,22 +123,30 @@ function ArmorUpkeep({ c, update }) {
   const addLedger = (x, e) => { x.craft.armor.ledger = [Object.assign({ id: rid(), t: Date.now(), note: "" }, e), ...x.craft.armor.ledger].slice(0, 20); };
 
   /* ---------- repair: one check, then one hammer strike per Repair Die ---------- */
-  const startRepair = () => {
+  const startRepair = async () => {
     if (!suit || rp.block) return;
-    const plan = rp, id = suit.id; setSel(id);
+    const plan = rp, id = suit.id;
+    const first = await askRoll({ title: "Armor repair check", dice: [{ n: 1, sides: 100 }], cancel: true,
+      note: `d100 − ${st.mod}. Repair Count = 10 − check ÷ 10: that many ${plan.die} restore Soak.` });
+    if (!first) return;
+    setSel(id);
     setRun({ kind: "repair", phase: "rolling", id, plan, dice: [], strike: null, shown: 0, gained: 0, mod: st.mod });
     later(() => {
-      const r = R.rollDie(100), check = r - st.mod, count = R.repairCount(check);
-      const dice = Array.from({ length: count }, () => R.rollDie(plan.sides));
-      patch({ phase: "counted", r, check, count, dice });
-      const strike = i => {
-        if (i >= count) return later(() => finishRepair(), 450);
-        patch({ phase: "strike", strike: i });
-        later(() => patch(g => ({ shown: i + 1, gained: Math.min(plan.missing, g.gained + dice[i]) })), 230);
-        later(() => strike(i + 1), 560);
-      };
-      later(() => strike(0), 1100);
-    }, 1100);
+      const r = first[0], check = r - st.mod, count = R.repairCount(check);
+      patch({ phase: "counted", r, check, count, dice: [] });
+      // Rolled at the table, the Repair Dice come back as one total: one strike for the lot.
+      askRoll({ title: `Repair Dice: ${count}${plan.die}`, dice: [{ n: count, sides: plan.sides }], note: "Soak goes back up by the total." }).then(dice => {
+        if (!runRef.current) return;
+        patch({ dice });
+        const strike = i => {
+          if (i >= dice.length) return later(() => finishRepair(), 450);
+          patch({ phase: "strike", strike: i });
+          later(() => patch(g => ({ shown: i + 1, gained: Math.min(plan.missing, g.gained + dice[i]) })), 230);
+          later(() => strike(i + 1), 560);
+        };
+        later(() => strike(0), 1100);
+      });
+    }, Dice.mode === "own" ? 500 : 1100);
   };
   const finishRepair = () => {
     const f = runRef.current; if (!f) return;
@@ -148,21 +156,27 @@ function ArmorUpkeep({ c, update }) {
       a.soak = num(a.soak) + gained;
       x.craft.supplies[f.plan.mat] = Math.max(0, num(x.craft.supplies[f.plan.mat]) - f.plan.cost);
       const txt = `${a.name || T[a.type].label + " armor"}: Soak ${f.plan.soak} → ${f.plan.soak + gained}`;
-      addLedger(x, { kind: "repair", name: f.plan.broken ? `Rebuilt ${txt}` : `Repaired ${txt}`, rolls: [`check ${f.r}−${f.mod}=${f.check} → ${f.count} × ${f.plan.die}${f.count ? ": " + f.dice.join(" + ") + " = " + total : ""}`] });
+      addLedger(x, { kind: "repair", name: f.plan.broken ? `Rebuilt ${txt}` : `Repaired ${txt}`, rolls: [`check ${f.r}−${f.mod}=${f.check} → ${f.count} × ${f.plan.die}${f.count ? ": " + (f.dice.length > 1 ? f.dice.join(" + ") + " = " : "") + total : ""}`] });
       addLog(x, `Armor repair: ${txt} (${f.plan.cost} g ${f.plan.mat} materials, ${f.count}${f.plan.die})`);
     });
     patch({ done: true, phase: "done", total, gainedFinal: gained });
   };
 
   /* ---------- craft: up to two rolls; a failure leaves a flaw, a second loses the suit ---------- */
-  const startCraft = () => {
+  const startCraft = async () => {
     if (cp.block) return;
     const plan = cp, name = (rc.name || "").trim() || `${plan.t.label} armor`;
+    const ask = n => askRoll({ title: n ? "Armor craft: second try" : "Armor craft check", dice: [{ n: 1, sides: 100 }], cancel: !n,
+      note: `d100 − ${st.mod}, under ${plan.dc}.${n ? " A second failure loses the suit." : " A failure leaves a flaw and gives one more try."}` });
+    const first = await ask(0);
+    if (!first) return;
     setRun({ kind: "craft", phase: "heat", plan, name, rolls: [], flaws: 0, mod: st.mod });
-    const roll = n => {
+    const roll = async n => {
+      const r = n ? (await ask(1))[0] : first[0];
+      if (!runRef.current) return;
       patch({ phase: "rolling", roll: null });
       later(() => {
-        const r = R.rollDie(100), ok = r - st.mod < plan.dc;
+        const ok = r - st.mod < plan.dc;
         patch(g => ({ roll: { r, total: r - st.mod, ok }, rolls: [...g.rolls, { r, total: r - st.mod, ok }] }));
         if (ok) later(() => finishCraft(true), 500);
         else if (n === 0) later(() => { patch(g => ({ phase: "flaw", flaws: g.flaws + 1 })); later(() => roll(1), 1500); }, 600);
@@ -248,7 +262,7 @@ function AmReadout({ run, onClose }) {
     const p = run.plan;
     if (run.done) return html`<div class=${"ptread end " + (run.gainedFinal ? "done" : "nothing")} role="status">
       <p class="ptbig">${run.gainedFinal ? `+${run.gainedFinal} Soak` : "No soak recovered"}</p>
-      <p>${run.count ? `${run.count} × ${p.die}: ${run.dice.join(" + ")} = ${run.total}${run.total > run.gainedFinal ? ` (the suit was full at ${p.max})` : ""}` : "The check was too high for even one Repair Die."}</p>
+      <p>${run.count ? `${run.count} × ${p.die}: ${run.dice.length > 1 ? run.dice.join(" + ") + " = " : ""}${run.total}${run.total > run.gainedFinal ? ` (the suit was full at ${p.max})` : ""}` : "The check was too high for even one Repair Die."}</p>
       <p class="muted">${p.cost} g of ${p.mat} materials used · an hour's work.</p>
       <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
     return html`<div class="ptread" role="status" aria-live="polite">
