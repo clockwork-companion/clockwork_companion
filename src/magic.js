@@ -95,115 +95,165 @@ function Warding({ c, update }) {
    An old book on the desk: the first page holds the grammar (Subjects, Adverbs, Conjunctions), then the Words of Power
    in alphabetical order, six to a page, and a fresh page to write a new word on. Turn the pages with the corners or
    the arrows; on a phone the book shows one page at a time. */
+/* The book's paper and leather textures. They are drawn once, here, from SVG noise into ordinary bitmaps: the browser
+   would otherwise redraw the noise every frame while the pages turn, which is what made the book stutter. */
+const TOME_TEX = {"stain": "<svg xmlns='http://www.w3.org/2000/svg' width='520' height='620'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='.011 .014' numOctaves='4' seed='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .42 0 0 0 0 .24 0 0 0 0 .08 0 0 0 -2.6 1.45'/></filter><rect width='100%' height='100%' filter='url(#s)'/></svg>", "noise": "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .3 0 0 0 0 .17 0 0 0 0 .05 0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>", "marble": "<svg xmlns='http://www.w3.org/2000/svg' width='520' height='620'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='.013' numOctaves='4' seed='9' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .2 0 0 0 0 .1 0 0 0 0 .04 0 0 0 1.4 -.35'/></filter><rect width='100%' height='100%' filter='url(#s)'/></svg>"};
+(function tomeTextures() {
+  try {
+    const root = document.documentElement;
+    Object.entries(TOME_TEX).forEach(([k, svg]) => {
+      const w = +svg.match(/width='(\d+)'/)[1], h = +svg.match(/height='(\d+)'/)[1], img = new Image();
+      img.onload = () => { try {
+        const cv = document.createElement("canvas"); cv.width = w; cv.height = h; cv.getContext("2d").drawImage(img, 0, 0);
+        cv.toBlob(b => { if (b) root.style.setProperty("--tex-" + k, `url(${URL.createObjectURL(b)})`); });
+      } catch (e) {} };
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    });
+  } catch (e) {}
+})();
+
 /* ---------- the book's moving paper ----------
    A sheet (the cover or a page) is a row of thin strips, each hinged on the one before, so it bends as it turns:
    the strip at the spine leads and the free edge trails behind, a lot for a page and a little for the stiff cover.
-   Each strip is shaded by how far it faces away from you. Sheets are plain DOM laid over the book while they move. */
-const TOME_STRIPS = 12;
+   Each strip is shaded by how far it faces away from you. Sheets live on their own layer (.tomefx) laid exactly over
+   the book while they move, so the book underneath is never redrawn: only the strips move, which keeps it smooth. */
 const tomeEase = { inOut: p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2, sine: p => -(Math.cos(Math.PI * p) - 1) / 2 };
-function tomeSheet(host, box, { s = 1, front = "", back = "", cls = "" }) {
-  const N = TOME_STRIPS, el = document.createElement("div"), strips = [];
-  el.className = "tsheet " + cls; el.setAttribute("aria-hidden", "true");
+function tomeSheet(host, box, { s = 1, front = "", back = "", cls = "", n = 8 }) {
+  const N = n, el = document.createElement("div"), strips = [], sw = box.w / N, ov = 1;
+  el.className = "tsheet " + cls;
   Object.assign(el.style, { left: box.x + "px", top: box.y + "px", width: box.w + "px", height: box.h + "px" });
   let parent = el;
   for (let i = 0; i < N; i++) {
-    const st = document.createElement("div"), fi = s > 0 ? i : N - 1 - i, bi = N - 1 - fi, sw = box.w / N, ov = 1;
+    const st = document.createElement("div"), fi = s > 0 ? i : N - 1 - i, bi = N - 1 - fi;
     st.className = "tstrip"; st.style.width = sw + "px";
     st.style[s > 0 ? "left" : "right"] = i ? "100%" : "0"; st.style.transformOrigin = s > 0 ? "left center" : "right center";
     // each face overlaps its neighbours by a pixel (no seams) and shows its own slice of the full-size picture
     st.innerHTML = `<div class="tface front"><div class="tfin" style="left:${ov - fi * sw}px;width:${box.w}px">${front}</div><i class="tshade"></i></div>`
       + `<div class="tface back"><div class="tfin" style="left:${ov - bi * sw}px;width:${box.w}px">${back}</div><i class="tshade"></i></div>`;
-    parent.appendChild(st); strips.push({ st, sh: [...st.children].map(f => f.lastChild) }); parent = st;
+    parent.appendChild(st); strips.push({ st, sh: [...st.children].map(f => f.lastChild), o: -1 }); parent = st;
   }
   host.appendChild(el);
   // a: how far it has turned (0 lying on its own side, 180 on the other); b: how much it bends (its edge lags by b).
+  const tail = N * (N - 1) / 2;
   el.pose = (a, b) => {
-    let tot = 0; const tail = N * (N - 1) / 2;
-    strips.forEach(({ st, sh }, i) => {
-      const rel = i === 0 ? a + .3 * b : -1.3 * b * i / tail;
-      tot += rel; st.style.transform = `rotateY(${(-s * rel).toFixed(2)}deg)`;
-      const d = Math.abs(Math.cos(tot * Math.PI / 180)), o = (.62 * (1 - d) + (tot > 90 ? .06 : 0)).toFixed(3);
-      sh[0].style.opacity = o; sh[1].style.opacity = o;
+    let tot = 0;
+    strips.forEach(x => {
+      const i = strips.indexOf(x), rel = i === 0 ? a + .3 * b : -1.3 * b * i / tail;
+      tot += rel; x.st.style.transform = `rotateY(${(-s * rel).toFixed(2)}deg)`;
+      const d = Math.abs(Math.cos(tot * Math.PI / 180)), o = Math.round((.62 * (1 - d) + (tot > 90 ? .06 : 0)) * 40) / 40;
+      if (o !== x.o) { x.o = o; x.sh[0].style.opacity = o; x.sh[1].style.opacity = o; }   // only touch what changed
     });
   };
   el.pose(0, 0);
   return el;
 }
-// Move a sheet from one angle to another over ms, starting after `wait`; paper bends more than board.
-function tomeMove(sheet, { from, to, ms, wait = 0, bend = 60, ease = tomeEase.inOut, fadeAt = 0, onFrame }) {
+// Move a sheet from one angle to another over ms, starting after `wait`; onFrame gets the angle; onCross fires once
+// when the sheet passes upright (90°), which is when a page changes sides.
+function tomeMove(sheet, { from, to, ms, wait = 0, bend = 60, ease = tomeEase.inOut, fadeAt = 0, onFrame, onCross }) {
   return new Promise(done => {
-    let t0 = 0;
+    let t0 = 0, crossed = false;
     const step = now => {
       if (!t0) t0 = now + wait;
       const p = R.clamp((now - t0) / ms, 0, 1), e = ease(p), a = from + (to - from) * e;
       const b = Math.sign(to - from) * bend * Math.pow(Math.sin(Math.PI * Math.min(1, p * 1.08)), .9) * (1 - .25 * p);
-      if (now >= t0) { sheet.pose(a, b); if (fadeAt && p > fadeAt) sheet.style.opacity = String(1 - (p - fadeAt) / (1 - fadeAt)); onFrame && onFrame(a); }
+      if (now >= t0) {
+        sheet.pose(a, b);
+        if (fadeAt && p > fadeAt) sheet.style.opacity = String(1 - (p - fadeAt) / (1 - fadeAt));
+        onFrame && onFrame(a);
+        if (!crossed && (from < to ? a >= 90 : a <= 90)) { crossed = true; onCross && onCross(); }
+      }
       p < 1 ? requestAnimationFrame(step) : done();
     };
     requestAnimationFrame(step);
   });
 }
+const tomeWait = ms => new Promise(r => setTimeout(r, ms));
 const tomeGeom = tome => {
   const pg = tome.querySelector(".tomepages"), x = pg.offsetLeft, y = pg.offsetTop, w = pg.offsetWidth, h = pg.offsetHeight;
   return { full: { x, y, w, h }, left: { x, y, w: w / 2, h }, right: { x: x + w / 2, y, w: w / 2, h } };
 };
-const tomeGhost = (tome, box, htmlStr) => {
-  const g = document.createElement("div"); g.className = "tghost"; g.setAttribute("aria-hidden", "true");
+// The layer the paper moves on: the same size, place and tilt as the book.
+function tomeFx(tome) {
+  const fx = tome.parentNode.querySelector(".tomefx"); fx.innerHTML = "";
+  fx.classList.toggle("single", tome.classList.contains("single"));
+  Object.assign(fx.style, { display: "block", left: tome.offsetLeft + "px", top: tome.offsetTop + "px", width: tome.offsetWidth + "px", height: tome.offsetHeight + "px", transform: getComputedStyle(tome).transform });
+  return fx;
+}
+const tomeFxClear = fx => { if (!fx) return; fx.innerHTML = ""; fx.style.display = "none"; fx.style.transform = ""; };
+const tomeGhost = (host, box, htmlStr) => {
+  const g = document.createElement("div"); g.className = "tghost";
   Object.assign(g.style, { left: box.x + "px", top: box.y + "px", width: box.w + "px", height: box.h + "px" });
-  g.innerHTML = htmlStr; tome.appendChild(g); return g;
+  g.innerHTML = htmlStr; host.appendChild(g); return g;
 };
 const BLANK_R = `<div class="tomepage recto blank"></div>`, BLANK_V = `<div class="tomepage verso blank"></div>`;
+/* The page edges along the bottom: a stack under each page, as thick as the pages lying on that side. The book holds
+   plenty of blank pages after the written ones, so each turned leaf moves a little thickness from right to left. */
+const TOME_STACK = 18, TOME_LEAF = 1.6;
+const tomeLeftStack = turned => Math.min(TOME_STACK - 4, 2 + TOME_LEAF * turned);
+function tomeBlocks(tome, left) {
+  const G = tomeGeom(tome), single = tome.classList.contains("single"), [l, r] = tome.querySelectorAll(".tomeblock");
+  if (!l || !r) return;
+  const top = G.full.y + G.full.h - 1;
+  if (single) { Object.assign(r.style, { left: G.full.x + "px", width: G.full.w + "px", top: top + "px", height: TOME_STACK - Math.min(left, TOME_STACK - 4) + "px" }); l.style.height = "0px"; return; }
+  Object.assign(l.style, { left: G.left.x + "px", width: G.left.w + "px", top: top + "px", height: left + "px" });
+  Object.assign(r.style, { left: G.right.x + "px", width: G.right.w + "px", top: top + "px", height: TOME_STACK - left + "px" });
+}
 // Opening: the shut book slides into place, the cover swings over to the left, then a few pages flutter after it.
 // Closing is the same in reverse. `single` is the phone's one-page book: there the cover and pages swing away out of view.
-async function tomeOpenClose(tome, { opening, single, coverHtml, leftHtml }) {
-  const G = tomeGeom(tome), W = tome.offsetWidth, H = tome.offsetHeight;
+async function tomeOpenClose(tome, { opening, single, coverHtml, leftHtml, turned }) {
+  const fx = tomeFx(tome), G = tomeGeom(tome), W = tome.offsetWidth, H = tome.offsetHeight, base = fx.style.transform;
   const cbox = single ? { x: 0, y: 0, w: W, h: H - 22 } : { x: W / 2, y: 0, w: W / 2, h: H - 22 };
-  const clip = l => { if (!single) tome.style.clipPath = `inset(-60px -60px -60px ${l}px)`; };
-  const slide = v => { if (!single) tome.style.setProperty("--slide", v + "px"); };
-  const edge = a => a < 90 ? W / 2 : W / 2 * (1 + Math.cos(a * Math.PI / 180));   // how far left the cover's edge reaches
-  const end = single ? 175 : 180, leaves = single ? 2 : 3;
-  const cover = tomeSheet(tome, cbox, { s: 1, front: `<div class="tomecover">${coverHtml}</div>`, back: `<div class="tendpaper"></div>`, cls: "tcover" });
+  // Until the cover lies open, only the right half of the book is there: the clip changes once, not every frame.
+  let hidden = null;
+  const hideLeft = v => { if (single || hidden === v) return; hidden = v; tome.style.clipPath = v ? `inset(-60px -60px -60px ${W / 2}px)` : ""; };
+  const slide = v => { if (single) return; const t = `${base} translateX(${v.toFixed(1)}px)`; tome.style.transform = t; fx.style.transform = t; };
+  const end = single ? 175 : 180, leaves = single ? 2 : 3, final = tomeLeftStack(turned);
+  const cover = tomeSheet(fx, cbox, { s: 1, n: 5, front: `<div class="tomecover">${coverHtml}</div>`, back: `<div class="tendpaper"></div>`, cls: "tcover" });
   const pagesBox = single ? G.full : G.right;
-  const mk = i => tomeSheet(tome, pagesBox, { s: 1, front: BLANK_R, back: !single && i === leaves - 1 ? leftHtml : BLANK_V, cls: "tleaf" });
-  const ls = Array.from({ length: leaves }, (_, i) => mk(i));
-  cover.style.zIndex = opening ? 8 : 5;   // shut, the cover lies on top of the pages
+  const ls = Array.from({ length: leaves }, (_, i) => tomeSheet(fx, pagesBox, { s: 1, front: BLANK_R, back: !single && i === leaves - 1 ? leftHtml : BLANK_V, cls: "tleaf" }));
+  const lerp = (v, w) => tomeMove({ pose: () => {} }, { from: 0, to: 1, ms: 420, bend: 0, onFrame: x => slide(v + (w - v) * x) });
+  const stack = v => tomeBlocks(tome, v);
   if (opening) {
-    tome.classList.add("tmoving"); clip(W / 2); slide(-W / 4);   // only the right half shows: the shut book, still where it lay
-    if (!single) await tomeMove({ pose: () => {} }, { from: 0, to: 1, ms: 420, bend: 0, onFrame: v => slide(-W / 4 * (1 - v)) });
+    tome.classList.add("tmoving"); cover.style.zIndex = 8; hideLeft(true); slide(-W / 4); stack(0);
+    if (!single) await lerp(-W / 4, 0);
     slide(0);
-    cover.style.zIndex = 8;
-    const cv = tomeMove(cover, { from: 0, to: end, ms: 1350, bend: 24, onFrame: a => { clip(Math.min(W / 2, edge(a))); cover.style.zIndex = a < 90 ? 8 : 5; }, fadeAt: single ? .7 : 0 });
-    await Promise.all([cv, ...ls.map((l, i) => tomeMove(l, { from: 0, to: end, ms: 1050, wait: 520 + i * 190, bend: 95, ease: tomeEase.sine, fadeAt: single ? .7 : 0 }))]);
-  } else {
-    // everything starts turned over to the left, lying on the open book
-    tome.classList.add("tmoving", "tclosing"); cover.pose(end, 0); ls.forEach(l => l.pose(end, 0)); ls.reverse();
-    if (single) { cover.style.opacity = "0"; ls.forEach(l => l.style.opacity = "0"); }
-    const fadeIn = el => single ? a => { el.style.opacity = String(R.clamp((end - a) / 50, 0, 1)); } : null;
-    await Promise.all(ls.map((l, i) => tomeMove(l, { from: end, to: 0, ms: 950, wait: i * 150, bend: 90, ease: tomeEase.sine, onFrame: fadeIn(l) })));
-    await tomeMove(cover, { from: end, to: 0, ms: 1250, bend: 24, onFrame: a => { clip(Math.min(W / 2, edge(a))); cover.style.zIndex = a < 90 ? 8 : 5; const f = fadeIn(cover); f && f(a); } });
-    if (!single) { clip(W / 2); await tomeMove({ pose: () => {} }, { from: 0, to: 1, ms: 420, bend: 0, onFrame: v => slide(-W / 4 * v) }); }
+    const cv = tomeMove(cover, { from: 0, to: end, ms: 1350, bend: 24, fadeAt: single ? .7 : 0,
+      onFrame: a => { if (a > 150) hideLeft(false); }, onCross: () => { cover.style.zIndex = 5; } });
+    await Promise.all([cv, ...ls.map((l, i) => tomeMove(l, { from: 0, to: end, ms: 1050, wait: 520 + i * 190, bend: 95, ease: tomeEase.sine, fadeAt: single ? .7 : 0,
+      onCross: () => stack(final * (i + 1) / leaves) }))]);
+    hideLeft(false);
+    return () => { tomeFxClear(fx); tome.classList.remove("tmoving"); tome.style.transform = ""; };
   }
-  return () => { [cover, ...ls].forEach(e => e.remove()); tome.classList.remove("tmoving", "tclosing"); tome.style.clipPath = ""; tome.style.removeProperty("--slide"); };
+  // closing: everything starts turned over to the left, lying on the open book
+  tome.classList.add("tmoving", "tclosing"); cover.style.zIndex = 5; cover.pose(end, 0); ls.forEach(l => l.pose(end, 0)); ls.reverse();
+  if (single) { cover.style.opacity = "0"; ls.forEach(l => { l.style.opacity = "0"; }); }
+  const fadeIn = el => single ? a => { el.style.opacity = String(R.clamp((end - a) / 50, 0, 1)); } : null;
+  await Promise.all(ls.map((l, i) => tomeMove(l, { from: end, to: 0, ms: 950, wait: i * 150, bend: 90, ease: tomeEase.sine, onFrame: fadeIn(l),
+    onCross: () => stack(final * (leaves - 1 - i) / leaves) })));
+  await tomeMove(cover, { from: end, to: 0, ms: 1250, bend: 24, onFrame: a => { if (a < 150) hideLeft(true); const f = fadeIn(cover); f && f(a); }, onCross: () => { cover.style.zIndex = 8; } });
+  if (!single) await lerp(0, -W / 4);
+  return () => tomeFxClear(fx);
 }
 // Turning a page: the page itself lifts, bends and lands on the other side, showing the next page on its back.
-async function tomeTurn(tome, { dir, single, olds, news }) {
-  const G = tomeGeom(tome), parts = [];
+async function tomeTurn(tome, { dir, single, olds, news, turned }) {
+  const fx = tomeFx(tome), G = tomeGeom(tome);
+  const stack = () => tomeBlocks(tome, tomeLeftStack(turned));   // the leaf changes sides: so does its thickness
   if (single) {
-    if (dir > 0) { const sh = tomeSheet(tome, G.full, { s: 1, front: olds[0], back: BLANK_V, cls: "tleaf" }); parts.push(sh);
-      await tomeMove(sh, { from: 0, to: 175, ms: 900, bend: 80, ease: tomeEase.sine, fadeAt: .6 }); }
-    else { parts.push(tomeGhost(tome, G.full, olds[0])); const sh = tomeSheet(tome, G.full, { s: 1, front: news[0], back: BLANK_V, cls: "tleaf" }); parts.push(sh);
+    if (dir > 0) { const sh = tomeSheet(fx, G.full, { s: 1, front: olds[0], back: BLANK_V, cls: "tleaf" });
+      await tomeMove(sh, { from: 0, to: 175, ms: 900, bend: 80, ease: tomeEase.sine, fadeAt: .6, onCross: stack }); }
+    else { tomeGhost(fx, G.full, olds[0]); const sh = tomeSheet(fx, G.full, { s: 1, front: news[0], back: BLANK_V, cls: "tleaf" });
       sh.pose(175, 0); sh.style.opacity = "0";
-      await tomeMove(sh, { from: 175, to: 0, ms: 900, bend: 80, ease: tomeEase.sine, onFrame: a => { sh.style.opacity = String(R.clamp((175 - a) / 50, 0, 1)); } }); }
+      await tomeMove(sh, { from: 175, to: 0, ms: 900, bend: 80, ease: tomeEase.sine, onCross: stack, onFrame: a => { sh.style.opacity = String(R.clamp((175 - a) / 50, 0, 1)); } }); }
   } else if (dir > 0) {
-    parts.push(tomeGhost(tome, G.left, olds[0]));
-    const sh = tomeSheet(tome, G.right, { s: 1, front: olds[1], back: news[0], cls: "tleaf" }); parts.push(sh);
-    await tomeMove(sh, { from: 0, to: 180, ms: 950, bend: 85, ease: tomeEase.sine });
+    tomeGhost(fx, G.left, olds[0]);
+    const sh = tomeSheet(fx, G.right, { s: 1, front: olds[1], back: news[0], cls: "tleaf" });
+    await tomeMove(sh, { from: 0, to: 180, ms: 950, bend: 85, ease: tomeEase.sine, onCross: stack });
   } else {
-    parts.push(tomeGhost(tome, G.right, olds[1]));
-    const sh = tomeSheet(tome, G.left, { s: -1, front: olds[0], back: news[1], cls: "tleaf" }); parts.push(sh);
-    await tomeMove(sh, { from: 0, to: 180, ms: 950, bend: 85, ease: tomeEase.sine });
+    tomeGhost(fx, G.right, olds[1]);
+    const sh = tomeSheet(fx, G.left, { s: -1, front: olds[0], back: news[1], cls: "tleaf" });
+    await tomeMove(sh, { from: 0, to: 180, ms: 950, bend: 85, ease: tomeEase.sine, onCross: stack });
   }
-  parts.forEach(e => e.remove());
+  tomeFxClear(fx);
 }
 const useTomeLayout = preactHooks.useLayoutEffect;
 
@@ -222,6 +272,7 @@ function WardWords({ c, st, update }) {
   // The book can be shut (remembered per browser): then only its cover shows.
   const [shut, setShut] = useState(() => !!lsGet("cw-tome-shut", false)), [swing, setSwing] = useState("");
   const tomeRef = useRef(null), tplRef = useRef(null), busy = useRef(false);
+  const sp = Math.min(at, spreads - 1);
   const pagesHtml = () => [...((tomeRef.current && tomeRef.current.querySelectorAll(".tomepages > .tomepage")) || [])].map(e => e.outerHTML);
   const shutTo = v => {
     if (swing || busy.current) return; lsSet("cw-tome-shut", v);
@@ -233,12 +284,13 @@ function WardWords({ c, st, update }) {
   useTomeLayout(() => {
     if (!swing || !tomeRef.current) return;
     const tome = tomeRef.current, opening = swing === "opening";
-    tomeOpenClose(tome, { opening, single: narrow, coverHtml: tplRef.current ? tplRef.current.innerHTML : "", leftHtml: pagesHtml()[0] || BLANK_V }).then(clear => {
+    tomeOpenClose(tome, { opening, single: narrow, turned: sp, coverHtml: tplRef.current ? tplRef.current.innerHTML : "", leftHtml: pagesHtml()[0] || BLANK_V }).then(clear => {
       busy.current = false;
-      if (opening) { clear(); setSwing(""); } else { setShut(true); setSwing(""); }
+      if (opening) { clear(); setSwing(""); }
+      // shut: the paper layer stays over the new cover for a frame, so the swap can't be seen
+      else { setShut(true); setSwing(""); requestAnimationFrame(() => requestAnimationFrame(clear)); }
     });
   }, [swing]);
-  const sp = Math.min(at, spreads - 1);
   const go = to => {
     to = R.clamp(to, 0, spreads - 1); if (to === sp || busy.current || swing) return;
     if (reduceMotion()) { setAt(to); return; }
@@ -246,8 +298,10 @@ function WardWords({ c, st, update }) {
   };
   useTomeLayout(() => {
     if (!turn || !tomeRef.current) return;
-    tomeTurn(tomeRef.current, { dir: turn.dir, single: narrow, olds: turn.olds, news: pagesHtml() }).then(() => { busy.current = false; setTurn(null); });
+    tomeTurn(tomeRef.current, { dir: turn.dir, single: narrow, olds: turn.olds, news: pagesHtml(), turned: sp }).then(() => { busy.current = false; setTurn(null); });
   }, [turn]);
+  // The page stacks follow the open spread (the moving paper sets them itself while it moves).
+  useTomeLayout(() => { if (tomeRef.current && !busy.current) tomeBlocks(tomeRef.current, tomeLeftStack(sp)); });
   // A new word lands on its page: turn there.
   const learn = v => {
     const id = "w" + rid();
@@ -295,10 +349,10 @@ function WardWords({ c, st, update }) {
     : html`<div key="open" ref=${tomeRef} class=${"tome" + (narrow ? " single" : "") + (swing ? " " + swing : "")}>
       <div class="tomepages">${shown.map((p, i) => page(p, sp * per + i + 1))}
         ${!narrow && shown.length < 2 && html`<div class="tomepage recto blank"></div>`}</div>
-      <i class="tomeblock" aria-hidden="true"></i>
+      <i class="tomeblock l" aria-hidden="true"></i><i class="tomeblock r" aria-hidden="true"></i>
       <button type="button" class="tomecorner prev" aria-label="Turn back a page" disabled=${sp === 0} onClick=${() => go(sp - 1)}></button>
       <button type="button" class="tomecorner next" aria-label="Turn the page" disabled=${sp >= spreads - 1} onClick=${() => go(sp + 1)}></button>
-    </div>`}</div>
+    </div>`}<div class="tomefx" aria-hidden="true"></div></div>
     <div class="tomecovertpl" ref=${tplRef} hidden aria-hidden="true">${cover}</div>
     ${shut ? html`<div class="row tomenav shutnav"><button class="btn small primary" onClick=${() => shutTo(false)}>Open the book</button></div>`
     : html`<div class="row tomenav"><button class="btn small" disabled=${sp === 0} onClick=${() => go(sp - 1)}>‹ Back</button>
