@@ -129,7 +129,8 @@ const CW = (() => {
       prosthetics: [], coins: 0,
       // Warding: the Words of Power the warder knows, extra grammar words, saved and formulaic wards, Fatigue.
       ward: { bonus: 0, fatigue: 0, words: [], extra: { subject: [], adverb: [], conj: [] }, wards: [], board: [], ledger: [] },
-      harmony: { els: [], ch: {}, rel: [], turns: 0, kept: 0, ledger: [] },   // Occult: Harmony: known elements, chakra → element, released chakras
+      harmony: { els: [], ch: {}, rel: [], turns: 0, kept: 0, ledger: [] },
+      demon: { daemons: [], out: [], guardian: "", today: 0, army: false, ledger: [] },   // Demonology: contracts, who is summoned, summons used today   // Occult: Harmony: known elements, chakra → element, released chakras
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
@@ -175,6 +176,12 @@ const CW = (() => {
     if (!out.harmony.ch || typeof out.harmony.ch !== "object" || Array.isArray(out.harmony.ch)) out.harmony.ch = {};
     ["rel", "ledger"].forEach(k => { if (!Array.isArray(out.harmony[k])) out.harmony[k] = []; });
     out.harmony.turns = Math.max(0, num(out.harmony.turns)); out.harmony.kept = Math.max(0, num(out.harmony.kept));
+    out.demon = Object.assign({}, b.demon, out.demon);
+    ["daemons", "out", "ledger"].forEach(k => { if (!Array.isArray(out.demon[k])) out.demon[k] = []; });
+    out.demon.daemons = out.demon.daemons.filter(x => x && typeof x === "object").map(x => Object.assign({ id: "", n: "", realm: "", wp: "", terms: "", note: "", img: "", imgData: "", abilities: [] }, x));
+    out.demon.daemons.forEach(x => { if (!Array.isArray(x.abilities)) x.abilities = []; });
+    out.demon.out = out.demon.out.filter(id => out.demon.daemons.some(x => x.id === id));
+    out.demon.today = Math.max(0, num(out.demon.today)); if (typeof out.demon.guardian !== "string") out.demon.guardian = ""; out.demon.army = !!out.demon.army && out.demon.out.length > 0;
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
@@ -441,6 +448,7 @@ const CW = (() => {
     if (st !== num(v.exhaustion)) parts.push(`Stamina ${num(v.exhaustion)} → ${st} lost`); setStamina(c, st);
     if (refreshUses(c, false)) parts.push("abilities recharged");
     if (c.ward && num(c.ward.fatigue)) { parts.push(`Warding Fatigue ${num(c.ward.fatigue)} → 0`); c.ward.fatigue = 0; }   // all Fatigue clears after a long rest
+    if (c.demon && num(c.demon.today)) { parts.push("daemon summons renewed"); c.demon.today = 0; }   // the app counts a day of summons from long rest to long rest
     return "Long rest: " + parts.join(" · ");
   }
 
@@ -799,6 +807,24 @@ const CW = (() => {
     return { parts, need: need ? +need : 0 };
   }
 
+  // ---------- Occult: Daemonology (rulebook 2020.1, 10.1) ----------
+  // Daemons are summoned once a contract is formed: 2 AP to summon, 1 to dismiss (1 and 0 from Demonology 7), one at a
+  // time. Summons a day: 1 per 2 SP; a daemon can stay half an hour per SP. Perks: partial summon (4, 2 uses), boost (5,
+  // 2 uses), unlimited partial summons for materials (6), banish (7, 1 use), +2 AP a turn for daemons' innate abilities (7),
+  // unlimited boosts for materials (8), a Guardian outside the duration (9), up to 5 at once (10: 5 AP, 3 Stamina).
+  function demonState(c) {
+    const lvl = sk(c, "Demonology"), d = c.demon || {}, u = c.uses || {};
+    const left = (lv, n) => Math.max(0, n - num(u["p:Demonology:" + lv]));
+    const perDay = Math.floor(lvl / 2), used = Math.max(0, num(d.today));
+    return {
+      lvl, mod: skillModifier(c, "Demonology"), perDay, used, left: Math.max(0, perDay - used), hours: lvl / 2,
+      summonAP: lvl >= 7 ? 1 : 2, dismissAP: lvl >= 7 ? 0 : 1, extraAP: lvl >= 7 ? 2 : 0,
+      contracts: lvl >= 3, partial: lvl >= 4, partialLeft: lvl >= 4 ? left(4, 2) : 0, partialMat: lvl >= 6,
+      boost: lvl >= 5, boostLeft: lvl >= 5 ? left(5, 2) : 0, boostMat: lvl >= 8,
+      banish: lvl >= 7, banishLeft: lvl >= 7 ? left(7, 1) : 0, guardian: lvl >= 9, army: lvl >= 10,
+    };
+  }
+
   // ---------- Armor Maintenance (rulebook 16.5 and the Armor chapter) ----------
   // Repair (book): cost = the type's grams × Armor Value; roll an Armor Maintenance check (d100 − modifier);
   // Repair Count = 10 − check ÷ 10, rounded down; roll the type's Repair Die that many times and add it to the Soak Pool.
@@ -1074,7 +1100,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine,
+           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, demonState,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
