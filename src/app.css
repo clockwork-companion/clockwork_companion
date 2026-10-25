@@ -376,6 +376,58 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .meter .ctl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .meter .ctl input { width: 64px; border: 1.5px solid var(--hair); background: var(--paper); padding: 3px 6px; font-family: var(--f-mono); }
 .meter .note { font-size: 12.5px; color: var(--ink-2); }
+/* rest: the big red button (long rest) and a smaller brass one (short rest), each sunk in a metal bezel.
+   Pressing sinks the cap; a long rest needs a second press (the cap glows while it waits). After a rest a warm glow
+   spreads from the buttons and the bars it refilled light up one after another, each with the amount it gained. */
+.restbay { position: relative; overflow: hidden; }
+.restrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; align-items: center; }
+.restopt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
+.restwhat { font-size: 13.5px; color: var(--ink-2); line-height: 1.45; }
+.restwhat b { color: var(--ink); font-family: var(--f-head); letter-spacing: .06em; text-transform: uppercase; font-size: 13px; }
+.armnote { color: var(--bad); font-style: normal; font-weight: 600; }
+.bezel { --cap: var(--blood); --size: 108px; width: calc(var(--size) + 18px); height: calc(var(--size) + 18px); border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 30%, #f2f2f2, #9a9a9a 55%, #5a5a5a); box-shadow: inset 0 2px 3px rgb(255 255 255 / .6), inset 0 -3px 6px rgb(0 0 0 / .45), 0 3px 8px rgb(0 0 0 / .35); }
+.restopt.short .bezel { --cap: var(--brass); --size: 74px; }
+.restbtn { width: var(--size); height: var(--size); border-radius: 50%; border: 0; padding: 0; cursor: pointer; position: relative; color: #fff;
+  background: radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--cap) 55%, #fff) 0, var(--cap) 46%, color-mix(in srgb, var(--cap) 62%, #000) 100%);
+  box-shadow: 0 7px 0 color-mix(in srgb, var(--cap) 45%, #000), 0 10px 14px rgb(0 0 0 / .35), inset 0 -5px 10px rgb(0 0 0 / .25), inset 0 4px 6px rgb(255 255 255 / .35);
+  transform: translateY(-5px); transition: transform .09s ease-out, box-shadow .09s ease-out, filter .2s; -webkit-tap-highlight-color: transparent; }
+.restbtn span { font: 800 15px/1.05 var(--f-head); letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 1px 0 rgb(0 0 0 / .45), 0 0 8px rgb(0 0 0 / .2); pointer-events: none; }
+.restbtn.short span { font-size: 11.5px; }
+.restbtn:hover { filter: brightness(1.08); }
+.restbtn:focus-visible { outline: 3px solid var(--brass); outline-offset: 6px; }
+.restbtn:active, .restbtn.pressed { transform: translateY(2px);
+  box-shadow: 0 0 0 color-mix(in srgb, var(--cap) 45%, #000), 0 2px 4px rgb(0 0 0 / .35), inset 0 -2px 6px rgb(0 0 0 / .2), inset 0 5px 12px rgb(0 0 0 / .4); }
+.restbtn.pressed { animation: capSpring .5s cubic-bezier(.3, 1.6, .5, 1) .14s both; }
+@keyframes capSpring { from { transform: translateY(2px); } to { transform: translateY(-5px); } }
+.restopt.armed .restbtn { animation: capArm 1.1s ease-in-out infinite; }
+@keyframes capArm { 0%, 100% { filter: brightness(1); box-shadow: 0 7px 0 color-mix(in srgb, var(--cap) 45%, #000), 0 0 0 0 color-mix(in srgb, var(--cap) 60%, transparent), inset 0 4px 6px rgb(255 255 255 / .35); }
+  50% { filter: brightness(1.25); box-shadow: 0 7px 0 color-mix(in srgb, var(--cap) 45%, #000), 0 0 0 10px color-mix(in srgb, var(--cap) 0%, transparent), 0 0 26px color-mix(in srgb, var(--cap) 70%, transparent), inset 0 4px 6px rgb(255 255 255 / .35); } }
+.restbay.rejuv::after { content: ""; position: absolute; left: 70px; top: 120px; width: 40px; height: 40px; margin: -20px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--good) 45%, transparent), color-mix(in srgb, var(--brass) 25%, transparent) 45%, transparent 70%);
+  animation: restWave 1.3s ease-out both; }
+@keyframes restWave { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(30); opacity: 0; } }
+.restlog { margin-top: 12px; }
+.restlog summary { cursor: pointer; font: 600 12px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.restlog .log { margin-top: 6px; }
+@media (max-width: 640px) {
+  .restrow { grid-template-columns: minmax(0, 1fr); }
+  .bezel { --size: 92px; } .restopt.short .bezel { --size: 66px; }
+}
+.meter { position: relative; }
+.gainfloat { position: absolute; left: calc(50% - 18px); top: 30px; font: 800 18px var(--f-mono); pointer-events: none; text-shadow: 0 1px 0 var(--card), 0 0 6px var(--card);
+  animation: gainUp 1.3s ease-out both; }
+@keyframes gainUp { 0% { opacity: 0; transform: translateY(8px) scale(.8); } 20% { opacity: 1; transform: translateY(0) scale(1.15); } 100% { opacity: 0; transform: translateY(-26px) scale(1); } }
+/* at a glance: a foldable card under the header */
+.glance { grid-column: 1 / -1; }
+.glancetog { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 2px 0; cursor: pointer; color: var(--ink-3);
+  font: 600 11.5px var(--f-head); letter-spacing: .12em; text-transform: uppercase; }
+.glancetog:hover { color: var(--ink); }
+.glancetog svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform .2s; transform: rotate(-90deg); }
+.glance.open .glancetog svg { transform: none; }
+.glancefacts { margin-top: 4px; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); border-top-width: 2px; animation: rIn .2s ease-out; }
+.glancefacts .fact { padding: 6px 10px 6px 0; }
+.glancefacts .fact b { font-size: 15.5px; }
 /* stamina lost: an attribute-style bar of ten under the vitals; the tenth cell is a skull */
 .stambar { margin-top: -32px; }
 .stambar .scale.stam { max-width: none; }
@@ -693,6 +745,42 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .usetick.spent { background: var(--ink-2); }
 .usetick.spent::after { content: ""; position: absolute; inset: 3px; background: linear-gradient(45deg, transparent 44%, var(--paper) 44% 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, var(--paper) 44% 56%, transparent 56%); }
 .talentedit { align-content: start; }
+/* attribute colours: every skill, perk and filter chip takes its attribute's colour (--att). The text shade is mixed
+   toward the theme's ink, so it stays readable on light and dark themes alike. */
+:root { --a-STR: #d0342c; --a-DEX: #2e9e4f; --a-END: #e47b21; --a-MND: #2f6fdc; --a-WIL: #8d4fd6; --a-WIS: #13a098; --a-PRS: #e0b012; }
+[style*="--att"] { --att-ink: color-mix(in oklab, var(--att) 72%, var(--ink)); --att-soft: color-mix(in srgb, var(--att) 14%, transparent); }
+.perkgroup[style*="--att"] h3 { border-bottom-color: var(--att); }
+.perkgroup[style*="--att"] h3 .sname { color: var(--att-ink); }
+.atttag { display: inline-block; margin-right: 7px; padding: 1px 5px; border-radius: 3px; background: var(--att); color: #fff; font: 700 10.5px/1.3 var(--f-mono); letter-spacing: .06em; vertical-align: 1px; text-shadow: 0 1px 0 rgb(0 0 0 / .25); }
+.perkcard { position: relative; }
+.perkcard.hasatt::before { content: ""; position: absolute; left: -1.5px; top: -1.5px; bottom: -1.5px; width: 4px; background: var(--att); pointer-events: none; }
+.perkcard.hasatt .pbox b { color: var(--att-ink); }
+.perkcard.hasatt .pbox { border-color: color-mix(in srgb, var(--att) 55%, var(--hair)); }
+/* the kind of perk, as a tag top right and in the card's shape:
+   Active = a raised card, ready to be pressed · Empowerment = a doubled glowing edge · Passive = flat, always there */
+.ttag { margin-left: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px 2px 5px; border-radius: 999px; font: 700 10px/1.3 var(--f-head); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap;
+  border: 1px solid currentColor; color: var(--ink-2); background: var(--card); }
+.ttag svg { width: 13px; height: 13px; }
+.phead .uline + .ttag { margin-left: 10px; }
+.phead .pname + .ttag { margin-left: auto; }
+.ttag.tt-A { color: var(--card); background: var(--ink); border-color: var(--ink); }
+.ttag.tt-E { color: var(--att-ink, var(--life)); border-color: currentColor; box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 18%, transparent); }
+.perkcard.k-A { box-shadow: 3px 3px 0 color-mix(in srgb, var(--ink) 22%, transparent); }
+.perkcard.k-E { outline: 1.5px solid color-mix(in srgb, var(--att, var(--life)) 55%, transparent); outline-offset: 2px; box-shadow: 0 0 14px color-mix(in srgb, var(--att, var(--life)) 22%, transparent); }
+.perkcard.k-P { box-shadow: none; background: color-mix(in srgb, var(--card) 70%, var(--paper)); }
+.perkcard.k-P .pbox { box-shadow: none; }
+.segicon { width: 12px; height: 12px; margin-right: 4px; vertical-align: -1px; }
+/* the attribute filter: pick any number; with 3+ invested skills among them, those skills are listed to narrow further */
+.attfilter { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 2px; }
+.attchip, .skchip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border: 1.5px solid var(--att); border-radius: 999px; background: var(--card); color: var(--att-ink);
+  font: 700 12px/1.2 var(--f-mono); letter-spacing: .05em; cursor: pointer; transition: background .15s, color .15s, transform .1s; }
+.attchip small, .skchip small { opacity: .7; font-weight: 600; }
+.attchip:hover, .skchip:hover { background: var(--att-soft); }
+.attchip:active, .skchip:active { transform: scale(.95); }
+.attchip[aria-pressed="true"], .skchip[aria-pressed="true"] { background: var(--att); color: #fff; text-shadow: 0 1px 0 rgb(0 0 0 / .3); }
+.attskills { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0 0; padding: 8px 10px; border: 1px dashed var(--hair); background: color-mix(in srgb, var(--card) 60%, transparent); animation: rIn .2s ease-out; }
+.attskills .lbl { width: 100%; }
+.skchip { font: 600 12.5px/1.2 var(--f-body, inherit); letter-spacing: 0; padding: 3px 9px; }
 @media (max-width: 560px) {
   .spanel { top: auto; height: 82vh; width: 100vw; border-left: 0; border-top: 5px solid var(--bracket); animation: spUp .22s ease-out; }
 }
@@ -1362,6 +1450,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-skin="cyber"] :is(.perkcard.t-A, .perkcard.t-M, .wcard.final.kind-melee, .wound) { --card-stripe: var(--coral); }
 :root[data-skin="cyber"] :is(.perkcard.t-E, .wcard.final.kind-ranged) { --card-stripe: #9a6bff; }
 :root[data-skin="cyber"] :is(.perkcard.talent, .wcard.worn) { --card-stripe: var(--gold); }
+:root[data-skin="cyber"] .perkcard.hasatt.hasatt { --card-stripe: var(--att); }   /* doubled to outrank the kind-based stripes above */
+:root[data-skin="cyber"] .perkcard.hasatt::before { content: none; }
 /* small tags read like the game's yellow "NEW" stickers */
 :root[data-skin="cyber"] .flag { background: rgb(243 230 0 / .1); color: #f3e600; border: 1px solid rgb(243 230 0 / .45); border-radius: 0; font-family: var(--f-head); letter-spacing: .08em; }
 :root[data-skin="cyber"] .flag.bad { background: rgb(255 31 61 / .12); color: #ff6a7f; border-color: rgb(255 31 61 / .5); }
