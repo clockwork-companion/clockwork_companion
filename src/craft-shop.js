@@ -75,6 +75,7 @@ const Shop = {
   put(job) {
     const body = clean(job); delete body.id;
     if (!this.live()) { this.jobs = [...this.jobs.filter(j => j.id !== job.id), Object.assign(body, { id: job.id })]; lsSet("cw-jobs", this.jobs); this.emit(); this.sync(); return Promise.resolve(); }
+    this.jobs = [...this.jobs.filter(j => j.id !== job.id), Object.assign({}, body, { id: job.id })]; this.emit();   // show it at once; the snapshot confirms it
     return Store.db.doc("jobs/" + job.id).set(body).catch(() => { toast("Couldn't reach the workshop just now. Try again."); this.fail(); });
   },
   del(id) {
@@ -91,8 +92,9 @@ const Shop = {
   },
   // The owner takes an item back before it's repaired; the payment comes back with it.
   recall(job, update) {
-    update(x => { this.restore(x, job, 0); this.give(x, job.pay);
-      addLog(x, `Took ${job.item.name || "it"} back from ${job.to.name}${this.hasPay(job.pay) ? `; got ${this.payText(Object.assign({}, job.pay, { note: "" }))} back` : ""}`); });
+    const cur = this.jobs.find(j => j.id === job.id) || job, g = num((cur.result || {}).gained);
+    update(x => { this.restore(x, cur, g); this.give(x, cur.pay);
+      addLog(x, `Took ${cur.item.name || "it"} back from ${cur.to.name}${g ? ` (+${g} ${cur.kind === "weapon" ? "Durability" : "Soak"} so far)` : ""}${this.hasPay(cur.pay) ? `; got ${this.payText(Object.assign({}, cur.pay, { note: "" }))} back` : ""}`); });
     this.del(job.id);
   },
   // Hand a job's item back to the owner, with any durability or soak the smith restored (if it was removed from
@@ -146,6 +148,31 @@ const Shop = {
   // The smith hands a finished craft to someone.
   gift(kind, c, item, to) {
     return this.put({ id: "j" + rid(), kind, mode: "gift", from: this.party(c), to: { char: to.id, name: to.name, uids: to.uids || [] }, item: clean(item), status: "open", t: Date.now() });
+  },
+  // The item as it stands on the smith's bench: the copy that was sent, plus the repairs made so far.
+  view(job) {
+    const it = Object.assign({}, job.item), g = num((job.result || {}).gained);
+    if (job.kind === "weapon") it.dur = Math.min(num(it.durMax), num(it.dur) + g);
+    else it.soak = Math.min(num(it.jobMax) || num(it.soakMax), num(it.soak) + g);
+    return it;
+  },
+  // One repair on the smith's bench: added to the job, which stays open so the smith can repair again.
+  progress(job, gained, roll, by) {
+    const cur = this.jobs.find(j => j.id === job.id);
+    if (!cur || cur.status !== "open") return false;
+    const r = cur.result || {};
+    this.put(Object.assign({}, cur, { result: { gained: num(r.gained) + num(gained), rolls: [...(r.rolls || []), roll].slice(-12), times: num(r.times) + 1, by } }));
+    return true;
+  },
+  // The smith is done: the item goes back with every repair made, and the payment goes to the smith.
+  finish(job, update, by) {
+    const cur = this.jobs.find(j => j.id === job.id);
+    if (!cur || cur.status !== "open") return false;
+    const r = cur.result || {}, g = num(r.gained), what = cur.item.name || (cur.kind === "weapon" ? "weapon" : "armor");
+    this.answer(cur, "done", { gained: g, roll: (r.rolls || []).join("; "), times: num(r.times), by });
+    if (update) update(x => { this.give(x, cur.pay);
+      addLog(x, `Sent ${cur.from.name}'s ${what} back: +${g} ${cur.kind === "weapon" ? "Durability" : "Soak"}${this.hasPay(cur.pay) ? `; paid ${this.payText(Object.assign({}, cur.pay, { note: "" }))}` : ""}`); });
+    return true;
   },
   // The smith reports back (done or declined).
   answer(job, status, result) {
@@ -242,10 +269,12 @@ function ShopGear({ c, kind, item, update }) {
 }
 
 // Pops up when a smith this app looks after gets a new job (once per job, in this browser).
-function ShopNotice({ go }) {
+// Only while that smith's character is the one open, so the player who sent it never sees it (in this browser only,
+// or as a GM, one app can hold both characters).
+function ShopNotice({ go, current }) {
   useShop();
   const [seen, setSeen] = useState(() => lsGet("cw-jobs-seen", []));
-  const job = Shop.jobs.find(j => j.mode === "repair" && j.status === "open" && !seen.includes(j.id) && Shop.owns(j.to.char, j.to.uids));
+  const job = current ? Shop.jobs.find(j => j.mode === "repair" && j.status === "open" && j.to.char === current && j.from.char !== current && !seen.includes(j.id) && !num((j.result || {}).times) && Shop.owns(j.to.char, j.to.uids)) : null;
   if (!job) return null;
   const done = () => { const next = [job.id, ...seen].slice(0, 100); lsSet("cw-jobs-seen", next); setSeen(next); };
   const wpn = job.kind === "weapon", it = job.item;
@@ -262,18 +291,19 @@ function ShopNotice({ go }) {
 }
 
 // On the smith's Repair bench: other players' items waiting for them.
-function ShopJobs({ c, kind, selId, pick, busy }) {
+function ShopJobs({ c, kind, selId, pick, busy, update }) {
   useShop();
   const jobs = Shop.incoming(c, kind);
   if (!jobs.length) return null;
   return html`<h3 class="lbl shoph">Jobs from other players</h3>
-    <div class="ptopts amsuits">${jobs.map(j => { const it = j.item, wpn = kind === "weapon";
+    <div class="ptopts amsuits">${jobs.map(j => { const it = Shop.view(j), wpn = kind === "weapon", r = j.result || {};
       const now = wpn ? num(it.dur) : num(it.soak), max = wpn ? num(it.durMax) : num(it.jobMax) || num(it.soakMax);
       return html`<div class=${"ptopt row-opt" + (selId === "job:" + j.id ? " on" : "")}>
         <button type="button" class="ptcheck" aria-pressed=${selId === "job:" + j.id} disabled=${busy} onClick=${() => pick("job:" + j.id)}>
-          <b>${j.from.name}'s ${it.name || (wpn ? "weapon" : "armor")}</b>${j.pay ? html`<span class="shoppaid">Pays ${Shop.payText(j.pay)}</span>` : ""}<span>${wpn ? `${it.shield ? "Shield" : it.skill} · Durability` : `${(R.ARMOR[it.type] || R.ARMOR.light).label} · AV ${num(it.av)} · Soak`} ${now}/${max}</span>
+          <b>${j.from.name}'s ${it.name || (wpn ? "weapon" : "armor")}</b>${j.pay ? html`<span class="shoppaid">Pays ${Shop.payText(j.pay)}</span>` : ""}${num(r.times) ? html`<span class="shoppaid">Repaired ${num(r.times) === 1 ? "once" : num(r.times) + " times"}: +${num(r.gained)} so far</span>` : ""}<span>${wpn ? `${it.shield ? "Shield" : it.skill} · Durability` : `${(R.ARMOR[it.type] || R.ARMOR.light).label} · AV ${num(it.av)} · Soak`} ${now}/${max}</span>
           <i class="amtrack"><i style=${`width:${max ? (now / max) * 100 : 0}%`}></i></i></button>
-        <button class="btn small shopback" disabled=${busy} title="Send it back without repairing it" onClick=${() => Shop.answer(j, "declined")}>Send back</button></div>`; })}</div>
+        ${num(r.times) ? html`<button class="btn small primary shopback" disabled=${busy} title="Send it back with the repairs made" onClick=${() => { Shop.finish(j, update, c.name || ""); toast(`Sent back to ${j.from.name}.`); }}>Send it back</button>`
+          : html`<button class="btn small shopback" disabled=${busy} title="Send it back without repairing it" onClick=${() => Shop.answer(j, "declined")}>Send back unrepaired</button>`}</div>`; })}</div>
     <h3 class="lbl shoph">Your own</h3>`;
 }
 

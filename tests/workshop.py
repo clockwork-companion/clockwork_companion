@@ -77,7 +77,7 @@ with sync_playwright() as p:
     check("but is locked: durability and edit can't be used", pg.locator(".wcard.final.away").count() == 1 and pg.locator(".wcard.away button[aria-label='Lose 1 durability']").is_disabled() and pg.locator(".wcard.away button[aria-label^='Edit']").is_disabled())
     pg.locator(".wcard.final").screenshot(path=str(SHOTS / "workshop-locked.png"))
     check("no crafting skills, so no Crafting tab for the owner", pg.get_by_role("tab", name="Crafting").count() == 0)
-    done = dict(j); done.pop("id", None); done.update({"status": "done", "result": {"gained": 41, "roll": "check 7 → 9 × d10: 41", "by": "Arslan"}})
+    done = dict(j); done.pop("id", None); done.update({"status": "done", "result": {"gained": 41, "roll": "check 7 → 9 × d10: 41", "times": 1, "by": "Arslan"}})
     put(pg, f"jobs/{j['id']}", done); pg.wait_for_timeout(1800)
     sab = me().get("weapons", [{}])[0]
     check("owner's app wrote the repair onto the sabre", sab.get("dur") == 61, sab.get("dur"))
@@ -96,8 +96,22 @@ with sync_playwright() as p:
     check("paid 10 more", me().get("coins") == 60)
     pg.locator(".shopgear.away .btn", has_text="Take it back").click(); pg.wait_for_timeout(1600)
     check("taken back: the coins come back", me().get("coins") == 70 and jobs(pg) == [], me().get("coins"))
+    check("the sender never gets the smith's pop-up", pg.locator(".shopnote").count() == 0)
     check("owner's roster card is published", (get(pg, "roster/bat") or {}).get("uids") == ["u1"])
     check("no page errors (owner)", not errs, errs[:3])
+    pg.context.close()
+
+    # ---- a GM holds both characters: the pop-up shows only while the smith's character is open
+    gseed = dict(base); gseed[f"{T}/jobs/j9"] = {"kind": "weapon", "mode": "repair", "status": "open", "t": 1,
+        "from": {"char": "bat", "name": "Batbayar", "uids": ["u1"]}, "to": {"char": "ars", "name": "Arslan", "uids": ["u2"]}, "item": SABRE, "pay": PAY}
+    gseed[f"{T}/characters/ars"] = dict(ARS, players=[])
+    gseed[f"{T}/jobs/j9"]["to"]["uids"] = []
+    pg, errs = as_player(b, "gm1", gseed)
+    pg.evaluate("localStorage.setItem('cw-sel', JSON.stringify('bat'))"); pg.reload(); pg.wait_for_selector(".tabs", timeout=20000); pg.wait_for_timeout(900)
+    check("GM on the sender's sheet: no pop-up", pg.locator(".shopnote").count() == 0)
+    pg.locator(".rnow").click(); pg.wait_for_timeout(300); pg.locator(".rpanel .rmain", has_text="Arslan").click(); pg.wait_for_timeout(900)
+    check("GM opens the smith's sheet: the pop-up shows", pg.locator(".shopnote", has_text="Batbayar").count() == 1)
+    check("no page errors (GM)", not errs, errs[:3])
     pg.context.close()
 
     # ---- the smith (u2): sees the job, repairs it with his own roll and materials; crafts a gift
@@ -113,12 +127,26 @@ with sync_playwright() as p:
     pg.screenshot(path=str(SHOTS / "workshop-smith.png"))
     pg.evaluate("window.Q=[25,8,8,8,8,8,8,8,8,8]"); pg.locator(".forgebtn").click(); pg.wait_for_selector(".ptread.end", timeout=20000); pg.wait_for_timeout(1500)
     j1 = get(pg, "jobs/j1") or {}
-    check("smith's result is on the job", j1.get("status") == "done" and (j1.get("result") or {}).get("gained") == 72, j1)
+    check("one repair stays on the job, still open", j1.get("status") == "open" and (j1.get("result") or {}).get("gained") == 72 and (j1.get("result") or {}).get("times") == 1, j1)
     check("the owner's sheet is untouched by the smith", (get(pg, "characters/bat") or {}).get("weapons", [{}])[0].get("dur") == 20)
     check("the smith paid the materials", ((get(pg, "characters/ars") or {}).get("craft", {}).get("supplies", {}).get("weapon")) == 8600)
+    check("no payment yet", not (get(pg, "characters/ars") or {}).get("coins"))
+    check("the result offers Repair again and Send it back", pg.locator(".ptread.end .btn", has_text="Repair again").count() == 1 and pg.locator(".ptread.end .btn", has_text="Send it back to Batbayar").count() == 1)
+    pg.screenshot(path=str(SHOTS / "workshop-again.png"))
+    pg.evaluate("window.Q=[25,8,8,8,8,8,8,8,8,8]"); pg.locator(".ptread.end .btn", has_text="Repair again").click()
+    pg.wait_for_selector(".ptread.end", timeout=20000); pg.wait_for_timeout(1500)
+    j1 = get(pg, "jobs/j1") or {}
+    check("a second repair adds up (up to full)", j1.get("status") == "open" and (j1.get("result") or {}).get("gained") == 80 and (j1.get("result") or {}).get("times") == 2, j1.get("result"))
+    check("fully repaired: only Send it back", pg.locator(".ptread.end .btn", has_text="Repair again").count() == 0 and pg.locator(".ptread.end", has_text="fully repaired").count() == 1)
+    pg.locator(".ptread.end .btn", has_text="Send it back to Batbayar").click(); pg.wait_for_timeout(1600)
+    j1 = get(pg, "jobs/j1") or {}
+    check("sent back: done, with both repairs", j1.get("status") == "done" and (j1.get("result") or {}).get("gained") == 80, j1)
     ars = get(pg, "characters/ars") or {}
+    check("the smith paid materials twice", ars.get("craft", {}).get("supplies", {}).get("weapon") == 8200, ars.get("craft", {}).get("supplies"))
     check("and got the payment", ars.get("coins") == 30 and any(i.get("name") == "Bandages" and i.get("qty") == 2 for i in ars.get("items", [])), (ars.get("coins"), ars.get("items")))
-    pg.locator(".ptread.end .btn", has_text="Back to").click(); pg.wait_for_timeout(200)
+    check("the bench is clear", pg.locator(".ptside .ptcheck", has_text="Batbayar's").count() == 0)
+    pg.locator(".ammode button", has_text="Craft").click(); pg.wait_for_timeout(300)
+    pg.locator(".ammode button", has_text="Repair").click(); pg.wait_for_timeout(300)
     pg.locator(".ammode button", has_text="Craft").click(); pg.wait_for_timeout(300)
     pg.locator(".ptlabel").first.click()
     opts = pg.evaluate("[...document.querySelector(\"select[id^='mf-']\").options].map(o => o.textContent)")
