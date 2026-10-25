@@ -2311,85 +2311,139 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .wardnote { margin: 8px 0 0; }
 .wardpages { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 460px; }
 
-/* --- Words: an old book on the desk. Its colours are the book's own (leather, parchment, iron-gall ink), in every theme. --- */
-.tome { --leather: #4a2a17; --leather-2: #2e190d; --tool: #b8893f; --vellum: #efe2c2; --vellum-2: #dcc69a; --ink: #2f2013; --ink-faint: #6e5638; --rubric: #8c2a1c;
-  --k-subject: #8a5d17; --k-verb: #8c2a1c; --k-noun: #1f4f6b; --k-adjective: #3f6b2a; --k-adverb: #6b6157; --k-conj: #7a5a12;
-  position: relative; padding: 16px 18px 20px; border-radius: 10px 14px 14px 10px; perspective: 2200px;
-  background: radial-gradient(ellipse at 30% 20%, #5c3520, transparent 60%), radial-gradient(ellipse at 80% 90%, #241208, transparent 55%), var(--leather);
-  box-shadow: inset 0 0 0 2px var(--leather-2), inset 0 0 0 6px var(--leather), inset 0 0 0 7px color-mix(in srgb, var(--tool) 55%, transparent), 0 14px 34px rgb(0 0 0 / .45), 0 2px 0 #1a0e06; }
-.tome::before { content: ""; position: absolute; top: -6px; right: 22%; width: 14px; height: 70px; z-index: 3; pointer-events: none;   /* the ribbon bookmark */
-  background: linear-gradient(90deg, #6b1712, #a52a1e 45%, #6b1712); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%); box-shadow: 0 2px 4px rgb(0 0 0 / .4); }
-.tomepages { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-height: 560px;
-  box-shadow: 3px 3px 0 #cbb48a, 5px 5px 0 #b39a6e, -3px 3px 0 #cbb48a, -5px 5px 0 #b39a6e; }
+/* --- Words: an old, much-used book lying open on the desk, tilted a little away from you. Its colours are its own
+   (leather, browned parchment, iron-gall ink) in every theme. The pages are scorched and torn at the corners. --- */
+.tomedesk { perspective: 1700px; padding: 6px 0 4px; }
+.tome { --leather: #4a2a17; --leather-2: #2a170b; --tool: #b8893f; --vellum: #d8b980; --vellum-2: #b48a52; --ink: #26170a; --ink-faint: #5a4024; --rubric: #7a1f12;
+  --k-subject: #6b4510; --k-verb: #7a1f12; --k-noun: #173d55; --k-adjective: #2f5420; --k-adverb: #4f463c; --k-conj: #5e430c;
+  position: relative; padding: 16px 18px 34px; border-radius: 10px 14px 14px 10px; perspective: 2200px; transform-style: preserve-3d;
+  transform: rotateX(13deg); transform-origin: 50% 100%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .17 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), radial-gradient(ellipse at 30% 20%, #5e3620, transparent 60%), radial-gradient(ellipse at 80% 90%, #1e0f06, transparent 55%), var(--leather);
+  box-shadow: inset 0 0 0 2px var(--leather-2), inset 0 0 0 6px var(--leather), inset 0 0 0 7px color-mix(in srgb, var(--tool) 45%, transparent), inset 0 -10px 18px rgb(0 0 0 / .45), 0 22px 30px -6px rgb(0 0 0 / .55), 0 4px 0 #1a0e06; }
+.tome::before { content: ""; position: absolute; top: -6px; right: 22%; width: 14px; height: 74px; z-index: 3; pointer-events: none;   /* the ribbon bookmark, frayed */
+  background: linear-gradient(90deg, #5c1410, #932419 45%, #5c1410); clip-path: polygon(0 0, 100% 0, 100% 100%, 78% 90%, 55% 97%, 38% 86%, 0 100%); box-shadow: 0 2px 4px rgb(0 0 0 / .4); }
+.tomepages { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-height: 560px; z-index: 1;
+  filter: drop-shadow(0 1px 0 #6e4b26); }
 .tome.single .tomepages { grid-template-columns: minmax(0, 1fr); }
-.tomepage { position: relative; padding: 30px 30px 44px; display: grid; gap: 12px; align-content: start; min-width: 0; color: var(--ink);
-  font-family: var(--f-display);
-  background: repeating-linear-gradient(0deg, transparent 0 27px, rgb(110 86 56 / .07) 27px 28px),
-    radial-gradient(ellipse at 50% 40%, var(--vellum), var(--vellum-2) 120%); }
-.tomepage.recto { box-shadow: inset 22px 0 26px -20px rgb(60 35 12 / .55); }           /* the gutter, on the inner edge */
-.tomepage.verso { box-shadow: inset -22px 0 26px -20px rgb(60 35 12 / .55); }
-.tome.single .tomepage { box-shadow: inset 18px 0 22px -20px rgb(60 35 12 / .5); }
-.tomepage.blank { background: radial-gradient(ellipse at 50% 40%, var(--vellum), var(--vellum-2) 120%); }
-.tomepage::before { content: ""; position: absolute; inset: 12px; pointer-events: none; border: 1px solid rgb(110 86 56 / .35);
-  background: radial-gradient(circle at 0 0, rgb(110 86 56 / .45) 0 2px, transparent 3px), radial-gradient(circle at 100% 0, rgb(110 86 56 / .45) 0 2px, transparent 3px),
-    radial-gradient(circle at 0 100%, rgb(110 86 56 / .45) 0 2px, transparent 3px), radial-gradient(circle at 100% 100%, rgb(110 86 56 / .45) 0 2px, transparent 3px); }
-.tomeh { margin: 0 0 2px; font: 400 28px/1.1 var(--f-display); color: var(--rubric); text-align: center; letter-spacing: .02em; }
+.tomepage { position: relative; padding: 36px 34px 50px; display: grid; gap: 12px; align-content: start; min-width: 0; color: var(--ink); font-family: var(--f-display);
+  background: radial-gradient(circle at var(--bx) 0, #1b0a03 0 10px, #4a2008 20px, rgb(110 52 14 / .7) 34px, rgb(140 82 30 / .3) 52px, transparent 80px),
+    radial-gradient(circle at var(--bx) 100%, #1b0a03 0 9px, #4a2008 18px, rgb(110 52 14 / .7) 32px, rgb(140 82 30 / .3) 50px, transparent 76px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .17 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='620'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.011 .014' numOctaves='4' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .24 0 0 0 0 .08 0 0 0 -2.6 1.45'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 50% 45%, #e2c690 0, var(--vellum) 45%, var(--vellum-2) 100%);
+  background-size: auto, auto, 240px 240px, 520px 620px, auto; }
+/* the inner edge of each page curves down into the spine; the outer edges are browned and scorched */
+.tomepage.recto { --bx: 100%; clip-path: polygon(0.0% 0.4%, 4.8% 0.8%, 9.1% 0.7%, 14.9% 0.1%, 21.5% 0.0%, 27.7% 0.1%, 32.1% 0.6%, 40.2% 0.2%, 45.4% 0.8%, 54.1% 0.8%, 60.1% 1.3%, 64.3% 1.1%, 69.8% 0.2%, 74.3% 0.4%, 82.4% 0.2%, 87.0% 0.6%, 89.5% 2.8%, 91.0% 1.6%, 93.5% 4.6%, 95.0% 3.4%, 96.6% 7.2%, 98.2% 6.4%, 99.4% 9.5%, 99.5% 12.0%, 99.4% 16.5%, 98.7% 19.7%, 99.6% 23.6%, 99.0% 28.3%, 99.2% 33.6%, 99.7% 37.8%, 98.9% 43.6%, 99.3% 48.9%, 99.6% 55.4%, 100.0% 59.6%, 99.2% 63.0%, 98.8% 69.1%, 98.7% 74.0%, 99.7% 79.7%, 99.8% 85.0%, 99.6% 87.0%, 98.4% 90.5%, 99.0% 92.4%, 96.8% 94.6%, 97.4% 96.8%, 94.2% 97.6%, 92.5% 99.4%, 89.0% 98.8%, 87.0% 100.0%, 84.0% 99.7%, 77.0% 99.5%, 70.7% 99.8%, 62.0% 99.4%, 54.7% 99.0%, 47.2% 99.6%, 38.2% 99.8%, 32.8% 99.3%, 25.5% 98.9%, 19.2% 99.1%, 14.6% 99.0%, 6.7% 99.0%, 0.0% 100.0%); box-shadow: inset 30px 0 30px -18px rgb(50 25 6 / .7), inset -14px 0 18px -10px rgb(70 35 8 / .55), inset 0 10px 16px -10px rgb(70 35 8 / .5), inset 0 -10px 16px -10px rgb(70 35 8 / .5); }
+.tomepage.verso { --bx: 0%; clip-path: polygon(100.0% 0.5%, 91.6% 0.1%, 85.4% 0.7%, 77.0% 1.1%, 68.7% 0.4%, 62.6% 0.5%, 54.2% 1.2%, 49.4% 0.2%, 44.2% 0.3%, 37.8% 0.8%, 32.5% 0.0%, 26.4% 0.5%, 19.6% 1.2%, 13.0% 0.6%, 10.5% 2.8%, 9.0% 1.6%, 6.5% 4.6%, 5.0% 3.4%, 3.4% 7.2%, 1.8% 6.4%, 0.6% 9.5%, 0.7% 12.0%, 0.5% 17.5%, 0.1% 20.7%, 0.2% 26.8%, 0.9% 33.0%, 1.3% 37.6%, 1.3% 43.1%, 1.1% 46.4%, 0.9% 50.0%, 1.4% 53.3%, 1.3% 56.9%, 1.4% 61.3%, 0.5% 67.8%, 1.0% 71.4%, 0.9% 75.8%, 0.2% 79.3%, 0.4% 87.0%, 1.6% 90.5%, 1.0% 92.4%, 3.2% 94.6%, 2.6% 96.8%, 5.8% 97.6%, 7.5% 99.4%, 11.0% 98.8%, 13.0% 100.0%, 16.0% 99.4%, 22.4% 99.0%, 26.9% 99.3%, 32.3% 99.8%, 37.1% 98.9%, 45.8% 99.5%, 50.5% 99.5%, 54.7% 99.5%, 63.6% 99.8%, 71.1% 99.2%, 76.9% 99.1%, 84.8% 99.5%, 92.6% 99.3%, 97.8% 99.8%, 100.0% 100.0%); box-shadow: inset -30px 0 30px -18px rgb(50 25 6 / .7), inset 14px 0 18px -10px rgb(70 35 8 / .55), inset 0 10px 16px -10px rgb(70 35 8 / .5), inset 0 -10px 16px -10px rgb(70 35 8 / .5); }
+.tome.single .tomepage { --bx: 100%; clip-path: polygon(0.0% 0.4%, 4.8% 0.8%, 9.1% 0.7%, 14.9% 0.1%, 21.5% 0.0%, 27.7% 0.1%, 32.1% 0.6%, 40.2% 0.2%, 45.4% 0.8%, 54.1% 0.8%, 60.1% 1.3%, 64.3% 1.1%, 69.8% 0.2%, 74.3% 0.4%, 82.4% 0.2%, 87.0% 0.6%, 89.5% 2.8%, 91.0% 1.6%, 93.5% 4.6%, 95.0% 3.4%, 96.6% 7.2%, 98.2% 6.4%, 99.4% 9.5%, 99.5% 12.0%, 99.4% 16.5%, 98.7% 19.7%, 99.6% 23.6%, 99.0% 28.3%, 99.2% 33.6%, 99.7% 37.8%, 98.9% 43.6%, 99.3% 48.9%, 99.6% 55.4%, 100.0% 59.6%, 99.2% 63.0%, 98.8% 69.1%, 98.7% 74.0%, 99.7% 79.7%, 99.8% 85.0%, 99.6% 87.0%, 98.4% 90.5%, 99.0% 92.4%, 96.8% 94.6%, 97.4% 96.8%, 94.2% 97.6%, 92.5% 99.4%, 89.0% 98.8%, 87.0% 100.0%, 84.0% 99.7%, 77.0% 99.5%, 70.7% 99.8%, 62.0% 99.4%, 54.7% 99.0%, 47.2% 99.6%, 38.2% 99.8%, 32.8% 99.3%, 25.5% 98.9%, 19.2% 99.1%, 14.6% 99.0%, 6.7% 99.0%, 0.0% 100.0%); box-shadow: inset 20px 0 22px -18px rgb(50 25 6 / .6), inset -14px 0 18px -10px rgb(70 35 8 / .55), inset 0 10px 16px -10px rgb(70 35 8 / .5), inset 0 -10px 16px -10px rgb(70 35 8 / .5); }
+/* the thick block of pages along the bottom, dipping at the spine */
+.tomeblock { position: absolute; left: 14px; right: 14px; bottom: 10px; height: 26px; z-index: 0; pointer-events: none; border-radius: 0 0 6px 6px;
+  background: radial-gradient(ellipse 7% 140% at 50% 0, #2a1508 0 30%, transparent 100%),
+    repeating-linear-gradient(0deg, #c9a46c 0 1px, #9b723f 1px 2px, #b88f58 2px 3px, #7d5a30 3px 4px),
+    linear-gradient(90deg, rgb(60 30 8 / .55), transparent 12%, transparent 88%, rgb(60 30 8 / .55));
+  background-blend-mode: normal, normal, multiply;
+  clip-path: polygon(0 0, 47% 0, 50% 55%, 53% 0, 100% 0, 99.4% 100%, 0.6% 100%); }
+.tome.single .tomeblock { clip-path: none; background: repeating-linear-gradient(0deg, #c9a46c 0 1px, #9b723f 1px 2px, #b88f58 2px 3px, #7d5a30 3px 4px); }
+.tomeh { margin: 0 0 2px; font: 400 28px/1.1 var(--f-display); color: var(--rubric); text-align: center; letter-spacing: .02em; text-shadow: 0 0 1px rgb(122 31 18 / .4); }
 .tomeh::after { content: "❦"; display: block; font-size: 16px; color: var(--ink-faint); margin-top: 2px; }
 .tomenote { margin: 0; font-style: italic; color: var(--ink-faint); font-size: 15px; text-align: center; }
-.tomefolio { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; font: italic 15px var(--f-display); color: var(--ink-faint); }
-.tomeword { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 6px 0 8px; border-bottom: 1px dashed rgb(110 86 56 / .4); animation: inkIn .5s ease-out both; }
-.tomeword .rune { width: 22px; height: 26px; stroke-width: 1.5; margin-top: 2px; }
+.tomefolio { position: absolute; bottom: 22px; left: 0; right: 0; text-align: center; font: italic 15px var(--f-display); color: var(--ink-faint); }
+.tomeword { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 6px 0 8px; border-bottom: 1px dashed rgb(70 40 14 / .45); animation: inkIn .5s ease-out both; }
+.tomeword .rune { width: 22px; height: 26px; stroke-width: 1.6; margin-top: 2px; }
 .tomewordtext { display: grid; gap: 1px; min-width: 0; }
-.tomewordtext b { font: 400 23px/1.15 var(--f-display); color: var(--ink); }
+.tomewordtext b { font: 400 23px/1.15 var(--f-display); color: var(--ink); text-shadow: 0 0 .6px rgb(38 23 10 / .6); }
 .tomewordtext b::first-letter { color: var(--rubric); font-size: 1.25em; }
 .tomecost { font: 600 12.5px var(--f-mono); color: var(--kc); }
 .tomecost i { font: italic 14px var(--f-display); color: var(--ink-faint); }
 .tomewordtext small { font-size: 14px; color: var(--ink); font-style: italic; }
 .tomeaside { color: var(--ink-faint) !important; }
-.tomeacts { display: flex; gap: 4px; opacity: .25; transition: opacity .15s; }
+.tomeacts { display: flex; gap: 4px; opacity: .3; transition: opacity .15s; }
 .tomeword:hover .tomeacts, .tomeword:focus-within .tomeacts { opacity: 1; }
 @media (hover: none) { .tomeacts { opacity: .8; } }
-.tome .iconbtn { background: transparent; border-color: rgb(110 86 56 / .45); color: var(--ink); }
+.tome .iconbtn { background: transparent; border-color: rgb(70 40 14 / .5); color: var(--ink); }
 .tomegram { display: grid; gap: 4px; }
-.tomegram h4 { margin: 4px 0 0; font: 400 19px var(--f-display); color: var(--kc); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; border-bottom: 1px solid rgb(110 86 56 / .35); }
+.tomegram h4 { margin: 4px 0 0; font: 400 19px var(--f-display); color: var(--kc); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; border-bottom: 1px solid rgb(70 40 14 / .4); }
 .tomegram h4 span { font: italic 13.5px var(--f-display); color: var(--ink-faint); }
 .tomegramwords { margin: 0; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 18px; }
 .tomegramwords span { display: inline-flex; align-items: center; gap: 2px; }
-.tomegramwords .own { text-decoration: underline dotted rgb(110 86 56 / .6); }
+.tomegramwords .own { text-decoration: underline dotted rgb(70 40 14 / .6); }
 .tomegramwords .iconbtn { width: 18px; height: 18px; font-size: 12px; border: 0; }
 .tomeadd { display: flex; gap: 4px; align-items: center; }
-.tome input, .tome select { flex: 1 1 auto; min-width: 0; border: 0; border-bottom: 1px dotted rgb(110 86 56 / .7); background: transparent; color: var(--ink); font: italic 16px var(--f-display); padding: 2px 0; }
-.tome input::placeholder { color: rgb(110 86 56 / .55); }
+.tome input, .tome select { flex: 1 1 auto; min-width: 0; border: 0; border-bottom: 1px dotted rgb(70 40 14 / .75); background: transparent; color: var(--ink); font: italic 16px var(--f-display); padding: 2px 0; }
+.tome input::placeholder { color: rgb(70 40 14 / .55); }
 .tome input:focus { outline: none; border-bottom-color: var(--rubric); }
 .tomewrite { margin-top: 4px; }
-.tomenew { background: none; border: 0; padding: 4px 0; font: italic 19px var(--f-display); color: var(--rubric); cursor: pointer; border-bottom: 1px dashed rgb(140 42 28 / .5); }
+.tomenew { background: none; border: 0; padding: 4px 0; font: italic 19px var(--f-display); color: var(--rubric); cursor: pointer; border-bottom: 1px dashed rgb(122 31 18 / .5); }
 .tomenew:hover { color: var(--ink); }
-.tome .wardform { border: 1px dashed rgb(110 86 56 / .5); background: rgb(255 248 230 / .35); padding: 10px; }
+.tome .wardform { border: 1px dashed rgb(70 40 14 / .55); background: rgb(240 220 180 / .25); padding: 10px; }
 .tome .wardform label, .tome .wardform .lbl { color: var(--ink-faint); }
-.tome .wardform .btn { color: var(--ink); border-color: var(--ink-faint); }
-.tome .wardform .btn.primary { background: var(--rubric); border-color: var(--rubric); color: #fff4e0; }
-.tome .wardform .flag.bad { background: rgb(140 42 28 / .12); color: var(--rubric); }
-.tomecorner { position: absolute; bottom: 14px; width: 54px; height: 54px; padding: 0; border: 0; background: none; cursor: pointer; z-index: 2; }
-.tomecorner.next { right: 12px; } .tomecorner.prev { left: 12px; }
-.tomecorner::after { content: ""; position: absolute; inset: auto 6px 6px auto; width: 26px; height: 26px; transition: width .2s, height .2s;
-  background: linear-gradient(135deg, transparent 50%, #c9b083 50%, #f3e7cb); box-shadow: -2px -2px 4px rgb(60 35 12 / .25); }
-.tomecorner.prev::after { inset: auto auto 6px 6px; background: linear-gradient(225deg, transparent 50%, #c9b083 50%, #f3e7cb); box-shadow: 2px -2px 4px rgb(60 35 12 / .25); }
-.tomecorner:not(:disabled):hover::after { width: 38px; height: 38px; }
+.tome .wardform .btn { color: var(--ink); border-color: var(--ink-faint); background: transparent; }
+.tome .wardform .btn.primary { background: var(--rubric); border-color: var(--rubric); color: #f6e6c6; }
+.tome .wardform .flag.bad { background: rgb(122 31 18 / .12); color: var(--rubric); }
+.tomecorner { position: absolute; bottom: 30px; width: 60px; height: 60px; padding: 0; border: 0; background: none; cursor: pointer; z-index: 2; }
+.tomecorner.next { right: 14px; } .tomecorner.prev { left: 14px; }
+.tomecorner::after { content: "›"; position: absolute; inset: auto 10px 10px auto; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%;
+  font: 20px/1 var(--f-display); color: #f0dcb4; background: rgb(60 30 10 / .55); opacity: 0; transition: opacity .2s, transform .2s; }
+.tomecorner.prev::after { content: "‹"; inset: auto auto 10px 10px; }
+.tomecorner:not(:disabled):hover::after, .tomecorner:not(:disabled):focus-visible::after { opacity: 1; transform: scale(1.1); }
 .tomecorner:disabled { display: none; }
 .tomenav { justify-content: space-between; margin-top: 12px; }
-/* turning a page: a leaf sweeps over the spread while the pages change underneath */
-.tomeleaf { position: absolute; top: 16px; bottom: 20px; width: calc(50% - 18px); z-index: 4; pointer-events: none; transform-style: preserve-3d;
-  background: linear-gradient(90deg, #d7c193, var(--vellum) 30%, #e5d3ac); box-shadow: 0 0 30px rgb(0 0 0 / .35); }
+.tomenavr { gap: 8px; flex-wrap: nowrap; }
+.shutnav { justify-content: center; }
+/* turning a page: a browned leaf sweeps over the spread while the pages change underneath */
+.tomeleaf { position: absolute; top: 16px; bottom: 34px; width: calc(50% - 18px); z-index: 4; pointer-events: none; transform-style: preserve-3d;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .17 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(90deg, #a37a45, var(--vellum) 30%, #c9a36a); box-shadow: 0 0 30px rgb(0 0 0 / .35); }
 .tomeleaf.next { left: 50%; transform-origin: left center; animation: leafNext .62s cubic-bezier(.45,.05,.35,1) forwards; }
 .tomeleaf.prev { right: 50%; transform-origin: right center; animation: leafPrev .62s cubic-bezier(.45,.05,.35,1) forwards; }
 .tome.single .tomeleaf { width: calc(100% - 36px); left: 18px; right: auto; }
 .tome.single .tomeleaf.prev { transform-origin: left center; animation-name: leafPrevSingle; }
-@keyframes leafNext { from { transform: rotateY(0); } 50% { filter: brightness(.85); } to { transform: rotateY(-180deg); opacity: .2; } }
-@keyframes leafPrev { from { transform: rotateY(0); } 50% { filter: brightness(.85); } to { transform: rotateY(180deg); opacity: .2; } }
+@keyframes leafNext { from { transform: rotateY(0); } 50% { filter: brightness(.8); } to { transform: rotateY(-180deg); opacity: .2; } }
+@keyframes leafPrev { from { transform: rotateY(0); } 50% { filter: brightness(.8); } to { transform: rotateY(180deg); opacity: .2; } }
 @keyframes leafPrevSingle { from { transform: rotateY(-180deg); opacity: .2; } to { transform: rotateY(0); opacity: 0; } }
 .tome.turning .tomepages > * { animation: pageFade .64s ease both; }
 @keyframes pageFade { 0%, 100% { opacity: 1; } 45%, 55% { opacity: .15; } }
 @keyframes inkIn { from { opacity: 0; filter: blur(2px); } }
+
+/* --- the cover: worn tooled leather, brass corners, a sealed rune and a strap clasp --- */
+.tome.shut { width: 50%; margin-inline: auto; padding: 0 0 22px; background: none; box-shadow: none; }
+.tome.shut::before { right: 30%; }
+.tome.shut::after { content: ""; position: absolute; left: 8px; right: 4px; bottom: 6px; height: 20px; border-radius: 0 0 4px 4px;   /* the page block under the cover */
+  background: repeating-linear-gradient(0deg, #c9a46c 0 1px, #9b723f 1px 2px, #b88f58 2px 3px, #7d5a30 3px 4px); box-shadow: 0 6px 0 -1px var(--leather-2), 0 10px 18px rgb(0 0 0 / .5); }
+.tome.single.shut { width: 100%; }
+.tomecover { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; min-height: 588px; padding: 40px 30px; border: 0; cursor: pointer; color: #d9b25e;
+  border-radius: 6px 12px 12px 6px; font: inherit;
+  background: radial-gradient(circle at 0 0, #c9a253 0 12px, #7a5a22 16px, transparent 17px), radial-gradient(circle at 100% 0, #c9a253 0 12px, #7a5a22 16px, transparent 17px),
+    radial-gradient(circle at 0 100%, #c9a253 0 12px, #7a5a22 16px, transparent 17px), radial-gradient(circle at 100% 100%, #c9a253 0 12px, #7a5a22 16px, transparent 17px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .17 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), radial-gradient(ellipse 30% 18% at 70% 78%, rgb(20 10 4 / .45), transparent), radial-gradient(ellipse 22% 14% at 22% 30%, rgb(150 95 55 / .22), transparent), radial-gradient(ellipse 40% 10% at 50% 8%, rgb(20 10 4 / .35), transparent), radial-gradient(ellipse at 40% 35%, #6a3e22, var(--leather) 55%, #2a170b);
+  background-size: auto, auto, auto, auto, 240px 240px, auto, auto, auto, auto;
+  box-shadow: inset 0 0 0 12px #3a2010, inset 0 0 0 13px rgb(201 162 83 / .6), inset 0 0 0 18px #331c0e, inset 0 0 0 19px rgb(201 162 83 / .35),
+    inset 16px 0 0 -6px #2a170b, inset 0 0 40px rgb(0 0 0 / .6), 0 2px 0 #1a0e06; }
+.tomecover:hover .tomeseal, .tomecover:focus-visible .tomeseal { filter: drop-shadow(0 0 6px rgb(230 190 100 / .7)); }
+.tomecoverin { display: grid; gap: 18px; justify-items: center; text-align: center; }
+.tomecovert { font: 400 34px/1.1 var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: #d9b25e; text-shadow: 0 1px 0 #1a0e06, 0 -1px 0 rgb(255 230 170 / .25); }
+.tomecovern { font: italic 20px var(--f-display); color: #c9a253; text-shadow: 0 1px 0 #1a0e06; }
+.tomecoverc { font: 600 11px var(--f-head); letter-spacing: .14em; text-transform: uppercase; color: rgb(201 162 83 / .7); }
+.tomeseal { width: min(220px, 60vw); transition: filter .3s; fill: none; stroke: #c9a253; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 0 #1a0e06); }
+.tomeseal .thin { stroke-width: .7; stroke-dasharray: 2 3; }
+.tomeseal .big { stroke-width: 1.1; }
+.tomeclasp { position: absolute; right: -10px; top: calc(50% - 34px); width: 46px; height: 68px; border-radius: 8px 4px 4px 8px; z-index: 2; pointer-events: none;
+  background: radial-gradient(circle at 18px 50%, #e3c27a 0 6px, #8a6224 7px 9px, transparent 10px), linear-gradient(90deg, #3a200f, #5a341b 40%, #2e190c);
+  box-shadow: 0 2px 6px rgb(0 0 0 / .5), inset 0 0 0 1px rgb(201 162 83 / .35); }
+/* opening: the shut book slides into place, then the cover swings over to the left and the pages appear; closing is the reverse */
+.tomecover.flap { position: absolute; top: 0; bottom: 22px; left: 50%; width: 50%; min-height: 0; z-index: 6; pointer-events: none; transform-origin: left center; display: grid; transform-style: preserve-3d; }
+.tomecover.flap .tomecoverin, .tomecover.flap .tomeclasp { backface-visibility: hidden; }
+.tomecover.flap::after { content: ""; position: absolute; inset: 8px 6px 8px 8px; transform: rotateY(180deg); backface-visibility: hidden; border-radius: 4px;   /* the marbled endpaper inside the cover */
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='20' viewBox='0 0 240 20'%3E%3Cg stroke='%23b9e39a' stroke-opacity='.26' stroke-width='1.1' fill='%23b9e39a' fill-opacity='.0' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath transform='translate(8 1)' d='M3 18V2M3 3L9 0M3 8L9 5'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='26' cy='10' r='1'/%3E%3Cpath transform='translate(38 1)' d='M3 18V2L9 6L3 10L9 18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='56' cy='10' r='1'/%3E%3Cpath transform='translate(68 1)' d='M6 18V2M6 8L1 2M6 8L11 2'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='86' cy='10' r='1'/%3E%3Cpath transform='translate(98 1)' d='M6 0L11 6L6 12L1 6Z M1 18L11 12M11 18L1 12'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='116' cy='10' r='1'/%3E%3Cpath transform='translate(128 1)' d='M3 18V2M9 18V2M3 6L9 12'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='146' cy='10' r='1'/%3E%3Cpath transform='translate(158 1)' d='M6 18V0M1 5L11 11'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='176' cy='10' r='1'/%3E%3Cpath transform='translate(188 1)' d='M2 2L10 18M10 2L2 18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='206' cy='10' r='1'/%3E%3Cpath transform='translate(218 1)' d='M3 18V2L9 8V18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='236' cy='10' r='1'/%3E%3C/g%3E%3C/svg%3E"), radial-gradient(ellipse at 30% 30%, #7a4e2a, transparent 50%), radial-gradient(ellipse at 70% 75%, #5a2e1a, transparent 55%), repeating-radial-gradient(circle at 40% 60%, #6b3f22 0 6px, #4f2a16 6px 11px, #7e5230 11px 14px); }
+.tome.opening .tomecover.flap { animation: coverOpen 1.1s cubic-bezier(.5,.05,.3,1) forwards; }
+.tome.closing .tomecover.flap { animation: coverOpen 1s cubic-bezier(.5,.05,.3,1) reverse forwards; }
+@keyframes coverOpen { 0% { transform: translateX(-50%) rotateY(0); } 30% { transform: translateX(0) rotateY(0); } 97% { transform: translateX(0) rotateY(-178deg); opacity: 1; } 100% { transform: translateX(0) rotateY(-180deg); opacity: 0; } }
+.tome.opening { animation: bookReveal 1.1s cubic-bezier(.5,.05,.3,1) forwards; }
+.tome.closing { animation: bookReveal 1s cubic-bezier(.5,.05,.3,1) reverse forwards; }
+@keyframes bookReveal { 0% { clip-path: inset(-40px 25% -40px 25%); } 30% { clip-path: inset(-40px 0 -40px 50%); } 100% { clip-path: inset(-40px -40px -40px -40px); } }
+.tome.single.opening, .tome.single.closing { animation: none; }
+.tome.single .tomecover.flap { left: 0; width: 100%; }
+.tome.single.opening .tomecover.flap { animation-name: coverOpenSingle; }
+.tome.single.closing .tomecover.flap { animation-name: coverOpenSingle; }
+@keyframes coverOpenSingle { from { transform: rotateY(0); } to { transform: rotateY(-120deg); opacity: 0; } }
 
 /* --- Inscribe: the floating words and the sigil --- */
 .wardstage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 330px); gap: 18px; align-items: center; }
@@ -2457,6 +2511,17 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @keyframes burst { from { opacity: 1; transform: scale(.4); } 30% { opacity: .95; } to { opacity: 0; transform: scale(6); } }
 .wardsigil.cast { animation: castShake .4s ease-out; }
 @keyframes castShake { 20% { transform: translate(2px, -1px); } 40% { transform: translate(-2px, 1px); } 60% { transform: translate(1px, 1px); } }
+.wardsigil.fizzle { animation: fizzleShake .7s ease-out; }
+.wardsigil.fizzle .link, .wardsigil.fizzle .star, .wardsigil.fizzle .bandrune, .wardsigil.fizzle .mark { opacity: .25; transition: opacity 1.2s .3s; filter: grayscale(1); }
+.wardsigil.fizzle .core { fill: var(--ink-3); animation: none; opacity: .4; }
+.wardsigil .smoke { fill: color-mix(in srgb, var(--ink-3) 50%, transparent); transform-box: view-box; transform-origin: 0 0; animation: smoke 1.6s ease-out forwards; }
+@keyframes smoke { from { opacity: .7; transform: scale(.3); } to { opacity: 0; transform: scale(3.6); } }
+.wardsigil .crack { fill: none; stroke: var(--bad); stroke-width: 1.6; stroke-linejoin: round; stroke-dasharray: 160; stroke-dashoffset: 160; animation: ray .35s ease-in forwards; opacity: .8; }
+@keyframes fizzleShake { 15% { transform: translate(-3px, 1px); } 30% { transform: translate(3px, -1px); } 45% { transform: translate(-2px, 0); } 60% { transform: translate(1px, 1px); } }
+.warddc { width: 120px; }
+.warddc input { width: 100%; }
+.warddchint { flex: 1 1 100%; font-size: 13px; }
+.wardcast .row { align-items: end; }
 .wardsigil.small { max-width: 170px; justify-self: center; }
 
 .wardsentence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 14px; padding: 10px 12px; border: 1.5px solid var(--rule); background: var(--card); }
@@ -2509,7 +2574,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + var(--fall))) scale(.5); background: #3b0764; }
 }
 @media (max-width: 760px) {
-  .tome { padding: 10px 10px 14px; }
+  .tome { padding: 10px 10px 30px; transform: rotateX(6deg); }
+  .tomecover { min-height: 498px; }
   .tomepages { min-height: 480px; }
   .tomepage { padding: 26px 20px 44px; }
   .wardstage { grid-template-columns: minmax(0, 1fr); }
@@ -2523,7 +2589,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @media (prefers-reduced-motion: reduce) {
   .wardword, .wardmotes, .wardsigil *, .wardsigil, .tomeword, .wardtok, .wardcast, .tome.turning .tomepages > * { animation: none !important; }
   .wardsigil .link, .wardsigil .star, .wardsigil .ray { stroke-dashoffset: 0; }
-  .tomeleaf { display: none; }
+  .tomeleaf, .tomecover.flap { display: none; }
+  .tome.opening, .tome.closing { animation: none !important; }
 }
 </style>
 <div id="app"></div>
@@ -4045,7 +4112,7 @@ const RULES_INFO = {
     "Wards are magical effects made by inscribing Sigils. A Ward is a sentence of Words of Power; the effect happens when the last Sigil is inscribed.",
     { h: "Sigils" }, { ul: ["You have a number of Sigils per AP: 3 per point of Warding.", "Say how many AP you use. Available Sigils = AP used × Sigils per AP − Fatigue.", "The Ward costs the sum of its words' Sigils."] },
     { t: { cols: ["Part of the sentence", "Sigils"], rows: [["Subject (I, The Ward, myself, there, the bandit)", "5 (2 at Warding 9)"], ["Adverb (a, an, for, the)", "1 (0 at Warding 9)"], ["Adjective, verb, noun", "Words of Power: their own cost"], ["Conjunction (and, but, when, while)", "10, needs Warding 7"]] } },
-    { h: "Ward sentences" }, { ul: ["Every Ward needs a Subject, usually I or The Ward: \"I ignite Fire\", \"The Ward ignites a Fire Column\".", "Be specific: a vague Ward may pass its DC and still do something you didn't want on a high roll.", "A word can be a verb and a noun (Ignite / Fire); related concepts can stand in for each other (Fire for heat); two words can make a higher one (Fire + Earth = lava), weaker and dearer than knowing Lava itself."] },
+    { h: "Ward sentences" }, { ul: ["Every Ward needs a Subject, usually I or The Ward: \"I ignite Fire\", \"The Ward ignites a Fire Column\".", "Be specific: a vague Ward may pass its DC and still do something you didn't want on a high roll.", "The check: d100 minus your modifier, under the GM's DC and the Ward holds. Put the DC in the Difficulty box before you roll, or leave it empty if the GM keeps it secret.", "A word can be a verb and a noun (Ignite / Fire); related concepts can stand in for each other (Fire for heat); two words can make a higher one (Fire + Earth = lava), weaker and dearer than knowing Lava itself."] },
     { h: "Words of Power" }, { ul: ["Your own understanding of a concept: they can't be learned from another warder.", "Learned through Research or Blueprinting; dear at first, cheaper as you study them or find inspiration.", "More specialised words are stronger: Ice beats Cool Water, with a lower cost and DC."] },
     { h: "Fatigue" }, { ul: ["Builds up from difficult Wards or failed attempts; the GM decides how much.", "It all clears after a long rest. Out of combat, each Stamina spent clears 10."] },
     { h: "Kinds of Ward" }, { ul: ["Formulaic (Warding 3): learned from manuals or a teacher, with a set effect, Sigil cost, casting time and materials.", "Ritual (Warding 4): any Ward inscribed slowly, 5 AP's worth of Sigils an hour. Fatigue under 10 becomes 1; over 10 is halved.", "Spontaneous (Warding 5): your own sentences of Words of Power."] },
@@ -9078,6 +9145,14 @@ function WardWords({ c, st, update }) {
   pages[pages.length - 1].last = true;
   const per = narrow ? 1 : 2, spreads = Math.ceil(pages.length / per);
   const [at, setAt] = useState(0), [turn, setTurn] = useState("");
+  // The book can be shut (remembered per browser): then only its cover shows. Opening swings the cover over.
+  const [shut, setShut] = useState(() => !!lsGet("cw-tome-shut", false)), [swing, setSwing] = useState("");
+  const shutTo = v => {
+    if (swing) return; lsSet("cw-tome-shut", v);
+    if (reduceMotion()) { setShut(v); return; }
+    if (v) { setSwing("closing"); setTimeout(() => { setShut(true); setSwing(""); }, 1000); }
+    else { setShut(false); setSwing("opening"); setTimeout(() => setSwing(""), 1100); }
+  };
   const sp = Math.min(at, spreads - 1);
   const go = to => {
     to = R.clamp(to, 0, spreads - 1); if (to === sp || turn) return;
@@ -9094,7 +9169,7 @@ function WardWords({ c, st, update }) {
   };
   const shown = pages.slice(sp * per, sp * per + per);
   // A plain function, not a component, so a word half-written on a page survives the sheet refreshing.
-  const page = (p, n) => html`<div class=${"tomepage " + (n % 2 ? "recto" : "verso")} key=${n}>
+  const page = (p, n) => html`<div class=${"tomepage " + (n % 2 ? "verso" : "recto")} key=${n}>
     ${p.k === "grammar" ? html`<h3 class="tomeh">Grammar</h3>
       <p class="tomenote">Common words, at fixed costs.${st.lvl >= 9 ? " Shade of Erebus: Subjects and Adverbs cost less." : ""}</p>
       ${["subject", "adverb", "conj"].map(k => html`<${GrammarLine} k=${k} st=${st} w=${w} update=${update} />`)}`
@@ -9112,20 +9187,36 @@ function WardWords({ c, st, update }) {
         : html`<button type="button" class="tomenew" onClick=${() => setWriting(true)}>+ Write a new word</button>`}</div>`}`}
     <span class="tomefolio">${WARD_ROMAN(n)}</span>
   </div>`;
+  const seal = useMemo(() => Array.from({ length: 12 }, (_, i) => wardRune("seal" + i)), []);
+  const cover = html`<span class="tomecoverin">
+      <span class="tomecovert">Words of Power</span>
+      <svg class="tomeseal" viewBox="-60 -60 120 120" aria-hidden="true"><circle r="56" /><circle r="44" class="thin" />
+        ${seal.map((d, i) => html`<g transform=${`rotate(${i * 30}) translate(0 -50) scale(.5)`}><path d=${d} /></g>`)}
+        <g transform="scale(2.6)"><path class="big" d=${wardRune(c.name || "Warder")} /></g></svg>
+      <span class="tomecovern">${c.name ? `The book of ${c.name}` : "A warder's book"}</span>
+      <span class="tomecoverc">${w.words.length} word${w.words.length === 1 ? "" : "s"} written</span></span>
+    <i class="tomeclasp" aria-hidden="true"></i>`;
   return html`<section class="frame wardbook">
     <h2 class="h"><span>Words</span><i class="orn" aria-hidden="true"></i></h2>
     <p class="sub">Your book of words. Adjectives, verbs and nouns are Words of Power: your own understanding of a concept, each with its own Sigil cost. You learn them by Research or Blueprinting, the cost comes down as you study them, and no other warder can teach them to you.</p>
     ${!st.spontaneous && html`<p class="ptlocked">Words of Power go into Spontaneous Wards from Warding 5 (Works of a Writer). You can fill the book now.</p>`}
-    <div class=${"tome" + (narrow ? " single" : "") + (turn ? " turning " + turn : "")}>
+    <div class="tomedesk">
+    ${shut ? html`<div class=${"tome shut" + (narrow ? " single" : "")}>
+        <button type="button" class="tomecover" aria-label="Open the book" title="Open the book" onClick=${() => shutTo(false)}>${cover}</button></div>`
+    : html`<div class=${"tome" + (narrow ? " single" : "") + (turn ? " turning " + turn : "") + (swing ? " " + swing : "")}>
       <div class="tomepages">${shown.map((p, i) => page(p, sp * per + i + 1))}
-        ${!narrow && shown.length < 2 && html`<div class="tomepage verso blank"></div>`}</div>
+        ${!narrow && shown.length < 2 && html`<div class="tomepage recto blank"></div>`}</div>
+      <i class="tomeblock" aria-hidden="true"></i>
       ${turn && html`<i class=${"tomeleaf " + turn} aria-hidden="true"></i>`}
+      ${swing && html`<i class="tomecover flap" aria-hidden="true">${cover}</i>`}
       <button type="button" class="tomecorner prev" aria-label="Turn back a page" disabled=${sp === 0} onClick=${() => go(sp - 1)}></button>
       <button type="button" class="tomecorner next" aria-label="Turn the page" disabled=${sp >= spreads - 1} onClick=${() => go(sp + 1)}></button>
-    </div>
-    <div class="row tomenav"><button class="btn small" disabled=${sp === 0} onClick=${() => go(sp - 1)}>‹ Back</button>
+    </div>`}</div>
+    ${shut ? html`<div class="row tomenav shutnav"><button class="btn small primary" onClick=${() => shutTo(false)}>Open the book</button></div>`
+    : html`<div class="row tomenav"><button class="btn small" disabled=${sp === 0} onClick=${() => go(sp - 1)}>‹ Back</button>
       <span class="muted">${per === 2 ? `Pages ${sp * 2 + 1}–${Math.min(pages.length, sp * 2 + 2)}` : `Page ${sp + 1}`} of ${pages.length}</span>
-      <button class="btn small" disabled=${sp >= spreads - 1} onClick=${() => go(sp + 1)}>Turn ›</button></div>
+      <span class="row tomenavr"><button class="btn small" disabled=${!!swing} onClick=${() => shutTo(true)}>Close the book</button>
+      <button class="btn small" disabled=${sp >= spreads - 1} onClick=${() => go(sp + 1)}>Turn ›</button></span></div>`}
   </section>`;
 }
 // One line of the grammar page: its words (the book's and yours) and a place to write another.
@@ -9258,6 +9349,7 @@ function WardSigil({ tokens, ok, phase, svgRef, small }) {
     ${ok && html`<circle class="core" r="8" />`}
     ${flare > 0 && html`<circle class="shock" r="20" key=${"f" + flare} />`}
     ${phase === "cast" && html`<circle class="shock big" r="20" /><circle class="burst" r="14" />`}
+    ${phase === "fizzle" && html`<circle class="smoke" r="22" /><path class="crack" d="M-6 -70 L4 -38 L-8 -10 L6 18 L-4 46 L5 72" />`}
   </svg>`;
 }
 // The Active perks and inscribing as a Ritual. The perks only work on a Ward that isn't a Ritual Ward.
@@ -9287,14 +9379,18 @@ function WardCostBox({ st, plan, total, o }) {
 const CAST_MS = 2300;
 function WardCast({ c, st, update, cast, onClose, onPhase }) {
   const [roll, setRoll] = useState(null), [gain, setGain] = useState(""), [done, setDone] = useState(null), [busy, setBusy] = useState(false);
+  // The difficulty the GM gives (optional): d100 − modifier under it and the Ward holds.
+  const [dc, setDc] = useState(cast.dc != null ? String(cast.dc) : "");
+  const dcN = dc === "" ? null : R.clamp(Math.round(num(dc)), 1, 200);
+  const holds = r => dcN == null ? null : r - st.mod < dcN;
   const plan = R.wardPlan(c, cast.cost, cast.o);
   const timer = useRef(0);
   useEffect(() => () => clearTimeout(timer.current), []);
   const go = async () => {
-    const r = await askRoll({ title: `Warding check: ${cast.name}`, dice: [{ n: 1, sides: 100 }], cancel: true, note: `d100 − ${st.mod}. The GM sets the DC; lower is better. A vague Ward can still go astray on a high roll.` });
+    const r = await askRoll({ title: `Warding check: ${cast.name}`, dice: [{ n: 1, sides: 100 }], cancel: true, note: dcN != null ? `d100 − ${st.mod}, under ${dcN} and the Ward holds.` : `d100 − ${st.mod}. The GM sets the DC; lower is better. A vague Ward can still go astray on a high roll.` });
     if (!r) return;
     setBusy(true); onPhase("casting");
-    timer.current = setTimeout(() => { setRoll(r[0]); setBusy(false); onPhase("cast"); }, reduceMotion() ? 120 : CAST_MS);
+    timer.current = setTimeout(() => { setRoll(r[0]); setBusy(false); onPhase(holds(r[0]) === false ? "fizzle" : "cast"); }, reduceMotion() ? 120 : CAST_MS);
   };
   const finish = () => {
     const f = R.wardFatigue(gain, cast.o);
@@ -9306,8 +9402,8 @@ function WardCast({ c, st, update, cast, onClose, onPhase }) {
       if (cast.o.epic && !cast.o.ritual) spend(7);
       const was = num(x.ward.fatigue); x.ward.fatigue = was + f;
       const what = cast.o.ritual ? `as a Ritual, ${plan.hours} h` : `${plan.ap} AP`;
-      x.ward.ledger = [{ id: rid(), t: Date.now(), n: cast.name, s: cast.sentence, sigils: cast.cost, how: what, roll: `${roll} − ${st.mod} = ${roll - st.mod}`, fatigue: f }, ...(x.ward.ledger || [])].slice(0, 20);
-      addLog(x, `Warding: inscribed ${cast.name} (${cast.cost} Sigils, ${what}; check ${roll} − ${st.mod} = ${roll - st.mod}; Fatigue +${f} → ${was + f})`);
+      x.ward.ledger = [{ id: rid(), t: Date.now(), n: cast.name, s: cast.sentence, sigils: cast.cost, how: what, roll: `${roll} − ${st.mod} = ${roll - st.mod}${dcN != null ? ` vs ${dcN}` : ""}`, held: holds(roll), fatigue: f }, ...(x.ward.ledger || [])].slice(0, 20);
+      addLog(x, `Warding: inscribed ${cast.name} (${cast.cost} Sigils, ${what}; check ${roll} − ${st.mod} = ${roll - st.mod}${dcN != null ? (holds(roll) ? ` under ${dcN}, it holds` : ` not under ${dcN}, it fails`) : ""}; Fatigue +${f} → ${was + f})`);
     });
     setDone(f); onPhase("");
   };
@@ -9317,8 +9413,10 @@ function WardCast({ c, st, update, cast, onClose, onPhase }) {
       <span class="muted">${cast.cost} Sigils · ${cast.o.ritual ? `${plan.hours} hour${plan.hours === 1 ? "" : "s"}` : `${plan.ap} AP`}${with_ ? ` · ${with_}` : ""}</span></p>
     ${done != null ? html`<p class="ptsavedok">Inscribed. Fatigue +${done}, now ${st.fatigue}. It's in the Ledger on the Wards page.</p><div class="row"><button class="btn primary" onClick=${onClose}>Back to the board</button></div>`
       : roll == null ? html`<div class="row">${busy ? html`<p class="wardchant" aria-live="polite">The Sigils take hold…</p>`
-          : html`<button class="btn primary" onClick=${go}>Roll the Warding check</button><button class="btn" onClick=${onClose}>Cancel</button>`}</div>`
-      : html`<div class="ptdice ok wardroll"><span class="d100">${roll}</span><span class="ptmath">${roll} − ${st.mod} = <b>${roll - st.mod}</b> · the GM says whether it holds</span></div>
+          : html`<div class="mini warddc"><label for="ward-dc">Difficulty</label><input id="ward-dc" type="number" min="1" max="200" placeholder="GM's DC" value=${dc} onInput=${e => setDc(e.target.value)} /></div>
+            <button class="btn primary" onClick=${go}>Roll the Warding check</button><button class="btn" onClick=${onClose}>Cancel</button>
+            <span class="muted warddchint">${dcN != null ? dcN + st.mod - 1 < 1 ? "No roll can hold at this difficulty." : dcN + st.mod - 1 >= 100 ? "Any roll holds at this difficulty." : `Roll ${dcN + st.mod - 1} or less to hold (${dcN + st.mod - 1}% chance).` : "Leave it empty if the GM keeps the DC to themselves."}</span>`}</div>`
+      : html`<div class=${"ptdice wardroll " + (holds(roll) === false ? "bad" : "ok")}><span class="d100">${roll}</span><span class="ptmath">${roll} − ${st.mod} = <b>${roll - st.mod}</b> · ${dcN == null ? "the GM says whether it holds" : holds(roll) ? `under ${dcN}: the Ward holds` : `not under ${dcN}: the Ward fails`}</span></div>
         <form class="row wardgain" onSubmit=${e => { e.preventDefault(); finish(); }}>
           <div class="mini"><label for="ward-gain">Fatigue gained (the GM decides)</label><input id="ward-gain" type="number" min="0" placeholder="0" value=${gain} onInput=${e => setGain(e.target.value)} /></div>
           <span class="muted">${cast.o.calm && !cast.o.ritual ? "No Fatigue: this inscription gains none." : cast.o.ritual ? "As a Ritual: under 10 becomes 1, 10 or more is halved." : cast.o.double ? "2× Sigils: it counts double." : ""}${num(gain) ? ` You gain ${R.wardFatigue(gain, cast.o)}.` : ""}</span>
@@ -9361,7 +9459,7 @@ function WardList({ c, st, update, toBoard }) {
       : html`<${FormulaForm} onCancel=${() => setAdding(false)} onSave=${v => { update(y => { y.ward.wards.push(Object.assign({ id: "d" + rid(), kind: "formulaic" }, v)); }); setAdding(false); }} />`}</div>
     ${(w.ledger || []).length > 0 && html`<h3 class="lbl wardsubh">Ledger</h3><div class="ptledger">${w.ledger.map((e, i) => html`<div class="pled">
       <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${e.n}</b><button class="iconbtn" aria-label="Remove this entry" onClick=${() => update(y => { y.ward.ledger.splice(i, 1); })}>×</button></div>
-      <small class="muted">${new Date(e.t).toLocaleString()} · ${e.sigils} Sigils · ${e.how} · check ${e.roll} · Fatigue +${e.fatigue}</small></div>`)}</div>`}
+      <small class="muted">${new Date(e.t).toLocaleString()} · ${e.sigils} Sigils · ${e.how} · check ${e.roll}${e.held === false ? " (failed)" : e.held ? " (held)" : ""} · Fatigue +${e.fatigue}</small></div>`)}</div>`}
   </section>`;
 }
 

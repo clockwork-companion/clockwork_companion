@@ -107,6 +107,14 @@ function WardWords({ c, st, update }) {
   pages[pages.length - 1].last = true;
   const per = narrow ? 1 : 2, spreads = Math.ceil(pages.length / per);
   const [at, setAt] = useState(0), [turn, setTurn] = useState("");
+  // The book can be shut (remembered per browser): then only its cover shows. Opening swings the cover over.
+  const [shut, setShut] = useState(() => !!lsGet("cw-tome-shut", false)), [swing, setSwing] = useState("");
+  const shutTo = v => {
+    if (swing) return; lsSet("cw-tome-shut", v);
+    if (reduceMotion()) { setShut(v); return; }
+    if (v) { setSwing("closing"); setTimeout(() => { setShut(true); setSwing(""); }, 1000); }
+    else { setShut(false); setSwing("opening"); setTimeout(() => setSwing(""), 1100); }
+  };
   const sp = Math.min(at, spreads - 1);
   const go = to => {
     to = R.clamp(to, 0, spreads - 1); if (to === sp || turn) return;
@@ -123,7 +131,7 @@ function WardWords({ c, st, update }) {
   };
   const shown = pages.slice(sp * per, sp * per + per);
   // A plain function, not a component, so a word half-written on a page survives the sheet refreshing.
-  const page = (p, n) => html`<div class=${"tomepage " + (n % 2 ? "recto" : "verso")} key=${n}>
+  const page = (p, n) => html`<div class=${"tomepage " + (n % 2 ? "verso" : "recto")} key=${n}>
     ${p.k === "grammar" ? html`<h3 class="tomeh">Grammar</h3>
       <p class="tomenote">Common words, at fixed costs.${st.lvl >= 9 ? " Shade of Erebus: Subjects and Adverbs cost less." : ""}</p>
       ${["subject", "adverb", "conj"].map(k => html`<${GrammarLine} k=${k} st=${st} w=${w} update=${update} />`)}`
@@ -141,20 +149,36 @@ function WardWords({ c, st, update }) {
         : html`<button type="button" class="tomenew" onClick=${() => setWriting(true)}>+ Write a new word</button>`}</div>`}`}
     <span class="tomefolio">${WARD_ROMAN(n)}</span>
   </div>`;
+  const seal = useMemo(() => Array.from({ length: 12 }, (_, i) => wardRune("seal" + i)), []);
+  const cover = html`<span class="tomecoverin">
+      <span class="tomecovert">Words of Power</span>
+      <svg class="tomeseal" viewBox="-60 -60 120 120" aria-hidden="true"><circle r="56" /><circle r="44" class="thin" />
+        ${seal.map((d, i) => html`<g transform=${`rotate(${i * 30}) translate(0 -50) scale(.5)`}><path d=${d} /></g>`)}
+        <g transform="scale(2.6)"><path class="big" d=${wardRune(c.name || "Warder")} /></g></svg>
+      <span class="tomecovern">${c.name ? `The book of ${c.name}` : "A warder's book"}</span>
+      <span class="tomecoverc">${w.words.length} word${w.words.length === 1 ? "" : "s"} written</span></span>
+    <i class="tomeclasp" aria-hidden="true"></i>`;
   return html`<section class="frame wardbook">
     <h2 class="h"><span>Words</span><i class="orn" aria-hidden="true"></i></h2>
     <p class="sub">Your book of words. Adjectives, verbs and nouns are Words of Power: your own understanding of a concept, each with its own Sigil cost. You learn them by Research or Blueprinting, the cost comes down as you study them, and no other warder can teach them to you.</p>
     ${!st.spontaneous && html`<p class="ptlocked">Words of Power go into Spontaneous Wards from Warding 5 (Works of a Writer). You can fill the book now.</p>`}
-    <div class=${"tome" + (narrow ? " single" : "") + (turn ? " turning " + turn : "")}>
+    <div class="tomedesk">
+    ${shut ? html`<div class=${"tome shut" + (narrow ? " single" : "")}>
+        <button type="button" class="tomecover" aria-label="Open the book" title="Open the book" onClick=${() => shutTo(false)}>${cover}</button></div>`
+    : html`<div class=${"tome" + (narrow ? " single" : "") + (turn ? " turning " + turn : "") + (swing ? " " + swing : "")}>
       <div class="tomepages">${shown.map((p, i) => page(p, sp * per + i + 1))}
-        ${!narrow && shown.length < 2 && html`<div class="tomepage verso blank"></div>`}</div>
+        ${!narrow && shown.length < 2 && html`<div class="tomepage recto blank"></div>`}</div>
+      <i class="tomeblock" aria-hidden="true"></i>
       ${turn && html`<i class=${"tomeleaf " + turn} aria-hidden="true"></i>`}
+      ${swing && html`<i class="tomecover flap" aria-hidden="true">${cover}</i>`}
       <button type="button" class="tomecorner prev" aria-label="Turn back a page" disabled=${sp === 0} onClick=${() => go(sp - 1)}></button>
       <button type="button" class="tomecorner next" aria-label="Turn the page" disabled=${sp >= spreads - 1} onClick=${() => go(sp + 1)}></button>
-    </div>
-    <div class="row tomenav"><button class="btn small" disabled=${sp === 0} onClick=${() => go(sp - 1)}>‹ Back</button>
+    </div>`}</div>
+    ${shut ? html`<div class="row tomenav shutnav"><button class="btn small primary" onClick=${() => shutTo(false)}>Open the book</button></div>`
+    : html`<div class="row tomenav"><button class="btn small" disabled=${sp === 0} onClick=${() => go(sp - 1)}>‹ Back</button>
       <span class="muted">${per === 2 ? `Pages ${sp * 2 + 1}–${Math.min(pages.length, sp * 2 + 2)}` : `Page ${sp + 1}`} of ${pages.length}</span>
-      <button class="btn small" disabled=${sp >= spreads - 1} onClick=${() => go(sp + 1)}>Turn ›</button></div>
+      <span class="row tomenavr"><button class="btn small" disabled=${!!swing} onClick=${() => shutTo(true)}>Close the book</button>
+      <button class="btn small" disabled=${sp >= spreads - 1} onClick=${() => go(sp + 1)}>Turn ›</button></span></div>`}
   </section>`;
 }
 // One line of the grammar page: its words (the book's and yours) and a place to write another.
@@ -287,6 +311,7 @@ function WardSigil({ tokens, ok, phase, svgRef, small }) {
     ${ok && html`<circle class="core" r="8" />`}
     ${flare > 0 && html`<circle class="shock" r="20" key=${"f" + flare} />`}
     ${phase === "cast" && html`<circle class="shock big" r="20" /><circle class="burst" r="14" />`}
+    ${phase === "fizzle" && html`<circle class="smoke" r="22" /><path class="crack" d="M-6 -70 L4 -38 L-8 -10 L6 18 L-4 46 L5 72" />`}
   </svg>`;
 }
 // The Active perks and inscribing as a Ritual. The perks only work on a Ward that isn't a Ritual Ward.
@@ -316,14 +341,18 @@ function WardCostBox({ st, plan, total, o }) {
 const CAST_MS = 2300;
 function WardCast({ c, st, update, cast, onClose, onPhase }) {
   const [roll, setRoll] = useState(null), [gain, setGain] = useState(""), [done, setDone] = useState(null), [busy, setBusy] = useState(false);
+  // The difficulty the GM gives (optional): d100 − modifier under it and the Ward holds.
+  const [dc, setDc] = useState(cast.dc != null ? String(cast.dc) : "");
+  const dcN = dc === "" ? null : R.clamp(Math.round(num(dc)), 1, 200);
+  const holds = r => dcN == null ? null : r - st.mod < dcN;
   const plan = R.wardPlan(c, cast.cost, cast.o);
   const timer = useRef(0);
   useEffect(() => () => clearTimeout(timer.current), []);
   const go = async () => {
-    const r = await askRoll({ title: `Warding check: ${cast.name}`, dice: [{ n: 1, sides: 100 }], cancel: true, note: `d100 − ${st.mod}. The GM sets the DC; lower is better. A vague Ward can still go astray on a high roll.` });
+    const r = await askRoll({ title: `Warding check: ${cast.name}`, dice: [{ n: 1, sides: 100 }], cancel: true, note: dcN != null ? `d100 − ${st.mod}, under ${dcN} and the Ward holds.` : `d100 − ${st.mod}. The GM sets the DC; lower is better. A vague Ward can still go astray on a high roll.` });
     if (!r) return;
     setBusy(true); onPhase("casting");
-    timer.current = setTimeout(() => { setRoll(r[0]); setBusy(false); onPhase("cast"); }, reduceMotion() ? 120 : CAST_MS);
+    timer.current = setTimeout(() => { setRoll(r[0]); setBusy(false); onPhase(holds(r[0]) === false ? "fizzle" : "cast"); }, reduceMotion() ? 120 : CAST_MS);
   };
   const finish = () => {
     const f = R.wardFatigue(gain, cast.o);
@@ -335,8 +364,8 @@ function WardCast({ c, st, update, cast, onClose, onPhase }) {
       if (cast.o.epic && !cast.o.ritual) spend(7);
       const was = num(x.ward.fatigue); x.ward.fatigue = was + f;
       const what = cast.o.ritual ? `as a Ritual, ${plan.hours} h` : `${plan.ap} AP`;
-      x.ward.ledger = [{ id: rid(), t: Date.now(), n: cast.name, s: cast.sentence, sigils: cast.cost, how: what, roll: `${roll} − ${st.mod} = ${roll - st.mod}`, fatigue: f }, ...(x.ward.ledger || [])].slice(0, 20);
-      addLog(x, `Warding: inscribed ${cast.name} (${cast.cost} Sigils, ${what}; check ${roll} − ${st.mod} = ${roll - st.mod}; Fatigue +${f} → ${was + f})`);
+      x.ward.ledger = [{ id: rid(), t: Date.now(), n: cast.name, s: cast.sentence, sigils: cast.cost, how: what, roll: `${roll} − ${st.mod} = ${roll - st.mod}${dcN != null ? ` vs ${dcN}` : ""}`, held: holds(roll), fatigue: f }, ...(x.ward.ledger || [])].slice(0, 20);
+      addLog(x, `Warding: inscribed ${cast.name} (${cast.cost} Sigils, ${what}; check ${roll} − ${st.mod} = ${roll - st.mod}${dcN != null ? (holds(roll) ? ` under ${dcN}, it holds` : ` not under ${dcN}, it fails`) : ""}; Fatigue +${f} → ${was + f})`);
     });
     setDone(f); onPhase("");
   };
@@ -346,8 +375,10 @@ function WardCast({ c, st, update, cast, onClose, onPhase }) {
       <span class="muted">${cast.cost} Sigils · ${cast.o.ritual ? `${plan.hours} hour${plan.hours === 1 ? "" : "s"}` : `${plan.ap} AP`}${with_ ? ` · ${with_}` : ""}</span></p>
     ${done != null ? html`<p class="ptsavedok">Inscribed. Fatigue +${done}, now ${st.fatigue}. It's in the Ledger on the Wards page.</p><div class="row"><button class="btn primary" onClick=${onClose}>Back to the board</button></div>`
       : roll == null ? html`<div class="row">${busy ? html`<p class="wardchant" aria-live="polite">The Sigils take hold…</p>`
-          : html`<button class="btn primary" onClick=${go}>Roll the Warding check</button><button class="btn" onClick=${onClose}>Cancel</button>`}</div>`
-      : html`<div class="ptdice ok wardroll"><span class="d100">${roll}</span><span class="ptmath">${roll} − ${st.mod} = <b>${roll - st.mod}</b> · the GM says whether it holds</span></div>
+          : html`<div class="mini warddc"><label for="ward-dc">Difficulty</label><input id="ward-dc" type="number" min="1" max="200" placeholder="GM's DC" value=${dc} onInput=${e => setDc(e.target.value)} /></div>
+            <button class="btn primary" onClick=${go}>Roll the Warding check</button><button class="btn" onClick=${onClose}>Cancel</button>
+            <span class="muted warddchint">${dcN != null ? dcN + st.mod - 1 < 1 ? "No roll can hold at this difficulty." : dcN + st.mod - 1 >= 100 ? "Any roll holds at this difficulty." : `Roll ${dcN + st.mod - 1} or less to hold (${dcN + st.mod - 1}% chance).` : "Leave it empty if the GM keeps the DC to themselves."}</span>`}</div>`
+      : html`<div class=${"ptdice wardroll " + (holds(roll) === false ? "bad" : "ok")}><span class="d100">${roll}</span><span class="ptmath">${roll} − ${st.mod} = <b>${roll - st.mod}</b> · ${dcN == null ? "the GM says whether it holds" : holds(roll) ? `under ${dcN}: the Ward holds` : `not under ${dcN}: the Ward fails`}</span></div>
         <form class="row wardgain" onSubmit=${e => { e.preventDefault(); finish(); }}>
           <div class="mini"><label for="ward-gain">Fatigue gained (the GM decides)</label><input id="ward-gain" type="number" min="0" placeholder="0" value=${gain} onInput=${e => setGain(e.target.value)} /></div>
           <span class="muted">${cast.o.calm && !cast.o.ritual ? "No Fatigue: this inscription gains none." : cast.o.ritual ? "As a Ritual: under 10 becomes 1, 10 or more is halved." : cast.o.double ? "2× Sigils: it counts double." : ""}${num(gain) ? ` You gain ${R.wardFatigue(gain, cast.o)}.` : ""}</span>
@@ -390,7 +421,7 @@ function WardList({ c, st, update, toBoard }) {
       : html`<${FormulaForm} onCancel=${() => setAdding(false)} onSave=${v => { update(y => { y.ward.wards.push(Object.assign({ id: "d" + rid(), kind: "formulaic" }, v)); }); setAdding(false); }} />`}</div>
     ${(w.ledger || []).length > 0 && html`<h3 class="lbl wardsubh">Ledger</h3><div class="ptledger">${w.ledger.map((e, i) => html`<div class="pled">
       <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${e.n}</b><button class="iconbtn" aria-label="Remove this entry" onClick=${() => update(y => { y.ward.ledger.splice(i, 1); })}>×</button></div>
-      <small class="muted">${new Date(e.t).toLocaleString()} · ${e.sigils} Sigils · ${e.how} · check ${e.roll} · Fatigue +${e.fatigue}</small></div>`)}</div>`}
+      <small class="muted">${new Date(e.t).toLocaleString()} · ${e.sigils} Sigils · ${e.how} · check ${e.roll}${e.held === false ? " (failed)" : e.held ? " (held)" : ""} · Fatigue +${e.fatigue}</small></div>`)}</div>`}
   </section>`;
 }
 
