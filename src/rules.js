@@ -128,7 +128,7 @@ const CW = (() => {
                 wounds: { light: 0, moderate: 0, mortal: 0 }, conditions: [] },
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
-      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
+      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
                brew: { bonus: 0, known: [], recipes: [], catalysts: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
                rune: { bonus: 0, effects: [], order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
@@ -160,6 +160,7 @@ const CW = (() => {
     ["supplies", "batch"].forEach(k => (out.craft[k] = Object.assign({}, b.craft[k], out.craft[k])));
     out.craft.recipe = Object.assign({ type: "rifle" }, out.craft.recipe);
     if (!Array.isArray(out.craft.ledger)) out.craft.ledger = [];
+    if (!Array.isArray(out.craft.parts)) out.craft.parts = [];   // custom Powdertinkering parts (coats, tips, areas, cores, statuses)
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
@@ -497,6 +498,28 @@ const CW = (() => {
     ["Hypothermia", "Cold", "Counts as having 1 stack of Exhaustion until resisted."],
   ];
   const PT_GRAMS = 200;
+  // The book's difficulty for each part, before Rating increments (custom parts may set their own).
+  const PT_BASE_DC = { coat: 60, tip: 40, area: 30, core: 40, status: 40 };
+  // The book's parts plus this character's custom ones (c.craft.parts: { k, part, n, what, dc, rated, el }), in the
+  // same shapes as COATS, TIPS, AREAS, ELEMENTS and STATUSES. dcs: the custom parts' own base difficulties.
+  function ptLists(c) {
+    const own = ((c.craft && c.craft.parts) || []).filter(x => x && x.n && PT_PARTS.includes(x.part));
+    const by = part => own.filter(x => x.part === part);
+    const book = new Set([...COATS.map(x => x[0]), ...TIPS.map(x => x[0]), ...AREAS.map(x => x[0]), ...ELEMENTS, ...STATUSES.map(x => x[0])]);
+    const fresh = x => !book.has(x.n);   // a custom part can't shadow one of the book's
+    const dcs = {}; own.forEach(x => (dcs[x.part + ":" + x.n] = num(x.dc) || PT_BASE_DC[x.part]));
+    const elements = [...ELEMENTS, ...by("core").filter(fresh).map(x => x.n)];
+    return {
+      coats: [...COATS, ...by("coat").filter(fresh).map(x => [x.n, x.what || "", true])],
+      tips: [...TIPS, ...by("tip").filter(fresh).map(x => [x.n, !!x.rated, x.what || "", true])],
+      areas: [...AREAS, ...by("area").filter(fresh).map(x => [x.n, x.what || "", true])],
+      elements,
+      cores: Object.fromEntries(by("core").filter(fresh).map(x => [x.n, x.what || ""])),
+      statuses: [...STATUSES, ...by("status").filter(x => fresh(x) && elements.includes(x.el)).map(x => [x.n, x.el, x.what || "", true])],
+      dcs, own,
+    };
+  }
+  const ptDc = (L, part, name) => L.dcs[part + ":" + name] || PT_BASE_DC[part];
 
   // What this character's Powdertinker level allows (perks Tinkerling → Master o' Munitions).
   function ptState(c) {
@@ -519,37 +542,38 @@ const CW = (() => {
     };
   }
   // Difficulty (in %) of a step. Tips: 40 − 5 per Rating increment above the base; Cores: 40 − 10 per increment.
-  function ptDifficulty(part, inc = 0) {
-    if (part === "coat") return 60;
-    if (part === "tip") return 40 - 5 * inc;
-    if (part === "area") return 30;
-    if (part === "core") return 40 - 10 * inc;
-    return 40;
+  // base: a custom part's own difficulty, which the increments then lower the same way.
+  function ptDifficulty(part, inc = 0, base) {
+    const b = base == null ? PT_BASE_DC[part] || 40 : num(base);
+    if (part === "tip") return b - 5 * inc;
+    if (part === "core") return b - 10 * inc;
+    return b;
   }
   // Chance that d100 (1–100) − mod lands below dc.
   const ptChance = (dc, mod) => clamp(dc + mod - 1, 0, 100);
   // The steps a recipe needs, in crafting order. A recipe: { type, coat, tips: {Precise: inc, …}, area: {k, cone}, core: {el, inc}, status: [names] }.
   function ptSteps(c, rc) {
-    const st = ptState(c), type = rc.type, steps = [];
+    const st = ptState(c), type = rc.type, steps = [], L = ptLists(c);
     const can = p => ptAccess(type, p) && st.unlock[p];
     const m = MUNITION[type] || MUNITIONS[0];
-    const coat = can("coat") ? rc.coat || "Piercing" : "Piercing";
-    steps.push({ part: "coat", key: "coat", label: m.shape === "grenade" ? "Casing" : m.shape === "flask" ? "Base oil" : `${coat} coat`, dc: 60, mat: "container" });
-    if (can("tip")) TIPS.forEach(([k, rated]) => {
+    const coat = can("coat") && L.coats.some(x => x[0] === rc.coat) ? rc.coat : "Piercing";
+    const plain = m.shape === "grenade" || m.shape === "flask";
+    steps.push({ part: "coat", key: "coat", label: m.shape === "grenade" ? "Casing" : m.shape === "flask" ? "Base oil" : `${coat} coat`, dc: plain ? 60 : ptDc(L, "coat", coat), mat: "container" });
+    if (can("tip")) L.tips.forEach(([k, rated]) => {
       const inc = rc.tips && rc.tips[k];
       if (inc == null || inc === false) return;
       const i = rated ? num(inc) : 0;
-      steps.push({ part: "tip", key: "tip:" + k, label: rated ? `${k} (${st.base.tip + i})` : k, dc: ptDifficulty("tip", i), mat: "container", name: k, rating: rated ? st.base.tip + i : null });
+      steps.push({ part: "tip", key: "tip:" + k, label: rated ? `${k} (${st.base.tip + i})` : k, dc: ptDifficulty("tip", i, ptDc(L, "tip", k)), mat: "container", name: k, rating: rated ? st.base.tip + i : null });
     });
     const area = rc.area && rc.area.k;
-    if (area && can("area") && !(m.shape === "grenade" && area === "Sphere"))
-      steps.push({ part: "area", key: "area", label: `${area === "Cone" ? `Cone ${rc.area.cone || 60}°` : area} (${st.base.area})`, dc: 30, mat: "container", name: area, rating: st.base.area });
+    if (area && can("area") && L.areas.some(x => x[0] === area) && !(m.shape === "grenade" && area === "Sphere"))
+      steps.push({ part: "area", key: "area", label: `${area === "Cone" ? `Cone ${rc.area.cone || 60}°` : area} (${st.base.area})`, dc: ptDc(L, "area", area), mat: "container", name: area, rating: st.base.area });
     const core = rc.core && rc.core.el;
-    if (core && can("core")) {
+    if (core && can("core") && L.elements.includes(core)) {
       const i = num(rc.core.inc);
-      steps.push({ part: "core", key: "core", label: `${core} core (${st.base.core + i})`, dc: ptDifficulty("core", i), mat: core, name: core, rating: st.base.core + i });
-      if (can("status")) (rc.status || []).forEach(s => { const S = STATUSES.find(x => x[0] === s); if (S && S[1] === core)
-        steps.push({ part: "status", key: "status:" + s, label: `${s} (${st.base.status})`, dc: 40, mat: core, name: s, rating: st.base.status }); });
+      steps.push({ part: "core", key: "core", label: `${core} core (${st.base.core + i})`, dc: ptDifficulty("core", i, ptDc(L, "core", core)), mat: core, name: core, rating: st.base.core + i });
+      if (can("status")) (rc.status || []).forEach(s => { const S = L.statuses.find(x => x[0] === s); if (S && S[1] === core)
+        steps.push({ part: "status", key: "status:" + s, label: `${s} (${st.base.status})`, dc: ptDc(L, "status", s), mat: core, name: s, rating: st.base.status }); });
     }
     steps.forEach(s => (s.chance = ptChance(s.dc, st.mod)));
     return steps;
@@ -851,7 +875,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
+           PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
            BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allCatalysts, allBrews, findBrew, brewOne, brewPlan,

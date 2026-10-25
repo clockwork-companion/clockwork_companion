@@ -58,6 +58,9 @@ jobs:
       - name: Crafting appears only with crafting skills
         run: python3 tests/craft_unlock.py "$RUNNER_TEMP/site"
 
+      - name: Custom Powdertinkering parts
+        run: python3 tests/powder_custom.py "$RUNNER_TEMP/site" smoke-shots
+
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v6
