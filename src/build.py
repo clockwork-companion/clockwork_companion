@@ -102,6 +102,8 @@ if __name__ == "__main__":
             shutil.copy(HERE / "web" / f, d / f)
         if (HERE / "web" / "egg").is_dir():   # art and sound for the hidden games
             shutil.copytree(HERE / "web" / "egg", d / "egg", dirs_exist_ok=True)
+        if (HERE / "web" / "art").is_dir():   # the 2021 rulebook's paintings, behind the perk cards
+            shutil.copytree(HERE / "web" / "art", d / "art", dirs_exist_ok=True)
         (d / "manifest.webmanifest").write_text(manifest("--dev" in a))
         version = hashlib.sha256((d / "index.html").read_bytes()).hexdigest()[:12]
         (d / "sw.js").write_text(read("web/sw.js").replace("__BUILD_VERSION__", version))
