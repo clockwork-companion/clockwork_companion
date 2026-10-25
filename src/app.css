@@ -2873,4 +2873,90 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @media (prefers-reduced-motion: reduce) {
   .drstars circle, .drmist, .draurora path, .drbubble, .drsphere circle, .dvorb { animation: none !important; }
 }
+
+/* ===== Magic: Alchemy (magic-alchemy.js) ===== */
+.alchemy { display: grid; gap: 0; }
+.alchfig { width: 100%; overflow: visible; }
+.alchfig .alayer, .alchfig .alayer * { fill: none; stroke: var(--ink); stroke-width: 1; stroke-linejoin: round; stroke-linecap: round; }
+.alchfig .alayer.signs path, .alchfig .alayer.sign { stroke-width: 1.4; }
+.alchfig .aglow { fill: none; }
+.alchfig.big { max-width: 380px; }
+.alchfig.big .alayer { animation: alayerIn .5s ease-out both; }
+@keyframes alayerIn { from { opacity: 0; } }
+/* activation: the layers light from the outside in, arcs of energy run round, a flash */
+.alchfig.active .alayer, .alchfig.active .alayer * { stroke: #8fe3ff; filter: drop-shadow(0 0 3px #8fe3ff); animation: alayerLight .9s calc(var(--i) * 90ms) ease-out both; }
+@keyframes alayerLight { from { stroke: var(--ink); filter: none; } 40% { stroke: #fff; filter: drop-shadow(0 0 7px #bff2ff); } }
+.alchfig.active .aglow { fill: #8fe3ff; opacity: .12; animation: aglow 2.2s ease-out both; }
+@keyframes aglow { 0% { opacity: 0; } 30% { opacity: .3; } 100% { opacity: 0; } }
+.aarcs path { fill: none; stroke: #e8fbff; stroke-width: 1.6; stroke-dasharray: 260; stroke-dashoffset: 260; filter: drop-shadow(0 0 4px #8fe3ff); animation: aarc .5s calc(.6s + var(--i) * .16s) ease-out forwards, aarcOff .3s calc(1.2s + var(--i) * .16s) ease-in forwards; }
+@keyframes aarc { to { stroke-dashoffset: 0; } }
+@keyframes aarcOff { to { opacity: 0; } }
+.aflash { fill: #fff; transform-box: fill-box; transform-origin: center; animation: aflash .8s 1.4s ease-out both; }
+@keyframes aflash { from { opacity: 0; transform: scale(.3); } 25% { opacity: .9; } to { opacity: 0; transform: scale(3.4); } }
+.alchfig.fail .alayer, .alchfig.fail .alayer * { stroke: var(--bad); animation: afail .5s ease-in-out 3; }
+@keyframes afail { 50% { transform: translate(1.5px, -1px); opacity: .6; } }
+.alchbench.active { box-shadow: 0 0 30px #8fe3ff44; }
+/* the circle book */
+.alchshelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.alchthumb { display: grid; gap: 4px; justify-items: center; padding: 10px 8px; border: 1.5px solid var(--rule); background: var(--card); color: var(--ink); cursor: pointer; text-align: center; }
+.alchthumb .alchfig { width: 90px; }
+.alchthumb b { font: 400 15px var(--f-display); }
+.alchthumb small { color: var(--ink-3); font-size: 12px; }
+.alchthumb.on { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass); }
+.alchthumb.sig { background: color-mix(in srgb, var(--brass-soft) 50%, var(--card)); }
+.alchthumb.new { border-style: dashed; color: var(--ink-3); align-content: center; min-height: 140px; }
+.alchthumb.new span { font-size: 32px; line-height: 1; }
+/* the workbench */
+.alchstage { display: grid; grid-template-columns: minmax(240px, 380px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.alchview { display: grid; justify-items: center; gap: 6px; }
+.alchsig { margin: 0; font: 600 12px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--brass); }
+.alchdesign { display: grid; gap: 10px; min-width: 0; }
+.alchmeta { gap: 10px; flex-wrap: wrap; }
+.alchmeta .grow { flex: 1 1 200px; }
+.alchmeta input { width: 100%; box-sizing: border-box; }
+.alchsizes { display: flex; flex-wrap: wrap; gap: 4px; }
+.alchsize { padding: 3px 9px; border: 1px solid var(--rule); background: var(--card); color: var(--ink); cursor: pointer; font-size: 12.5px; border-radius: 999px; }
+.alchsize.on { border-color: var(--brass); background: var(--brass-soft); font-weight: 600; }
+.alchtimes { margin: 0; font-size: 13.5px; }
+.alchlayers { display: grid; gap: 6px; }
+.alchlayer { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--hair); background: var(--card); animation: inkIn .3s ease-out both; }
+.alchlayer > b { font: 600 12px var(--f-head); letter-spacing: .06em; text-transform: uppercase; min-width: 7em; }
+.alchlayer .ptstepper { gap: 4px; align-items: center; }
+.alchlayer .ptstepper b { min-width: 2.2ch; text-align: center; font: 600 13px var(--f-mono); }
+.alchlayeracts { margin-left: auto; display: flex; gap: 4px; }
+.alchsyms { display: flex; flex-wrap: wrap; gap: 3px; }
+.alchsym { width: 26px; height: 26px; padding: 0; display: grid; place-items: center; border: 1px solid var(--hair); background: var(--card); color: var(--ink); cursor: pointer; font-size: 15px; }
+.alchsym svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.alchsym.on { border-color: var(--brass); background: var(--brass-soft); }
+.alchadd { gap: 6px; flex-wrap: wrap; align-items: center; }
+.alchsave { gap: 10px; align-items: center; flex-wrap: wrap; }
+.alchuse { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--rule); display: grid; gap: 8px; }
+.alchuse p { margin: 0; font-size: 13.5px; }
+.alchenergy { font-size: 14px; }
+.alchenergy b { font: 600 20px var(--f-mono); color: var(--good); }
+/* arrays */
+.alcharraystage { display: grid; grid-template-columns: minmax(160px, 220px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.alchbody { width: 100%; max-width: 220px; }
+.abody { fill: color-mix(in srgb, var(--ink) 10%, var(--card)); stroke: color-mix(in srgb, var(--ink) 45%, transparent); stroke-width: 1.2; stroke-linejoin: round; }
+.aslot { cursor: pointer; outline: none; }
+.aslotbg { fill: var(--card); stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.aslot.has .aslotbg { stroke: var(--brass); stroke-dasharray: none; }
+.aslot.done .aslotbg { stroke: #8fe3ff; stroke-width: 2; filter: drop-shadow(0 0 4px #8fe3ff); }
+.aslot.sel .aslotbg, .aslot:focus-visible .aslotbg { stroke-width: 2.4; }
+.aslot.joined { opacity: .45; }
+.aslot .alayer, .aslot .alayer * { fill: none; stroke: var(--ink); stroke-width: 6; }
+.alcharraylist { display: grid; gap: 6px; }
+.alcharray { border: 1px solid var(--hair); background: var(--card); }
+.alcharray.sel { border-color: var(--brass); }
+.alcharrayh { width: 100%; display: flex; justify-content: space-between; gap: 10px; align-items: baseline; padding: 8px 10px; border: 0; background: none; color: var(--ink); cursor: pointer; text-align: left; }
+.alcharrayh small { color: var(--ink-3); font-size: 12.5px; }
+.alcharrayedit { padding: 0 10px 10px; display: grid; gap: 8px; }
+@media (max-width: 760px) {
+  .alchstage, .alcharraystage { grid-template-columns: minmax(0, 1fr); }
+  .alchfig.big { max-width: 290px; justify-self: center; }
+  .alchbody { justify-self: center; max-width: 170px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .alchfig .alayer, .alchfig .alayer *, .aarcs path, .aflash, .alchfig .aglow { animation: none !important; }
+}
 </style>
