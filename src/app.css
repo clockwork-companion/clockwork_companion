@@ -376,44 +376,39 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .meter .ctl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .meter .ctl input { width: 64px; border: 1.5px solid var(--hair); background: var(--paper); padding: 3px 6px; font-family: var(--f-mono); }
 .meter .note { font-size: 12.5px; color: var(--ink-2); }
-/* rest: the big red button (long rest) and a smaller brass one (short rest), each sunk in a metal bezel.
-   Pressing sinks the cap; a long rest needs a second press (the cap glows while it waits). After a rest a warm glow
-   spreads from the buttons and the bars it refilled light up one after another, each with the amount it gained. */
-.restbay { position: relative; overflow: hidden; }
-.restrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; align-items: center; }
-.restopt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
-.restwhat { font-size: 13.5px; color: var(--ink-2); line-height: 1.45; }
-.restwhat b { color: var(--ink); font-family: var(--f-head); letter-spacing: .06em; text-transform: uppercase; font-size: 13px; }
-.armnote { color: var(--bad); font-style: normal; font-weight: 600; }
-.bezel { --cap: var(--blood); --size: 108px; width: calc(var(--size) + 18px); height: calc(var(--size) + 18px); border-radius: 50%; display: grid; place-items: center;
-  background: radial-gradient(circle at 50% 30%, #f2f2f2, #9a9a9a 55%, #5a5a5a); box-shadow: inset 0 2px 3px rgb(255 255 255 / .6), inset 0 -3px 6px rgb(0 0 0 / .45), 0 3px 8px rgb(0 0 0 / .35); }
-.restopt.short .bezel { --cap: var(--brass); --size: 74px; }
-.restbtn { width: var(--size); height: var(--size); border-radius: 50%; border: 0; padding: 0; cursor: pointer; position: relative; color: #fff;
-  background: radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--cap) 55%, #fff) 0, var(--cap) 46%, color-mix(in srgb, var(--cap) 62%, #000) 100%);
-  box-shadow: 0 7px 0 color-mix(in srgb, var(--cap) 45%, #000), 0 10px 14px rgb(0 0 0 / .35), inset 0 -5px 10px rgb(0 0 0 / .25), inset 0 4px 6px rgb(255 255 255 / .35);
-  transform: translateY(-5px); transition: transform .09s ease-out, box-shadow .09s ease-out, filter .2s; -webkit-tap-highlight-color: transparent; }
-.restbtn span { font: 800 15px/1.05 var(--f-head); letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 1px 0 rgb(0 0 0 / .45), 0 0 8px rgb(0 0 0 / .2); pointer-events: none; }
-.restbtn.short span { font-size: 11.5px; }
-.restbtn:hover { filter: brightness(1.08); }
-.restbtn:focus-visible { outline: 3px solid var(--brass); outline-offset: 6px; }
-.restbtn:active, .restbtn.pressed { transform: translateY(2px);
-  box-shadow: 0 0 0 color-mix(in srgb, var(--cap) 45%, #000), 0 2px 4px rgb(0 0 0 / .35), inset 0 -2px 6px rgb(0 0 0 / .2), inset 0 5px 12px rgb(0 0 0 / .4); }
-.restbtn.pressed { animation: capSpring .5s cubic-bezier(.3, 1.6, .5, 1) .14s both; }
-@keyframes capSpring { from { transform: translateY(2px); } to { transform: translateY(-5px); } }
-.restopt.armed .restbtn { animation: capArm 1.1s ease-in-out infinite; }
-@keyframes capArm { 0%, 100% { filter: brightness(1); box-shadow: 0 7px 0 color-mix(in srgb, var(--cap) 45%, #000), 0 0 0 0 color-mix(in srgb, var(--cap) 60%, transparent), inset 0 4px 6px rgb(255 255 255 / .35); }
-  50% { filter: brightness(1.25); box-shadow: 0 7px 0 color-mix(in srgb, var(--cap) 45%, #000), 0 0 0 10px color-mix(in srgb, var(--cap) 0%, transparent), 0 0 26px color-mix(in srgb, var(--cap) 70%, transparent), inset 0 4px 6px rgb(255 255 255 / .35); } }
-.restbay.rejuv::after { content: ""; position: absolute; left: 70px; top: 120px; width: 40px; height: 40px; margin: -20px; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, color-mix(in srgb, var(--good) 45%, transparent), color-mix(in srgb, var(--brass) 25%, transparent) 45%, transparent 70%);
-  animation: restWave 1.3s ease-out both; }
-@keyframes restWave { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(30); opacity: 0; } }
+/* rest: two plates in the sheet's card style (the perk boxes' offset shadow, the theme's own colours), each marked with
+   the rulebook's rest tent. Press and hold: the plate sinks onto its shadow, a fill sweeps across it, and when full
+   it stamps down; the bars it refilled then light up one after another with what they gained. */
+.restrow { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
+.restplate { --hold: 0; position: relative; overflow: hidden; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center;
+  padding: 14px 16px; text-align: left; color: var(--ink); background: var(--card); border: 1.5px solid var(--rule); cursor: pointer;
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--ink) 28%, transparent); transition: transform .08s ease-out, box-shadow .08s ease-out;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; font: inherit; }
+.restplate.long { border-width: 2px; }
+.restplate:hover { border-color: var(--brass); }
+.restplate:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+.restplate.holding { transform: translate(2px, 2px); box-shadow: 1px 1px 0 color-mix(in srgb, var(--ink) 28%, transparent); }
+.rpfill { position: absolute; inset: 0; transform-origin: left; transform: scaleX(var(--hold)); pointer-events: none;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--brass) 22%, transparent), color-mix(in srgb, var(--brass) 38%, transparent)); }
+.restplate.long .rpfill { background: linear-gradient(90deg, color-mix(in srgb, var(--blood) 16%, transparent), color-mix(in srgb, var(--blood) 32%, transparent)); }
+.rpicon, .rptext, .rphold { position: relative; }
+.rpicon { width: 52px; height: 52px; display: grid; place-items: center; background: var(--paper); border: 1.5px solid var(--hair); box-shadow: 2px 2px 0 color-mix(in srgb, var(--ink) 12%, transparent); position: relative; }
+.rpicon svg { width: 30px; height: 30px; fill: none; stroke: var(--brass); stroke-width: 1.3; stroke-linejoin: round; }
+.restplate.long .rpicon svg { stroke: var(--blood); }
+.rpicon b { position: absolute; right: 3px; bottom: 1px; font: 700 12px/1 var(--f-mono); color: var(--ink-2); }
+.rptext { display: grid; gap: 2px; min-width: 0; }
+.rptext b { font: 700 16px/1.1 var(--f-head); letter-spacing: .1em; text-transform: uppercase; }
+.rptext small { font-size: 12px; color: var(--ink-3); }
+.rptext span { font-size: 13.5px; color: var(--ink-2); line-height: 1.4; }
+.rphold { font: 600 10.5px var(--f-head); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); padding: 3px 7px; border: 1px dashed var(--hair); opacity: calc(1 - var(--hold)); }
+.restplate.stamped { animation: plateStamp .45s cubic-bezier(.3, 1.4, .5, 1) both; }
+.restplate.stamped .rpicon { animation: bump .4s cubic-bezier(.3, 1.5, .5, 1) .05s both; }
+.restplate.stamped::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--good) 40%, #fff) 50%, transparent); animation: fxSweep .8s ease-out both; }
+@keyframes plateStamp { 0% { transform: translate(3px, 3px) scale(.985); box-shadow: 0 0 0 transparent; } 100% { transform: none; } }
 .restlog { margin-top: 12px; }
 .restlog summary { cursor: pointer; font: 600 12px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
 .restlog .log { margin-top: 6px; }
-@media (max-width: 640px) {
-  .restrow { grid-template-columns: minmax(0, 1fr); }
-  .bezel { --size: 92px; } .restopt.short .bezel { --size: 66px; }
-}
+@media (max-width: 640px) { .restrow { grid-template-columns: minmax(0, 1fr); } .rphold { display: none; } }
 .meter { position: relative; }
 .gainfloat { position: absolute; left: calc(50% - 18px); top: 30px; font: 800 18px var(--f-mono); pointer-events: none; text-shadow: 0 1px 0 var(--card), 0 0 6px var(--card);
   animation: gainUp 1.3s ease-out both; }
