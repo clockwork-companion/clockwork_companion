@@ -1172,6 +1172,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .ptagain { justify-content: center; gap: 8px; }
 .ptopt.row-opt:has(.brdel) { grid-template-columns: minmax(0, 1fr) auto auto; }
 .ptopt.row-opt .brdel { margin-right: 6px; }
+.ptopt.row-opt:has(.ptdel) { grid-template-columns: minmax(0, 1fr) auto auto; }
+.ptopt.row-opt .ptdel { margin-right: 6px; }
 .ptread { width: 100%; max-width: 470px; border: 1.5px solid var(--rule); background: var(--card); padding: 12px 14px; display: grid; gap: 10px; }
 .ptstep { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; } .ptstep b { flex: 1; font: 600 15px var(--f-head); letter-spacing: .05em; text-transform: uppercase; min-width: 0; }
 .ptdet { display: inline-flex; gap: 6px; }
@@ -2282,6 +2284,21 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .sigil { opacity: calc(var(--o) * 1.5); }
 :is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .hovercard { background: #2b1c0f; color: #f6ecd2; border-top-color: #c9483c; }
 :is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .hovercard em { color: #f0c7a8; }
+/* Powdertinkering: saved recipes (chips above the munitions) and the save box after a craft. */
+.ptsaved { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 16px 0 -2px; }
+.ptsaved .lbl { flex: 0 0 100%; }
+.ptsavedchip { display: inline-flex; align-items: center; gap: 2px; }
+.ptsaved .ptsavedchip.on .btn, .ptsaved .ptsavedchip .btn[aria-pressed="true"] { background: var(--brass); border-color: var(--brass); color: var(--brass-ink); }
+.ptsavedchip .iconbtn { width: 24px; height: 24px; font-size: 14px; }
+.ptsave { display: grid; gap: 6px; text-align: left; margin: 4px 0; }
+.ptsave .row { flex-wrap: nowrap; }
+.ptsave .inp { flex: 1 1 auto; min-width: 0; }
+.ptsavedok { font-size: 13px; color: var(--good); margin: 0; }
+/* Powdertinkering: custom parts (a tag, a remove button, the add form). */
+.ptaddbox { display: grid; }
+.ptaddbox:empty, .ptratebox:empty { display: none; }
+.ptaddown { justify-self: start; margin-top: 8px; }
+.ptform { margin-top: 8px; }
 </style>
 <div id="app"></div>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
@@ -2762,7 +2779,7 @@ const CW = (() => {
                 wounds: { light: 0, moderate: 0, mortal: 0 }, conditions: [] },
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
-      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
+      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
                brew: { bonus: 0, known: [], recipes: [], catalysts: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
                rune: { bonus: 0, effects: [], order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
@@ -2794,6 +2811,8 @@ const CW = (() => {
     ["supplies", "batch"].forEach(k => (out.craft[k] = Object.assign({}, b.craft[k], out.craft[k])));
     out.craft.recipe = Object.assign({ type: "rifle" }, out.craft.recipe);
     if (!Array.isArray(out.craft.ledger)) out.craft.ledger = [];
+    if (!Array.isArray(out.craft.parts)) out.craft.parts = [];   // custom Powdertinkering parts (coats, tips, areas, cores, statuses)
+    if (!Array.isArray(out.craft.saved)) out.craft.saved = [];   // saved Powdertinkering recipes: { k, n, recipe }
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
@@ -3131,6 +3150,28 @@ const CW = (() => {
     ["Hypothermia", "Cold", "Counts as having 1 stack of Exhaustion until resisted."],
   ];
   const PT_GRAMS = 200;
+  // The book's difficulty for each part, before Rating increments (custom parts may set their own).
+  const PT_BASE_DC = { coat: 60, tip: 40, area: 30, core: 40, status: 40 };
+  // The book's parts plus this character's custom ones (c.craft.parts: { k, part, n, what, dc, rated, el }), in the
+  // same shapes as COATS, TIPS, AREAS, ELEMENTS and STATUSES. dcs: the custom parts' own base difficulties.
+  function ptLists(c) {
+    const own = ((c.craft && c.craft.parts) || []).filter(x => x && x.n && PT_PARTS.includes(x.part));
+    const by = part => own.filter(x => x.part === part);
+    const book = new Set([...COATS.map(x => x[0]), ...TIPS.map(x => x[0]), ...AREAS.map(x => x[0]), ...ELEMENTS, ...STATUSES.map(x => x[0])]);
+    const fresh = x => !book.has(x.n);   // a custom part can't shadow one of the book's
+    const dcs = {}; own.forEach(x => (dcs[x.part + ":" + x.n] = num(x.dc) || PT_BASE_DC[x.part]));
+    const elements = [...ELEMENTS, ...by("core").filter(fresh).map(x => x.n)];
+    return {
+      coats: [...COATS, ...by("coat").filter(fresh).map(x => [x.n, x.what || "", true])],
+      tips: [...TIPS, ...by("tip").filter(fresh).map(x => [x.n, !!x.rated, x.what || "", true])],
+      areas: [...AREAS, ...by("area").filter(fresh).map(x => [x.n, x.what || "", true])],
+      elements,
+      cores: Object.fromEntries(by("core").filter(fresh).map(x => [x.n, x.what || ""])),
+      statuses: [...STATUSES, ...by("status").filter(x => fresh(x) && elements.includes(x.el)).map(x => [x.n, x.el, x.what || "", true])],
+      dcs, own,
+    };
+  }
+  const ptDc = (L, part, name) => L.dcs[part + ":" + name] || PT_BASE_DC[part];
 
   // What this character's Powdertinker level allows (perks Tinkerling → Master o' Munitions).
   function ptState(c) {
@@ -3153,37 +3194,38 @@ const CW = (() => {
     };
   }
   // Difficulty (in %) of a step. Tips: 40 − 5 per Rating increment above the base; Cores: 40 − 10 per increment.
-  function ptDifficulty(part, inc = 0) {
-    if (part === "coat") return 60;
-    if (part === "tip") return 40 - 5 * inc;
-    if (part === "area") return 30;
-    if (part === "core") return 40 - 10 * inc;
-    return 40;
+  // base: a custom part's own difficulty, which the increments then lower the same way.
+  function ptDifficulty(part, inc = 0, base) {
+    const b = base == null ? PT_BASE_DC[part] || 40 : num(base);
+    if (part === "tip") return b - 5 * inc;
+    if (part === "core") return b - 10 * inc;
+    return b;
   }
   // Chance that d100 (1–100) − mod lands below dc.
   const ptChance = (dc, mod) => clamp(dc + mod - 1, 0, 100);
   // The steps a recipe needs, in crafting order. A recipe: { type, coat, tips: {Precise: inc, …}, area: {k, cone}, core: {el, inc}, status: [names] }.
   function ptSteps(c, rc) {
-    const st = ptState(c), type = rc.type, steps = [];
+    const st = ptState(c), type = rc.type, steps = [], L = ptLists(c);
     const can = p => ptAccess(type, p) && st.unlock[p];
     const m = MUNITION[type] || MUNITIONS[0];
-    const coat = can("coat") ? rc.coat || "Piercing" : "Piercing";
-    steps.push({ part: "coat", key: "coat", label: m.shape === "grenade" ? "Casing" : m.shape === "flask" ? "Base oil" : `${coat} coat`, dc: 60, mat: "container" });
-    if (can("tip")) TIPS.forEach(([k, rated]) => {
+    const coat = can("coat") && L.coats.some(x => x[0] === rc.coat) ? rc.coat : "Piercing";
+    const plain = m.shape === "grenade" || m.shape === "flask";
+    steps.push({ part: "coat", key: "coat", label: m.shape === "grenade" ? "Casing" : m.shape === "flask" ? "Base oil" : `${coat} coat`, dc: plain ? 60 : ptDc(L, "coat", coat), mat: "container" });
+    if (can("tip")) L.tips.forEach(([k, rated]) => {
       const inc = rc.tips && rc.tips[k];
       if (inc == null || inc === false) return;
       const i = rated ? num(inc) : 0;
-      steps.push({ part: "tip", key: "tip:" + k, label: rated ? `${k} (${st.base.tip + i})` : k, dc: ptDifficulty("tip", i), mat: "container", name: k, rating: rated ? st.base.tip + i : null });
+      steps.push({ part: "tip", key: "tip:" + k, label: rated ? `${k} (${st.base.tip + i})` : k, dc: ptDifficulty("tip", i, ptDc(L, "tip", k)), mat: "container", name: k, rating: rated ? st.base.tip + i : null });
     });
     const area = rc.area && rc.area.k;
-    if (area && can("area") && !(m.shape === "grenade" && area === "Sphere"))
-      steps.push({ part: "area", key: "area", label: `${area === "Cone" ? `Cone ${rc.area.cone || 60}°` : area} (${st.base.area})`, dc: 30, mat: "container", name: area, rating: st.base.area });
+    if (area && can("area") && L.areas.some(x => x[0] === area) && !(m.shape === "grenade" && area === "Sphere"))
+      steps.push({ part: "area", key: "area", label: `${area === "Cone" ? `Cone ${rc.area.cone || 60}°` : area} (${st.base.area})`, dc: ptDc(L, "area", area), mat: "container", name: area, rating: st.base.area });
     const core = rc.core && rc.core.el;
-    if (core && can("core")) {
+    if (core && can("core") && L.elements.includes(core)) {
       const i = num(rc.core.inc);
-      steps.push({ part: "core", key: "core", label: `${core} core (${st.base.core + i})`, dc: ptDifficulty("core", i), mat: core, name: core, rating: st.base.core + i });
-      if (can("status")) (rc.status || []).forEach(s => { const S = STATUSES.find(x => x[0] === s); if (S && S[1] === core)
-        steps.push({ part: "status", key: "status:" + s, label: `${s} (${st.base.status})`, dc: 40, mat: core, name: s, rating: st.base.status }); });
+      steps.push({ part: "core", key: "core", label: `${core} core (${st.base.core + i})`, dc: ptDifficulty("core", i, ptDc(L, "core", core)), mat: core, name: core, rating: st.base.core + i });
+      if (can("status")) (rc.status || []).forEach(s => { const S = L.statuses.find(x => x[0] === s); if (S && S[1] === core)
+        steps.push({ part: "status", key: "status:" + s, label: `${s} (${st.base.status})`, dc: ptDc(L, "status", s), mat: core, name: s, rating: st.base.status }); });
     }
     steps.forEach(s => (s.chance = ptChance(s.dc, st.mod)));
     return steps;
@@ -3485,7 +3527,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
+           PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
            BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allCatalysts, allBrews, findBrew, brewOne, brewPlan,
@@ -3685,6 +3727,8 @@ const RULES_INFO = {
     { h: "Each part is one roll" }, { ul: ["Modifier = 3% × Powdertinker, plus any item bonus.", "Roll d100 and subtract the modifier. Under the part's difficulty, it holds.", "Each attempt uses 200 g: container materials for Coats, Tips and Areas; element solution for Cores and Status."] },
     { t: { cols: ["Part", "Difficulty", "Rating"], rows: [["Coat (always first)", "60%", "—"], ["Tip (several)", "40%, −5% per step above base", "Powdertinker"], ["Area (one)", "30%", "Powdertinker"], ["Core (one element)", "40%, −10% per step above base", "Powdertinker ÷ 2"], ["Status (match the Core)", "40%", "Powdertinker ÷ 2"]] } },
     { h: "Failures" }, { ul: ["A failed roll loses its materials and gives the batch a Detriment (the GM decides what). You may try the same part again.", "Powdertinker 3 lets you fail once; Powdertinker 6, twice. One more scraps the batch and everything in it."] },
+    { h: "Saved recipes" }, { ul: ["After a craft, name it and click \"Save recipe\". It appears under Saved recipes above the munitions.", "One click on a saved recipe puts every part back: the munition, coat, tips, area, core and statuses.", "Ammo made from a saved recipe, with every part holding, goes into the inventory under its name. Change any part and it's a new recipe again.", "Saving under a name that already exists updates that recipe; × deletes one."] },
+    { h: "Your own parts" }, { ul: ["Each part has \"+ A custom …\" under the book's choices: give it a name, what it does and its difficulty.", "A custom Tip can have a Rating (each +1 makes it 5% harder); a custom Core is a new element with its own solution under Supplies (each +1 makes it 10% harder); a custom Status belongs to one element.", "They're saved on this character and marked \"custom\". The × removes one (a removed Core takes its Statuses with it).", "What a custom part does in play is up to the GM, like a Detriment."] },
     { h: "Unlocks" }, { ul: ["3: proficient, custom Coats.", "4: Tips and Cores.", "5: keep a failed property as well as its Detriment (once per long rest).", "7: Area and Status.", "8: half a batch more per unused failure.", "9: a whole batch more.", "10: ignore one Detriment (once per long rest)."] },
     { note: "The app's readings: the Component Access table (which munition takes which part) is garbled in our copy of the book and is our best guess; bombs keep a free Sphere; grenades and oils roll their base layer at 60%; both perk abilities are once per long rest." } ] },
   armorRepair: { kicker: "Crafting", title: "Repairing armor", body: [
@@ -6259,6 +6303,7 @@ function gearPath(cx, cy, r, r2, n) {
 
 /* ================= powdertinkering ================= */
 const PT_LABEL = { coat: "Coat", tip: "Tips", area: "Area", core: "Core", status: "Status" };
+const PT_ONE = { coat: "coat", tip: "tip", area: "area", core: "core", status: "status" };
 const PT_RULE = {
   coat: "Every munition starts with its Coat, made from container materials. A batch has one Coat.",
   tip: "A batch can carry several Tips, made from container materials. Raising a Rating above your base makes it harder: −5% difficulty per step.",
@@ -6267,12 +6312,15 @@ const PT_RULE = {
   status: "Status properties need a Core and must match its element. A batch can carry several, made from element solution.",
 };
 const ELEMENT_HUE = { Fire: "#ff7a2a", Cold: "#86d6ff", Electric: "#c9a6ff", Poison: "#7bd451", Acid: "#d4ec3c", Radiant: "#ffe28a", Necrotic: "#9b6ad6" };
+// A custom core's element gets a steady colour of its own, picked from its name.
+const OWN_HUES = ["#e0a35c", "#5cc8b8", "#d77fb0", "#a3b85c", "#7f9be0", "#c8705c", "#b59be0", "#5ca8e0"];
+const elHue = el => ELEMENT_HUE[el] || OWN_HUES[[...String(el)].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) % OWN_HUES.length];
 const COAT_FILL = { Piercing: "url(#pt-copper)", Bludgeoning: "url(#pt-lead)", Slashing: "url(#pt-steel)" };
 const reduceMotion = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
 
 // What a recipe currently puts on each part, for the callout labels and the drawing.
 function ptSummary(c, rc, st) {
-  const m = R.MUNITION[rc.type] || R.MUNITIONS[0];
+  const m = R.MUNITION[rc.type] || R.MUNITIONS[0], L = R.ptLists(c);
   const out = {};
   R.PT_PARTS.forEach(p => {
     const access = R.ptAccess(rc.type, p), open = st.unlock[p];
@@ -6280,10 +6328,10 @@ function ptSummary(c, rc, st) {
     if (p === "coat") { value = m.shape === "grenade" ? "Casing" : m.shape === "flask" ? "Base oil" : (open && access ? rc.coat : "") || "Piercing"; on = true; }
     // Every munition has a base layer (coat, casing or base oil); only custom coats depend on the access table.
     if (p === "coat") { out[p] = { access: true, open, value, on: true, custom: access }; return; }
-    if (p === "tip") { const t = R.TIPS.filter(([k]) => rc.tips && rc.tips[k] != null && rc.tips[k] !== false).map(([k, rated]) => rated ? `${k} ${st.base.tip + num(rc.tips[k])}` : k); value = t.join(", "); on = t.length > 0; }
+    if (p === "tip") { const t = L.tips.filter(([k]) => rc.tips && rc.tips[k] != null && rc.tips[k] !== false).map(([k, rated]) => rated ? `${k} ${st.base.tip + num(rc.tips[k])}` : k); value = t.join(", "); on = t.length > 0; }
     if (p === "area") { const a = rc.area && rc.area.k; if (a) { value = `${a === "Cone" ? `Cone ${rc.area.cone || 60}°` : a} ${st.base.area}`; on = true; } else if (m.shape === "grenade") { value = `Sphere ${st.base.area}`; on = true; } }
     if (p === "core") { const e = rc.core && rc.core.el; if (e) { value = `${e} ${st.base.core + num(rc.core.inc)}`; on = true; } }
-    if (p === "status") { const e = rc.core && rc.core.el; const s = (rc.status || []).filter(n => { const S = R.STATUSES.find(x => x[0] === n); return S && S[1] === e; }); value = s.join(", "); on = s.length > 0; }
+    if (p === "status") { const e = rc.core && rc.core.el; const s = (rc.status || []).filter(n => { const S = L.statuses.find(x => x[0] === n); return S && S[1] === e; }); value = s.join(", "); on = s.length > 0; }
     out[p] = { access, open, value, on: on && access && (open || p === "coat" || (p === "area" && m.shape === "grenade" && !rc.area?.k)) };
   });
   return out;
@@ -6301,8 +6349,23 @@ function Powdertinkering({ c, update }) {
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   useEffect(() => { if (fRef.current && fRef.current.charId !== c.id) { timers.current.forEach(clearTimeout); setF(null); } }, [c.id]);
   const later = (fn, ms) => timers.current.push(setTimeout(fn, reduceMotion() ? Math.min(ms, 120) : ms));
-  const setRc = fn => update(x => fn(x.craft.recipe));
+  // Changing any part makes it a different recipe, so a loaded recipe's name comes off.
+  const setRc = fn => update(x => { fn(x.craft.recipe); delete x.craft.recipe.name; });
   const steps = useMemo(() => R.ptSteps(c, rc), [c]);
+  /* ---------- saved recipes: name a craft, then load every part back with one click ---------- */
+  const saved = cr.saved || [];
+  const saveRecipe = (n, recipe) => {
+    const name = String(n || "").trim().slice(0, 60); if (!name) return;
+    const r = clean(recipe); delete r.name;
+    update(x => {
+      const i = x.craft.saved.findIndex(y => y.n.toLowerCase() === name.toLowerCase());
+      const it = { k: i >= 0 ? x.craft.saved[i].k : "r" + rid(), n: name, recipe: r };
+      if (i >= 0) x.craft.saved[i] = it; else x.craft.saved.push(it);
+      x.craft.recipe = Object.assign(clean(r), { name });
+    });
+    toast(`Saved "${name}". Pick it under Saved recipes to make it again.`);
+  };
+  const loadRecipe = it => { update(x => { x.craft.recipe = Object.assign({ type: "rifle" }, clean(it.recipe), { name: it.n }); }); setFocus("coat"); };
   const sum = ptSummary(c, rc, st);
   const yieldNow = R.ptYield(c, type, st.maxFails);
   // Materials the whole craft needs if nothing fails.
@@ -6355,7 +6418,9 @@ function Powdertinkering({ c, update }) {
     const made = !scrap && done.some(s => s.part === "coat");
     const det = Math.max(0, f.det - f.ignored);
     const y = made ? R.ptYield(c, f.type, Math.max(0, f.maxFails - det)) : { n: 0 };
-    const name = R.ptName(f.type, done, f.recipe) + (det ? ` · ${det} Detriment${det > 1 ? "s" : ""}` : "");
+    // Made from a saved recipe with every part in place: the recipe's name. Otherwise the parts that held.
+    const whole = f.recipe.name && done.length === f.steps.length;
+    const name = (whole ? f.recipe.name : R.ptName(f.type, done, f.recipe)) + (det ? ` · ${det} Detriment${det > 1 ? "s" : ""}` : "");
     const spentTxt = Object.entries(f.spent).map(([k, g]) => `${g} g ${matName(k)}`).join(", ");
     update(x => {
       Object.entries(f.spent).forEach(([k, g]) => (x.craft.supplies[k] = Math.max(0, num(x.craft.supplies[k]) - g)));
@@ -6369,7 +6434,7 @@ function Powdertinkering({ c, update }) {
       x.craft.ledger = [{ id: rid(), t: Date.now(), name, qty: y.n, det, scrap, rolls: f.rolls.map(r => `${r.label} ${r.r}−${f.mod}=${r.total} vs ${r.dc} ${r.ok ? "✓" : "✗"}`), note: "" }, ...x.craft.ledger].slice(0, 20);
       addLog(x, scrap ? `Powdertinkering: the batch was scrapped (${spentTxt} lost)` : made ? `Powdertinkering: forged ${y.n} × ${name} (${spentTxt})` : `Powdertinkering: stopped before the coat held (${spentTxt} lost)`);
     });
-    patch({ phase: scrap ? "scrap" : made ? "done" : "nothing", result: { name, n: y.n, det, made } });
+    patch({ phase: scrap ? "scrap" : made ? "done" : "nothing", result: { name, n: y.n, det, made, plain: f.recipe.name || R.ptName(f.type, f.steps, f.recipe) } });
   };
   const close = () => { timers.current.forEach(clearTimeout); timers.current = []; setF(null); };
   const busy = !!forge;
@@ -6402,6 +6467,10 @@ function Powdertinkering({ c, update }) {
         ${st.keepFailed && html`<span class=${"flag " + (st.used.keep ? "" : "brass")} title="Novice Tinker (Powdertinker 5): keep a property you failed, as well as its Detriment. Recharges on a long rest.">Novice Tinker · ${st.used.keep ? "used" : "ready"}</span>`}
         ${st.ignoreOne && html`<span class=${"flag " + (st.used.ignore ? "" : "brass")} title="Master o' Munitions (Powdertinker 10): ignore 1 Detriment. Recharges on a long rest.">Ignore a Detriment · ${st.used.ignore ? "used" : "ready"}</span>`}</div>`}
 
+      ${saved.length > 0 && html`<div class="ptsaved" role="group" aria-label="Saved recipes"><span class="lbl">Saved recipes</span>
+        ${saved.map(it => html`<span class=${"ptsavedchip" + (rc.name === it.n ? " on" : "")}>
+          <button type="button" class="btn small" aria-pressed=${rc.name === it.n} disabled=${busy} title=${`Load every part of ${it.n}`} onClick=${() => loadRecipe(it)}>${it.n}</button>
+          <button type="button" class="iconbtn" aria-label=${`Delete the recipe ${it.n}`} disabled=${busy} onClick=${() => update(x => { x.craft.saved = x.craft.saved.filter(y => y.k !== it.k); if (x.craft.recipe.name === it.n) delete x.craft.recipe.name; })}>×</button></span>`)}</div>`}
       <div class="pttypes" role="radiogroup" aria-label="Munition">${R.MUNITIONS.map(x => html`<button type="button" role="radio" aria-checked=${x.k === type} disabled=${busy}
         onClick=${() => setRc(r => { r.type = x.k; })}><svg viewBox="0 0 24 24" aria-hidden="true">${TYPE_ICON[x.shape]}</svg><span>${x.n}</span></button>`)}</div>
 
@@ -6415,12 +6484,12 @@ function Powdertinkering({ c, update }) {
             ${!busy && html`<button class="btn primary big forgebtn" disabled=${!canForge} onClick=${start}>
               <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 12h11l3-3H6z M6 12v3h8v-3 M8 15v2.5 M12 15v2.5 M9 5.5l1-3 1 3" /></svg>Forge ${steps.length === 1 ? "a plain batch" : `· ${steps.length} rolls`}</button>
               ${why && html`<p class="muted ptwhy">${why}</p>`}`}
-            ${busy && html`<${ForgeReadout} f=${forge} st=${st} matName=${matName} supplies=${cr.supplies}
-              onRetry=${() => attempt(forge.idx)} onSkip=${skip} onKeep=${keepIt} onIgnore=${ignoreIt} onFinish=${() => finish(false)} onClose=${close} />`}
+            ${busy && html`<${ForgeReadout} f=${forge} st=${st} matName=${matName} supplies=${cr.supplies} saved=${saved}
+              onSave=${n => saveRecipe(n, forge.recipe)} onRetry=${() => attempt(forge.idx)} onSkip=${skip} onKeep=${keepIt} onIgnore=${ignoreIt} onFinish=${() => finish(false)} onClose=${close} />`}
           </div>
         </div>
         <div class="ptside">
-          <${PartPicker} part=${focus} c=${c} rc=${rc} st=${st} m=${m} sum=${sum} setRc=${setRc} disabled=${busy} />
+          <${PartPicker} part=${focus} c=${c} rc=${rc} st=${st} m=${m} sum=${sum} setRc=${setRc} update=${update} disabled=${busy} />
           <div class="ptplan">
             <${PlanHead} title="The craft" busy=${busy} onReset=${() => update(x => { x.craft.recipe = { type }; })} />
             <ol>${steps.map(s => html`<li><span>${s.label}</span><span class="muted">${s.dc}% · ${s.chance}% to land · 200 g ${s.mat === "container" ? "container" : s.mat.toLowerCase()}</span></li>`)}</ol>
@@ -6438,7 +6507,7 @@ function Powdertinkering({ c, update }) {
       <div class="ptsupplies">
         <div class="mini ptsup big"><label for=${"sup-c-" + c.id}>Container materials (g)</label>
           <input id=${"sup-c-" + c.id} type="number" min="0" step="100" value=${cr.supplies.container ?? 0} onInput=${e => update(x => { x.craft.supplies.container = Math.max(0, +e.target.value || 0); })} /></div>
-        ${R.ELEMENTS.map(el => html`<div class="mini ptsup"><label for=${"sup-" + el + c.id}><i class="dot" style=${`background:${ELEMENT_HUE[el]}`}></i>${el} (g)</label>
+        ${R.ptLists(c).elements.map(el => html`<div class="mini ptsup"><label for=${"sup-" + el + c.id}><i class="dot" style=${`background:${elHue(el)}`}></i>${el} (g)</label>
           <input id=${"sup-" + el + c.id} type="number" min="0" step="100" value=${cr.supplies[el] ?? 0} onInput=${e => update(x => { x.craft.supplies[el] = Math.max(0, +e.target.value || 0); })} /></div>`)}
         <div class="mini ptsup"><label for=${"sup-b-" + c.id}>Other bonus (%)</label>
           <input id=${"sup-b-" + c.id} type="number" step="1" value=${cr.bonus ?? 0} onInput=${e => update(x => { x.craft.bonus = +e.target.value || 0; })} /></div>
@@ -6458,9 +6527,10 @@ function Powdertinkering({ c, update }) {
 }
 
 /* ---------- the readout under the munition while forging ---------- */
-function ForgeReadout({ f, st, matName, supplies, onRetry, onSkip, onKeep, onIgnore, onFinish, onClose }) {
+function ForgeReadout({ f, st, matName, supplies, saved, onSave, onRetry, onSkip, onKeep, onIgnore, onFinish, onClose }) {
   const s = f.steps[f.idx];
   const [spin, setSpin] = useState(0);
+  const [saveName, setSaveName] = useState(null), [didSave, setDidSave] = useState(false);
   useEffect(() => {
     if (f.phase !== "rolling" || reduceMotion()) return;
     const t = setInterval(() => setSpin(1 + Math.floor(Math.random() * 100)), 55);
@@ -6476,6 +6546,11 @@ function ForgeReadout({ f, st, matName, supplies, onRetry, onSkip, onKeep, onIgn
       <p class="ptbig">${f.phase === "scrap" ? "Scrapped" : f.phase === "nothing" ? "Nothing made" : `${r.n} forged`}</p>
       <p>${f.phase === "scrap" ? "One Detriment too many: the batch and every material in it are lost." : f.phase === "nothing" ? "The coat never held, so there's no munition. The materials used are gone." : r.name}</p>
       ${f.phase === "done" && html`<p class="muted">Added to the inventory${r.det ? `. ${r.det} Detriment${r.det > 1 ? "s" : ""} for the GM to decide (note them in the Ledger)` : ""}.</p>`}
+      ${f.phase !== "nothing" && (didSave ? html`<p class="ptsavedok">Saved as a recipe. It's under Saved recipes on the bench.</p>`
+        : html`<form class="ptsave" onSubmit=${e => { e.preventDefault(); const n = (saveName == null ? r.plain : saveName).trim(); if (n) { onSave(n); setDidSave(true); } }}>
+          <label class="lbl" for="pt-save-n">Save this recipe${f.recipe.name ? "" : " to make it again"}</label>
+          <div class="row"><input id="pt-save-n" class="inp" maxlength="60" placeholder="Name the ammo" value=${saveName == null ? r.plain : saveName} onInput=${e => setSaveName(e.target.value)} />
+            <button class="btn" type="submit" disabled=${!(saveName == null ? r.plain : saveName).trim()}>${(saved || []).some(x => x.n.toLowerCase() === (saveName == null ? r.plain : saveName).trim().toLowerCase()) ? "Update recipe" : "Save recipe"}</button></div></form>`)}
       <button class="btn primary" onClick=${onClose}>${f.phase === "done" ? "Back to the bench" : "Clear the bench"}</button></div>`;
   }
   const r = f.roll;
@@ -6497,8 +6572,28 @@ function ForgeReadout({ f, st, matName, supplies, onRetry, onSkip, onKeep, onIgn
 }
 
 /* ---------- the picker beside the munition ---------- */
-function PartPicker({ part, c, rc, st, m, sum, setRc, disabled }) {
-  const s = sum[part];
+function PartPicker({ part, c, rc, st, m, sum, setRc, update, disabled }) {
+  const s = sum[part], L = R.ptLists(c);
+  const [adding, setAdding] = useState(false);
+  useEffect(() => setAdding(false), [part]);
+  const own = (k) => L.own.find(x => x.part === part && x.n === k);
+  const dcOf = k => (own(k) ? num(own(k).dc) || R.PT_BASE_DC[part] : R.PT_BASE_DC[part]);
+  // A custom part: tagged, with its own difficulty, and a × to remove it (and take it off the recipe).
+  const tag = k => own(k) ? html` <span class="flag brass">custom</span>` : "";
+  const del = k => own(k) && html`<button class="iconbtn ptdel" aria-label=${`Remove ${k}`} title="Remove this custom part" disabled=${disabled} onClick=${() => update(x => {
+    const it = x.craft.parts.find(y => y.part === part && y.n === k);
+    x.craft.parts = x.craft.parts.filter(y => y !== it && !(part === "core" && y.part === "status" && y.el === k));
+    const r = x.craft.recipe;
+    if (part === "coat" && r.coat === k) r.coat = "Piercing";
+    if (part === "tip" && r.tips) delete r.tips[k];
+    if (part === "area" && r.area && r.area.k === k) r.area = null;
+    if (part === "core" && r.core && r.core.el === k) { r.core = null; r.status = []; }
+    if (part === "status") r.status = (r.status || []).filter(n => n !== k);
+  })}>×</button>`;
+  // Always the same wrapper, so the page redraws the button and the form in place.
+  const addBtn = html`<div class="ptaddbox">${!adding ? html`<button class="btn small ptaddown" disabled=${disabled} onClick=${() => setAdding(true)}>+ A custom ${PT_ONE[part]}</button>`
+    : html`<${PartForm} part=${part} L=${L} el=${rc.core && rc.core.el} onCancel=${() => setAdding(false)}
+        onSave=${it => { update(x => { x.craft.parts.push(it); }); setAdding(false); toast(`${it.n} added to ${PT_LABEL[part]}.`); }} />`}</div>`;
   const lockedMsg = !s.access ? `${m.n} can't carry a ${PT_LABEL[part].replace(/s$/, "").toLowerCase()} (Component Access table).`
     : !s.open ? `Unlocks at Powdertinker ${st.unlockAt[part]}${part === "area" || part === "status" ? " (Expert Tinker)" : part === "coat" ? " (Tinkerling)" : " (Tinkerling)"}. ${c.name || "This character"} has ${st.lvl}.` : "";
   const chance = dc => R.ptChance(dc, st.mod);
@@ -6508,46 +6603,77 @@ function PartPicker({ part, c, rc, st, m, sum, setRc, disabled }) {
   if (lockedMsg && !(part === "coat")) body = html`<p class="ptlocked"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 7V5a4 4 0 0 1 8 0v2 M3 7h10v7H3z" /></svg>${lockedMsg}</p>`;
   else if (part === "coat") {
     const free = s.custom && s.open;
-    body = html`${m.shape === "grenade" || m.shape === "flask" ? html`<p class="muted">${m.n} start with a plain ${m.shape === "grenade" ? "casing" : "base oil"} instead of a custom coat: one roll at 60%.</p>` : html`<div class="ptopts">${R.COATS.map(([k, t]) => html`<button type="button" class="ptopt" aria-pressed=${(rc.coat || "Piercing") === k}
-        disabled=${disabled || (!free && k !== "Piercing")} onClick=${() => setRc(r => { r.coat = k; })}><b>${k}</b><span>${t}</span></button>`)}</div>
-      ${!free && html`<p class="muted">Custom coats unlock at Powdertinker 3 (Tinkerling). Until then munitions are piercing.</p>`}`}
-      <p class="ptdc">Difficulty 60% · ${chance(60)}% to land</p>`;
+    body = html`${m.shape === "grenade" || m.shape === "flask" ? html`<p class="muted">${m.n} start with a plain ${m.shape === "grenade" ? "casing" : "base oil"} instead of a custom coat: one roll at 60%.</p>` : html`<div class="ptopts">${L.coats.map(([k, t]) => html`<div class=${"ptopt row-opt" + ((rc.coat || "Piercing") === k ? " on" : "")}><button type="button" class="ptcheck" aria-pressed=${(rc.coat || "Piercing") === k}
+        disabled=${disabled || (!free && k !== "Piercing")} onClick=${() => setRc(r => { r.coat = k; })}><b>${k}${tag(k)}</b><span>${t}${own(k) ? ` · ${dcOf(k)}%` : ""}</span></button>${del(k)}</div>`)}</div>
+      ${!free ? html`<p class="muted">Custom coats unlock at Powdertinker 3 (Tinkerling). Until then munitions are piercing.</p>` : addBtn}`}
+      <p class="ptdc">${(() => { const dc = m.shape === "grenade" || m.shape === "flask" ? 60 : dcOf(rc.coat || "Piercing"); return `Difficulty ${dc}% · ${chance(dc)}% to land`; })()}</p>`;
   } else if (part === "tip") {
-    body = html`<div class="ptopts">${R.TIPS.map(([k, rated, t]) => { const on = rc.tips && rc.tips[k] != null && rc.tips[k] !== false; const inc = num(rc.tips && rc.tips[k]); const dc = R.ptDifficulty("tip", rated ? inc : 0);
+    body = html`<div class="ptopts">${L.tips.map(([k, rated, t]) => { const on = rc.tips && rc.tips[k] != null && rc.tips[k] !== false; const inc = num(rc.tips && rc.tips[k]); const dc = R.ptDifficulty("tip", rated ? inc : 0, dcOf(k));
       return html`<div class=${"ptopt row-opt" + (on ? " on" : "")}>
         <button type="button" class="ptcheck" aria-pressed=${on} disabled=${disabled} onClick=${() => setRc(r => { r.tips = Object.assign({}, r.tips); if (on) delete r.tips[k]; else r.tips[k] = rated ? 0 : true; })}>
-          <b>${k}${rated ? ` (${st.base.tip + (on ? inc : 0)})` : ""}</b><span>${t}</span></button>
+          <b>${k}${rated ? ` (${st.base.tip + (on ? inc : 0)})` : ""}${tag(k)}</b><span>${t}</span></button>${del(k)}
         ${on && html`<div class="ptrate">${rated && html`<${Stepper} label=${k + " rating"} value=${inc} max=${7} onSet=${v => setRc(r => { r.tips = Object.assign({}, r.tips, { [k]: v }); })} />`}
           <span class="ptdc">${dc}% · ${chance(dc)}%</span></div>`}</div>`; })}</div>
-      <p class="muted">Base Rating = your Powdertinker (${st.base.tip}).</p>`;
+      ${addBtn}<p class="muted">Base Rating = your Powdertinker (${st.base.tip}).</p>`;
   } else if (part === "area") {
     const cur = rc.area && rc.area.k;
     const bomb = m.shape === "grenade";
     body = html`<div class="ptopts">
       ${!bomb && html`<button type="button" class="ptopt" aria-pressed=${!cur} disabled=${disabled} onClick=${() => setRc(r => { r.area = null; })}><b>None</b><span>A single target.</span></button>`}
-      ${R.AREAS.map(([k, t]) => html`<button type="button" class="ptopt" aria-pressed=${cur === k || (bomb && !cur && k === "Sphere")} disabled=${disabled}
-        onClick=${() => setRc(r => { r.area = bomb && k === "Sphere" ? null : { k, cone: (r.area && r.area.cone) || 60 }; })}><b>${k} (${st.base.area})${bomb && k === "Sphere" ? " · built in" : ""}</b><span>${t}</span></button>`)}</div>
+      ${L.areas.map(([k, t]) => html`<div class=${"ptopt row-opt" + (cur === k ? " on" : "")}><button type="button" class="ptcheck" aria-pressed=${cur === k || (bomb && !cur && k === "Sphere")} disabled=${disabled}
+        onClick=${() => setRc(r => { r.area = bomb && k === "Sphere" ? null : { k, cone: (r.area && r.area.cone) || 60 }; })}><b>${k} (${st.base.area})${bomb && k === "Sphere" ? " · built in" : ""}${tag(k)}</b><span>${t}${own(k) ? ` · ${dcOf(k)}%` : ""}</span></button>${del(k)}</div>`)}</div>
+      ${addBtn}
       ${cur === "Cone" && html`<div class="seg three ptcone" role="group" aria-label="Cone angle">${[30, 60, 90].map(a => html`<button aria-pressed=${(rc.area.cone || 60) === a} disabled=${disabled} onClick=${() => setRc(r => { r.area = Object.assign({}, r.area, { cone: a }); })}>${a}°</button>`)}</div>`}
-      <p class="ptdc">Difficulty 30% · ${chance(30)}% to land${bomb ? " · the sphere every bomb has needs no roll" : ""}</p>`;
+      <p class="ptdc">Difficulty ${dcOf(cur || "Sphere")}% · ${chance(dcOf(cur || "Sphere"))}% to land${bomb ? " · the sphere every bomb has needs no roll" : ""}</p>`;
   } else if (part === "core") {
-    const el = rc.core && rc.core.el, inc = num(rc.core && rc.core.inc), dc = R.ptDifficulty("core", inc);
+    const el = rc.core && rc.core.el, inc = num(rc.core && rc.core.inc), dc = R.ptDifficulty("core", inc, dcOf(el));
     body = html`<div class="ptels">
       <button type="button" class="ptel" aria-pressed=${!el} disabled=${disabled} onClick=${() => setRc(r => { r.core = null; })}><i style="background:var(--sunk)"></i>None</button>
-      ${R.ELEMENTS.map(e => html`<button type="button" class="ptel" aria-pressed=${el === e} disabled=${disabled} onClick=${() => setRc(r => { r.core = { el: e, inc: r.core ? num(r.core.inc) : 0 }; })}><i style=${`background:${ELEMENT_HUE[e]}`}></i>${e}</button>`)}</div>
-      ${el && html`<div class="row ptrate"><span><b>${el} (${st.base.core + inc})</b> · +${st.base.core + inc} ${el.toLowerCase()} damage</span>
-        <${Stepper} label="core rating" value=${inc} max=${3} onSet=${v => setRc(r => { r.core = Object.assign({}, r.core, { inc: v }); })} /></div>`}
+      ${L.elements.map(e => html`<button type="button" class="ptel" aria-pressed=${el === e} disabled=${disabled} onClick=${() => setRc(r => { r.core = { el: e, inc: r.core ? num(r.core.inc) : 0 }; })}><i style=${`background:${elHue(e)}`}></i>${e}</button>`)}</div>
+      <div class="ptratebox">${el && html`<div class="row ptrate"><span><b>${el} (${st.base.core + inc})</b>${tag(el)} · ${L.cores[el] || `+${st.base.core + inc} ${el.toLowerCase()} damage`}</span>
+        <${Stepper} label="core rating" value=${inc} max=${3} onSet=${v => setRc(r => { r.core = Object.assign({}, r.core, { inc: v }); })} />${del(el)}</div>`}</div>
+      ${addBtn}
       <p class="ptdc">${el ? `Difficulty ${dc}% · ${chance(dc)}% to land` : "Pick an element"} · base Rating ${st.base.core} (half your Powdertinker)</p>`;
   } else if (part === "status") {
     const el = rc.core && rc.core.el;
-    body = !el ? html`<p class="ptlocked">Status properties need a Core first. Pick an element on the Core.</p>` : html`<div class="ptopts">${R.STATUSES.filter(x => x[1] === el).map(([k, , t]) => { const on = (rc.status || []).includes(k);
-      return html`<button type="button" class="ptopt" aria-pressed=${on} disabled=${disabled} onClick=${() => setRc(r => { const s = (r.status || []).filter(n => { const S = R.STATUSES.find(x => x[0] === n); return S && S[1] === el; }); r.status = on ? s.filter(n => n !== k) : [...s, k]; })}>
-        <b>${k} (${st.base.status})</b><span>${t}</span></button>`; })}</div>
-      <p class="ptdc">Difficulty 40% each · ${chance(40)}% to land · Rating ${st.base.status}</p>`;
+    body = !el ? html`<p class="ptlocked">Status properties need a Core first. Pick an element on the Core.</p>` : html`<div class="ptopts">${L.statuses.filter(x => x[1] === el).map(([k, , t]) => { const on = (rc.status || []).includes(k);
+      return html`<div class=${"ptopt row-opt" + (on ? " on" : "")}><button type="button" class="ptcheck" aria-pressed=${on} disabled=${disabled} onClick=${() => setRc(r => { const s = (r.status || []).filter(n => { const S = L.statuses.find(x => x[0] === n); return S && S[1] === el; }); r.status = on ? s.filter(n => n !== k) : [...s, k]; })}>
+        <b>${k} (${st.base.status})${tag(k)}</b><span>${t}${own(k) ? ` · ${dcOf(k)}%` : ""}</span></button>${del(k)}</div>`; })}</div>
+      ${!L.statuses.some(x => x[1] === el) && html`<p class="muted">The book has no status for ${el}. Add your own below.</p>`}
+      ${addBtn}<p class="ptdc">Difficulty 40% each (custom ones: their own) · ${chance(40)}% to land · Rating ${st.base.status}</p>`;
   }
   return html`<div class=${"ptpick part-" + part}>
     <h3 class="ptpickh"><span>${PT_LABEL[part]}</span>${s.access && s.open && s.value ? html`<small>${s.value}</small>` : ""}</h3>
     <p class="muted ptrule">${PT_RULE[part]}</p>
     ${body}</div>`;
+}
+
+// A custom part: a name, what it does, its difficulty, and for a tip whether it has a Rating, for a status its element.
+// The examples in the boxes are only hints. Saved on this character (c.craft.parts).
+const PT_HINT = {
+  coat: ["Silvered", "Silver-plated: hurts creatures weak to silver."],
+  tip: ["Hollow point", "Opens wide on impact: +Rating damage against unarmored targets."],
+  area: ["Line", "Explodes in a line 2 m wide, length Rating."],
+  core: ["Steam", "+Rating scalding damage; the target is wreathed in steam."],
+  status: ["Scalded", "Rating/2 damage each turn until resisted."],
+};
+function PartForm({ part, L, el, onSave, onCancel }) {
+  const [f, setF] = useState({ n: "", what: "", dc: R.PT_BASE_DC[part], rated: true, el: el || L.elements[0] });
+  const set = (k, v) => setF(Object.assign({}, f, { [k]: v }));
+  const id = k => "pf-" + part + "-" + k, name = f.n.trim();
+  const taken = name && [...L.coats, ...L.tips, ...L.areas, ...L.statuses].some(x => x[0].toLowerCase() === name.toLowerCase()) || L.elements.some(x => x.toLowerCase() === name.toLowerCase());
+  const ok = name && !taken;
+  return html`<div class="brform ptform">
+    <div class="grid2"><div class="mini"><label for=${id("n")}>Name</label><input id=${id("n")} type="text" maxlength="40" value=${f.n} placeholder=${PT_HINT[part][0]} onInput=${e => set("n", e.target.value)} /></div>
+      <div class="mini"><label for=${id("dc")}>Difficulty (%)</label><input id=${id("dc")} type="number" min="1" max="100" value=${f.dc} onInput=${e => set("dc", R.clamp(+e.target.value || 0, 1, 100))} /></div>
+      ${part === "status" && html`<div class="mini"><label for=${id("el")}>Element</label><select id=${id("el")} value=${f.el} onChange=${e => set("el", e.target.value)}>${L.elements.map(x => html`<option>${x}</option>`)}</select></div>`}</div>
+    <div class="mini"><label for=${id("w")}>What it does</label><input id=${id("w")} type="text" maxlength="200" value=${f.what} placeholder=${PT_HINT[part][1]} onInput=${e => set("what", e.target.value)} /></div>
+    ${part === "tip" && html`<label class="amforge"><input type="checkbox" checked=${f.rated} onChange=${e => set("rated", e.target.checked)} /> Has a Rating <span class="muted">(starts at your Powdertinker; each +1 makes it 5% harder)</span></label>`}
+    ${part === "core" && html`<p class="muted">A new element, with its own solution under Supplies. Each +1 Rating makes it 10% harder, as in the book.</p>`}
+    ${taken && html`<p class="flag bad">There's already a part called ${name}.</p>`}
+    <div class="row" style="margin-top:8px"><button class="btn small primary" disabled=${!ok} onClick=${() => onSave(Object.assign({ k: "p" + rid(), part, n: name, what: f.what.trim(), dc: f.dc },
+        part === "tip" ? { rated: !!f.rated } : {}, part === "status" ? { el: f.el } : {}))}>Save ${PT_ONE[part]}</button>
+      <button class="btn small" onClick=${onCancel}>Cancel</button></div></div>`;
 }
 
 /* ---------- the drawing ---------- */
@@ -6727,8 +6853,8 @@ function Munition({ m, rc, sum, st, focus, partState, forging, phase, onPick }) 
   const tips = rc.tips || {}; const has = k => tips[k] != null && tips[k] !== false;
   const tipFill = show("tip") && sum.tip.access && sum.tip.open ? (has("Penetrating") ? "#34383d" : has("Precise") ? "url(#pt-silver)" : has("Impale") ? "impale" : null) : null;
   const el = rc.core && rc.core.el;
-  const core = show("core") && el ? ELEMENT_HUE[el] : null;
-  const status = show("status") && el ? ELEMENT_HUE[el] : null;
+  const core = show("core") && el ? elHue(el) : null;
+  const status = show("status") && el ? elHue(el) : null;
   const area = show("area") ? (rc.area && rc.area.k ? rc.area : m.shape === "grenade" ? { k: "Sphere" } : null) : null;
   const anchorFor = p => shape.anchors[p];
   const final = phase === "done", scrap = phase === "scrap" || phase === "scrapping";
