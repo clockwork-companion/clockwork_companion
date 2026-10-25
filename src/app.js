@@ -1129,6 +1129,18 @@ function GlanceCard({ d }) {
 const TYPE_SHORT = { P: "Passive", A: "Active", E: "Empow.", M: "Active" };
 // Each attribute has its own colour (--a-STR … in app.css); skills, perks and filter chips take their attribute's.
 const attStyle = a => (a ? `--att:var(--a-${a})` : "");
+// Each attribute's emblem: a war hammer for Strength, a feather for Dexterity, a shield for Endurance, a cog for Mind,
+// a spiral for Willpower, an eye for Wisdom, a crown for Presence. Perks wear their attribute's on the card's spine.
+const ATTR_GLYPH = {
+  STR: html`<path d="M11 6l4-4 7 7-4 4z M3 21l10.5-10.5" />`,
+  DEX: html`<path d="M20 3.5C11.5 4 6 9.5 6 18l-2.5 2.5 M6 18c7 0 12.5-5 14-14.5 M8.5 15.5l5.5-.8 M10.8 12.2l5.6-.9 M13.6 8.8l4.6-.8" />`,
+  END: html`<path d="M12 2.8l7.5 3v6c0 4.7-3.2 7.9-7.5 9.4-4.3-1.5-7.5-4.7-7.5-9.4v-6z M12 7.5v9 M8 11.5h8" />`,
+  MND: html`<circle cx="12" cy="12" r="5.5" /><circle cx="12" cy="12" r="2" /><path d="M12 2.5v3 M12 18.5v3 M2.5 12h3 M18.5 12h3 M5.3 5.3l2.1 2.1 M16.6 16.6l2.1 2.1 M5.3 18.7l2.1-2.1 M16.6 7.4l2.1-2.1" />`,
+  WIL: html`<path d="M12 12c0-1 1-1.6 1.8-1.2 1.3.6 1.2 2.6 0 3.4-1.8 1.2-4.2.2-4.8-1.8-.8-2.6 1-5.2 3.6-5.6 3.4-.5 6.2 2 6.4 5.2.2 4-3 7.2-6.8 7.4-4.6.2-8.4-3.4-8.4-8.2" />`,
+  WIS: html`<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" />`,
+  PRS: html`<path d="M3.5 18.5h17 M4.2 18.5L3 7.5l5 4 4-6.5 4 6.5 5-4-1.2 11" />`,
+};
+const AttrGlyph = ({ a, cls = "aglyph" }) => (ATTR_GLYPH[a] ? html`<svg class=${cls} viewBox="0 0 24 24" aria-hidden="true">${ATTR_GLYPH[a]}</svg>` : null);
 // The kind of a perk, as a tag in the card's top-right corner: a bolt for Active, a flame for Empowerment,
 // an endless loop for Passive (always on). The card's shape changes with it too (app.css).
 const PERK_ICON = {
@@ -1181,7 +1193,8 @@ function PerkCard({ c, p, update, skill, attr, art }) {
   const t = p.t || "P";
   return html`<article class=${"perkcard t-" + t + " k-" + typeKey(t) + (attr ? " hasatt" : "") + (art ? " hasart" : "")} style=${attStyle(attr)}>
     ${art && html`<i class="partbg" aria-hidden="true" style=${`background-image:url(${art})`}></i>`}
-    <div class="pbox"><b>${p.l}</b><small>Level</small></div>
+    ${attr ? html`<div class="pbox spine" title=${`${R.ATTR_NAME[attr]} · level ${p.l}`}><${AttrGlyph} a=${attr} /><b>${p.l}</b><small>${attr}</small></div>`
+      : html`<div class="pbox"><b>${p.l}</b><small>Level</small></div>`}
     <div class="pmain"><div class="phead"><b class="pname">${p.group || skill}</b><${UsageLine} u=${p.u} /><${TypeTag} t=${t} /></div>
       <p>${p.x || "Not written yet."}</p>
       ${p.u && p.u.uses && html`<${UseBoxes} c=${c} ukey=${p.key} uses=${p.u.uses} recharge=${p.u.recharge} update=${update} label=${`${skill} ${p.l}`} />`}</div>
@@ -1253,13 +1266,13 @@ function TalentsTab({ c, update, openSkill }) {
       <div class="row perkbar"><div class="seg" role="group" aria-label="Show perks">${[["all", "All"], ["A", "Active"], ["E", "Empowerment"], ["P", "Passive"]].map(([k, n]) => html`<button aria-pressed=${filter === k} onClick=${() => setFilter(k)}>${k !== "all" && html`<svg class="segicon" viewBox="0 0 16 16" aria-hidden="true">${PERK_ICON[k]}</svg>`}${n} <small>${count(k)}</small></button>`)}</div>
         ${spentAny && html`<button class="btn small" onClick=${() => update(x => { x.uses = {}; addLog(x, "Recharged every ability by hand"); })}>Recharge all</button>`}</div>
       <div class="attfilter" role="group" aria-label="Show perks from these attributes (pick any number)">
-        ${R.ATTRS.map(a => html`<button type="button" class="attchip" style=${attStyle(a.k)} aria-pressed=${attrs.includes(a.k)} title=${a.n} onClick=${() => toggleAttr(a.k)}>${a.k} <small>${attrCount(a.k)}</small></button>`)}
+        ${R.ATTRS.map(a => html`<button type="button" class="attchip" style=${attStyle(a.k)} aria-pressed=${attrs.includes(a.k)} title=${a.n} onClick=${() => toggleAttr(a.k)}><${AttrGlyph} a=${a.k} />${a.k} <small>${attrCount(a.k)}</small></button>`)}
         ${attrs.length > 0 && html`<button type="button" class="linkbtn" onClick=${() => { setAttrs([]); setFocus(""); }}>Show all</button>`}</div>
       ${listed && html`<div class="attskills" role="group" aria-label=${`Skills invested in under ${attrs.map(a => R.ATTR_NAME[a]).join(", ")}`}>
         <span class="lbl">Your ${attrs.map(a => R.ATTR_NAME[a]).join(" · ")} skills</span>
         ${invested.map(x => html`<button type="button" class="skchip" style=${attStyle(x.attr)} aria-pressed=${focusOn === x.name} onClick=${() => setFocus(focusOn === x.name ? "" : x.name)}>${x.name} <small>${x.lv}</small></button>`)}</div>`}
       ${shown.length ? shown.map(g => html`<div class="perkgroup" style=${attStyle(g.attr)}>
-        <h3><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small><span class="atttag">${g.attr}</span>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small></h3>
+        <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small></h3>
         <div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div></div>`)
       : html`<p class="muted emptyline">${empty}</p>`}
     </section>
