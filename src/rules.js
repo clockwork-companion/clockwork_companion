@@ -127,6 +127,8 @@ const CW = (() => {
       vitals: { hp: null, bp: null, dp: null, tox: 0, exhaustion: 0, staminaLost: 0,
                 wounds: { light: 0, moderate: 0, mortal: 0 }, conditions: [] },
       prosthetics: [], coins: 0,
+      // Warding: the Words of Power the warder knows, extra grammar words, saved and formulaic wards, Fatigue.
+      ward: { bonus: 0, fatigue: 0, words: [], extra: { subject: [], adverb: [], conj: [] }, wards: [], board: [], ledger: [] },
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
@@ -162,6 +164,11 @@ const CW = (() => {
     if (!Array.isArray(out.craft.ledger)) out.craft.ledger = [];
     if (!Array.isArray(out.craft.parts)) out.craft.parts = [];   // custom Powdertinkering parts (coats, tips, areas, cores, statuses)
     if (!Array.isArray(out.craft.saved)) out.craft.saved = [];   // saved Powdertinkering recipes: { k, n, recipe }
+    out.ward = Object.assign({}, b.ward, out.ward);
+    out.ward.extra = Object.assign({ subject: [], adverb: [], conj: [] }, out.ward.extra);
+    ["subject", "adverb", "conj"].forEach(k => { if (!Array.isArray(out.ward.extra[k])) out.ward.extra[k] = []; });
+    ["words", "wards", "board", "ledger"].forEach(k => { if (!Array.isArray(out.ward[k])) out.ward[k] = []; });
+    out.ward.fatigue = Math.max(0, num(out.ward.fatigue));
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
@@ -427,6 +434,7 @@ const CW = (() => {
     const st = Math.max(0, num(v.exhaustion) - 2 - (sk(c, "Conditioning") >= 7 ? 2 : 0));
     if (st !== num(v.exhaustion)) parts.push(`Stamina ${num(v.exhaustion)} → ${st} lost`); setStamina(c, st);
     if (refreshUses(c, false)) parts.push("abilities recharged");
+    if (c.ward && num(c.ward.fatigue)) { parts.push(`Warding Fatigue ${num(c.ward.fatigue)} → 0`); c.ward.fatigue = 0; }   // all Fatigue clears after a long rest
     return "Long rest: " + parts.join(" · ");
   }
 
@@ -599,6 +607,90 @@ const CW = (() => {
     });
     if (m.shape === "grenade" && !done.some(s => s.part === "area")) bits.unshift("Sphere");
     return [m.n, ...bits].join(" · ");
+  }
+
+
+  // ---------- Warding (rulebook 2020.1, Willpower skills: Warding Magic) ----------
+  // A Ward is an English sentence. Subjects cost 5 Sigils, adverbs (a, an, for, the) 1, conjunctions 10 (Warding 7);
+  // adjectives, verbs and nouns are Words of Power, each with the cost in the warder's own dictionary.
+  // Available Sigils = AP used × Sigils per AP − Fatigue. Sigils per AP: 3 per point of Warding.
+  const WORD_KINDS = ["noun", "verb", "adjective"];
+  const WARD_GRAMMAR = {
+    subject: { n: "Subject", cost: 5, words: ["I", "The Ward", "myself", "there"] },
+    adverb: { n: "Adverb", cost: 1, words: ["a", "an", "the", "for"] },
+    conj: { n: "Conjunction", cost: 10, words: ["and", "but", "when", "while"] },
+  };
+  const WARD_KIND_NAME = { subject: "Subject", adverb: "Adverb", conj: "Conjunction", noun: "Noun", verb: "Verb", adjective: "Adjective" };
+  function wardState(c) {
+    const lvl = sk(c, "Warding"), w = c.ward || {}, u = c.uses || {};
+    const left = (lv, n) => Math.max(0, n - num(u["p:Warding:" + lv]));
+    return {
+      lvl, mod: skillModifier(c, "Warding") + num(w.bonus), bonus: num(w.bonus),
+      spa: 3 * lvl,                                   // Sigils per AP
+      fatigue: Math.max(0, num(w.fatigue)),
+      formulaic: lvl >= 3, ritual: lvl >= 4, spontaneous: lvl >= 5, repeatAdj: lvl >= 6, conj: lvl >= 7, reaction: lvl >= 8,
+      subjectCost: WARD_GRAMMAR.subject.cost - (lvl >= 9 ? 3 : 0), adverbCost: Math.max(0, WARD_GRAMMAR.adverb.cost - (lvl >= 9 ? 1 : 0)),
+      // The Active perks (uses kept in c.uses with every other Active ability).
+      active: { double: lvl >= 5 ? left(5, 3) : 0, calm: lvl >= 6 ? left(6, 2) : 0, epic: lvl >= 7 ? left(7, 3) : 0 },
+    };
+  }
+  // Which kinds of word may come next in a Ward sentence (a light grammar: Subject first; verbs, objects and
+  // compound nouns after; adjectives lead into a noun; a conjunction starts a new clause).
+  function wardNext(tokens) {
+    const last = tokens.length ? tokens[tokens.length - 1].k : null;
+    if (!last) return ["subject"];
+    return ({
+      subject: ["verb", "adverb", "conj"],
+      verb: ["adverb", "adjective", "noun", "subject", "conj"],
+      adverb: ["adverb", "adjective", "noun", "subject", "verb"],
+      adjective: ["adjective", "noun"],
+      noun: ["noun", "adverb", "verb", "conj"],
+      conj: ["subject", "verb", "adverb"],
+    })[last] || [];
+  }
+  // The cost and the problems of a Ward sentence. tokens: [{ k, text, id }] (id: a Word of Power in c.ward.words).
+  // epic: The First Epic (Warding 7) is on: up to 3 Words of Power cost 1 Sigil (the dearest ones, to save the most).
+  function wardCost(c, tokens, epic) {
+    const st = wardState(c), words = ((c.ward || {}).words || []), problems = [];
+    const lines = tokens.map((t, i) => {
+      if (t.k === "subject") return { i, t, base: WARD_GRAMMAR.subject.cost, cost: st.subjectCost };
+      if (t.k === "adverb") return { i, t, base: WARD_GRAMMAR.adverb.cost, cost: st.adverbCost };
+      if (t.k === "conj") return { i, t, base: WARD_GRAMMAR.conj.cost, cost: WARD_GRAMMAR.conj.cost };
+      const w = words.find(x => x.id === t.id);
+      if (!w) problems.push(`"${t.text}" isn't in the dictionary any more.`);
+      const cost = w ? Math.max(0, num(w.cost)) : 0;
+      return { i, t, base: cost, cost, wop: true };
+    });
+    let epicUsed = 0;
+    if (epic) lines.filter(l => l.wop).sort((a, b) => b.cost - a.cost).slice(0, 3).forEach(l => { if (l.cost > 1) { l.cost = 1; l.epic = true; epicUsed++; } });
+    const total = lines.reduce((s, l) => s + l.cost, 0);
+    if (!tokens.length) problems.push("Start with a Subject, such as I or The Ward.");
+    else {
+      if (tokens[0].k !== "subject") problems.push("A Ward starts with its Subject.");
+      tokens.forEach((t, i) => { if (i && !wardNext(tokens.slice(0, i)).includes(t.k)) problems.push(`A ${WARD_KIND_NAME[t.k].toLowerCase()} can't follow a ${WARD_KIND_NAME[tokens[i - 1].k].toLowerCase()} there.`); });
+      if (!tokens.some(t => t.k === "verb")) problems.push("A Ward needs a verb: what it does.");
+      if (["adverb", "adjective", "conj"].includes(tokens[tokens.length - 1].k)) problems.push("The sentence isn't finished.");
+      if (tokens.some(t => WORD_KINDS.includes(t.k)) && !st.spontaneous) problems.push("Words of Power need Warding 5 (Works of a Writer).");
+      if (tokens.some(t => t.k === "conj") && !st.conj) problems.push("Conjunctions need Warding 7 (The First Epic).");
+      if (!st.repeatAdj) { const seen = {}; tokens.forEach(t => { if (t.k === "adjective") { if (seen[t.id]) problems.push(`Repeating "${t.text}" needs Warding 6.`); seen[t.id] = 1; } }); }
+    }
+    return { lines, total, epicUsed, problems: [...new Set(problems)], ok: !!tokens.length && !problems.length };
+  }
+  // What inscribing a Ward of this cost takes. double: Works of a Writer (2× Sigils per AP); ritual: inscribed as a
+  // Ritual Ward (5 AP's worth of Sigils an hour). Fatigue comes off the Sigils the AP buy.
+  function wardPlan(c, cost, o = {}) {
+    const st = wardState(c), spa = st.spa * (o.double && !o.ritual ? 2 : 1);
+    const ap = spa > 0 ? Math.max(1, Math.ceil((num(cost) + st.fatigue) / spa)) : Infinity;
+    return { spa, ap, fatigue: st.fatigue, hours: Math.ceil(ap / 5), available: a => Math.max(0, num(a) * spa - st.fatigue) };
+  }
+  // Fatigue gained from one inscription (the GM decides the amount). calm: no Fatigue (Warding 6 Active);
+  // double: 2× Fatigue (Warding 5 Active); ritual: under 10 becomes 1, 10 or more is halved (rounded up).
+  function wardFatigue(gained, o = {}) {
+    let f = Math.max(0, Math.round(num(gained)));
+    if (o.calm && !o.ritual) return 0;
+    if (o.double && !o.ritual) f *= 2;
+    if (o.ritual && f > 0) f = f < 10 ? 1 : Math.ceil(f / 2);
+    return f;
   }
 
   // ---------- Armor Maintenance (rulebook 16.5 and the Armor chapter) ----------
@@ -876,6 +968,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
+           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
