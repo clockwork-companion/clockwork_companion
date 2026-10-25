@@ -2802,4 +2802,75 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   .demoncircf.calling .dflame, .demoncircf.present .dflame { opacity: 1; }
   .demoncircf.calling .dstar { stroke-dashoffset: 0; }
 }
+
+/* ===== Magic: Dreamwalking (magic-dream.js) ===== */
+.dreamwalking { display: grid; gap: 0; }
+.fact.warn b { color: #9b6bd6; }
+.dreamf { --mist: #c9c4ef; }
+.dreamf.nightmare { --mist: #7a3fc4; }
+.dreamstage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 260px); gap: 18px; align-items: start; }
+.dreamscene { position: relative; border: 1.5px solid var(--rule); overflow: hidden; background: #070b24; }
+.dreamscene svg { display: block; width: 100%; height: auto; }
+.drstars circle { fill: #f2efff; animation: twinkle 3.5s ease-in-out infinite alternate; animation-delay: calc(var(--d) * -1); }
+@keyframes twinkle { from { opacity: .25; } to { opacity: .95; } }
+.drhalo { opacity: .45; }
+.drmoon { fill: #fff3d2; }
+.drshadow { fill: #0c0f2c; transition: cx 1.2s ease; }
+.drhills { fill: #0b0a1f; }
+.drmist { animation: mistDrift 9s ease-in-out infinite alternate; transition: y 1.2s ease, height 1.2s ease; }
+@keyframes mistDrift { to { transform: translateX(-24px); } }
+.draurora path { fill: none; stroke-width: 18; stroke-linecap: round; opacity: .22; filter: blur(6px); animation: aurora 7s ease-in-out infinite alternate; }
+.draurora path:first-child { stroke: #7ef2d0; } .draurora path:last-child { stroke: #b48cff; animation-delay: -3s; }
+@keyframes aurora { to { transform: translateY(14px); opacity: .38; } }
+.dreamf.asleep .dreamscene { box-shadow: inset 0 0 40px #7ef2d055, 0 0 18px #7ef2d033; }
+.drbubble { animation: bubbleBob 6s ease-in-out infinite alternate; animation-delay: calc(var(--d) * -1); }
+.drbubble circle { fill: #b9a8ff33; stroke: #d9ceff; stroke-width: 1; filter: drop-shadow(0 0 6px #b9a8ff); }
+.drbubble text { font: 600 9px var(--f-head); fill: #f4f0ff; text-anchor: middle; letter-spacing: .03em; }
+.drbubble.lost { opacity: .35; }
+.drbubble.lost circle { stroke-dasharray: 3 3; }
+@keyframes bubbleBob { to { transform: translateY(-8px); } }
+.drbubble { transform-box: fill-box; }
+.drsphere circle { fill: #9fe6ff1f; stroke: #bfefff; stroke-width: 1.5; filter: drop-shadow(0 0 10px #9fe6ff); animation: sphereBreath 3s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+.drsphere text { font: 600 11px var(--f-head); fill: #e9fbff; text-anchor: middle; letter-spacing: .06em; text-transform: uppercase; }
+@keyframes sphereBreath { to { transform: scale(1.03); } }
+.dreamstate { position: absolute; left: 10px; bottom: 8px; margin: 0; padding: 3px 8px; font-size: 12.5px; color: #e9e6ff; background: #0b0a1fcc; border-radius: 3px; }
+/* the Toll meter */
+.dreamtoll { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.dtmeter { position: relative; min-height: 220px; border: 1.5px solid var(--rule); background: var(--sunk); display: flex; align-items: flex-end; overflow: hidden; }
+.dtmeter i { display: block; width: 100%; background: linear-gradient(0deg, #8e7cf0, #c9c4ef); transition: height .8s ease; }
+.dreamf.nightmare .dtmeter i { background: linear-gradient(0deg, #4b1d8a, #9b6bd6); }
+.dt30 { position: absolute; left: -2px; right: -2px; bottom: 30%; border-top: 2px dashed #9b6bd6; }
+.dtlist { display: grid; gap: 6px; align-content: start; }
+.dttotal { margin: 0; font-size: 14px; }
+.dttotal b { font: 600 24px var(--f-mono); }
+.dtpart { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; align-items: center; font-size: 13.5px; padding: 3px 0; border-bottom: 1px dashed var(--hair); animation: inkIn .3s ease-out both; }
+.dtpart b { font: 600 13px var(--f-mono); }
+.dtpart .iconbtn { width: 22px; height: 22px; font-size: 13px; }
+.dreamacts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+.dtrav { gap: 6px; align-items: center; }
+.dreamform { margin-top: 12px; padding: 12px; border: 1.5px solid var(--rule); background: var(--sunk); display: grid; gap: 8px; animation: inkIn .3s ease-out both; }
+.dreamform p { margin: 0; font-size: 13.5px; }
+.dreamform.sphereon { border-color: #9fd9ea; background: color-mix(in srgb, #9fe6ff 8%, var(--card)); }
+.dreamroll.inline { display: grid; gap: 6px; }
+.dreamform .grow { flex: 1 1 220px; }
+.dreamform .grow input { width: 100%; box-sizing: border-box; }
+/* the vault and the seeds */
+.dvitems { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin: 8px 0; }
+.dvitem { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1.5px solid #c9c4ef; background: color-mix(in srgb, #b9a8ff 8%, var(--card)); animation: inkIn .4s ease-out both; }
+.dvitem.lost { opacity: .55; border-style: dashed; }
+.dvitem.seed { border-color: #9fd9ea; }
+.dvorb { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #b9a8ff 55%, #6c5ad1); box-shadow: 0 0 10px #b9a8ff; animation: bubbleBob 4s ease-in-out infinite alternate; }
+.dvitem.seed .dvorb { background: radial-gradient(circle at 35% 30%, #fff, #9fe6ff 55%, #3b8fb3); box-shadow: 0 0 10px #9fe6ff; }
+.dvn { display: grid; line-height: 1.25; }
+.dvn small { color: var(--ink-3); font-size: 12px; }
+.dvpick { display: flex; flex-wrap: wrap; gap: 6px; }
+.dvchip { padding: 4px 10px; border: 1px solid var(--rule); border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer; font-size: 13.5px; }
+.dvchip.on { border-color: #8e7cf0; background: color-mix(in srgb, #b9a8ff 20%, var(--card)); }
+@media (max-width: 760px) {
+  .dreamstage { grid-template-columns: minmax(0, 1fr); }
+  .dtmeter { min-height: 120px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drstars circle, .drmist, .draurora path, .drbubble, .drsphere circle, .dvorb { animation: none !important; }
+}
 </style>
