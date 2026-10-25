@@ -42,14 +42,20 @@ with sync_playwright() as p:
         # ---- Words: learn three Words of Power and a subject
         pg.locator(".wardpages button", has_text="Words").click(); pg.wait_for_timeout(200)
         def learn(word, cost, kinds):
-            pg.locator(".wardbook .ptaddown").click(); pg.wait_for_timeout(150)
+            for _ in range(6):   # the write-a-word line is on the book's last page
+                if pg.locator(".tomenew").count() or pg.locator(".tome .wardform").count(): break
+                pg.locator(".tomecorner.next").click(); pg.wait_for_timeout(750)
+            if pg.locator(".tomenew").count(): pg.locator(".tomenew").click(); pg.wait_for_timeout(150)
             pg.fill("#wf-new-w", word); pg.fill("#wf-new-c", str(cost))
             for k in ["noun", "verb", "adjective"]:
                 box = pg.locator(".wardkinds label", has_text={"noun": "Noun", "verb": "Verb", "adjective": "Adjective"}[k]).locator("input")
                 if box.is_checked() != (k in kinds): box.click()
-            pg.locator(".wardform .btn.primary").click(); pg.wait_for_timeout(250)
+            pg.locator(".tome .wardform .btn.primary").click(); pg.wait_for_timeout(900)
         learn("Fire", 12, ["noun", "verb"]); learn("Ignite", 8, ["verb"]); learn("Big", 6, ["adjective"])
-        pg.fill(".wardaddx input >> nth=0", "the bandits"); pg.locator(".wardaddx >> nth=0").locator("button").click(); pg.wait_for_timeout(1500)
+        while pg.locator(".tomeh", has_text="Grammar").count() == 0:
+            pg.locator(".tomecorner.prev").click(); pg.wait_for_timeout(750)
+        check(tag + "the book turns back to its Grammar page", pg.locator(".tome .tomeh", has_text="Grammar").count() == 1)
+        pg.fill(".tomegram.k-subject .tomeadd input", "the bandits"); pg.locator(".tomegram.k-subject .tomeadd button").click(); pg.wait_for_timeout(1500)
         w = ch()["ward"]
         check(tag + "the dictionary holds the words", sorted(x["w"] for x in w["words"]) == ["Big", "Fire", "Ignite"] and next(x for x in w["words"] if x["w"] == "Fire")["kinds"] == ["noun", "verb"] and w["extra"]["subject"] == ["the bandits"], w)
         pg.screenshot(path=str(SHOTS / f"ward-words-{W}.png"))
@@ -61,6 +67,7 @@ with sync_playwright() as p:
             pg.evaluate(f"[...document.querySelectorAll('.wardword:not(.off)')].find(b => b.textContent.trim() === {json.dumps(t)}).click()"); pg.wait_for_timeout(250)
         total = pg.locator(".wardtotal b").inner_text()
         check(tag + "I ignite a big big fire = 5 + 8 + 1 + 6 + 6 + 12 = 38 Sigils, valid", total == "38" and pg.locator(".wardsigil.ok").count() == 1 and pg.locator(".wardproblems").count() == 0, total)
+        check(tag + "the sigil is ringed with runes, and each word marks it with its own rune", pg.locator(".wardsigil .bandrune").count() >= 12 and pg.locator(".wardsigil .mark path").count() >= 6 and pg.locator(".wardsigil .mark rect").count() == 0)
         pg.wait_for_timeout(1500)   # the sheet saves shortly after a change
         check(tag + "Fire is lit as a noun after an adjective", (ch()["ward"]["board"] or [{}])[-1].get("k") == "noun", ch()["ward"]["board"])
         pg.locator(".wardopt", has_text="3 words at 1 Sigil").click(); pg.wait_for_timeout(200)
@@ -79,7 +86,11 @@ with sync_playwright() as p:
         check(tag + "2× Sigils per AP: 42 per AP, 1 AP", any("AP needed1 AP → 38 Sigils" in f for f in ap), ap)
         pg.evaluate("CW.rollDie = () => 20")
         pg.locator(".wardactions .btn.primary", has_text="Inscribe").click(); pg.wait_for_timeout(300)
-        pg.locator(".wardcast .btn.primary", has_text="Roll the Warding check").click(); pg.wait_for_timeout(500)
+        check(tag + "inscribing stays on the Inscribe page", pg.locator(".wardboardf .wardcast").count() == 1 and pg.locator(".wardfloat").count() == 1, (pg.locator(".wardboardf .wardcast").count(), pg.locator(".wardfloat").count()))
+        pg.locator(".wardcast .btn.primary", has_text="Roll the Warding check").click(); pg.wait_for_timeout(600)
+        check(tag + "the casting animation plays", pg.locator(".wardsigil.casting").count() == 1 and pg.locator(".wardsigil .ray").count() > 0)
+        pg.wait_for_timeout(2400)
+        check(tag + "then the Ward is cast", pg.locator(".wardsigil.cast .burst").count() == 1)
         check(tag + "the check is d100 − modifier", "20 − 21 = -1" in pg.locator(".wardroll").inner_text(), pg.locator(".wardroll").inner_text())
         pg.fill("#ward-gain", "3"); pg.locator(".wardgain .btn.primary").click(); pg.wait_for_timeout(1500)
         c = ch()
@@ -96,7 +107,7 @@ with sync_playwright() as p:
         card = pg.locator(".wardcard", has_text="Ward of Alarming")
         check(tag + "a Ritual: (50 + 10 Fatigue) / 21 → 3 AP → 1 hour", "About 1 hour as a Ritual" in card.inner_text(), card.inner_text())
         card.locator(".btn.primary", has_text="Inscribe").click(); pg.wait_for_timeout(300)
-        pg.locator(".wardcast .btn.primary", has_text="Roll the Warding check").click(); pg.wait_for_timeout(400)
+        pg.locator(".wardcast .btn.primary", has_text="Roll the Warding check").click(); pg.wait_for_timeout(2900)
         pg.fill("#ward-gain", "3"); pg.locator(".wardgain .btn.primary").click(); pg.wait_for_timeout(1500)
         check(tag + "Ritual: 3 Fatigue becomes 1 (10 → 11)", ch()["ward"]["fatigue"] == 11, ch()["ward"]["fatigue"])
         pg.locator(".wardcast .btn.primary").click(); pg.wait_for_timeout(300)

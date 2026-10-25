@@ -22,21 +22,41 @@ function MagicTab({ c, update }) {
 
 /* ---------- Warding ---------- */
 const WARD_PAGES = [["words", "Words"], ["inscribe", "Inscribe"], ["wards", "Wards"]];
-// A small glyph for each kind of word: the same marks are drawn on the chips and on the sigil.
-const WARD_GLYPH = {
-  subject: "M0 -6a6 6 0 1 0 0.01 0z",
-  verb: "M0 -7L6.5 5H-6.5z",
-  noun: "M-5.5 -5.5h11v11h-11z",
-  adjective: "M0 -7L7 0L0 7L-7 0z",
-  adverb: "M0 -3a3 3 0 1 0 0.01 0z",
-  conj: "M0 -7a7 7 0 1 0 0.01 0z M0 -3.5a3.5 3.5 0 1 0 0.01 0z",
-};
 const wardText = tokens => tokens.map(t => t.text).join(" ");
 // A steady pseudo-random number from a string, so each word floats in its own place every time.
 const wardSeed = s => { let h = 2166136261; for (const ch of String(s)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return ((h >>> 0) % 10000) / 10000; };
+// Every word has its own rune, drawn from its spelling: a stave with two or three branches, hooks or crossings on a
+// small grid, like the old runic alphabets. The same word always gets the same rune; its kind gives the colour.
+const WARD_RUNES = new Map();
+function wardRune(text) {
+  const key = String(text).toLowerCase();
+  if (WARD_RUNES.has(key)) return WARD_RUNES.get(key);
+  let h = 0x811c9dc5; for (const ch of key) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  const rnd = () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
+  const twin = rnd() < .22, Y = [-6, -2, 2], strokes = [];
+  let d = twin ? "M-3 -6L-3 6M3 -6L3 6" : "M0 -6L0 6";
+  const x0 = twin ? 3 : 0, n = 2 + (rnd() < .45 ? 1 : 0);
+  for (let i = 0; i < n; i++) {
+    const y = Y[Math.floor(rnd() * 3)], side = rnd() < .5 ? -1 : 1, form = Math.floor(rnd() * 4), sx = side * x0;
+    const s = form === 0 ? `M${sx} ${y}L${sx + side * 4} ${y + 4}`            // a branch falling away
+      : form === 1 ? `M${sx} ${y + 4}L${sx + side * 4} ${y}`                     // a branch rising
+      : form === 2 ? `M${sx} ${y}L${sx + side * 4} ${y + 2}L${sx} ${y + 4}`      // a hook
+      : twin ? `M-3 ${y}L3 ${y + 4}` : `M-4 ${y}L4 ${y + 4}`;                    // a crossing
+    if (!strokes.includes(s)) { strokes.push(s); d += s; }
+  }
+  WARD_RUNES.set(key, d);
+  return d;
+}
+const Rune = ({ text, cls = "" }) => html`<svg class=${"rune " + cls} viewBox="-7 -8 14 16" aria-hidden="true"><path d=${wardRune(text)} /></svg>`;
+const narrowNow = () => { try { return matchMedia("(max-width: 760px)").matches; } catch { return false; } };
+function useNarrow() {
+  const [n, setN] = useState(narrowNow);
+  useEffect(() => { let m; try { m = matchMedia("(max-width: 760px)"); } catch { return; } const f = () => setN(m.matches); m.addEventListener("change", f); return () => m.removeEventListener("change", f); }, []);
+  return n;
+}
 
 function Warding({ c, update }) {
-  const st = R.wardState(c), w = c.ward;
+  const st = R.wardState(c);
   const [page, setPage] = useState(() => lsGet("cw-ward-page", "words"));
   useEffect(() => lsSet("cw-ward-page", page), [page]);
   const stamina = num(c.vitals && c.vitals.exhaustion);
@@ -63,7 +83,7 @@ function Warding({ c, update }) {
         <span class="muted">Takes ${st.fatigue} Sigils off every inscription. A long rest clears it.</span>
         ${st.fatigue > 0 && html`<button class="btn small" disabled=${stamina >= 10} title="Out of combat only. Each Stamina spent clears 10 Fatigue." onClick=${restWithStamina}>Spend 1 Stamina: −10 Fatigue</button>`}
       </div>
-      ${st.lvl < 8 && st.formulaic ? html`<p class="muted wardnote">${st.lvl < 8 ? "Warding is used out of combat at this level; from Warding 8 you can inscribe as a reaction." : ""}</p>` : ""}
+      ${st.formulaic && st.lvl < 8 && html`<p class="muted wardnote">Warding is used out of combat at this level; from Warding 8 you can inscribe as a reaction.</p>`}
     </section>
     <div class="seg wardpages" role="tablist" aria-label="Warding">${WARD_PAGES.map(([k, n]) => html`<button role="tab" aria-selected=${page === k} aria-pressed=${page === k} onClick=${() => setPage(k)}>${n}</button>`)}</div>
     ${page === "words" && html`<${WardWords} c=${c} st=${st} update=${update} />`}
@@ -71,76 +91,102 @@ function Warding({ c, update }) {
     ${page === "wards" && html`<${WardList} c=${c} st=${st} update=${update} toBoard=${() => setPage("inscribe")} />`}`;
 }
 
-/* ---------- Words: the warder's dictionary ---------- */
+/* ---------- Words: the warder's book ----------
+   An old book on the desk: the first page holds the grammar (Subjects, Adverbs, Conjunctions), then the Words of Power
+   in alphabetical order, six to a page, and a fresh page to write a new word on. Turn the pages with the corners or
+   the arrows; on a phone the book shows one page at a time. */
+const WARD_ROMAN = n => { let r = "", v = [[10, "x"], [9, "ix"], [5, "v"], [4, "iv"], [1, "i"]]; for (const [k, s] of v) while (n >= k) { r += s; n -= k; } return r; };
+const PER_PAGE = 6;
 function WardWords({ c, st, update }) {
-  const w = c.ward, [adding, setAdding] = useState(false), [editId, setEditId] = useState("");
-  const [extra, setExtra] = useState({ subject: "", adverb: "", conj: "" });
+  const w = c.ward, narrow = useNarrow();
+  const [editId, setEditId] = useState(""), [writing, setWriting] = useState(false);
   const list = [...w.words].sort((a, b) => a.w.localeCompare(b.w));
-  const addExtra = k => { const t = extra[k].trim(); if (!t) return;
-    if ([...R.WARD_GRAMMAR[k].words, ...w.extra[k]].some(x => x.toLowerCase() === t.toLowerCase())) { toast(`"${t}" is already there.`); return; }
-    update(x => { x.ward.extra[k].push(t); }); setExtra(Object.assign({}, extra, { [k]: "" })); };
+  const chunks = []; for (let i = 0; i < list.length; i += PER_PAGE) chunks.push(list.slice(i, i + PER_PAGE));
+  const pages = [{ k: "grammar" }, ...chunks.map(ws => ({ k: "words", ws }))];
+  if (!chunks.length || chunks[chunks.length - 1].length >= PER_PAGE) pages.push({ k: "words", ws: [] });   // a fresh page to write on
+  pages[pages.length - 1].last = true;
+  const per = narrow ? 1 : 2, spreads = Math.ceil(pages.length / per);
+  const [at, setAt] = useState(0), [turn, setTurn] = useState("");
+  const sp = Math.min(at, spreads - 1);
+  const go = to => {
+    to = R.clamp(to, 0, spreads - 1); if (to === sp || turn) return;
+    if (reduceMotion()) { setAt(to); return; }
+    setTurn(to > sp ? "next" : "prev"); setTimeout(() => setAt(to), 280); setTimeout(() => setTurn(""), 640);
+  };
+  // A new word lands on its page: turn there.
+  const learn = v => {
+    const id = "w" + rid();
+    update(y => { y.ward.words.push(Object.assign({ id }, v)); });
+    const idx = [...list, Object.assign({ id }, v)].sort((a, b) => a.w.localeCompare(b.w)).findIndex(x => x.id === id);
+    const pg = 1 + Math.floor(idx / PER_PAGE); setWriting(false); toast(`${v.w} is written in your book.`);
+    const to = Math.floor(pg / per); if (to !== sp) go(to);
+  };
+  const shown = pages.slice(sp * per, sp * per + per);
+  // A plain function, not a component, so a word half-written on a page survives the sheet refreshing.
+  const page = (p, n) => html`<div class=${"tomepage " + (n % 2 ? "recto" : "verso")} key=${n}>
+    ${p.k === "grammar" ? html`<h3 class="tomeh">Grammar</h3>
+      <p class="tomenote">Common words, at fixed costs.${st.lvl >= 9 ? " Shade of Erebus: Subjects and Adverbs cost less." : ""}</p>
+      ${["subject", "adverb", "conj"].map(k => html`<${GrammarLine} k=${k} st=${st} w=${w} update=${update} />`)}`
+    : html`${n === 1 && html`<h3 class="tomeh">Words of Power</h3>`}
+      ${p.ws.map(x => editId === x.id ? html`<${WordForm} key=${x.id} init=${x} words=${w.words} onCancel=${() => setEditId("")}
+          onSave=${v => { update(y => { const i = y.ward.words.findIndex(z => z.id === x.id); if (i >= 0) y.ward.words[i] = Object.assign({}, y.ward.words[i], v); }); setEditId(""); }} />`
+        : html`<div class=${"tomeword k-" + ((x.kinds || [])[0] || "noun")} key=${x.id}>
+          <${Rune} text=${x.w} />
+          <div class="tomewordtext"><b>${x.w}</b><span class="tomecost">${num(x.cost)} Sigils · <i>${(x.kinds || []).map(k2 => R.WARD_KIND_NAME[k2].toLowerCase()).join(", ")}</i></span>
+            ${x.alts && html`<small>also ${x.alts}</small>`}${x.note && html`<small class="tomeaside">${x.note}</small>`}</div>
+          <span class="tomeacts"><button class="iconbtn" aria-label=${`Edit ${x.w}`} title="Edit (lower the cost as you study it)" onClick=${() => setEditId(x.id)}>${PENCIL}</button>
+            <button class="iconbtn" aria-label=${`Forget ${x.w}`} title="Strike it from the book" onClick=${() => update(y => { y.ward.words = y.ward.words.filter(z => z.id !== x.id); })}>×</button></span></div>`)}
+      ${!w.words.length && n === 1 && html`<p class="tomenote">The pages are empty. Write your first Word of Power: Fire, Ward, Ignite, Cold…</p>`}
+      ${p.last && html`<div class="tomewrite">${writing ? html`<${WordForm} words=${w.words} onCancel=${() => setWriting(false)} onSave=${learn} />`
+        : html`<button type="button" class="tomenew" onClick=${() => setWriting(true)}>+ Write a new word</button>`}</div>`}`}
+    <span class="tomefolio">${WARD_ROMAN(n)}</span>
+  </div>`;
   return html`<section class="frame wardbook">
     <h2 class="h"><span>Words</span><i class="orn" aria-hidden="true"></i></h2>
-    <p class="sub">Your dictionary. Adjectives, verbs and nouns are Words of Power: each is your own understanding of a concept, with its own Sigil cost. You learn them by Research or Blueprinting, and the cost comes down as you study them. They can't be learned from another warder.</p>
-    ${!st.spontaneous && html`<p class="ptlocked">Words of Power go into Spontaneous Wards from Warding 5 (Works of a Writer). You can fill the dictionary now.</p>`}
-    <div class="wardpagesbook">
-      <div class="wardleaf">
-        <h3 class="wardleafh">Words of Power</h3>
-        ${!w.words.length && html`<p class="muted">No words yet. Learn your first one below: Fire, Ward, Ignite, Cold…</p>`}
-        ${list.length > 0 && html`<div class="wardgroup"><p class="wardkey">${R.WORD_KINDS.map(k => html`<span class=${"k-" + k}><svg viewBox="-8 -8 16 16" aria-hidden="true"><path d=${WARD_GLYPH[k]} /></svg>${R.WARD_KIND_NAME[k]}</span>`)}</p>
-          ${list.map(x => editId === x.id ? html`<${WordForm} key=${x.id} init=${x} onCancel=${() => setEditId("")} onSave=${v => { update(y => { const i = y.ward.words.findIndex(z => z.id === x.id); if (i >= 0) y.ward.words[i] = Object.assign({}, y.ward.words[i], v); }); setEditId(""); }} words=${w.words} />`
-            : html`<div class="wardentry"><div><b>${x.w}<span class="wardmarks" title=${(x.kinds || []).map(k2 => R.WARD_KIND_NAME[k2]).join(" / ")}>${(x.kinds || []).map(k2 => html`<svg class=${"k-" + k2} viewBox="-8 -8 16 16" aria-label=${R.WARD_KIND_NAME[k2]}><path d=${WARD_GLYPH[k2]} /></svg>`)}</span></b>
-                <span class="wardcost">${num(x.cost)} Sigils · ${(x.kinds || []).map(k2 => R.WARD_KIND_NAME[k2].toLowerCase()).join(" / ")}</span>
-                ${x.alts && html`<small>Also: ${x.alts}</small>`}${x.note && html`<small class="muted">${x.note}</small>`}</div>
-              <span class="row"><button class="iconbtn" aria-label=${`Edit ${x.w}`} title="Edit (lower the cost as you study it)" onClick=${() => setEditId(x.id)}>${PENCIL}</button>
-                <button class="iconbtn" aria-label=${`Forget ${x.w}`} title="Remove from the dictionary" onClick=${() => update(y => { y.ward.words = y.ward.words.filter(z => z.id !== x.id); })}>×</button></span></div>`)}</div>`}
-        <div class="ptaddbox">${!adding ? html`<button class="btn small ptaddown" onClick=${() => setAdding(true)}>+ Learn a word</button>`
-          : html`<${WordForm} words=${w.words} onCancel=${() => setAdding(false)} onSave=${v => { update(y => { y.ward.words.push(Object.assign({ id: "w" + rid() }, v)); }); setAdding(false); toast(`${v.w} is in your dictionary.`); }} />`}</div>
-      </div>
-      <div class="wardleaf">
-        <h3 class="wardleafh">Grammar</h3>
-        <p class="muted">Common words with fixed costs.${st.lvl >= 9 ? " Shade of Erebus: Subjects and Adverbs cost less." : ""}</p>
-        ${["subject", "adverb", "conj"].map(k => { const G = R.WARD_GRAMMAR[k], cost = k === "subject" ? st.subjectCost : k === "adverb" ? st.adverbCost : G.cost;
-          return html`<div class="wardgroup"><h4><svg viewBox="-8 -8 16 16" aria-hidden="true"><path d=${WARD_GLYPH[k]} /></svg>${G.n}s · ${cost} Sigil${cost === 1 ? "" : "s"} each${k === "conj" && !st.conj ? " · Warding 7" : ""}</h4>
-            <div class="wardchips">${G.words.map(t => html`<span class="wardtag">${t}</span>`)}
-              ${w.extra[k].map(t => html`<span class="wardtag own">${t}<button class="iconbtn" aria-label=${`Remove ${t}`} onClick=${() => update(y => { y.ward.extra[k] = y.ward.extra[k].filter(z => z !== t); })}>×</button></span>`)}</div>
-            <form class="row wardaddx" onSubmit=${e => { e.preventDefault(); addExtra(k); }}>
-              <input class="inp" aria-label=${`Add a ${G.n.toLowerCase()}`} maxlength="30" placeholder=${k === "subject" ? "the wolves" : k === "adverb" ? "at" : "unless"} value=${extra[k]} onInput=${e => setExtra(Object.assign({}, extra, { [k]: e.target.value }))} />
-              <button class="btn small" type="submit" disabled=${!extra[k].trim()}>Add</button></form></div>`; })}
-      </div>
+    <p class="sub">Your book of words. Adjectives, verbs and nouns are Words of Power: your own understanding of a concept, each with its own Sigil cost. You learn them by Research or Blueprinting, the cost comes down as you study them, and no other warder can teach them to you.</p>
+    ${!st.spontaneous && html`<p class="ptlocked">Words of Power go into Spontaneous Wards from Warding 5 (Works of a Writer). You can fill the book now.</p>`}
+    <div class=${"tome" + (narrow ? " single" : "") + (turn ? " turning " + turn : "")}>
+      <div class="tomepages">${shown.map((p, i) => page(p, sp * per + i + 1))}
+        ${!narrow && shown.length < 2 && html`<div class="tomepage verso blank"></div>`}</div>
+      ${turn && html`<i class=${"tomeleaf " + turn} aria-hidden="true"></i>`}
+      <button type="button" class="tomecorner prev" aria-label="Turn back a page" disabled=${sp === 0} onClick=${() => go(sp - 1)}></button>
+      <button type="button" class="tomecorner next" aria-label="Turn the page" disabled=${sp >= spreads - 1} onClick=${() => go(sp + 1)}></button>
     </div>
+    <div class="row tomenav"><button class="btn small" disabled=${sp === 0} onClick=${() => go(sp - 1)}>‹ Back</button>
+      <span class="muted">${per === 2 ? `Pages ${sp * 2 + 1}–${Math.min(pages.length, sp * 2 + 2)}` : `Page ${sp + 1}`} of ${pages.length}</span>
+      <button class="btn small" disabled=${sp >= spreads - 1} onClick=${() => go(sp + 1)}>Turn ›</button></div>
   </section>`;
 }
-// Learn (or edit) a Word of Power: the word, what kinds of word it can be, its Sigil cost, related concepts.
-function WordForm({ init, words, onSave, onCancel }) {
-  const [f, setF] = useState(() => Object.assign({ w: "", kinds: ["noun"], cost: 20, alts: "", note: "" }, init || {}));
-  const set = (k, v) => setF(Object.assign({}, f, { [k]: v }));
-  const id = k => "wf-" + (init ? init.id : "new") + "-" + k, name = f.w.trim();
-  const taken = name && words.some(x => x.id !== (init && init.id) && x.w.toLowerCase() === name.toLowerCase());
-  const ok = name && !taken && f.kinds.length;
-  return html`<form class="brform wardform" onSubmit=${e => { e.preventDefault(); if (ok) onSave({ w: name, kinds: f.kinds, cost: Math.max(0, Math.round(num(f.cost))), alts: f.alts.trim(), note: f.note.trim() }); }}>
-    <div class="grid2"><div class="mini"><label for=${id("w")}>Word</label><input id=${id("w")} type="text" maxlength="30" placeholder="Fire" value=${f.w} onInput=${e => set("w", e.target.value)} /></div>
-      <div class="mini"><label for=${id("c")}>Sigil cost</label><input id=${id("c")} type="number" min="0" value=${f.cost} onInput=${e => set("cost", e.target.value)} /></div></div>
-    <div class="row wardkinds" role="group" aria-label="It can be a">${R.WORD_KINDS.map(k => html`<label class="amforge"><input type="checkbox" checked=${f.kinds.includes(k)}
-      onChange=${e => set("kinds", e.target.checked ? [...f.kinds, k] : f.kinds.filter(x => x !== k))} /> ${R.WARD_KIND_NAME[k]}</label>`)}</div>
-    <div class="mini"><label for=${id("a")}>Also covers (the same concept)</label><input id=${id("a")} type="text" maxlength="120" placeholder="heat, burning, ignite" value=${f.alts} onInput=${e => set("alts", e.target.value)} /></div>
-    <div class="mini"><label for=${id("n")}>Note</label><input id=${id("n")} type="text" maxlength="160" placeholder="Learned from the burnt chapel's frescoes" value=${f.note} onInput=${e => set("note", e.target.value)} /></div>
-    ${taken && html`<p class="flag bad">${name} is already in the dictionary.</p>`}
-    ${!f.kinds.length && html`<p class="flag bad">Tick at least one: noun, verb or adjective.</p>`}
-    <div class="row"><button class="btn small primary" type="submit" disabled=${!ok}>${init ? "Save" : "Learn it"}</button><button class="btn small" type="button" onClick=${onCancel}>Cancel</button></div></form>`;
+// One line of the grammar page: its words (the book's and yours) and a place to write another.
+function GrammarLine({ k, st, w, update }) {
+  const G = R.WARD_GRAMMAR[k], cost = k === "subject" ? st.subjectCost : k === "adverb" ? st.adverbCost : G.cost;
+  const [v, setV] = useState("");
+  const add = () => { const t = v.trim(); if (!t) return;
+    if ([...G.words, ...w.extra[k]].some(x => x.toLowerCase() === t.toLowerCase())) { toast(`"${t}" is already there.`); return; }
+    update(x => { x.ward.extra[k].push(t); }); setV(""); };
+  return html`<div class=${"tomegram k-" + k}>
+    <h4>${G.n}s <span>${cost} Sigil${cost === 1 ? "" : "s"} each${k === "conj" && !st.conj ? " · from Warding 7" : ""}</span></h4>
+    <p class="tomegramwords">${G.words.map(t => html`<span>${t}</span>`)}${w.extra[k].map(t => html`<span class="own">${t}<button class="iconbtn" aria-label=${`Remove ${t}`} onClick=${() => update(y => { y.ward.extra[k] = y.ward.extra[k].filter(z => z !== t); })}>×</button></span>`)}</p>
+    <form class="tomeadd" onSubmit=${e => { e.preventDefault(); add(); }}>
+      <input aria-label=${`Write a ${G.n.toLowerCase()}`} maxlength="30" placeholder=${k === "subject" ? "the wolves" : k === "adverb" ? "at" : "unless"} value=${v} onInput=${e => setV(e.target.value)} />
+      <button class="iconbtn" type="submit" aria-label=${`Add the ${G.n.toLowerCase()}`} disabled=${!v.trim()}>+</button></form></div>`;
 }
 
-/* ---------- Inscribe: the words float; picked in order, they link into the Ward's sigil ---------- */
+/* ---------- Inscribe ----------
+   The words float; only those that can come next are lit. Picked in order, each flies into the circle as its rune and
+   is linked to the one before. A finished Ward closes the figure, draws its inner star and flares. Inscribing happens
+   right here: the check is rolled, the sigil is cast, and the GM's Fatigue is noted, all without leaving the board. */
 function WardBoard({ c, st, update }) {
   const w = c.ward, tokens = w.board || [];
   const [o, setO] = useState({ double: false, calm: false, epic: false, ritual: false });
-  const [name, setName] = useState(""), [cast, setCast] = useState(null);
+  const [name, setName] = useState(""), [cast, setCast] = useState(null), [phase, setPhase] = useState("");
+  const sigilRef = useRef(null);
   const res = R.wardCost(c, tokens, o.epic && !o.ritual);
   const next = R.wardNext(tokens);
   const plan = R.wardPlan(c, res.total, o);
   const setBoard = fn => update(x => { x.ward.board = fn(x.ward.board || []); });
-  // Every word on the board: the grammar words and the dictionary. A word that is both a noun and a verb (Fire,
-  // Ignite) takes whichever role fits next.
+  // Every word on the board: the grammar words and the book. A word that is both a noun and a verb (Fire, Ignite)
+  // takes whichever role fits next.
   const pool = [
     ...["subject", "adverb", "conj"].flatMap(k => (k === "conj" && !st.conj ? [] : [...R.WARD_GRAMMAR[k].words, ...w.extra[k]].map(t => ({ key: k + ":" + t, kinds: [k], text: t })))),
     ...(st.spontaneous ? w.words.map(x => ({ key: "w:" + x.id, kinds: x.kinds || [], text: x.w, id: x.id, cost: num(x.cost) })) : []),
@@ -149,7 +195,9 @@ function WardBoard({ c, st, update }) {
   // The field is a grid of cells, one per word, handed out in a steady shuffled order.
   const cols = Math.max(3, Math.ceil(Math.sqrt(pool.length * 1.4))), rows = Math.max(3, Math.ceil(pool.length / cols));
   const cells = useMemo(() => Array.from({ length: cols * rows }, (_, j) => j).sort((a, b) => wardSeed("c" + a) - wardSeed("c" + b)), [cols, rows]);
-  const pick = p => { const k = fit(p); if (!k) return; setBoard(b => [...b, { k, text: p.text, id: p.id }]); };
+  const pick = (p, e) => { const k = fit(p); if (!k || cast) return;
+    flyRune(e.currentTarget, sigilRef.current, p.text, k, tokens.length, [...tokens, { k }]);
+    setBoard(b => [...b, { k, text: p.text, id: p.id }]); };
   const saved = w.wards.find(x => x.kind === "spontaneous" && wardText(x.tokens) === wardText(tokens));
   const save = () => { const n = name.trim(); if (!n || !res.ok) return;
     update(x => { const i = x.ward.wards.findIndex(y => y.n.toLowerCase() === n.toLowerCase());
@@ -159,54 +207,86 @@ function WardBoard({ c, st, update }) {
   if (!st.formulaic) return html`<section class="frame"><p class="ptlocked">Warding 3 (The Mightier Pen) lets you inscribe Formulaic Wards; Warding 5 adds Spontaneous Wards built from your Words of Power.</p></section>`;
   if (!st.spontaneous) return html`<section class="frame"><h2 class="h"><span>Inscribe</span><i class="orn" aria-hidden="true"></i></h2>
     <p class="ptlocked">Building your own Wards from Words of Power comes at Warding 5 (Works of a Writer). Until then, inscribe Formulaic Wards from the Wards page.</p></section>`;
-  if (cast) return html`<${WardCast} c=${c} st=${st} update=${update} cast=${cast} onClose=${() => setCast(null)} />`;
-  return html`<section class="frame wardboardf">
+  return html`<section class=${"frame wardboardf" + (cast ? " casting" : "")}>
     <h2 class="h"><span>Inscribe</span><i class="orn" aria-hidden="true"></i></h2>
-    <p class="sub">Pick the words in order. Only the words that can come next are lit; each one you pick is linked into the sigil.</p>
+    <p class="sub">Pick the words in order. Only the words that can come next are lit; each one you pick flies into the circle as its rune.</p>
     <div class="wardstage">
       <div class="wardfloat" role="group" aria-label="Words">
         ${pool.map((p, i) => { const k = fit(p), r = wardSeed(p.key), r2 = wardSeed(p.key + "~");
           // Each word gets its own cell of the field (in a shuffled order) and drifts a little inside it, so none cover another.
           const cell = cells[i], cx = (cell % cols + .05 + r * .14) / cols, cy = (Math.floor(cell / cols) + .14 + r2 * .36) / rows;
-          return html`<button type="button" class=${"wardword k-" + (k || p.kinds[0]) + (k ? "" : " off")} disabled=${!k} key=${p.key}
+          return html`<button type="button" class=${"wardword k-" + (k || p.kinds[0]) + (k ? "" : " off")} disabled=${!k || !!cast} key=${p.key}
             style=${`--x:${(cx * 100).toFixed(1)}%;--y:${(cy * 100).toFixed(1)}%;--dx:${((r - .5) * 18).toFixed(0)}px;--dy:${((r2 - .5) * 14).toFixed(0)}px;--t:${(7 + r * 6).toFixed(1)}s;--d:${(-r2 * 6).toFixed(1)}s`}
-            title=${k ? `${R.WARD_KIND_NAME[k]}${p.id ? ` · ${p.cost} Sigils` : ""}` : `Can't come next (${p.kinds.map(x => R.WARD_KIND_NAME[x].toLowerCase()).join(" / ")})`} onClick=${() => pick(p)}>
-            <svg viewBox="-8 -8 16 16" aria-hidden="true"><path d=${WARD_GLYPH[k || p.kinds[0]]} /></svg>${p.text}</button>`; })}
-        ${!w.words.length && html`<p class="muted wardempty">Your dictionary is empty. Learn some Words of Power on the Words page.</p>`}
+            title=${k ? `${R.WARD_KIND_NAME[k]}${p.id ? ` · ${p.cost} Sigils` : ""}` : `Can't come next (${p.kinds.map(x => R.WARD_KIND_NAME[x].toLowerCase()).join(" / ")})`} onClick=${e => pick(p, e)}>
+            <${Rune} text=${p.text} />${p.text}</button>`; })}
+        ${!w.words.length && html`<p class="muted wardempty">Your book is empty. Write some Words of Power on the Words page.</p>`}
+        <i class="wardmotes" aria-hidden="true"></i>
       </div>
-      <${WardSigil} tokens=${tokens} ok=${res.ok} />
+      <${WardSigil} tokens=${tokens} ok=${res.ok} phase=${phase} svgRef=${sigilRef} />
     </div>
     <div class="wardsentence" aria-live="polite">
-      ${tokens.length ? res.lines.map(l => html`<span class=${"wardtok k-" + l.t.k + (l.epic ? " epic" : "")} title=${R.WARD_KIND_NAME[l.t.k]}><b>${l.t.text}</b><small>${l.epic ? html`<s>${l.base}</s> 1` : l.cost}</small></span>`)
+      ${tokens.length ? res.lines.map(l => html`<span class=${"wardtok k-" + l.t.k + (l.epic ? " epic" : "")} title=${R.WARD_KIND_NAME[l.t.k]}><${Rune} text=${l.t.text} /><b>${l.t.text}</b><small>${l.epic ? html`<s>${l.base}</s> 1` : l.cost}</small></span>`)
         : html`<span class="muted">Start with a Subject: I, The Ward…</span>`}
       <span class="wardtotal"><b>${res.total}</b> Sigils</span>
-      <span class="row"><button class="btn small" disabled=${!tokens.length} onClick=${() => setBoard(b => b.slice(0, -1))}>Undo</button>
-        <button class="btn small" disabled=${!tokens.length} onClick=${() => setBoard(() => [])}>Clear</button></span>
+      ${!cast && html`<span class="row"><button class="btn small" disabled=${!tokens.length} onClick=${() => setBoard(b => b.slice(0, -1))}>Undo</button>
+        <button class="btn small" disabled=${!tokens.length} onClick=${() => setBoard(() => [])}>Clear</button></span>`}
     </div>
     ${res.problems.length > 0 && tokens.length > 0 && html`<ul class="wardproblems">${res.problems.map(p => html`<li>${p}</li>`)}</ul>`}
-    <${WardOptions} st=${st} o=${o} setO=${setO} wop=${tokens.some(t => R.WORD_KINDS.includes(t.k))} />
-    <${WardCostBox} st=${st} plan=${plan} total=${res.total} o=${o} />
-    <div class="row wardactions">
-      <button class="btn primary" disabled=${!res.ok} onClick=${() => setCast({ name: saved ? saved.n : wardText(tokens), sentence: wardText(tokens), cost: res.total, o: Object.assign({}, o, { epic: o.epic && res.epicUsed > 0 }) })}>Inscribe</button>
-      <form class="row wardsave" onSubmit=${e => { e.preventDefault(); save(); }}>
-        <input class="inp" aria-label="Name this ward" maxlength="50" placeholder=${saved ? `Saved as ${saved.n}` : "Name it to save it"} value=${name} onInput=${e => setName(e.target.value)} />
-        <button class="btn" type="submit" disabled=${!res.ok || !name.trim()}>${w.wards.some(x => x.n.toLowerCase() === name.trim().toLowerCase()) ? "Update ward" : "Save ward"}</button></form>
-    </div>
+    ${cast ? html`<${WardCast} c=${c} st=${st} update=${update} cast=${cast} onPhase=${setPhase} onClose=${() => { setCast(null); setPhase(""); }} />`
+      : html`<${WardOptions} st=${st} o=${o} setO=${setO} wop=${tokens.some(t => R.WORD_KINDS.includes(t.k))} />
+      <${WardCostBox} st=${st} plan=${plan} total=${res.total} o=${o} />
+      <div class="row wardactions">
+        <button class="btn primary" disabled=${!res.ok} onClick=${() => setCast({ name: saved ? saved.n : wardText(tokens), sentence: wardText(tokens), cost: res.total, o: Object.assign({}, o, { epic: o.epic && res.epicUsed > 0 }) })}>Inscribe</button>
+        <form class="row wardsave" onSubmit=${e => { e.preventDefault(); save(); }}>
+          <input class="inp" aria-label="Name this ward" maxlength="50" placeholder=${saved ? `Saved as ${saved.n}` : "Name it to save it"} value=${name} onInput=${e => setName(e.target.value)} />
+          <button class="btn" type="submit" disabled=${!res.ok || !name.trim()}>${w.wards.some(x => x.n.toLowerCase() === name.trim().toLowerCase()) ? "Update ward" : "Save ward"}</button></form>
+      </div>`}
   </section>`;
 }
-// The sigil: each word is a mark on a ring, linked to the one before it; a finished Ward closes the figure.
-function WardSigil({ tokens, ok }) {
-  const n = tokens.length, R0 = 74;
-  const pts = tokens.map((t, i) => { const a = -Math.PI / 2 + (n ? (i / Math.max(n, 3)) * Math.PI * 2 : 0), r = t.k === "adverb" ? R0 * .62 : t.k === "conj" ? R0 * .4 : R0;
+// Where the i-th of n words sits on the sigil (adverbs nearer the middle, conjunctions nearer still).
+function sigilPoints(tokens) {
+  const n = tokens.length, R0 = 72;
+  return tokens.map((t, i) => { const a = -Math.PI / 2 + (i / Math.max(n, 3)) * Math.PI * 2, r = t.k === "adverb" ? R0 * .62 : t.k === "conj" ? R0 * .4 : R0;
     return [Math.cos(a) * r, Math.sin(a) * r]; });
+}
+// A picked word's rune flies from its chip into its place in the circle.
+function flyRune(from, svg, text, k, i, after) {
+  if (!from || !svg || reduceMotion()) return;
+  const a = from.getBoundingClientRect(), b = svg.getBoundingClientRect(), p = sigilPoints(after)[i] || [0, 0];
+  const tx = b.left + b.width / 2 + p[0] * b.width / 200, ty = b.top + b.height / 2 + p[1] * b.height / 200;
+  const el = document.createElement("div");
+  el.className = "runefly k-" + k; el.setAttribute("aria-hidden", "true");
+  el.innerHTML = `<svg viewBox="-7 -8 14 16"><path d="${wardRune(text)}" /></svg>`;
+  el.style.left = a.left + 12 + "px"; el.style.top = a.top + a.height / 2 + "px";
+  (document.querySelector(".magic") || document.body).appendChild(el);
+  const dx = tx - (a.left + 12), dy = ty - (a.top + a.height / 2);
+  el.animate([{ transform: "translate(-50%, -50%) scale(.9)", opacity: 0 }, { transform: `translate(calc(-50% + ${dx * .45}px), calc(-50% + ${dy * .45 - 40}px)) scale(1.6) rotate(-12deg)`, opacity: 1, offset: .45 },
+    { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1)`, opacity: .2 }], { duration: 560, easing: "cubic-bezier(.3,.1,.3,1)" }).onfinish = () => el.remove();
+}
+// The sigil: a band of runes turning slowly round the rim; each word's rune sits on the circle, linked to the one
+// before. A finished Ward closes the figure, draws its inner star and flares. phase "casting" (the check is rolled):
+// the band spins up, rays reach out from the core to every rune; "cast": a burst of light and a ring rolling outward.
+function WardSigil({ tokens, ok, phase, svgRef, small }) {
+  const n = tokens.length, pts = sigilPoints(tokens);
   const path = pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
-  return html`<svg class=${"wardsigil" + (ok ? " ok" : "")} viewBox="-100 -100 200 200" role="img" aria-label=${n ? `Sigil of ${n} word${n === 1 ? "" : "s"}${ok ? ", complete" : ""}` : "Empty sigil"}>
-    <circle class="ring" r="92" /><circle class="ring thin" r="84" />
-    ${Array.from({ length: 24 }, (_, i) => { const a = i * Math.PI / 12; return html`<line class="tick" x1=${Math.cos(a) * 84} y1=${Math.sin(a) * 84} x2=${Math.cos(a) * (i % 2 ? 88 : 92)} y2=${Math.sin(a) * (i % 2 ? 88 : 92)} />`; })}
-    ${ok && n > 3 && html`<path class="star" d=${pts.map((_, i) => { const a = pts[i], b = pts[(i + 2) % n]; return `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`; }).join("")} key=${"s" + n} />`}
+  const band = useMemo(() => Array.from({ length: 18 }, (_, i) => wardRune("band" + i)), []);
+  const was = useRef(ok), [flare, setFlare] = useState(0);
+  useEffect(() => { if (ok && !was.current && n) setFlare(f => f + 1); was.current = ok; }, [ok, n]);
+  return html`<svg ref=${svgRef} class=${"wardsigil" + (ok ? " ok" : "") + (phase ? " " + phase : "") + (small ? " small" : "")} viewBox="-100 -100 200 200" role="img"
+    aria-label=${n ? `Sigil of ${n} word${n === 1 ? "" : "s"}${ok ? ", complete" : ""}` : "Empty sigil"}>
+    <defs><radialGradient id="ward-glow"><stop offset="0" stop-color="var(--brass)" stop-opacity=".55" /><stop offset="1" stop-color="var(--brass)" stop-opacity="0" /></radialGradient></defs>
+    <circle class="halo" r="96" fill="url(#ward-glow)" />
+    <circle class="ring" r="95" /><circle class="ring thin" r="80" />
+    <g class="band">${band.map((d, i) => { const a = i * 20; return html`<g transform=${`rotate(${a}) translate(0 -87.5) scale(.62)`}><path class="bandrune" style=${`--i:${i}`} d=${d} /></g>`; })}</g>
+    <circle class="ring inner" r="54" />
+    ${ok && n > 3 && html`<path class="star" d=${pts.map((_, i) => { const a = pts[i], b = pts[(i + 2) % n]; return `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`; }).join("")} key=${"s" + n + flare} />`}
     ${n > 1 && html`<path class="link" d=${path + (ok && n > 2 ? " Z" : "")} key=${"p" + n} />`}
-    ${pts.map((p, i) => html`<g class=${"mark k-" + tokens[i].k} transform=${`translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})`} key=${i}><path d=${WARD_GLYPH[tokens[i].k]} /></g>`)}
-    ${ok && html`<circle class="core" r="10" />`}
+    ${phase === "casting" && pts.map((p, i) => html`<line class="ray" style=${`--i:${i}`} x1="0" y1="0" x2=${p[0].toFixed(1)} y2=${p[1].toFixed(1)} />`)}
+    ${pts.map((p, i) => html`<g class=${"mark k-" + tokens[i].k} transform=${`translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})`} key=${i + ":" + tokens[i].text}>
+      <circle r="9.5" /><path d=${wardRune(tokens[i].text)} transform="scale(.95)" /></g>`)}
+    ${ok && html`<circle class="core" r="8" />`}
+    ${flare > 0 && html`<circle class="shock" r="20" key=${"f" + flare} />`}
+    ${phase === "cast" && html`<circle class="shock big" r="20" /><circle class="burst" r="14" />`}
   </svg>`;
 }
 // The Active perks and inscribing as a Ritual. The perks only work on a Ward that isn't a Ritual Ward.
@@ -232,12 +312,19 @@ function WardCostBox({ st, plan, total, o }) {
   ].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>`;
 }
 
-/* ---------- inscribing: the check, then the Fatigue the GM sets ---------- */
-function WardCast({ c, st, update, cast, onClose }) {
-  const [roll, setRoll] = useState(null), [gain, setGain] = useState(cast.fatigue == null ? "" : String(cast.fatigue)), [done, setDone] = useState(null);
+/* ---------- inscribing, in place: the check is rolled while the sigil is cast, then the GM's Fatigue ---------- */
+const CAST_MS = 2300;
+function WardCast({ c, st, update, cast, onClose, onPhase }) {
+  const [roll, setRoll] = useState(null), [gain, setGain] = useState(""), [done, setDone] = useState(null), [busy, setBusy] = useState(false);
   const plan = R.wardPlan(c, cast.cost, cast.o);
-  const go = async () => { const r = await askRoll({ title: `Warding check: ${cast.name}`, dice: [{ n: 1, sides: 100 }], cancel: true, note: `d100 − ${st.mod}. The GM sets the DC; lower is better. A vague Ward can still go astray on a high roll.` });
-    if (r) setRoll(r[0]); };
+  const timer = useRef(0);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const go = async () => {
+    const r = await askRoll({ title: `Warding check: ${cast.name}`, dice: [{ n: 1, sides: 100 }], cancel: true, note: `d100 − ${st.mod}. The GM sets the DC; lower is better. A vague Ward can still go astray on a high roll.` });
+    if (!r) return;
+    setBusy(true); onPhase("casting");
+    timer.current = setTimeout(() => { setRoll(r[0]); setBusy(false); onPhase("cast"); }, reduceMotion() ? 120 : CAST_MS);
+  };
   const finish = () => {
     const f = R.wardFatigue(gain, cast.o);
     update(x => {
@@ -251,30 +338,31 @@ function WardCast({ c, st, update, cast, onClose }) {
       x.ward.ledger = [{ id: rid(), t: Date.now(), n: cast.name, s: cast.sentence, sigils: cast.cost, how: what, roll: `${roll} − ${st.mod} = ${roll - st.mod}`, fatigue: f }, ...(x.ward.ledger || [])].slice(0, 20);
       addLog(x, `Warding: inscribed ${cast.name} (${cast.cost} Sigils, ${what}; check ${roll} − ${st.mod} = ${roll - st.mod}; Fatigue +${f} → ${was + f})`);
     });
-    setDone(f);
+    setDone(f); onPhase("");
   };
-  return html`<section class="frame wardcast">
-    <h2 class="h"><span>Inscribing</span><i class="orn" aria-hidden="true"></i></h2>
-    <p class="wardcastname"><b>${cast.name}</b>${cast.sentence !== cast.name ? html`<span class="muted">“${cast.sentence}”</span>` : ""}</p>
-    <div class="facts">${[["Sigils", cast.cost], cast.o.ritual ? ["Takes", `${plan.hours} hour${plan.hours === 1 ? "" : "s"}`] : ["AP", `${plan.ap}`],
-      ["With", [cast.o.ritual && "Ritual", cast.o.double && !cast.o.ritual && "2× Sigils", cast.o.calm && !cast.o.ritual && "no Fatigue", cast.o.epic && !cast.o.ritual && "The First Epic"].filter(Boolean).join(", ") || "nothing extra"]]
-      .map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>
-    ${roll == null ? html`<div class="row"><button class="btn primary" onClick=${go}>Roll the Warding check</button><button class="btn" onClick=${onClose}>Back</button></div>`
-      : done == null ? html`<div class="ptdice ok wardroll"><span class="d100">${roll}</span><span class="ptmath">${roll} − ${st.mod} = <b>${roll - st.mod}</b> · the GM says whether it holds</span></div>
+  const with_ = [cast.o.ritual && "as a Ritual", cast.o.double && !cast.o.ritual && "2× Sigils", cast.o.calm && !cast.o.ritual && "no Fatigue", cast.o.epic && !cast.o.ritual && "The First Epic"].filter(Boolean).join(", ");
+  return html`<div class="wardcast" role="region" aria-label="Inscribing">
+    <p class="wardcastname"><span class="lbl">Inscribing</span><b>${cast.name}</b>
+      <span class="muted">${cast.cost} Sigils · ${cast.o.ritual ? `${plan.hours} hour${plan.hours === 1 ? "" : "s"}` : `${plan.ap} AP`}${with_ ? ` · ${with_}` : ""}</span></p>
+    ${done != null ? html`<p class="ptsavedok">Inscribed. Fatigue +${done}, now ${st.fatigue}. It's in the Ledger on the Wards page.</p><div class="row"><button class="btn primary" onClick=${onClose}>Back to the board</button></div>`
+      : roll == null ? html`<div class="row">${busy ? html`<p class="wardchant" aria-live="polite">The Sigils take hold…</p>`
+          : html`<button class="btn primary" onClick=${go}>Roll the Warding check</button><button class="btn" onClick=${onClose}>Cancel</button>`}</div>`
+      : html`<div class="ptdice ok wardroll"><span class="d100">${roll}</span><span class="ptmath">${roll} − ${st.mod} = <b>${roll - st.mod}</b> · the GM says whether it holds</span></div>
         <form class="row wardgain" onSubmit=${e => { e.preventDefault(); finish(); }}>
           <div class="mini"><label for="ward-gain">Fatigue gained (the GM decides)</label><input id="ward-gain" type="number" min="0" placeholder="0" value=${gain} onInput=${e => setGain(e.target.value)} /></div>
           <span class="muted">${cast.o.calm && !cast.o.ritual ? "No Fatigue: this inscription gains none." : cast.o.ritual ? "As a Ritual: under 10 becomes 1, 10 or more is halved." : cast.o.double ? "2× Sigils: it counts double." : ""}${num(gain) ? ` You gain ${R.wardFatigue(gain, cast.o)}.` : ""}</span>
-          <button class="btn primary" type="submit">Done</button></form>`
-      : html`<p class="ptsavedok">Inscribed. Fatigue +${done}, now ${st.fatigue}. It's in the Ledger on the Wards page.</p><button class="btn primary" onClick=${onClose}>Back to the board</button>`}
-  </section>`;
+          <button class="btn primary" type="submit">Done</button></form>`}
+  </div>`;
 }
 
 /* ---------- Wards: saved Spontaneous Wards and learned Formulaic Wards ---------- */
+// A Formulaic Ward has no words of its own, so its sigil is drawn from the letters of its name.
+const nameTokens = n => String(n).split(/\s+/).filter(Boolean).slice(0, 7).map((t, i) => ({ k: i === 0 ? "subject" : ["verb", "noun", "adjective", "noun"][i % 4], text: t }));
 function WardList({ c, st, update, toBoard }) {
-  const w = c.ward, [adding, setAdding] = useState(false), [cast, setCast] = useState(null), [o, setO] = useState({ double: false, calm: false, epic: false, ritual: false });
+  const w = c.ward, [adding, setAdding] = useState(false), [cast, setCast] = useState(null), [phase, setPhase] = useState("");
+  const [o, setO] = useState({ double: false, calm: false, epic: false, ritual: false });
   const spont = w.wards.filter(x => x.kind === "spontaneous"), form = w.wards.filter(x => x.kind === "formulaic");
   const del = id => update(x => { x.ward.wards = x.ward.wards.filter(y => y.id !== id); });
-  if (cast) return html`<${WardCast} c=${c} st=${st} update=${update} cast=${cast} onClose=${() => setCast(null)} />`;
   return html`<section class="frame wardlist">
     <h2 class="h"><span>Wards</span><i class="orn" aria-hidden="true"></i></h2>
     <h3 class="lbl">Your Spontaneous Wards</h3>
@@ -288,14 +376,16 @@ function WardList({ c, st, update, toBoard }) {
             <button class="btn small danger" onClick=${() => del(x.id)}>Delete</button></div></div>`; })}</div>`}
     <h3 class="lbl wardsubh">Formulaic Wards</h3>
     <p class="muted">Learned from manuals or from another warder: a set effect, Sigil cost and casting time.${!st.formulaic ? " Inscribing them needs Warding 3." : ""}</p>
-    ${form.length > 0 && html`<${WardOptions} st=${st} o=${o} setO=${setO} fixed=${true} />`}
-    <div class="cards">${form.map(x => { const plan = R.wardPlan(c, x.cost, Object.assign({}, o, { ritual: o.ritual || x.ritual }));
-      return html`<div class="wcard wardcard"><div class="title"><b class="wname">${x.n}</b><span class="flag brass">${num(x.cost)} Sigils</span>${x.ritual && html`<span class="flag">Ritual</span>`}</div>
+    ${form.length > 0 && !cast && html`<${WardOptions} st=${st} o=${o} setO=${setO} fixed=${true} />`}
+    <div class="cards">${form.map(x => { const plan = R.wardPlan(c, x.cost, Object.assign({}, o, { ritual: o.ritual || x.ritual })), mine = cast && cast.id === x.id;
+      return html`<div class=${"wcard wardcard" + (mine ? " casting" : "")}><div class="title"><b class="wname">${x.n}</b><span class="flag brass">${num(x.cost)} Sigils</span>${x.ritual && html`<span class="flag">Ritual</span>`}</div>
+        ${mine && html`<${WardSigil} tokens=${nameTokens(x.n)} ok=${true} phase=${phase} small=${true} />`}
         <p>${x.effect || html`<span class="muted">No effect written.</span>`}</p>
         <p class="muted">${[x.time && `Casting time: ${x.time}`, x.fatigueNote && `Fatigue: ${x.fatigueNote}`, x.materials && `Materials: ${x.materials}`].filter(Boolean).join(" · ") || ""}</p>
-        <p class="muted">${o.ritual || x.ritual ? `About ${plan.hours} hour${plan.hours === 1 ? "" : "s"} as a Ritual` : `${plan.ap} AP at ${plan.spa} Sigils per AP`}</p>
-        <div class="row"><button class="btn small primary" disabled=${!st.formulaic || (x.ritual && !st.ritual)} onClick=${() => setCast({ name: x.n, sentence: x.n, cost: num(x.cost), o: Object.assign({}, o, { ritual: o.ritual || !!x.ritual, epic: false }) })}>Inscribe</button>
-          <button class="btn small danger" onClick=${() => del(x.id)}>Delete</button></div></div>`; })}</div>
+        ${mine ? html`<${WardCast} c=${c} st=${st} update=${update} cast=${cast} onPhase=${setPhase} onClose=${() => { setCast(null); setPhase(""); }} />`
+          : html`<p class="muted">${o.ritual || x.ritual ? `About ${plan.hours} hour${plan.hours === 1 ? "" : "s"} as a Ritual` : `${plan.ap} AP at ${plan.spa} Sigils per AP`}</p>
+          <div class="row"><button class="btn small primary" disabled=${!st.formulaic || (x.ritual && !st.ritual) || !!cast} onClick=${() => setCast({ id: x.id, name: x.n, sentence: x.n, cost: num(x.cost), o: Object.assign({}, o, { ritual: o.ritual || !!x.ritual, epic: false }) })}>Inscribe</button>
+            <button class="btn small danger" disabled=${!!cast} onClick=${() => del(x.id)}>Delete</button></div>`}</div>`; })}</div>
     <div class="ptaddbox">${!adding ? html`<button class="btn small ptaddown" onClick=${() => setAdding(true)}>+ A Formulaic Ward</button>`
       : html`<${FormulaForm} onCancel=${() => setAdding(false)} onSave=${v => { update(y => { y.ward.wards.push(Object.assign({ id: "d" + rid(), kind: "formulaic" }, v)); }); setAdding(false); }} />`}</div>
     ${(w.ledger || []).length > 0 && html`<h3 class="lbl wardsubh">Ledger</h3><div class="ptledger">${w.ledger.map((e, i) => html`<div class="pled">
@@ -303,6 +393,27 @@ function WardList({ c, st, update, toBoard }) {
       <small class="muted">${new Date(e.t).toLocaleString()} · ${e.sigils} Sigils · ${e.how} · check ${e.roll} · Fatigue +${e.fatigue}</small></div>`)}</div>`}
   </section>`;
 }
+
+// Learn (or edit) a Word of Power: the word, what kinds of word it can be, its Sigil cost, related concepts.
+function WordForm({ init, words, onSave, onCancel }) {
+  const [f, setF] = useState(() => Object.assign({ w: "", kinds: ["noun"], cost: 20, alts: "", note: "" }, init || {}));
+  const set = (k, v) => setF(Object.assign({}, f, { [k]: v }));
+  const id = k => "wf-" + (init ? init.id : "new") + "-" + k, name = f.w.trim();
+  const taken = name && words.some(x => x.id !== (init && init.id) && x.w.toLowerCase() === name.toLowerCase());
+  const ok = name && !taken && f.kinds.length;
+  return html`<form class="brform wardform" onSubmit=${e => { e.preventDefault(); if (ok) onSave({ w: name, kinds: f.kinds, cost: Math.max(0, Math.round(num(f.cost))), alts: f.alts.trim(), note: f.note.trim() }); }}>
+    <div class="grid2"><div class="mini"><label for=${id("w")}>Word</label><input id=${id("w")} type="text" maxlength="30" placeholder="Fire" value=${f.w} onInput=${e => set("w", e.target.value)} /></div>
+      <div class="mini"><label for=${id("c")}>Sigil cost</label><input id=${id("c")} type="number" min="0" value=${f.cost} onInput=${e => set("cost", e.target.value)} /></div></div>
+    <div class="row wardkinds" role="group" aria-label="It can be a">${R.WORD_KINDS.map(k => html`<label class="amforge"><input type="checkbox" checked=${f.kinds.includes(k)}
+      onChange=${e => set("kinds", e.target.checked ? [...f.kinds, k] : f.kinds.filter(x => x !== k))} /> ${R.WARD_KIND_NAME[k]}</label>`)}</div>
+    <div class="mini"><label for=${id("a")}>Also covers (the same concept)</label><input id=${id("a")} type="text" maxlength="120" placeholder="heat, burning, ignite" value=${f.alts} onInput=${e => set("alts", e.target.value)} /></div>
+    <div class="mini"><label for=${id("n")}>Note</label><input id=${id("n")} type="text" maxlength="160" placeholder="Learned from the burnt chapel's frescoes" value=${f.note} onInput=${e => set("note", e.target.value)} /></div>
+    ${taken && html`<p class="flag bad">${name} is already in the dictionary.</p>`}
+    ${!f.kinds.length && html`<p class="flag bad">Tick at least one: noun, verb or adjective.</p>`}
+    <div class="row"><button class="btn small primary" type="submit" disabled=${!ok}>${init ? "Save" : "Learn it"}</button><button class="btn small" type="button" onClick=${onCancel}>Cancel</button></div></form>`;
+}
+
+
 // A Formulaic Ward from a manual or a teacher (the book's example: Ward of Alarming).
 function FormulaForm({ onSave, onCancel }) {
   const [f, setF] = useState({ n: "", cost: 50, time: "", fatigueNote: "", materials: "", effect: "", ritual: false });

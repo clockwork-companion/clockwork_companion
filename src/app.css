@@ -2290,66 +2290,168 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .ptaddown { justify-self: start; margin-top: 8px; }
 .ptform { margin-top: 8px; }
 /* ===== Magic: Warding (magic.js) ===== */
-/* Each kind of word has its own colour and mark, the same on the chips, the sentence and the sigil. */
+/* Each kind of word has its own colour; every word has its own rune (wardRune), the same on the chips, in the book,
+   in the sentence and on the sigil. */
 .magic { --k-subject: var(--brass); --k-verb: var(--blood); --k-noun: var(--life); --k-adjective: var(--tox); --k-adverb: var(--ink-3); --k-conj: var(--hunger); }
 .magic .k-subject { --kc: var(--k-subject); } .magic .k-verb { --kc: var(--k-verb); } .magic .k-noun { --kc: var(--k-noun); }
 .magic .k-adjective { --kc: var(--k-adjective); } .magic .k-adverb { --kc: var(--k-adverb); } .magic .k-conj { --kc: var(--k-conj); }
+.rune { width: 12px; height: 14px; flex: 0 0 auto; fill: none; stroke: var(--kc, currentColor); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .wardfat { gap: 10px; margin-top: 12px; align-items: center; }
 .wardfatn { font: 600 20px var(--f-mono); min-width: 2.5ch; text-align: center; font-variant-numeric: tabular-nums; }
 .wardnote { margin: 8px 0 0; }
 .wardpages { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 460px; }
-/* Words: a two-page book */
-.wardpagesbook { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border: 1.5px solid var(--rule); background: var(--card); box-shadow: inset 0 0 0 4px var(--card), inset 0 0 0 5px var(--hair); }
-.wardleaf { padding: 18px 20px 20px; display: grid; gap: 12px; align-content: start; min-width: 0; }
-.wardleaf + .wardleaf { border-left: 1.5px solid var(--hair); box-shadow: inset 12px 0 14px -14px rgb(0 0 0 / .45); }
-.wardleafh { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 24px; border-bottom: 3px double var(--rule); padding-bottom: 4px; }
-.wardgroup { display: grid; gap: 6px; }
-.wardgroup h4 { margin: 4px 0 0; font: 600 12px var(--f-head); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); display: flex; align-items: center; gap: 6px; }
-.wardgroup h4 svg, .wardword svg { width: 12px; height: 12px; flex: 0 0 auto; fill: none; stroke: var(--kc, currentColor); stroke-width: 1.8; }
-.wardgroup.k-noun h4 svg, .wardgroup h4 svg { stroke: var(--ink-2); }
-.wardentry { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dotted var(--hair); }
-.wardentry > div { display: grid; gap: 1px; min-width: 0; }
-.wardentry b { font-family: var(--f-display); font-size: 19px; font-weight: 400; }
-.wardentry small { font-size: 12.5px; color: var(--ink-2); }
-.wardkey { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; font: 600 11.5px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
-.wardkey span { display: inline-flex; align-items: center; gap: 5px; }
-.wardkey svg, .wardmarks svg { width: 12px; height: 12px; fill: none; stroke: var(--kc); stroke-width: 1.8; }
-.wardmarks { display: inline-flex; gap: 3px; margin-left: 8px; vertical-align: 2px; }
-.wardcost { font: 600 12px var(--f-mono); color: var(--brass); }
-.wardchips { display: flex; flex-wrap: wrap; gap: 6px; }
-.wardtag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid var(--hair); background: var(--paper); font-size: 13.5px; }
-.wardtag.own { border-style: dashed; }
-.wardtag .iconbtn { width: 18px; height: 18px; font-size: 12px; border: 0; background: none; }
-.wardaddx { gap: 6px; flex-wrap: nowrap; }
-.wardaddx .inp { min-width: 0; flex: 1 1 auto; }
-.wardkinds { gap: 14px; }
-.wardform { margin-top: 0; }
-/* Inscribe: the floating words and the sigil */
-.wardstage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 320px); gap: 18px; align-items: center; }
-.wardfloat { position: relative; min-height: 360px; border: 1.5px solid var(--hair); background:
-  radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--brass) 8%, transparent), transparent 70%), var(--sunk); overflow: hidden; }
-.wardword { position: absolute; left: var(--x); top: var(--y); display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; white-space: nowrap;
+
+/* --- Words: an old book on the desk. Its colours are the book's own (leather, parchment, iron-gall ink), in every theme. --- */
+.tome { --leather: #4a2a17; --leather-2: #2e190d; --tool: #b8893f; --vellum: #efe2c2; --vellum-2: #dcc69a; --ink: #2f2013; --ink-faint: #6e5638; --rubric: #8c2a1c;
+  --k-subject: #8a5d17; --k-verb: #8c2a1c; --k-noun: #1f4f6b; --k-adjective: #3f6b2a; --k-adverb: #6b6157; --k-conj: #7a5a12;
+  position: relative; padding: 16px 18px 20px; border-radius: 10px 14px 14px 10px; perspective: 2200px;
+  background: radial-gradient(ellipse at 30% 20%, #5c3520, transparent 60%), radial-gradient(ellipse at 80% 90%, #241208, transparent 55%), var(--leather);
+  box-shadow: inset 0 0 0 2px var(--leather-2), inset 0 0 0 6px var(--leather), inset 0 0 0 7px color-mix(in srgb, var(--tool) 55%, transparent), 0 14px 34px rgb(0 0 0 / .45), 0 2px 0 #1a0e06; }
+.tome::before { content: ""; position: absolute; top: -6px; right: 22%; width: 14px; height: 70px; z-index: 3; pointer-events: none;   /* the ribbon bookmark */
+  background: linear-gradient(90deg, #6b1712, #a52a1e 45%, #6b1712); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%); box-shadow: 0 2px 4px rgb(0 0 0 / .4); }
+.tomepages { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); min-height: 560px;
+  box-shadow: 3px 3px 0 #cbb48a, 5px 5px 0 #b39a6e, -3px 3px 0 #cbb48a, -5px 5px 0 #b39a6e; }
+.tome.single .tomepages { grid-template-columns: minmax(0, 1fr); }
+.tomepage { position: relative; padding: 30px 30px 44px; display: grid; gap: 12px; align-content: start; min-width: 0; color: var(--ink);
+  font-family: var(--f-display);
+  background: repeating-linear-gradient(0deg, transparent 0 27px, rgb(110 86 56 / .07) 27px 28px),
+    radial-gradient(ellipse at 50% 40%, var(--vellum), var(--vellum-2) 120%); }
+.tomepage.recto { box-shadow: inset 22px 0 26px -20px rgb(60 35 12 / .55); }           /* the gutter, on the inner edge */
+.tomepage.verso { box-shadow: inset -22px 0 26px -20px rgb(60 35 12 / .55); }
+.tome.single .tomepage { box-shadow: inset 18px 0 22px -20px rgb(60 35 12 / .5); }
+.tomepage.blank { background: radial-gradient(ellipse at 50% 40%, var(--vellum), var(--vellum-2) 120%); }
+.tomepage::before { content: ""; position: absolute; inset: 12px; pointer-events: none; border: 1px solid rgb(110 86 56 / .35);
+  background: radial-gradient(circle at 0 0, rgb(110 86 56 / .45) 0 2px, transparent 3px), radial-gradient(circle at 100% 0, rgb(110 86 56 / .45) 0 2px, transparent 3px),
+    radial-gradient(circle at 0 100%, rgb(110 86 56 / .45) 0 2px, transparent 3px), radial-gradient(circle at 100% 100%, rgb(110 86 56 / .45) 0 2px, transparent 3px); }
+.tomeh { margin: 0 0 2px; font: 400 28px/1.1 var(--f-display); color: var(--rubric); text-align: center; letter-spacing: .02em; }
+.tomeh::after { content: "❦"; display: block; font-size: 16px; color: var(--ink-faint); margin-top: 2px; }
+.tomenote { margin: 0; font-style: italic; color: var(--ink-faint); font-size: 15px; text-align: center; }
+.tomefolio { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; font: italic 15px var(--f-display); color: var(--ink-faint); }
+.tomeword { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 6px 0 8px; border-bottom: 1px dashed rgb(110 86 56 / .4); animation: inkIn .5s ease-out both; }
+.tomeword .rune { width: 22px; height: 26px; stroke-width: 1.5; margin-top: 2px; }
+.tomewordtext { display: grid; gap: 1px; min-width: 0; }
+.tomewordtext b { font: 400 23px/1.15 var(--f-display); color: var(--ink); }
+.tomewordtext b::first-letter { color: var(--rubric); font-size: 1.25em; }
+.tomecost { font: 600 12.5px var(--f-mono); color: var(--kc); }
+.tomecost i { font: italic 14px var(--f-display); color: var(--ink-faint); }
+.tomewordtext small { font-size: 14px; color: var(--ink); font-style: italic; }
+.tomeaside { color: var(--ink-faint) !important; }
+.tomeacts { display: flex; gap: 4px; opacity: .25; transition: opacity .15s; }
+.tomeword:hover .tomeacts, .tomeword:focus-within .tomeacts { opacity: 1; }
+@media (hover: none) { .tomeacts { opacity: .8; } }
+.tome .iconbtn { background: transparent; border-color: rgb(110 86 56 / .45); color: var(--ink); }
+.tomegram { display: grid; gap: 4px; }
+.tomegram h4 { margin: 4px 0 0; font: 400 19px var(--f-display); color: var(--kc); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; border-bottom: 1px solid rgb(110 86 56 / .35); }
+.tomegram h4 span { font: italic 13.5px var(--f-display); color: var(--ink-faint); }
+.tomegramwords { margin: 0; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 18px; }
+.tomegramwords span { display: inline-flex; align-items: center; gap: 2px; }
+.tomegramwords .own { text-decoration: underline dotted rgb(110 86 56 / .6); }
+.tomegramwords .iconbtn { width: 18px; height: 18px; font-size: 12px; border: 0; }
+.tomeadd { display: flex; gap: 4px; align-items: center; }
+.tome input, .tome select { flex: 1 1 auto; min-width: 0; border: 0; border-bottom: 1px dotted rgb(110 86 56 / .7); background: transparent; color: var(--ink); font: italic 16px var(--f-display); padding: 2px 0; }
+.tome input::placeholder { color: rgb(110 86 56 / .55); }
+.tome input:focus { outline: none; border-bottom-color: var(--rubric); }
+.tomewrite { margin-top: 4px; }
+.tomenew { background: none; border: 0; padding: 4px 0; font: italic 19px var(--f-display); color: var(--rubric); cursor: pointer; border-bottom: 1px dashed rgb(140 42 28 / .5); }
+.tomenew:hover { color: var(--ink); }
+.tome .wardform { border: 1px dashed rgb(110 86 56 / .5); background: rgb(255 248 230 / .35); padding: 10px; }
+.tome .wardform label, .tome .wardform .lbl { color: var(--ink-faint); }
+.tome .wardform .btn { color: var(--ink); border-color: var(--ink-faint); }
+.tome .wardform .btn.primary { background: var(--rubric); border-color: var(--rubric); color: #fff4e0; }
+.tome .wardform .flag.bad { background: rgb(140 42 28 / .12); color: var(--rubric); }
+.tomecorner { position: absolute; bottom: 14px; width: 54px; height: 54px; padding: 0; border: 0; background: none; cursor: pointer; z-index: 2; }
+.tomecorner.next { right: 12px; } .tomecorner.prev { left: 12px; }
+.tomecorner::after { content: ""; position: absolute; inset: auto 6px 6px auto; width: 26px; height: 26px; transition: width .2s, height .2s;
+  background: linear-gradient(135deg, transparent 50%, #c9b083 50%, #f3e7cb); box-shadow: -2px -2px 4px rgb(60 35 12 / .25); }
+.tomecorner.prev::after { inset: auto auto 6px 6px; background: linear-gradient(225deg, transparent 50%, #c9b083 50%, #f3e7cb); box-shadow: 2px -2px 4px rgb(60 35 12 / .25); }
+.tomecorner:not(:disabled):hover::after { width: 38px; height: 38px; }
+.tomecorner:disabled { display: none; }
+.tomenav { justify-content: space-between; margin-top: 12px; }
+/* turning a page: a leaf sweeps over the spread while the pages change underneath */
+.tomeleaf { position: absolute; top: 16px; bottom: 20px; width: calc(50% - 18px); z-index: 4; pointer-events: none; transform-style: preserve-3d;
+  background: linear-gradient(90deg, #d7c193, var(--vellum) 30%, #e5d3ac); box-shadow: 0 0 30px rgb(0 0 0 / .35); }
+.tomeleaf.next { left: 50%; transform-origin: left center; animation: leafNext .62s cubic-bezier(.45,.05,.35,1) forwards; }
+.tomeleaf.prev { right: 50%; transform-origin: right center; animation: leafPrev .62s cubic-bezier(.45,.05,.35,1) forwards; }
+.tome.single .tomeleaf { width: calc(100% - 36px); left: 18px; right: auto; }
+.tome.single .tomeleaf.prev { transform-origin: left center; animation-name: leafPrevSingle; }
+@keyframes leafNext { from { transform: rotateY(0); } 50% { filter: brightness(.85); } to { transform: rotateY(-180deg); opacity: .2; } }
+@keyframes leafPrev { from { transform: rotateY(0); } 50% { filter: brightness(.85); } to { transform: rotateY(180deg); opacity: .2; } }
+@keyframes leafPrevSingle { from { transform: rotateY(-180deg); opacity: .2; } to { transform: rotateY(0); opacity: 0; } }
+.tome.turning .tomepages > * { animation: pageFade .64s ease both; }
+@keyframes pageFade { 0%, 100% { opacity: 1; } 45%, 55% { opacity: .15; } }
+@keyframes inkIn { from { opacity: 0; filter: blur(2px); } }
+
+/* --- Inscribe: the floating words and the sigil --- */
+.wardstage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 330px); gap: 18px; align-items: center; }
+.wardfloat { position: relative; min-height: 360px; border: 1.5px solid var(--hair); overflow: hidden; isolation: isolate;
+  background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--brass) 9%, transparent), transparent 70%), var(--sunk); }
+/* drifting motes of light behind the words */
+.wardmotes { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
+  background: radial-gradient(circle, color-mix(in srgb, var(--brass) 70%, transparent) 0 1.5px, transparent 2.5px) 0 0 / 90px 70px,
+    radial-gradient(circle, color-mix(in srgb, var(--brass) 45%, transparent) 0 1px, transparent 2px) 30px 40px / 60px 110px;
+  animation: motes 26s linear infinite; }
+@keyframes motes { to { background-position: 90px -140px, -30px -180px; } }
+.wardword { position: absolute; left: var(--x); top: var(--y); display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px 5px 9px; white-space: nowrap;
   border: 1.5px solid var(--kc); background: var(--card); color: var(--ink); font: 400 17px var(--f-display); border-radius: 999px; cursor: pointer;
-  box-shadow: 0 2px 8px rgb(0 0 0 / .18); animation: wardDrift var(--t) ease-in-out var(--d) infinite alternate; transition: opacity .2s, filter .2s, transform .15s; }
-.wardword:not(.off):hover, .wardword:not(.off):focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--kc) 35%, transparent), 0 2px 10px rgb(0 0 0 / .25); z-index: 2; }
-.wardword.off { opacity: .28; filter: grayscale(.7); cursor: default; animation-play-state: paused; }
+  box-shadow: 0 2px 8px rgb(0 0 0 / .18); animation: wardDrift var(--t) ease-in-out var(--d) infinite alternate; transition: opacity .25s, filter .25s, box-shadow .2s; }
+.wardword:not(.off) { box-shadow: 0 0 0 0 transparent, 0 2px 10px rgb(0 0 0 / .2), 0 0 14px color-mix(in srgb, var(--kc) 30%, transparent); }
+.wardword:not(.off):hover, .wardword:not(.off):focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--kc) 35%, transparent), 0 0 22px color-mix(in srgb, var(--kc) 50%, transparent); z-index: 2; }
+.wardword.off { opacity: .26; filter: grayscale(.7); cursor: default; animation-play-state: paused; }
+.wardword .rune { width: 12px; height: 15px; }
 @keyframes wardDrift { to { transform: translate(var(--dx), var(--dy)); } }
+.wardboardf.casting .wardfloat { filter: saturate(.6); }
 .wardempty { position: absolute; inset: auto 16px 16px; margin: 0; }
-.wardsigil { width: 100%; max-width: 320px; aspect-ratio: 1; justify-self: center; overflow: visible; }
+.runefly { position: fixed; z-index: 80; width: 26px; height: 30px; pointer-events: none; filter: drop-shadow(0 0 6px var(--kc)); }
+.runefly svg { width: 100%; height: 100%; fill: none; stroke: var(--kc); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.wardsigil { width: 100%; max-width: 330px; aspect-ratio: 1; justify-self: center; overflow: visible; }
+.wardsigil .halo { opacity: 0; transition: opacity .6s; }
 .wardsigil .ring { fill: none; stroke: var(--ink-3); stroke-width: 1.2; }
-.wardsigil .ring.thin { stroke-width: .6; stroke-dasharray: 2 3; }
-.wardsigil .tick { stroke: var(--ink-3); stroke-width: .8; }
+.wardsigil .ring.thin { stroke-width: .6; stroke-dasharray: 2 3; transform-box: view-box; transform-origin: 0 0; animation: spin 90s linear infinite reverse; }
+.wardsigil .ring.inner { stroke-width: .5; stroke-dasharray: 1 5; opacity: .7; transform-box: view-box; transform-origin: 0 0; animation: spin 50s linear infinite; }
+.wardsigil .band { transform-box: view-box; transform-origin: 0 0; animation: spin 120s linear infinite; }
+.wardsigil .bandrune { fill: none; stroke: var(--ink-3); stroke-width: 1.3; stroke-linecap: round; opacity: .55; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .wardsigil .link { fill: none; stroke: var(--brass); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1200; stroke-dashoffset: 1200; animation: wardInk .9s ease-out forwards; }
-@keyframes wardInk { to { stroke-dashoffset: 0; } }
 .wardsigil .star { fill: none; stroke: var(--brass); stroke-width: .9; opacity: .55; stroke-dasharray: 1200; stroke-dashoffset: 1200; animation: wardInk 1.4s .5s ease-out forwards; }
-.wardsigil .mark path { fill: var(--card); stroke: var(--kc); stroke-width: 2; }
-.wardsigil .mark { animation: wardMark .35s ease-out both; }
-@keyframes wardMark { from { opacity: 0; transform-box: fill-box; transform-origin: center; scale: .2; } }
-.wardsigil .core { fill: var(--brass); opacity: .85; }
+@keyframes wardInk { to { stroke-dashoffset: 0; } }
+.wardsigil .mark circle { fill: var(--card); stroke: var(--kc); stroke-width: 1.4; }
+.wardsigil .mark path { fill: none; stroke: var(--kc); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.wardsigil .mark { transform-box: fill-box; transform-origin: center; animation: wardMark .45s .35s cubic-bezier(.2,1.6,.4,1) both; }
+@keyframes wardMark { from { opacity: 0; scale: .2; } }
+.wardsigil .core { fill: var(--brass); opacity: .85; transform-box: view-box; transform-origin: 0 0; animation: corePulse 3s ease-in-out infinite; }
+@keyframes corePulse { 50% { opacity: .5; transform: scale(.8); } }
 .wardsigil.ok .ring { stroke: var(--brass); }
+.wardsigil.ok .halo { opacity: .5; }
+.wardsigil.ok .bandrune { stroke: var(--brass); opacity: .9; animation: bandLight .5s calc(var(--i) * 45ms) ease-out both; }
+@keyframes bandLight { from { opacity: .2; filter: none; } 50% { opacity: 1; filter: drop-shadow(0 0 3px var(--brass)); } }
 .wardsigil.ok { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--brass) 55%, transparent)); }
+/* finishing a Ward: a ring of light rolls outward */
+.wardsigil .shock { fill: none; stroke: var(--brass); stroke-width: 3; transform-box: view-box; transform-origin: 0 0; animation: shock 1.2s ease-out forwards; }
+.wardsigil .shock.big { stroke-width: 5; animation-duration: 1.4s; }
+@keyframes shock { from { opacity: .9; transform: scale(.3); } to { opacity: 0; transform: scale(5.2); stroke-width: .5; } }
+/* casting: the band spins up, the runes blaze, rays reach from the core to every rune; then a burst */
+.wardsigil.casting .band { animation-duration: 3s; }
+.wardsigil.casting .ring.thin { animation-duration: 4s; }
+.wardsigil.casting .halo { opacity: 1; animation: haloBeat .55s ease-in-out infinite alternate; }
+@keyframes haloBeat { to { opacity: .45; } }
+.wardsigil.casting .bandrune { stroke: var(--brass); opacity: 1; filter: drop-shadow(0 0 3px var(--brass)); }
+.wardsigil.casting .mark circle { fill: color-mix(in srgb, var(--kc) 25%, var(--card)); }
+.wardsigil.casting .mark path { filter: drop-shadow(0 0 3px var(--kc)); }
+.wardsigil .ray { stroke: var(--brass); stroke-width: 1.4; stroke-dasharray: 120; stroke-dashoffset: 120; opacity: .9; animation: ray .5s calc(var(--i) * 140ms) ease-out forwards, rayFlicker .3s calc(.5s + var(--i) * 140ms) ease-in-out infinite alternate; }
+@keyframes ray { to { stroke-dashoffset: 0; } }
+@keyframes rayFlicker { to { opacity: .4; } }
+.wardsigil.casting .core { animation: coreCharge .4s ease-in-out infinite alternate; }
+@keyframes coreCharge { to { transform: scale(1.6); opacity: 1; } }
+.wardsigil.cast .burst { fill: #fff8e6; transform-box: view-box; transform-origin: 0 0; animation: burst .9s ease-out forwards; }
+@keyframes burst { from { opacity: 1; transform: scale(.4); } 30% { opacity: .95; } to { opacity: 0; transform: scale(6); } }
+.wardsigil.cast { animation: castShake .4s ease-out; }
+@keyframes castShake { 20% { transform: translate(2px, -1px); } 40% { transform: translate(-2px, 1px); } 60% { transform: translate(1px, 1px); } }
+.wardsigil.small { max-width: 170px; justify-self: center; }
+
 .wardsentence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 14px; padding: 10px 12px; border: 1.5px solid var(--rule); background: var(--card); }
-.wardtok { display: inline-grid; justify-items: center; line-height: 1.1; padding: 2px 6px 3px; border-bottom: 2px solid var(--kc); }
+.wardtok { display: inline-grid; grid-template-columns: auto auto; column-gap: 4px; align-items: center; line-height: 1.1; padding: 2px 6px 3px; border-bottom: 2px solid var(--kc); animation: inkIn .4s ease-out both; }
+.wardtok .rune { grid-row: span 2; }
 .wardtok b { font: 400 18px var(--f-display); }
 .wardtok small { font: 600 11px var(--f-mono); color: var(--ink-3); }
 .wardtok.epic small { color: var(--good); }
@@ -2367,16 +2469,18 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .wardactions { gap: 10px; margin-top: 14px; justify-content: space-between; }
 .wardsave { gap: 6px; flex-wrap: nowrap; flex: 1 1 280px; max-width: 460px; }
 .wardsave .inp { min-width: 0; flex: 1 1 auto; }
-/* Inscribing, and the Wards page */
-.wardcast { display: grid; gap: 12px; }
+/* inscribing, right on the board */
+.wardcast { display: grid; gap: 12px; margin-top: 14px; padding: 14px; border: 1.5px solid var(--brass); background: color-mix(in srgb, var(--brass-soft) 55%, var(--card)); animation: inkIn .35s ease-out both; }
 .wardcastname { margin: 0; display: grid; gap: 2px; }
 .wardcastname b { font-family: var(--f-display); font-size: 22px; font-weight: 400; }
-.wardroll { max-width: 520px; }
+.wardchant { margin: 0; font: italic 18px var(--f-display); color: var(--brass); animation: haloBeat .6s ease-in-out infinite alternate; }
+.wardroll { max-width: 520px; animation: inkIn .4s ease-out both; }
 .wardgain { gap: 10px; align-items: end; }
 .wardgain .mini { width: 220px; max-width: 100%; }
 .wardgain .muted { flex: 1 1 200px; font-size: 13px; }
 .wardsubh { margin-top: 18px; }
 .wardcard { display: grid; gap: 8px; }
+.wardcard.casting { border-color: var(--brass); }
 .wardsent { margin: 0; font: 400 18px/1.4 var(--f-display); }
 .wardsent span { border-bottom: 2px solid var(--kc); }
 /* The Magic tab arriving: it rises in ink (forgeIn(el, "ink")). */
@@ -2395,15 +2499,20 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + var(--fall))) scale(.5); background: #3b0764; }
 }
 @media (max-width: 760px) {
-  .wardpagesbook { grid-template-columns: minmax(0, 1fr); }
-  .wardleaf + .wardleaf { border-left: 0; border-top: 1.5px solid var(--hair); box-shadow: none; }
+  .tome { padding: 10px 10px 14px; }
+  .tomepages { min-height: 480px; }
+  .tomepage { padding: 26px 20px 44px; }
   .wardstage { grid-template-columns: minmax(0, 1fr); }
-  .wardsigil { max-width: 240px; }
+  .wardsigil { max-width: 250px; }
   /* On a phone the words sit in a loose cloud rather than drifting across a fixed field. */
   .wardfloat { min-height: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 14px 10px; }
   .wardword { position: static; animation-name: wardBob; }
   .wardempty { position: static; }
 }
 @keyframes wardBob { to { transform: translateY(calc(var(--dy) / 4)); } }
-@media (prefers-reduced-motion: reduce) { .wardword, .wardsigil .link, .wardsigil .star, .wardsigil .mark { animation: none; } .wardsigil .link, .wardsigil .star { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .wardword, .wardmotes, .wardsigil *, .wardsigil, .tomeword, .wardtok, .wardcast, .tome.turning .tomepages > * { animation: none !important; }
+  .wardsigil .link, .wardsigil .star, .wardsigil .ray { stroke-dashoffset: 0; }
+  .tomeleaf { display: none; }
+}
 </style>
