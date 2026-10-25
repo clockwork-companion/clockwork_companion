@@ -13,7 +13,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25   # installing the test browser alone can take 10 minutes on GitHub
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
