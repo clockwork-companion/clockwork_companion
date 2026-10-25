@@ -531,7 +531,7 @@ function App() {
     ${making === "choose" && html`<${NewChoice} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")} onBlank=${() => { setMaking(null); create(false); }} />`}
     ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
     <${Toaster} /><${HoverCard} /><${DiceAsk} />
-    <${ShopNotice} current=${!settings && view === "chars" && current ? current.id : ""} go=${id => { setSel(id); setView("chars"); setSettings(false); setTab("craft"); window.scrollTo(0, 0); }} />
+    <${ShopNotice} current=${!settings && view === "chars" && current ? current.id : ""} onGm=${!settings && view === "gm" && gm} goGm=${() => { setView("gm"); setSettings(false); window.scrollTo(0, 0); }} go=${id => { setSel(id); setView("chars"); setSettings(false); setTab("craft"); window.scrollTo(0, 0); }} />
   </div>`;
 }
 

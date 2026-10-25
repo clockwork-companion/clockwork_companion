@@ -123,7 +123,7 @@ function ArmorUpkeep({ c, update }) {
   const job = run && run.kind === "repair" ? run.job : selId.startsWith("job:") ? Shop.incoming(c, "armor").find(j => "job:" + j.id === selId) || null : null;
   const suit = job ? Shop.view(job) : suits.find(a => a.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
   const away = !job && suit ? Shop.outgoing(c, "armor", suit.id) : null;   // sent to a smith: they repair it, not us
-  const rp = suit ? Object.assign(R.repairPlan(c, suit), away ? { block: `It's at ${away.to.name}'s bench. Take it back on the Gear tab to repair it yourself.` } : {}) : null;
+  const rp = suit ? Object.assign(R.repairPlan(c, suit), away ? { block: `It's with ${away.to.name}. Take it back on the Gear tab to repair it yourself.` } : {}) : null;
   const rc = ca.recipe, cp = R.craftPlan(c, rc);
   const setRc = fn => update(x => fn(x.craft.armor.recipe));
   const T = R.ARMOR;

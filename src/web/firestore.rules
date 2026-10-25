@@ -70,12 +70,17 @@ service cloud.firestore {
     // either side can update its status and result but not who it's between, the item or the payment; either side can clear it.
     match /tables/{t}/jobs/{id} {
       allow read: if isGM(t) || (isMember(t) && (plays(resource.data.from.uids) || plays(resource.data.to.uids)));
+      // A repair can also go to the town smith (an NPC run by the GM): "to" is then { char: "gm", uids: [] },
+      // and only GMs (who see every job) can work on it.
       allow create: if isMember(t) && request.resource.data.status == "open"
                     && request.resource.data.from.uids == playersOfChar(t, request.resource.data.from.char)
-                    && request.resource.data.to.uids == playersOfChar(t, request.resource.data.to.char)
-                    && campaignOf(t, request.resource.data.from.char) != ""
-                    && campaignOf(t, request.resource.data.from.char) == campaignOf(t, request.resource.data.to.char)
-                    && (isGM(t) || plays(request.resource.data.from.uids));
+                    && (isGM(t) || plays(request.resource.data.from.uids))
+                    && ((request.resource.data.to.char == "gm" && request.resource.data.to.uids == []
+                         && request.resource.data.mode == "repair")
+                     || (request.resource.data.to.char != "gm"
+                         && request.resource.data.to.uids == playersOfChar(t, request.resource.data.to.char)
+                         && campaignOf(t, request.resource.data.from.char) != ""
+                         && campaignOf(t, request.resource.data.from.char) == campaignOf(t, request.resource.data.to.char)));
       allow update: if isMember(t) && (isGM(t) || plays(resource.data.from.uids) || plays(resource.data.to.uids))
                     && request.resource.data.from == resource.data.from && request.resource.data.to == resource.data.to
                     && request.resource.data.item == resource.data.item && request.resource.data.kind == resource.data.kind

@@ -137,7 +137,7 @@ function WeaponUpkeep({ c, update }) {
   const job = run && run.kind === "repair" ? run.job : selId.startsWith("job:") ? Shop.incoming(c, "weapon").find(j => "job:" + j.id === selId) || null : null;
   const weapon = job ? Shop.view(job) : ws.find(w => w.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
   const away = !job && weapon ? Shop.outgoing(c, "weapon", weapon.id) : null;   // sent to a smith: they repair it, not us
-  const rp = weapon ? Object.assign(R.wRepairPlan(c, weapon), away ? { block: `It's at ${away.to.name}'s bench. Take it back on the Gear tab to repair it yourself.` } : {}) : null;
+  const rp = weapon ? Object.assign(R.wRepairPlan(c, weapon), away ? { block: `It's with ${away.to.name}. Take it back on the Gear tab to repair it yourself.` } : {}) : null;
   const rc = cw.recipe, cp = R.wCraftPlan(c, rc);
   const setRc = fn => update(x => fn(x.craft.weapon.recipe));
   const addLedger = (x, e) => { x.craft.weapon.ledger = [Object.assign({ id: rid(), t: Date.now(), note: "" }, e), ...x.craft.weapon.ledger].slice(0, 20); };

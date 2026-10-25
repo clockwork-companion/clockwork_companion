@@ -9,6 +9,9 @@
 // Players can't open each other's characters, so only the owner's (or recipient's) app ever changes their sheet.
 const SHOP_MIN = 3;   // Weapon/Armor Maintenance needed to take jobs (the book's repairs start at 3)
 const SHOP_SKILL = { weapon: "Weapon Maintenance", armor: "Armor Maintenance" };
+// The GM's smith: an NPC in town. Jobs sent here go to the GM table, where the GM says how much is repaired.
+// The payment goes to the NPC, so nobody's sheet gets it; it comes back only if the item comes back unrepaired.
+const TOWN = { id: "gm", name: "Town smith (GM)", uids: [] };
 
 const Shop = {
   started: false, jobs: [], roster: [], err: "", listeners: new Set(), cards: {}, busy: new Set(), updater: null,
@@ -182,6 +185,7 @@ const Shop = {
   },
   find(pred) { return this.jobs.find(pred) || null; },
   // Open jobs waiting on this character's bench.
+  townJobs() { return this.jobs.filter(j => j.mode === "repair" && j.status === "open" && j.to.char === TOWN.id); },
   incoming(c, kind) { return this.jobs.filter(j => j.kind === kind && j.mode === "repair" && j.status === "open" && j.to.char === c.id); },
   outgoing(c, kind, itemId) { return this.find(j => j.kind === kind && j.mode === "repair" && j.from.char === c.id && j.item.id === itemId && j.status === "open"); },
 
@@ -228,13 +232,15 @@ function useShop() {
 function ShopGear({ c, kind, item, update }) {
   useShop();
   const [open, setOpen] = useState(false), [to, setTo] = useState(""), [coins, setCoins] = useState(""), [pick, setPick] = useState(""), [qty, setQty] = useState(1), [note, setNote] = useState("");
-  const what = kind === "weapon" ? "weaponsmith" : "armorsmith";
   const out = Shop.outgoing(c, kind, item.id);
-  if (out) return html`<div class="shopgear away"><span><span class="flag brass">At ${out.to.name}'s bench</span> Can't be used until it's back.${Shop.hasPay(out.pay) || (out.pay && out.pay.note) ? ` Paid: ${Shop.payText(out.pay)}.` : ""}</span>
+  if (out) return html`<div class="shopgear away"><span><span class="flag brass">With ${out.to.name}</span> Can't be used until it's back.${Shop.hasPay(out.pay) || (out.pay && out.pay.note) ? ` Paid: ${Shop.payText(out.pay)}.` : ""}</span>
     <button class="btn small" onClick=${() => { Shop.recall(out, update); toast(`${item.name || "It"} is back in your hands.`); }}>Take it back</button></div>`;
-  if (!open) return html`<button class="btn small shopbtn" onClick=${() => setOpen(true)}>Send to a ${what}</button>`;
-  const smiths = Shop.smiths(kind, c), skill = SHOP_SKILL[kind], camp = String(c.campaign || "").trim(), id = k => `sg-${k}-${item.id}`;
+  if (!open) return html`<button class="btn small shopbtn" onClick=${() => setOpen(true)}>Send for repair</button>`;
+  // Another player's smith (same campaign, Maintenance 3+), or the GM's smith in town.
+  const players = Shop.smiths(kind, c), skill = SHOP_SKILL[kind], camp = String(c.campaign || "").trim(), id = k => `sg-${k}-${item.id}`;
+  const smiths = [...players, TOWN];
   const smith = smiths.find(s => s.id === to) || (smiths.length === 1 ? smiths[0] : null);
+  const town = smith && smith.id === TOWN.id;
   const inv = c.items.filter(i => i.name && num(i.qty) > 0), chosen = inv.find(i => i.id === pick) || null;
   const pay = { coins: num(coins), items: chosen ? [{ name: chosen.name, qty: R.clamp(num(qty) || 1, 1, num(chosen.qty)), size: chosen.size || "small" }] : [], note };
   const short = num(coins) > num(c.coins) ? `${c.name || "This character"} has only ${num(c.coins)} coins.` : "";
@@ -246,46 +252,74 @@ function ShopGear({ c, kind, item, update }) {
       if (kind === "armor") { const a = x.armor.find(y => y.id === item.id); if (a) a.worn = false; }
       addLog(x, `Sent ${item.name || "a " + kind} to ${smith.name} for repair${Shop.payClean(pay) ? `, paying ${Shop.payText(Shop.payClean(pay))}` : ""}`); });
     if (!ok) { toast("That payment isn't on the sheet any more."); return; }
-    Shop.send(kind, c, item, smith, pay); toast(`Sent to ${smith.name}.`); setOpen(false); setCoins(""); setPick(""); setQty(1); setNote("");
+    Shop.send(kind, c, item, smith, pay); toast(town ? "Sent to the town smith. The GM will see it on the GM table." : `Sent to ${smith.name}.`); setOpen(false); setCoins(""); setPick(""); setQty(1); setNote("");
   };
-  return html`<div class="shopgear" role="group" aria-label=${`Send ${item.name || "it"} to a ${what}`}>
-    <div class="row shophead"><b>Send to a ${what}</b><button class="iconbtn" aria-label="Close" onClick=${() => setOpen(false)}>×</button></div>
+  return html`<div class="shopgear" role="group" aria-label=${`Send ${item.name || "it"} for repair`}>
+    <div class="row shophead"><b>Send for repair</b><button class="iconbtn" aria-label="Close" onClick=${() => setOpen(false)}>×</button></div>
     ${Shop.err ? html`<p class="muted">${Shop.err}</p>`
-      : !camp ? html`<p class="muted">Set this character's campaign on the Sheet first: you can only send things to smiths in the same campaign.</p>`
-      : !smiths.length ? html`<p class="muted">Nobody else in ${camp} has ${skill} ${SHOP_MIN} or more.</p>`
-      : html`<p class="muted">It stays in your Gear but can't be used${kind === "armor" ? " or worn" : ""} while ${smith ? smith.name : "the smith"} works on it. They see only this ${kind === "weapon" ? "weapon" : "suit"} and use their own roll and materials.</p>
-      <div class="mini"><label for=${id("to")}>Smith</label><select id=${id("to")} value=${smith ? smith.id : ""} onChange=${e => setTo(e.target.value)}>
-        ${!smith && html`<option value="">Pick a smith</option>`}${smiths.map(s => html`<option value=${s.id}>${s.name} · ${skill} ${s[kind]}</option>`)}</select></div>
+      : html`<div class="mini"><label for=${id("to")}>Who repairs it</label><select id=${id("to")} value=${smith ? smith.id : ""} onChange=${e => setTo(e.target.value)}>
+        ${!smith && html`<option value="">Pick a smith</option>`}${players.map(s => html`<option value=${s.id}>${s.name} · ${skill} ${s[kind]}</option>`)}<option value=${TOWN.id}>${TOWN.name}: an NPC smith</option></select></div>
+      <p class="muted">${!camp ? "Set a campaign on the Sheet to send it to other players' smiths too. "
+        : !players.length ? `Nobody else in ${camp} has ${skill} ${SHOP_MIN} or more. ` : ""}${!smith ? "" : town
+        ? `The GM decides how much the town smith repairs. The payment goes to the smith, so nobody's sheet gets it. It stays in your Gear but can't be used${kind === "armor" ? " or worn" : ""} until it's back.`
+        : `It stays in your Gear but can't be used${kind === "armor" ? " or worn" : ""} while ${smith.name} works on it. They see only this ${kind === "weapon" ? "weapon" : "suit"} and use their own roll and materials.`}</p>
       <div class="shoppay"><span class="lbl">Payment (optional)</span>
         <div class="grid2"><div class="mini"><label for=${id("coins")}>Coins (you have ${num(c.coins)})</label><input id=${id("coins")} type="number" min="0" max=${num(c.coins)} placeholder="0" value=${coins} onInput=${e => setCoins(e.target.value)} /></div>
           <div class="mini"><label for=${id("item")}>An item</label><select id=${id("item")} value=${pick} onChange=${e => { setPick(e.target.value); setQty(1); }}>
             <option value="">None</option>${inv.map(i => html`<option value=${i.id}>${i.name} (${num(i.qty)})</option>`)}</select></div>
           ${chosen && num(chosen.qty) > 1 && html`<div class="mini"><label for=${id("qty")}>How many</label><input id=${id("qty")} type="number" min="1" max=${num(chosen.qty)} value=${qty} onInput=${e => setQty(e.target.value)} /></div>`}
           <div class="mini wide"><label for=${id("note")}>Anything else</label><input id=${id("note")} maxlength="140" placeholder="A favour, a round of ale…" value=${note} onInput=${e => setNote(e.target.value)} /></div></div>
-        <span class="muted">Coins and items leave your sheet now. ${smith ? smith.name : "The smith"} gets them when the repair is done; if it comes back unrepaired, so does the payment.</span></div>
+        <span class="muted">Coins and items leave your sheet now. ${town ? "The town smith keeps them" : `${smith ? smith.name : "The smith"} gets them`} when the repair is done; if it comes back unrepaired, so does the payment.</span></div>
       ${short && html`<p class="flag bad">${short}</p>`}
-      <div class="row"><button class="btn primary" disabled=${!smith || !!short} onClick=${send}>${smith ? `Send to ${smith.name}` : "Send"}</button></div>`}
+      <div class="row"><button class="btn primary" disabled=${!smith || !!short} onClick=${send}>${!smith ? "Send" : town ? "Send to the town smith" : `Send to ${smith.name}`}</button></div>`}
   </div>`;
+}
+
+// On the GM table: items players sent to the town smith (an NPC). The GM says how much is repaired and sends it back.
+function TownSmith() {
+  useShop();
+  const jobs = Shop.townJobs();
+  const [amt, setAmt] = useState({});
+  if (!jobs.length) return null;
+  return html`<section class="frame townsmith"><h2 class="h"><span>Town smith</span><i class="orn" aria-hidden="true"></i></h2>
+    <p class="sub">Players sent these to an NPC smith. Say how much the smith restores (full by default) and send it back. The payment stays with the smith.</p>
+    <div class="cards">${jobs.map(j => { const it = j.item, wpn = j.kind === "weapon", unit = wpn ? "Durability" : "Soak";
+      const now = wpn ? num(it.dur) : num(it.soak), max = wpn ? num(it.durMax) : num(it.jobMax) || num(it.soakMax), miss = Math.max(0, max - now);
+      const v = amt[j.id] == null ? miss : amt[j.id], give = R.clamp(num(v), 0, miss), fid = "ts-" + j.id;
+      return html`<div class="wcard townjob">
+        <div class="title"><b class="wname">${j.from.name}'s ${it.name || (wpn ? "weapon" : `${(R.ARMOR[it.type] || R.ARMOR.light).label} armor`)}</b></div>
+        <div class="wsub">${wpn ? `${it.shield ? "Shield" : it.skill} · ${num(it.hands) === 2 ? "two-handed" : "one-handed"}` : `${(R.ARMOR[it.type] || R.ARMOR.light).label} · AV ${num(it.av)}`}</div>
+        <div class="wdur"><span class="lbl">${unit} ${now} / ${max}</span><div class="track"><i style=${`width:${max ? (now / max) * 100 : 0}%;background:var(--ink-2)`}></i></div></div>
+        <p class="muted">Paid: ${Shop.payText(j.pay)}</p>
+        <div class="mini townamt"><label for=${fid}>${unit} restored (up to ${miss})</label>
+          <input id=${fid} type="number" min="0" max=${miss} value=${v} onInput=${e => setAmt(a => Object.assign({}, a, { [j.id]: e.target.value }))} /></div>
+        <div class="row townrow"><button class="btn primary" onClick=${() => { Shop.answer(j, "done", { gained: give, roll: "set by the GM", times: 1, by: TOWN.name }); toast(`${j.from.name}'s ${it.name || "item"} goes back with +${give} ${unit}.`); }}>Send it back</button>
+          <button class="btn" title="Send it back without repairing it; the payment goes back too" onClick=${() => { Shop.answer(j, "declined"); toast(`${j.from.name}'s ${it.name || "item"} goes back unrepaired.`); }}>Send back unrepaired</button></div>
+      </div>`; })}</div></section>`;
 }
 
 // Pops up when a smith this app looks after gets a new job (once per job, in this browser).
 // Only while that smith's character is the one open, so the player who sent it never sees it (in this browser only,
 // or as a GM, one app can hold both characters).
-function ShopNotice({ go, current }) {
+// The town smith's jobs pop up for the GM, anywhere except on the sheet that sent them.
+function ShopNotice({ go, goGm, current, onGm }) {
   useShop();
   const [seen, setSeen] = useState(() => lsGet("cw-jobs-seen", []));
-  const job = current ? Shop.jobs.find(j => j.mode === "repair" && j.status === "open" && j.to.char === current && j.from.char !== current && !seen.includes(j.id) && !num((j.result || {}).times) && Shop.owns(j.to.char, j.to.uids)) : null;
+  const fresh = j => j.mode === "repair" && j.status === "open" && !seen.includes(j.id) && !num((j.result || {}).times);
+  const job = Shop.jobs.find(j => fresh(j) && (j.to.char === TOWN.id ? isGM() && !onGm && j.from.char !== current
+    : current && j.to.char === current && j.from.char !== current && Shop.owns(j.to.char, j.to.uids))) || null;
   if (!job) return null;
   const done = () => { const next = [job.id, ...seen].slice(0, 100); lsSet("cw-jobs-seen", next); setSeen(next); };
   const wpn = job.kind === "weapon", it = job.item;
   const what = it.name || (wpn ? "a weapon" : `${(R.ARMOR[it.type] || R.ARMOR.light).label.toLowerCase()} armor`);
   return html`<div class="gx-veil shop-veil" onClick=${e => { if (e.target === e.currentTarget) done(); }} onKeyDown=${e => { if (e.key === "Escape") done(); }}>
     <div class="gx-choose shopnote" role="dialog" aria-modal="true" aria-labelledby="shopnote-h">
-      <h2 class="ornate" id="shopnote-h">${wpn ? "A weapon" : "Armor"} for your bench</h2>
-      <p><b>${job.from.name}</b> sent ${job.to.name} their <b>${what}</b> to repair.</p>
+      <h2 class="ornate" id="shopnote-h">${job.to.char === TOWN.id ? "A job for the town smith" : `${wpn ? "A weapon" : "Armor"} for your bench`}</h2>
+      <p><b>${job.from.name}</b> ${job.to.char === TOWN.id ? html`took their <b>${what}</b> to the town smith. You decide how much is repaired.` : html`sent ${job.to.name} their <b>${what}</b> to repair.`}</p>
       <div class="shopnotefacts"><div class="fact"><span>${wpn ? "Durability" : "Soak"}</span><b>${wpn ? `${num(it.dur)} / ${num(it.durMax)}` : `${num(it.soak)} / ${num(it.jobMax) || num(it.soakMax)}`}</b></div>
         <div class="fact"><span>Payment</span><p>${job.pay ? Shop.payText(job.pay) : "None offered"}</p></div></div>
-      <div class="row dice-btns"><button class="btn primary" onClick=${() => { done(); Shop.open(job); go(job.to.char); }}>Open the Repair bench</button>
+      <div class="row dice-btns">${job.to.char === TOWN.id ? html`<button class="btn primary" onClick=${() => { done(); goGm(); }}>Open the GM table</button>`
+        : html`<button class="btn primary" onClick=${() => { done(); Shop.open(job); go(job.to.char); }}>Open the Repair bench</button>`}
         <button class="btn" onClick=${done}>Later</button></div>
     </div></div>`;
 }
