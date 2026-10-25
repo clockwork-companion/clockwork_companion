@@ -386,44 +386,39 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .meter .ctl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .meter .ctl input { width: 64px; border: 1.5px solid var(--hair); background: var(--paper); padding: 3px 6px; font-family: var(--f-mono); }
 .meter .note { font-size: 12.5px; color: var(--ink-2); }
-/* rest: the big red button (long rest) and a smaller brass one (short rest), each sunk in a metal bezel.
-   Pressing sinks the cap; a long rest needs a second press (the cap glows while it waits). After a rest a warm glow
-   spreads from the buttons and the bars it refilled light up one after another, each with the amount it gained. */
-.restbay { position: relative; overflow: hidden; }
-.restrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; align-items: center; }
-.restopt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; }
-.restwhat { font-size: 13.5px; color: var(--ink-2); line-height: 1.45; }
-.restwhat b { color: var(--ink); font-family: var(--f-head); letter-spacing: .06em; text-transform: uppercase; font-size: 13px; }
-.armnote { color: var(--bad); font-style: normal; font-weight: 600; }
-.bezel { --cap: var(--blood); --size: 108px; width: calc(var(--size) + 18px); height: calc(var(--size) + 18px); border-radius: 50%; display: grid; place-items: center;
-  background: radial-gradient(circle at 50% 30%, #f2f2f2, #9a9a9a 55%, #5a5a5a); box-shadow: inset 0 2px 3px rgb(255 255 255 / .6), inset 0 -3px 6px rgb(0 0 0 / .45), 0 3px 8px rgb(0 0 0 / .35); }
-.restopt.short .bezel { --cap: var(--brass); --size: 74px; }
-.restbtn { width: var(--size); height: var(--size); border-radius: 50%; border: 0; padding: 0; cursor: pointer; position: relative; color: #fff;
-  background: radial-gradient(circle at 50% 32%, color-mix(in srgb, var(--cap) 55%, #fff) 0, var(--cap) 46%, color-mix(in srgb, var(--cap) 62%, #000) 100%);
-  box-shadow: 0 7px 0 color-mix(in srgb, var(--cap) 45%, #000), 0 10px 14px rgb(0 0 0 / .35), inset 0 -5px 10px rgb(0 0 0 / .25), inset 0 4px 6px rgb(255 255 255 / .35);
-  transform: translateY(-5px); transition: transform .09s ease-out, box-shadow .09s ease-out, filter .2s; -webkit-tap-highlight-color: transparent; }
-.restbtn span { font: 800 15px/1.05 var(--f-head); letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 1px 0 rgb(0 0 0 / .45), 0 0 8px rgb(0 0 0 / .2); pointer-events: none; }
-.restbtn.short span { font-size: 11.5px; }
-.restbtn:hover { filter: brightness(1.08); }
-.restbtn:focus-visible { outline: 3px solid var(--brass); outline-offset: 6px; }
-.restbtn:active, .restbtn.pressed { transform: translateY(2px);
-  box-shadow: 0 0 0 color-mix(in srgb, var(--cap) 45%, #000), 0 2px 4px rgb(0 0 0 / .35), inset 0 -2px 6px rgb(0 0 0 / .2), inset 0 5px 12px rgb(0 0 0 / .4); }
-.restbtn.pressed { animation: capSpring .5s cubic-bezier(.3, 1.6, .5, 1) .14s both; }
-@keyframes capSpring { from { transform: translateY(2px); } to { transform: translateY(-5px); } }
-.restopt.armed .restbtn { animation: capArm 1.1s ease-in-out infinite; }
-@keyframes capArm { 0%, 100% { filter: brightness(1); box-shadow: 0 7px 0 color-mix(in srgb, var(--cap) 45%, #000), 0 0 0 0 color-mix(in srgb, var(--cap) 60%, transparent), inset 0 4px 6px rgb(255 255 255 / .35); }
-  50% { filter: brightness(1.25); box-shadow: 0 7px 0 color-mix(in srgb, var(--cap) 45%, #000), 0 0 0 10px color-mix(in srgb, var(--cap) 0%, transparent), 0 0 26px color-mix(in srgb, var(--cap) 70%, transparent), inset 0 4px 6px rgb(255 255 255 / .35); } }
-.restbay.rejuv::after { content: ""; position: absolute; left: 70px; top: 120px; width: 40px; height: 40px; margin: -20px; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, color-mix(in srgb, var(--good) 45%, transparent), color-mix(in srgb, var(--brass) 25%, transparent) 45%, transparent 70%);
-  animation: restWave 1.3s ease-out both; }
-@keyframes restWave { 0% { transform: scale(.4); opacity: .9; } 100% { transform: scale(30); opacity: 0; } }
+/* rest: two plates in the sheet's card style (the perk boxes' offset shadow, the theme's own colours), each marked with
+   the rulebook's rest tent. Press and hold: the plate sinks onto its shadow, a fill sweeps across it, and when full
+   it stamps down; the bars it refilled then light up one after another with what they gained. */
+.restrow { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
+.restplate { --hold: 0; position: relative; overflow: hidden; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center;
+  padding: 14px 16px; text-align: left; color: var(--ink); background: var(--card); border: 1.5px solid var(--rule); cursor: pointer;
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--ink) 28%, transparent); transition: transform .08s ease-out, box-shadow .08s ease-out;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; font: inherit; }
+.restplate.long { border-width: 2px; }
+.restplate:hover { border-color: var(--brass); }
+.restplate:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+.restplate.holding { transform: translate(2px, 2px); box-shadow: 1px 1px 0 color-mix(in srgb, var(--ink) 28%, transparent); }
+.rpfill { position: absolute; inset: 0; transform-origin: left; transform: scaleX(var(--hold)); pointer-events: none;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--brass) 22%, transparent), color-mix(in srgb, var(--brass) 38%, transparent)); }
+.restplate.long .rpfill { background: linear-gradient(90deg, color-mix(in srgb, var(--blood) 16%, transparent), color-mix(in srgb, var(--blood) 32%, transparent)); }
+.rpicon, .rptext, .rphold { position: relative; }
+.rpicon { width: 52px; height: 52px; display: grid; place-items: center; background: var(--paper); border: 1.5px solid var(--hair); box-shadow: 2px 2px 0 color-mix(in srgb, var(--ink) 12%, transparent); position: relative; }
+.rpicon svg { width: 30px; height: 30px; fill: none; stroke: var(--brass); stroke-width: 1.3; stroke-linejoin: round; }
+.restplate.long .rpicon svg { stroke: var(--blood); }
+.rpicon b { position: absolute; right: 3px; bottom: 1px; font: 700 12px/1 var(--f-mono); color: var(--ink-2); }
+.rptext { display: grid; gap: 2px; min-width: 0; }
+.rptext b { font: 700 16px/1.1 var(--f-head); letter-spacing: .1em; text-transform: uppercase; }
+.rptext small { font-size: 12px; color: var(--ink-3); }
+.rptext span { font-size: 13.5px; color: var(--ink-2); line-height: 1.4; }
+.rphold { font: 600 10.5px var(--f-head); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); padding: 3px 7px; border: 1px dashed var(--hair); opacity: calc(1 - var(--hold)); }
+.restplate.stamped { animation: plateStamp .45s cubic-bezier(.3, 1.4, .5, 1) both; }
+.restplate.stamped .rpicon { animation: bump .4s cubic-bezier(.3, 1.5, .5, 1) .05s both; }
+.restplate.stamped::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--good) 40%, #fff) 50%, transparent); animation: fxSweep .8s ease-out both; }
+@keyframes plateStamp { 0% { transform: translate(3px, 3px) scale(.985); box-shadow: 0 0 0 transparent; } 100% { transform: none; } }
 .restlog { margin-top: 12px; }
 .restlog summary { cursor: pointer; font: 600 12px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
 .restlog .log { margin-top: 6px; }
-@media (max-width: 640px) {
-  .restrow { grid-template-columns: minmax(0, 1fr); }
-  .bezel { --size: 92px; } .restopt.short .bezel { --size: 66px; }
-}
+@media (max-width: 640px) { .restrow { grid-template-columns: minmax(0, 1fr); } .rphold { display: none; } }
 .meter { position: relative; }
 .gainfloat { position: absolute; left: calc(50% - 18px); top: 30px; font: 800 18px var(--f-mono); pointer-events: none; text-shadow: 0 1px 0 var(--card), 0 0 6px var(--card);
   animation: gainUp 1.3s ease-out both; }
@@ -4779,32 +4774,48 @@ function VitalsTab({ c, d, update }) {
   </div>`;
 }
 
-// Rest: the big button. Short rest is the smaller brass one. A long rest asks for a second press (or the dice, with
-// "My own rolls") so it can't happen by accident; each press sinks the button, and the bars it refills light up in turn.
-function RestBay({ c, d, update }) {
-  const [armed, setArmed] = useState(false); const timer = useRef(); const bay = useRef(), longB = useRef(), shortB = useRef();
-  useEffect(() => () => clearTimeout(timer.current), []);
-  const press = el => replay(el, "pressed");
-  const glow = () => replay(bay.current, "rejuv");
-  const st = { short: num(c.skills.Conditioning) >= 6 ? 2 : 1, long: num(c.skills.Conditioning) >= 7 ? 4 : 2 };
-  const shortRest = () => { press(shortB.current); markRest(); glow(); update(x => { const m = R.shortRest(x); addLog(x, m); toast(m); }); };
-  const longRest = () => {
-    press(longB.current); clearTimeout(timer.current);
-    if (!armed && Dice.mode !== "own") { setArmed(true); timer.current = setTimeout(() => setArmed(false), 4000); return; }
-    setArmed(false);
-    askRoll({ title: "Long rest", dice: [{ n: 1, sides: 6 }, { n: d.cleanseDice.d4, sides: 4 }], note: "The cleansing dice: Toxicity goes down by the total.", cancel: true })
-      .then(r => { if (!r) return; markRest(); glow(); update(x => { const m = R.longRest(x, r.reduce((a, b) => a + b, 0)); addLog(x, m); toast(m); }); });
+// Rest: two plates in the sheet's own card style, each marked with the rulebook's rest tent (L or S). Press and hold:
+// a fill sweeps across the plate, and when it's full the plate stamps down and the rest is taken. Letting go early
+// drains it back, so nobody rests by accident. With "My own rolls", the long rest then asks for the cleansing dice.
+function RestPlate({ kind, ms, title, when, lines, onDone }) {
+  const el = useRef(), st = useRef({ raf: 0, t0: 0, v: 0, on: false });
+  const paint = v => { st.current.v = v; if (el.current) el.current.style.setProperty("--hold", v.toFixed(3)); };
+  const stop = () => { cancelAnimationFrame(st.current.raf); st.current.on = false; };
+  const drain = () => { const s = st.current; stop(); if (!el.current) return; el.current.classList.remove("holding");
+    const v0 = s.v, t0 = performance.now(); const step = t => { const v = Math.max(0, v0 - (t - t0) / 250); paint(v); if (v > 0) s.raf = requestAnimationFrame(step); }; s.raf = requestAnimationFrame(step); };
+  const start = () => {
+    const s = st.current; if (s.on) return; stop(); s.on = true; el.current.classList.add("holding");
+    const quick = calm(), v0 = s.v, t0 = performance.now();
+    const step = t => { const v = quick ? 1 : Math.min(1, v0 + (t - t0) / ms); paint(v);
+      if (v < 1) { s.raf = requestAnimationFrame(step); return; }
+      s.on = false; el.current.classList.remove("holding"); replay(el.current, "stamped"); onDone(); setTimeout(() => paint(0), 450); };
+    s.raf = requestAnimationFrame(step);
   };
+  useEffect(() => stop, []);
+  return html`<button type="button" ref=${el} class=${"restplate " + kind} aria-label=${`${title}: press and hold to rest. ${lines}`}
+    onPointerDown=${e => { if (e.button === 0) { e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId); start(); } }}
+    onPointerUp=${() => st.current.on && drain()} onPointerCancel=${() => st.current.on && drain()} onLostPointerCapture=${() => st.current.on && drain()}
+    onKeyDown=${e => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); start(); } }}
+    onKeyUp=${e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (st.current.on) drain(); } }}
+    onContextMenu=${e => e.preventDefault()} onClick=${e => e.preventDefault()}>
+    <span class="rpfill" aria-hidden="true"></span>
+    <span class="rpicon" aria-hidden="true"><svg viewBox="0 0 16 16">${UICON.recharge}</svg><b>${kind === "long" ? "L" : "S"}</b></span>
+    <span class="rptext"><b>${title}</b><small>${when}</small><span>${lines}</span></span>
+    <span class="rphold" aria-hidden="true">Hold</span>
+  </button>`;
+}
+function RestBay({ c, d, update }) {
+  const bay = useRef();
+  const st = { short: num(c.skills.Conditioning) >= 6 ? 2 : 1, long: num(c.skills.Conditioning) >= 7 ? 4 : 2 };
+  const shortRest = () => { markRest(); update(x => { const m = R.shortRest(x); addLog(x, m); toast(m); }); };
+  const longRest = () => askRoll({ title: "Long rest", dice: [{ n: 1, sides: 6 }, { n: d.cleanseDice.d4, sides: 4 }], note: "The cleansing dice: Toxicity goes down by the total.", cancel: true })
+    .then(r => { if (!r) return; markRest(); update(x => { const m = R.longRest(x, r.reduce((a, b) => a + b, 0)); addLog(x, m); toast(m); }); });
   return html`<section class="frame restbay" ref=${bay}><${Head} title="Rest" topic="rest" />
     <div class="restrow">
-      <div class=${"restopt long" + (armed ? " armed" : "")}>
-        <div class="bezel"><button type="button" ref=${longB} class="restbtn long" onClick=${longRest} aria-pressed=${armed}
-          aria-label=${armed ? "Press again to take the long rest" : "Long rest"}><span>${armed ? html`Press<br />again` : html`Long<br />rest`}</span></button></div>
-        <div class="restwhat"><b>Long rest</b> · about 8 hours<br />+${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${st.long} Stamina, recharge every ability.
-          ${armed && html`<br /><em class="armnote">Press again to rest.</em>`}</div></div>
-      <div class="restopt short">
-        <div class="bezel"><button type="button" ref=${shortB} class="restbtn short" onClick=${shortRest} aria-label=${`Short rest: recover ${st.short} Stamina and recharge short-rest abilities`}><span>Short<br />rest</span></button></div>
-        <div class="restwhat"><b>Short rest</b> · about an hour<br />Recover ${st.short} Stamina, recharge short-rest abilities.</div></div>
+      <${RestPlate} kind="long" ms=${1100} title="Long rest" when="About 8 hours" onDone=${longRest}
+        lines=${`+${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${st.long} Stamina, recharge every ability.`} />
+      <${RestPlate} kind="short" ms=${650} title="Short rest" when="About an hour" onDone=${shortRest}
+        lines=${`Recover ${st.short} Stamina, recharge short-rest abilities.`} />
     </div>
     <details class="restlog"><summary>Log</summary>
       <div class="log">${(c.log || []).slice(0, 12).map(l => html`<div><time>${new Date(l.t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>${l.m}</div>`)}</div></details>

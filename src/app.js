@@ -1063,32 +1063,48 @@ function VitalsTab({ c, d, update }) {
   </div>`;
 }
 
-// Rest: the big button. Short rest is the smaller brass one. A long rest asks for a second press (or the dice, with
-// "My own rolls") so it can't happen by accident; each press sinks the button, and the bars it refills light up in turn.
-function RestBay({ c, d, update }) {
-  const [armed, setArmed] = useState(false); const timer = useRef(); const bay = useRef(), longB = useRef(), shortB = useRef();
-  useEffect(() => () => clearTimeout(timer.current), []);
-  const press = el => replay(el, "pressed");
-  const glow = () => replay(bay.current, "rejuv");
-  const st = { short: num(c.skills.Conditioning) >= 6 ? 2 : 1, long: num(c.skills.Conditioning) >= 7 ? 4 : 2 };
-  const shortRest = () => { press(shortB.current); markRest(); glow(); update(x => { const m = R.shortRest(x); addLog(x, m); toast(m); }); };
-  const longRest = () => {
-    press(longB.current); clearTimeout(timer.current);
-    if (!armed && Dice.mode !== "own") { setArmed(true); timer.current = setTimeout(() => setArmed(false), 4000); return; }
-    setArmed(false);
-    askRoll({ title: "Long rest", dice: [{ n: 1, sides: 6 }, { n: d.cleanseDice.d4, sides: 4 }], note: "The cleansing dice: Toxicity goes down by the total.", cancel: true })
-      .then(r => { if (!r) return; markRest(); glow(); update(x => { const m = R.longRest(x, r.reduce((a, b) => a + b, 0)); addLog(x, m); toast(m); }); });
+// Rest: two plates in the sheet's own card style, each marked with the rulebook's rest tent (L or S). Press and hold:
+// a fill sweeps across the plate, and when it's full the plate stamps down and the rest is taken. Letting go early
+// drains it back, so nobody rests by accident. With "My own rolls", the long rest then asks for the cleansing dice.
+function RestPlate({ kind, ms, title, when, lines, onDone }) {
+  const el = useRef(), st = useRef({ raf: 0, t0: 0, v: 0, on: false });
+  const paint = v => { st.current.v = v; if (el.current) el.current.style.setProperty("--hold", v.toFixed(3)); };
+  const stop = () => { cancelAnimationFrame(st.current.raf); st.current.on = false; };
+  const drain = () => { const s = st.current; stop(); if (!el.current) return; el.current.classList.remove("holding");
+    const v0 = s.v, t0 = performance.now(); const step = t => { const v = Math.max(0, v0 - (t - t0) / 250); paint(v); if (v > 0) s.raf = requestAnimationFrame(step); }; s.raf = requestAnimationFrame(step); };
+  const start = () => {
+    const s = st.current; if (s.on) return; stop(); s.on = true; el.current.classList.add("holding");
+    const quick = calm(), v0 = s.v, t0 = performance.now();
+    const step = t => { const v = quick ? 1 : Math.min(1, v0 + (t - t0) / ms); paint(v);
+      if (v < 1) { s.raf = requestAnimationFrame(step); return; }
+      s.on = false; el.current.classList.remove("holding"); replay(el.current, "stamped"); onDone(); setTimeout(() => paint(0), 450); };
+    s.raf = requestAnimationFrame(step);
   };
+  useEffect(() => stop, []);
+  return html`<button type="button" ref=${el} class=${"restplate " + kind} aria-label=${`${title}: press and hold to rest. ${lines}`}
+    onPointerDown=${e => { if (e.button === 0) { e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId); start(); } }}
+    onPointerUp=${() => st.current.on && drain()} onPointerCancel=${() => st.current.on && drain()} onLostPointerCapture=${() => st.current.on && drain()}
+    onKeyDown=${e => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); start(); } }}
+    onKeyUp=${e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (st.current.on) drain(); } }}
+    onContextMenu=${e => e.preventDefault()} onClick=${e => e.preventDefault()}>
+    <span class="rpfill" aria-hidden="true"></span>
+    <span class="rpicon" aria-hidden="true"><svg viewBox="0 0 16 16">${UICON.recharge}</svg><b>${kind === "long" ? "L" : "S"}</b></span>
+    <span class="rptext"><b>${title}</b><small>${when}</small><span>${lines}</span></span>
+    <span class="rphold" aria-hidden="true">Hold</span>
+  </button>`;
+}
+function RestBay({ c, d, update }) {
+  const bay = useRef();
+  const st = { short: num(c.skills.Conditioning) >= 6 ? 2 : 1, long: num(c.skills.Conditioning) >= 7 ? 4 : 2 };
+  const shortRest = () => { markRest(); update(x => { const m = R.shortRest(x); addLog(x, m); toast(m); }); };
+  const longRest = () => askRoll({ title: "Long rest", dice: [{ n: 1, sides: 6 }, { n: d.cleanseDice.d4, sides: 4 }], note: "The cleansing dice: Toxicity goes down by the total.", cancel: true })
+    .then(r => { if (!r) return; markRest(); update(x => { const m = R.longRest(x, r.reduce((a, b) => a + b, 0)); addLog(x, m); toast(m); }); });
   return html`<section class="frame restbay" ref=${bay}><${Head} title="Rest" topic="rest" />
     <div class="restrow">
-      <div class=${"restopt long" + (armed ? " armed" : "")}>
-        <div class="bezel"><button type="button" ref=${longB} class="restbtn long" onClick=${longRest} aria-pressed=${armed}
-          aria-label=${armed ? "Press again to take the long rest" : "Long rest"}><span>${armed ? html`Press<br />again` : html`Long<br />rest`}</span></button></div>
-        <div class="restwhat"><b>Long rest</b> · about 8 hours<br />+${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${st.long} Stamina, recharge every ability.
-          ${armed && html`<br /><em class="armnote">Press again to rest.</em>`}</div></div>
-      <div class="restopt short">
-        <div class="bezel"><button type="button" ref=${shortB} class="restbtn short" onClick=${shortRest} aria-label=${`Short rest: recover ${st.short} Stamina and recharge short-rest abilities`}><span>Short<br />rest</span></button></div>
-        <div class="restwhat"><b>Short rest</b> · about an hour<br />Recover ${st.short} Stamina, recharge short-rest abilities.</div></div>
+      <${RestPlate} kind="long" ms=${1100} title="Long rest" when="About 8 hours" onDone=${longRest}
+        lines=${`+${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${st.long} Stamina, recharge every ability.`} />
+      <${RestPlate} kind="short" ms=${650} title="Short rest" when="About an hour" onDone=${shortRest}
+        lines=${`Recover ${st.short} Stamina, recharge short-rest abilities.`} />
     </div>
     <details class="restlog"><summary>Log</summary>
       <div class="log">${(c.log || []).slice(0, 12).map(l => html`<div><time>${new Date(l.t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>${l.m}</div>`)}</div></details>
