@@ -774,6 +774,12 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .perkcard.k-E { outline: 1.5px solid color-mix(in srgb, var(--att, var(--life)) 55%, transparent); outline-offset: 2px; box-shadow: 0 0 14px color-mix(in srgb, var(--att, var(--life)) 22%, transparent); }
 .perkcard.k-P { box-shadow: none; background: color-mix(in srgb, var(--card) 70%, var(--paper)); }
 .perkcard.k-P .pbox { box-shadow: none; }
+/* the rulebook's painting for the skill, faded in from the card's right edge (60% see-through), under the text */
+.partbg { position: absolute; inset: 0; pointer-events: none; background: no-repeat right center / cover; opacity: .4;
+  -webkit-mask-image: linear-gradient(to left, #000 10%, rgb(0 0 0 / .55) 45%, transparent 92%); mask-image: linear-gradient(to left, #000 10%, rgb(0 0 0 / .55) 45%, transparent 92%); }
+.perkcard.hasart { overflow: hidden; }
+.perkcard.hasart > :not(.partbg) { position: relative; }
+.perkcard.hasart .pmain p { text-shadow: 0 0 6px var(--card), 0 0 2px var(--card); }
 .segicon { width: 12px; height: 12px; margin-right: 4px; vertical-align: -1px; }
 /* the attribute filter: pick any number; with 3+ invested skills among them, those skills are listed to narrow further */
 .attfilter { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 2px; }
@@ -4847,6 +4853,23 @@ const PERK_ICON = {
   E: html`<path d="M8 1.3c.6 2.6 3.7 4 3.7 7.4a3.7 3.7 0 0 1-7.4 0c0-1.7.9-2.8 1.7-3.6.1 1.4.7 2.1 1.5 2.4C7.3 5.7 7.4 3.4 8 1.3z" fill="currentColor" />`,
   P: html`<path d="M4.6 5.4C3 5.4 1.9 6.6 1.9 8s1.1 2.6 2.7 2.6C7 10.6 9 5.4 11.4 5.4c1.6 0 2.7 1.2 2.7 2.6s-1.1 2.6-2.7 2.6C9 10.6 7 5.4 4.6 5.4z" fill="none" stroke="currentColor" stroke-width="1.6" />`,
 };
+// The 2021 rulebook's paintings (cut from its pages by tools/rulebook_art_cutout.py), faded behind each skill's perk
+// cards. A skill with several pages takes turns by perk group. Website only: the files live in art/.
+const SKILL_ART = {
+  Maim: ["str_maim", "str_maim2"], Bash: ["str_bash"], Parry: ["str_parry"], "Armor Mastery": ["str_armorm"], "Strong Back": ["str_strongb"],
+  Tumble: ["dex_tumble"], Pierce: ["dex_pierce"], Precision: ["dex_precision"], Alacrity: ["dex_alacrity"], Evasion: ["dex_evasion"],
+  "Bleed Resistance": ["end_bleedr"], Durability: ["end_durability"], "Shield Mastery": ["end_shieldm"], Conditioning: ["end_conditioning"], Versatility: ["end_versatility"], Metabolism: ["end_metabolism"],
+  Demonology: ["mnd_daemonology", "mnd_daemonology2"], Alchemy: ["mnd_alchemy", "mnd_alchemy2"], Engineering: ["mnd_engineering"], Robotics: ["mnd_robotics"], Lore: ["mnd_lore"],
+  "Armor Maintenance": ["wis_armormn", "wis_armormn2"], "Weapon Maintenance": ["wis_weaponmn", "wis_weaponmn2"], Brewing: ["wis_brewing"], Powdertinker: ["wis_powdertinker"], Awareness: ["wis_awareness"], Medicine: ["wis_medicine", "wis_medicine2"],
+  Dreamwalking: ["wil_dreamwalking", "wil_dreamwalking2"], "Occult: Harmony": ["wil_harmony", "wil_harmony2", "wil_harmony3", "wil_harmony4"],
+  Leadership: ["prs_leadership"], Runecrafting: ["prs_runecrafting", "prs_runecrafting2"], Hunting: ["prs_hunter", "prs_hunter2", "prs_hunter3", "prs_hunter4"], Perform: ["prs_perform"],
+};
+const WEAPON_ART = ["rulebook_weapons1"];
+function skillArt(skill, kind, n) {
+  if (!window.CW_WEB) return "";
+  const list = kind === "weapon" ? WEAPON_ART : SKILL_ART[skill]; if (!list) return "";
+  return `art/${list[n % list.length]}.webp`;
+}
 const typeKey = t => (t === "M" || t === "A" ? "A" : t === "E" ? "E" : "P");
 const TypeTag = ({ t }) => { const k = typeKey(t); return html`<span class=${"ttag tt-" + k} title=${TYPE_NAME[t] || TYPE_NAME[k]}><svg viewBox="0 0 16 16" aria-hidden="true">${PERK_ICON[k]}</svg>${k === "E" ? "Empower" : TYPE_NAME[k]}</span>`; };
 function unlockedPerks(c) {
@@ -4854,7 +4877,7 @@ function unlockedPerks(c) {
   const add = (name, lv, kind) => {
     const sd = SKILL_DATA.skills[name]; if (!sd || !lv) return;
     const got = [];
-    sd.gs.forEach(g => g.p.forEach(p => { if (lv >= p.l) got.push(Object.assign({ key: `p:${name}:${p.l}`, group: g.n && g.n !== "Perks" ? g.n : "", flavor: g.f || "" }, p)); }));
+    sd.gs.forEach((g, gi) => g.p.forEach(p => { if (lv >= p.l) got.push(Object.assign({ key: `p:${name}:${p.l}`, gi, group: g.n && g.n !== "Perks" ? g.n : "", flavor: g.f || "" }, p)); }));
     if (got.length) out.push({ name, lv, kind, attr: R.LEVELS[kind].attrOf(name), perks: got });
   };
   R.SKILL_GROUPS.forEach(g => g.skills.forEach(([n]) => add(n, num(c.skills[n]), "skill")));
@@ -4871,9 +4894,10 @@ function UseBoxes({ c, ukey, uses, recharge, update, label }) {
       aria-label=${i < spent ? `Give back use ${i + 1} of ${label}` : `Spend use ${i + 1} of ${label}`} onClick=${() => set(i < spent ? i : i + 1)}></button>`)}
     <small class="muted">${spent >= max ? "All used · " : `${max - spent} left · `}${recharge ? `back on a ${recharge.toLowerCase()}` : "recharge not set"}</small></div>`;
 }
-function PerkCard({ c, p, update, skill, attr }) {
+function PerkCard({ c, p, update, skill, attr, art }) {
   const t = p.t || "P";
-  return html`<article class=${"perkcard t-" + t + " k-" + typeKey(t) + (attr ? " hasatt" : "")} style=${attStyle(attr)}>
+  return html`<article class=${"perkcard t-" + t + " k-" + typeKey(t) + (attr ? " hasatt" : "") + (art ? " hasart" : "")} style=${attStyle(attr)}>
+    ${art && html`<i class="partbg" aria-hidden="true" style=${`background-image:url(${art})`}></i>`}
     <div class="pbox"><b>${p.l}</b><small>Level</small></div>
     <div class="pmain"><div class="phead"><b class="pname">${p.group || skill}</b><${UsageLine} u=${p.u} /><${TypeTag} t=${t} /></div>
       <p>${p.x || "Not written yet."}</p>
@@ -4953,7 +4977,7 @@ function TalentsTab({ c, update, openSkill }) {
         ${invested.map(x => html`<button type="button" class="skchip" style=${attStyle(x.attr)} aria-pressed=${focusOn === x.name} onClick=${() => setFocus(focusOn === x.name ? "" : x.name)}>${x.name} <small>${x.lv}</small></button>`)}</div>`}
       ${shown.length ? shown.map(g => html`<div class="perkgroup" style=${attStyle(g.attr)}>
         <h3><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small><span class="atttag">${g.attr}</span>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small></h3>
-        <div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} />`)}</div></div>`)
+        <div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div></div>`)
       : html`<p class="muted emptyline">${empty}</p>`}
     </section>
 
