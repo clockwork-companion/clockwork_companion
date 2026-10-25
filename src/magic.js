@@ -95,6 +95,118 @@ function Warding({ c, update }) {
    An old book on the desk: the first page holds the grammar (Subjects, Adverbs, Conjunctions), then the Words of Power
    in alphabetical order, six to a page, and a fresh page to write a new word on. Turn the pages with the corners or
    the arrows; on a phone the book shows one page at a time. */
+/* ---------- the book's moving paper ----------
+   A sheet (the cover or a page) is a row of thin strips, each hinged on the one before, so it bends as it turns:
+   the strip at the spine leads and the free edge trails behind, a lot for a page and a little for the stiff cover.
+   Each strip is shaded by how far it faces away from you. Sheets are plain DOM laid over the book while they move. */
+const TOME_STRIPS = 12;
+const tomeEase = { inOut: p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2, sine: p => -(Math.cos(Math.PI * p) - 1) / 2 };
+function tomeSheet(host, box, { s = 1, front = "", back = "", cls = "" }) {
+  const N = TOME_STRIPS, el = document.createElement("div"), strips = [];
+  el.className = "tsheet " + cls; el.setAttribute("aria-hidden", "true");
+  Object.assign(el.style, { left: box.x + "px", top: box.y + "px", width: box.w + "px", height: box.h + "px" });
+  let parent = el;
+  for (let i = 0; i < N; i++) {
+    const st = document.createElement("div"), fi = s > 0 ? i : N - 1 - i, bi = N - 1 - fi, sw = box.w / N, ov = 1;
+    st.className = "tstrip"; st.style.width = sw + "px";
+    st.style[s > 0 ? "left" : "right"] = i ? "100%" : "0"; st.style.transformOrigin = s > 0 ? "left center" : "right center";
+    // each face overlaps its neighbours by a pixel (no seams) and shows its own slice of the full-size picture
+    st.innerHTML = `<div class="tface front"><div class="tfin" style="left:${ov - fi * sw}px;width:${box.w}px">${front}</div><i class="tshade"></i></div>`
+      + `<div class="tface back"><div class="tfin" style="left:${ov - bi * sw}px;width:${box.w}px">${back}</div><i class="tshade"></i></div>`;
+    parent.appendChild(st); strips.push({ st, sh: [...st.children].map(f => f.lastChild) }); parent = st;
+  }
+  host.appendChild(el);
+  // a: how far it has turned (0 lying on its own side, 180 on the other); b: how much it bends (its edge lags by b).
+  el.pose = (a, b) => {
+    let tot = 0; const tail = N * (N - 1) / 2;
+    strips.forEach(({ st, sh }, i) => {
+      const rel = i === 0 ? a + .3 * b : -1.3 * b * i / tail;
+      tot += rel; st.style.transform = `rotateY(${(-s * rel).toFixed(2)}deg)`;
+      const d = Math.abs(Math.cos(tot * Math.PI / 180)), o = (.62 * (1 - d) + (tot > 90 ? .06 : 0)).toFixed(3);
+      sh[0].style.opacity = o; sh[1].style.opacity = o;
+    });
+  };
+  el.pose(0, 0);
+  return el;
+}
+// Move a sheet from one angle to another over ms, starting after `wait`; paper bends more than board.
+function tomeMove(sheet, { from, to, ms, wait = 0, bend = 60, ease = tomeEase.inOut, fadeAt = 0, onFrame }) {
+  return new Promise(done => {
+    let t0 = 0;
+    const step = now => {
+      if (!t0) t0 = now + wait;
+      const p = R.clamp((now - t0) / ms, 0, 1), e = ease(p), a = from + (to - from) * e;
+      const b = Math.sign(to - from) * bend * Math.pow(Math.sin(Math.PI * Math.min(1, p * 1.08)), .9) * (1 - .25 * p);
+      if (now >= t0) { sheet.pose(a, b); if (fadeAt && p > fadeAt) sheet.style.opacity = String(1 - (p - fadeAt) / (1 - fadeAt)); onFrame && onFrame(a); }
+      p < 1 ? requestAnimationFrame(step) : done();
+    };
+    requestAnimationFrame(step);
+  });
+}
+const tomeGeom = tome => {
+  const pg = tome.querySelector(".tomepages"), x = pg.offsetLeft, y = pg.offsetTop, w = pg.offsetWidth, h = pg.offsetHeight;
+  return { full: { x, y, w, h }, left: { x, y, w: w / 2, h }, right: { x: x + w / 2, y, w: w / 2, h } };
+};
+const tomeGhost = (tome, box, htmlStr) => {
+  const g = document.createElement("div"); g.className = "tghost"; g.setAttribute("aria-hidden", "true");
+  Object.assign(g.style, { left: box.x + "px", top: box.y + "px", width: box.w + "px", height: box.h + "px" });
+  g.innerHTML = htmlStr; tome.appendChild(g); return g;
+};
+const BLANK_R = `<div class="tomepage recto blank"></div>`, BLANK_V = `<div class="tomepage verso blank"></div>`;
+// Opening: the shut book slides into place, the cover swings over to the left, then a few pages flutter after it.
+// Closing is the same in reverse. `single` is the phone's one-page book: there the cover and pages swing away out of view.
+async function tomeOpenClose(tome, { opening, single, coverHtml, leftHtml }) {
+  const G = tomeGeom(tome), W = tome.offsetWidth, H = tome.offsetHeight;
+  const cbox = single ? { x: 0, y: 0, w: W, h: H - 22 } : { x: W / 2, y: 0, w: W / 2, h: H - 22 };
+  const clip = l => { if (!single) tome.style.clipPath = `inset(-60px -60px -60px ${l}px)`; };
+  const slide = v => { if (!single) tome.style.setProperty("--slide", v + "px"); };
+  const edge = a => a < 90 ? W / 2 : W / 2 * (1 + Math.cos(a * Math.PI / 180));   // how far left the cover's edge reaches
+  const end = single ? 175 : 180, leaves = single ? 2 : 3;
+  const cover = tomeSheet(tome, cbox, { s: 1, front: `<div class="tomecover">${coverHtml}</div>`, back: `<div class="tendpaper"></div>`, cls: "tcover" });
+  const pagesBox = single ? G.full : G.right;
+  const mk = i => tomeSheet(tome, pagesBox, { s: 1, front: BLANK_R, back: !single && i === leaves - 1 ? leftHtml : BLANK_V, cls: "tleaf" });
+  const ls = Array.from({ length: leaves }, (_, i) => mk(i));
+  cover.style.zIndex = opening ? 8 : 5;   // shut, the cover lies on top of the pages
+  if (opening) {
+    tome.classList.add("tmoving"); clip(W / 2); slide(-W / 4);   // only the right half shows: the shut book, still where it lay
+    if (!single) await tomeMove({ pose: () => {} }, { from: 0, to: 1, ms: 420, bend: 0, onFrame: v => slide(-W / 4 * (1 - v)) });
+    slide(0);
+    cover.style.zIndex = 8;
+    const cv = tomeMove(cover, { from: 0, to: end, ms: 1350, bend: 24, onFrame: a => { clip(Math.min(W / 2, edge(a))); cover.style.zIndex = a < 90 ? 8 : 5; }, fadeAt: single ? .7 : 0 });
+    await Promise.all([cv, ...ls.map((l, i) => tomeMove(l, { from: 0, to: end, ms: 1050, wait: 520 + i * 190, bend: 95, ease: tomeEase.sine, fadeAt: single ? .7 : 0 }))]);
+  } else {
+    // everything starts turned over to the left, lying on the open book
+    tome.classList.add("tmoving", "tclosing"); cover.pose(end, 0); ls.forEach(l => l.pose(end, 0)); ls.reverse();
+    if (single) { cover.style.opacity = "0"; ls.forEach(l => l.style.opacity = "0"); }
+    const fadeIn = el => single ? a => { el.style.opacity = String(R.clamp((end - a) / 50, 0, 1)); } : null;
+    await Promise.all(ls.map((l, i) => tomeMove(l, { from: end, to: 0, ms: 950, wait: i * 150, bend: 90, ease: tomeEase.sine, onFrame: fadeIn(l) })));
+    await tomeMove(cover, { from: end, to: 0, ms: 1250, bend: 24, onFrame: a => { clip(Math.min(W / 2, edge(a))); cover.style.zIndex = a < 90 ? 8 : 5; const f = fadeIn(cover); f && f(a); } });
+    if (!single) { clip(W / 2); await tomeMove({ pose: () => {} }, { from: 0, to: 1, ms: 420, bend: 0, onFrame: v => slide(-W / 4 * v) }); }
+  }
+  return () => { [cover, ...ls].forEach(e => e.remove()); tome.classList.remove("tmoving", "tclosing"); tome.style.clipPath = ""; tome.style.removeProperty("--slide"); };
+}
+// Turning a page: the page itself lifts, bends and lands on the other side, showing the next page on its back.
+async function tomeTurn(tome, { dir, single, olds, news }) {
+  const G = tomeGeom(tome), parts = [];
+  if (single) {
+    if (dir > 0) { const sh = tomeSheet(tome, G.full, { s: 1, front: olds[0], back: BLANK_V, cls: "tleaf" }); parts.push(sh);
+      await tomeMove(sh, { from: 0, to: 175, ms: 900, bend: 80, ease: tomeEase.sine, fadeAt: .6 }); }
+    else { parts.push(tomeGhost(tome, G.full, olds[0])); const sh = tomeSheet(tome, G.full, { s: 1, front: news[0], back: BLANK_V, cls: "tleaf" }); parts.push(sh);
+      sh.pose(175, 0); sh.style.opacity = "0";
+      await tomeMove(sh, { from: 175, to: 0, ms: 900, bend: 80, ease: tomeEase.sine, onFrame: a => { sh.style.opacity = String(R.clamp((175 - a) / 50, 0, 1)); } }); }
+  } else if (dir > 0) {
+    parts.push(tomeGhost(tome, G.left, olds[0]));
+    const sh = tomeSheet(tome, G.right, { s: 1, front: olds[1], back: news[0], cls: "tleaf" }); parts.push(sh);
+    await tomeMove(sh, { from: 0, to: 180, ms: 950, bend: 85, ease: tomeEase.sine });
+  } else {
+    parts.push(tomeGhost(tome, G.right, olds[1]));
+    const sh = tomeSheet(tome, G.left, { s: -1, front: olds[0], back: news[1], cls: "tleaf" }); parts.push(sh);
+    await tomeMove(sh, { from: 0, to: 180, ms: 950, bend: 85, ease: tomeEase.sine });
+  }
+  parts.forEach(e => e.remove());
+}
+const useTomeLayout = preactHooks.useLayoutEffect;
+
 const WARD_ROMAN = n => { let r = "", v = [[10, "x"], [9, "ix"], [5, "v"], [4, "iv"], [1, "i"]]; for (const [k, s] of v) while (n >= k) { r += s; n -= k; } return r; };
 const PER_PAGE = 6;
 function WardWords({ c, st, update }) {
@@ -106,21 +218,36 @@ function WardWords({ c, st, update }) {
   if (!chunks.length || chunks[chunks.length - 1].length >= PER_PAGE) pages.push({ k: "words", ws: [] });   // a fresh page to write on
   pages[pages.length - 1].last = true;
   const per = narrow ? 1 : 2, spreads = Math.ceil(pages.length / per);
-  const [at, setAt] = useState(0), [turn, setTurn] = useState("");
-  // The book can be shut (remembered per browser): then only its cover shows. Opening swings the cover over.
+  const [at, setAt] = useState(0), [turn, setTurn] = useState(null);
+  // The book can be shut (remembered per browser): then only its cover shows.
   const [shut, setShut] = useState(() => !!lsGet("cw-tome-shut", false)), [swing, setSwing] = useState("");
+  const tomeRef = useRef(null), tplRef = useRef(null), busy = useRef(false);
+  const pagesHtml = () => [...((tomeRef.current && tomeRef.current.querySelectorAll(".tomepages > .tomepage")) || [])].map(e => e.outerHTML);
   const shutTo = v => {
-    if (swing) return; lsSet("cw-tome-shut", v);
+    if (swing || busy.current) return; lsSet("cw-tome-shut", v);
     if (reduceMotion()) { setShut(v); return; }
-    if (v) { setSwing("closing"); setTimeout(() => { setShut(true); setSwing(""); }, 1000); }
-    else { setShut(false); setSwing("opening"); setTimeout(() => setSwing(""), 1100); }
+    busy.current = true;
+    if (v) setSwing("closing"); else { setShut(false); setSwing("opening"); }
   };
+  // The paper moves right after the book is drawn, before the browser paints it, so nothing flashes.
+  useTomeLayout(() => {
+    if (!swing || !tomeRef.current) return;
+    const tome = tomeRef.current, opening = swing === "opening";
+    tomeOpenClose(tome, { opening, single: narrow, coverHtml: tplRef.current ? tplRef.current.innerHTML : "", leftHtml: pagesHtml()[0] || BLANK_V }).then(clear => {
+      busy.current = false;
+      if (opening) { clear(); setSwing(""); } else { setShut(true); setSwing(""); }
+    });
+  }, [swing]);
   const sp = Math.min(at, spreads - 1);
   const go = to => {
-    to = R.clamp(to, 0, spreads - 1); if (to === sp || turn) return;
+    to = R.clamp(to, 0, spreads - 1); if (to === sp || busy.current || swing) return;
     if (reduceMotion()) { setAt(to); return; }
-    setTurn(to > sp ? "next" : "prev"); setTimeout(() => setAt(to), 280); setTimeout(() => setTurn(""), 640);
+    busy.current = true; setTurn({ dir: to > sp ? 1 : -1, olds: pagesHtml() }); setAt(to);
   };
+  useTomeLayout(() => {
+    if (!turn || !tomeRef.current) return;
+    tomeTurn(tomeRef.current, { dir: turn.dir, single: narrow, olds: turn.olds, news: pagesHtml() }).then(() => { busy.current = false; setTurn(null); });
+  }, [turn]);
   // A new word lands on its page: turn there.
   const learn = v => {
     const id = "w" + rid();
@@ -163,21 +290,20 @@ function WardWords({ c, st, update }) {
     <p class="sub">Your book of words. Adjectives, verbs and nouns are Words of Power: your own understanding of a concept, each with its own Sigil cost. You learn them by Research or Blueprinting, the cost comes down as you study them, and no other warder can teach them to you.</p>
     ${!st.spontaneous && html`<p class="ptlocked">Words of Power go into Spontaneous Wards from Warding 5 (Works of a Writer). You can fill the book now.</p>`}
     <div class="tomedesk">
-    ${shut ? html`<div class=${"tome shut" + (narrow ? " single" : "")}>
+    ${shut ? html`<div key="shut" class=${"tome shut" + (narrow ? " single" : "")}>
         <button type="button" class="tomecover" aria-label="Open the book" title="Open the book" onClick=${() => shutTo(false)}>${cover}</button></div>`
-    : html`<div class=${"tome" + (narrow ? " single" : "") + (turn ? " turning " + turn : "") + (swing ? " " + swing : "")}>
+    : html`<div key="open" ref=${tomeRef} class=${"tome" + (narrow ? " single" : "") + (swing ? " " + swing : "")}>
       <div class="tomepages">${shown.map((p, i) => page(p, sp * per + i + 1))}
         ${!narrow && shown.length < 2 && html`<div class="tomepage recto blank"></div>`}</div>
       <i class="tomeblock" aria-hidden="true"></i>
-      ${turn && html`<i class=${"tomeleaf " + turn} aria-hidden="true"></i>`}
-      ${swing && html`<i class="tomecover flap" aria-hidden="true">${cover}</i>`}
       <button type="button" class="tomecorner prev" aria-label="Turn back a page" disabled=${sp === 0} onClick=${() => go(sp - 1)}></button>
       <button type="button" class="tomecorner next" aria-label="Turn the page" disabled=${sp >= spreads - 1} onClick=${() => go(sp + 1)}></button>
     </div>`}</div>
+    <div class="tomecovertpl" ref=${tplRef} hidden aria-hidden="true">${cover}</div>
     ${shut ? html`<div class="row tomenav shutnav"><button class="btn small primary" onClick=${() => shutTo(false)}>Open the book</button></div>`
     : html`<div class="row tomenav"><button class="btn small" disabled=${sp === 0} onClick=${() => go(sp - 1)}>‹ Back</button>
       <span class="muted">${per === 2 ? `Pages ${sp * 2 + 1}–${Math.min(pages.length, sp * 2 + 2)}` : `Page ${sp + 1}`} of ${pages.length}</span>
-      <span class="row tomenavr"><button class="btn small" disabled=${!!swing} onClick=${() => shutTo(true)}>Close the book</button>
+      <span class="row tomenavr"><button class="btn small" disabled=${!!swing || !!turn} onClick=${() => shutTo(true)}>Close the book</button>
       <button class="btn small" disabled=${sp >= spreads - 1} onClick=${() => go(sp + 1)}>Turn ›</button></span></div>`}
   </section>`;
 }

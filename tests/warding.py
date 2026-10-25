@@ -44,22 +44,22 @@ with sync_playwright() as p:
         def learn(word, cost, kinds):
             for _ in range(6):   # the write-a-word line is on the book's last page
                 if pg.locator(".tomenew").count() or pg.locator(".tome .wardform").count(): break
-                pg.locator(".tomecorner.next").click(); pg.wait_for_timeout(750)
+                pg.locator(".tomecorner.next").click(); pg.wait_for_timeout(1500)
             if pg.locator(".tomenew").count(): pg.locator(".tomenew").click(); pg.wait_for_timeout(150)
             pg.fill("#wf-new-w", word); pg.fill("#wf-new-c", str(cost))
             for k in ["noun", "verb", "adjective"]:
                 box = pg.locator(".wardkinds label", has_text={"noun": "Noun", "verb": "Verb", "adjective": "Adjective"}[k]).locator("input")
                 if box.is_checked() != (k in kinds): box.click()
-            pg.locator(".tome .wardform .btn.primary").click(); pg.wait_for_timeout(900)
+            pg.locator(".tome .wardform .btn.primary").click(); pg.wait_for_timeout(1500)
         learn("Fire", 12, ["noun", "verb"]); learn("Ignite", 8, ["verb"]); learn("Big", 6, ["adjective"])
         while pg.locator(".tomeh", has_text="Grammar").count() == 0:
-            pg.locator(".tomecorner.prev").click(); pg.wait_for_timeout(750)
-        pg.locator(".tomenavr .btn", has_text="Close the book").click(); pg.wait_for_timeout(1300)
+            pg.locator(".tomecorner.prev").click(); pg.wait_for_timeout(1500)
+        pg.locator(".tomenavr .btn", has_text="Close the book").click(); pg.wait_for_timeout(4000)
         check(tag + "the book closes to its cover", pg.locator(".tome.shut .tomecover").count() == 1 and pg.locator(".tomepage").count() == 0 and "Batbayar" in pg.locator(".tomecover").inner_text())
         pg.reload(); pg.wait_for_timeout(1500); pg.get_by_role("tab", name="Magic").click(); pg.wait_for_timeout(400)
         check(tag + "and stays shut after a reload", pg.locator(".tome.shut").count() == 1)
-        pg.locator(".tomecover").click(); pg.wait_for_timeout(1400)
-        check(tag + "clicking the cover opens it", pg.locator(".tomepage").count() >= 1 and pg.locator(".tomecover").count() == 0)
+        pg.locator(".tomecover").click(); pg.wait_for_timeout(3500)
+        check(tag + "clicking the cover opens it, and the moving paper is cleared away", pg.locator(".tomepage").count() >= 1 and pg.locator(".tome .tomecover").count() == 0 and pg.locator(".tsheet, .tghost").count() == 0)
         check(tag + "the book turns back to its Grammar page", pg.locator(".tome .tomeh", has_text="Grammar").count() == 1)
         pg.fill(".tomegram.k-subject .tomeadd input", "the bandits"); pg.locator(".tomegram.k-subject .tomeadd button").click(); pg.wait_for_timeout(1500)
         w = ch()["ward"]

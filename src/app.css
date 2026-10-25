@@ -2303,11 +2303,11 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 
 /* --- Words: an old, much-used book lying open on the desk, tilted a little away from you. Its colours are its own
    (leather, browned parchment, iron-gall ink) in every theme. The pages are scorched and torn at the corners. --- */
-.tomedesk { perspective: 1700px; padding: 6px 0 4px; }
+.tomedesk { perspective: 1700px; padding: 6px 0 4px; overflow-x: clip; }
 .tome { --leather: #4a2a17; --leather-2: #2a170b; --tool: #b8893f; --vellum: #d8b980; --vellum-2: #b48a52; --ink: #26170a; --ink-faint: #5a4024; --rubric: #7a1f12;
   --k-subject: #6b4510; --k-verb: #7a1f12; --k-noun: #173d55; --k-adjective: #2f5420; --k-adverb: #4f463c; --k-conj: #5e430c;
   position: relative; padding: 16px 18px 34px; border-radius: 10px 14px 14px 10px; perspective: 2200px; transform-style: preserve-3d;
-  transform: rotateX(13deg); transform-origin: 50% 100%;
+  transform: rotateX(var(--tilt, 13deg)) translateX(var(--slide, 0px)); transform-origin: 50% 100%;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .17 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), radial-gradient(ellipse at 30% 20%, #5e3620, transparent 60%), radial-gradient(ellipse at 80% 90%, #1e0f06, transparent 55%), var(--leather);
   box-shadow: inset 0 0 0 2px var(--leather-2), inset 0 0 0 6px var(--leather), inset 0 0 0 7px color-mix(in srgb, var(--tool) 45%, transparent), inset 0 -10px 18px rgb(0 0 0 / .45), 0 22px 30px -6px rgb(0 0 0 / .55), 0 4px 0 #1a0e06; }
 .tome::before { content: ""; position: absolute; top: -6px; right: 22%; width: 14px; height: 74px; z-index: 3; pointer-events: none;   /* the ribbon bookmark, frayed */
@@ -2379,20 +2379,24 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .tomenav { justify-content: space-between; margin-top: 12px; }
 .tomenavr { gap: 8px; flex-wrap: nowrap; }
 .shutnav { justify-content: center; }
-/* turning a page: a browned leaf sweeps over the spread while the pages change underneath */
-.tomeleaf { position: absolute; top: 16px; bottom: 34px; width: calc(50% - 18px); z-index: 4; pointer-events: none; transform-style: preserve-3d;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .3 0 0 0 0 .17 0 0 0 0 .05 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(90deg, #a37a45, var(--vellum) 30%, #c9a36a); box-shadow: 0 0 30px rgb(0 0 0 / .35); }
-.tomeleaf.next { left: 50%; transform-origin: left center; animation: leafNext .62s cubic-bezier(.45,.05,.35,1) forwards; }
-.tomeleaf.prev { right: 50%; transform-origin: right center; animation: leafPrev .62s cubic-bezier(.45,.05,.35,1) forwards; }
-.tome.single .tomeleaf { width: calc(100% - 36px); left: 18px; right: auto; }
-.tome.single .tomeleaf.prev { transform-origin: left center; animation-name: leafPrevSingle; }
-@keyframes leafNext { from { transform: rotateY(0); } 50% { filter: brightness(.8); } to { transform: rotateY(-180deg); opacity: .2; } }
-@keyframes leafPrev { from { transform: rotateY(0); } 50% { filter: brightness(.8); } to { transform: rotateY(180deg); opacity: .2; } }
-@keyframes leafPrevSingle { from { transform: rotateY(-180deg); opacity: .2; } to { transform: rotateY(0); opacity: 0; } }
-.tome.turning .tomepages > * { animation: pageFade .64s ease both; }
-@keyframes pageFade { 0%, 100% { opacity: 1; } 45%, 55% { opacity: .15; } }
 @keyframes inkIn { from { opacity: 0; filter: blur(2px); } }
 
+/* the moving paper (tomeSheet in magic.js): a sheet is a chain of hinged strips, each with a front and a back face */
+.tsheet { position: absolute; z-index: 6; transform-style: preserve-3d; pointer-events: none; }
+.tsheet.tcover { z-index: 5; }
+.tstrip { position: absolute; top: 0; height: 100%; transform-style: preserve-3d; }
+.tface { position: absolute; top: 0; bottom: 0; left: -1px; right: -1px; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.tface.back { transform: rotateY(180deg); }
+.tfin { position: absolute; top: 0; height: 100%; }
+.tfin > *, .tghost > * { width: 100%; height: 100%; min-height: 0 !important; box-sizing: border-box; }
+.tshade { position: absolute; inset: 0; background: #140902; opacity: 0; pointer-events: none; }
+.tleaf .tshade { background: linear-gradient(90deg, #140902, #3a1c08); }
+.tghost { position: absolute; z-index: 4; pointer-events: none; }
+.tsheet *, .tghost * { animation: none !important; transition: none !important; }
+.tendpaper { border-radius: 4px; box-shadow: inset 0 0 0 8px var(--leather), inset 0 0 0 9px rgb(201 162 83 / .35);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='520' height='620'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.02 .006' numOctaves='4' seed='9' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .33 0 0 0 0 .14 0 0 0 -3 1.6'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='20' viewBox='0 0 240 20'%3E%3Cg stroke='%23b9e39a' stroke-opacity='.26' stroke-width='1.1' fill='%23b9e39a' fill-opacity='.0' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath transform='translate(8 1)' d='M3 18V2M3 3L9 0M3 8L9 5'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='26' cy='10' r='1'/%3E%3Cpath transform='translate(38 1)' d='M3 18V2L9 6L3 10L9 18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='56' cy='10' r='1'/%3E%3Cpath transform='translate(68 1)' d='M6 18V2M6 8L1 2M6 8L11 2'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='86' cy='10' r='1'/%3E%3Cpath transform='translate(98 1)' d='M6 0L11 6L6 12L1 6Z M1 18L11 12M11 18L1 12'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='116' cy='10' r='1'/%3E%3Cpath transform='translate(128 1)' d='M3 18V2M9 18V2M3 6L9 12'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='146' cy='10' r='1'/%3E%3Cpath transform='translate(158 1)' d='M6 18V0M1 5L11 11'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='176' cy='10' r='1'/%3E%3Cpath transform='translate(188 1)' d='M2 2L10 18M10 2L2 18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='206' cy='10' r='1'/%3E%3Cpath transform='translate(218 1)' d='M3 18V2L9 8V18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='236' cy='10' r='1'/%3E%3C/g%3E%3C/svg%3E"), radial-gradient(ellipse at 30% 30%, #7a4e2a, transparent 50%), radial-gradient(ellipse at 70% 75%, #5a2e1a, transparent 55%), #4a2a17; }
+.tome.tmoving .tomecorner { visibility: hidden; }
+.tome.tclosing:not(.single) .tomepages > .tomepage:first-child { visibility: hidden; }
 /* --- the cover: worn tooled leather, brass corners, a sealed rune and a strap clasp --- */
 .tome.shut { width: 50%; margin-inline: auto; padding: 0 0 22px; background: none; box-shadow: none; }
 .tome.shut::before { right: 30%; }
@@ -2418,22 +2422,6 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .tomeclasp { position: absolute; right: -10px; top: calc(50% - 34px); width: 46px; height: 68px; border-radius: 8px 4px 4px 8px; z-index: 2; pointer-events: none;
   background: radial-gradient(circle at 18px 50%, #e3c27a 0 6px, #8a6224 7px 9px, transparent 10px), linear-gradient(90deg, #3a200f, #5a341b 40%, #2e190c);
   box-shadow: 0 2px 6px rgb(0 0 0 / .5), inset 0 0 0 1px rgb(201 162 83 / .35); }
-/* opening: the shut book slides into place, then the cover swings over to the left and the pages appear; closing is the reverse */
-.tomecover.flap { position: absolute; top: 0; bottom: 22px; left: 50%; width: 50%; min-height: 0; z-index: 6; pointer-events: none; transform-origin: left center; display: grid; transform-style: preserve-3d; }
-.tomecover.flap .tomecoverin, .tomecover.flap .tomeclasp { backface-visibility: hidden; }
-.tomecover.flap::after { content: ""; position: absolute; inset: 8px 6px 8px 8px; transform: rotateY(180deg); backface-visibility: hidden; border-radius: 4px;   /* the marbled endpaper inside the cover */
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='20' viewBox='0 0 240 20'%3E%3Cg stroke='%23b9e39a' stroke-opacity='.26' stroke-width='1.1' fill='%23b9e39a' fill-opacity='.0' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath transform='translate(8 1)' d='M3 18V2M3 3L9 0M3 8L9 5'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='26' cy='10' r='1'/%3E%3Cpath transform='translate(38 1)' d='M3 18V2L9 6L3 10L9 18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='56' cy='10' r='1'/%3E%3Cpath transform='translate(68 1)' d='M6 18V2M6 8L1 2M6 8L11 2'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='86' cy='10' r='1'/%3E%3Cpath transform='translate(98 1)' d='M6 0L11 6L6 12L1 6Z M1 18L11 12M11 18L1 12'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='116' cy='10' r='1'/%3E%3Cpath transform='translate(128 1)' d='M3 18V2M9 18V2M3 6L9 12'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='146' cy='10' r='1'/%3E%3Cpath transform='translate(158 1)' d='M6 18V0M1 5L11 11'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='176' cy='10' r='1'/%3E%3Cpath transform='translate(188 1)' d='M2 2L10 18M10 2L2 18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='206' cy='10' r='1'/%3E%3Cpath transform='translate(218 1)' d='M3 18V2L9 8V18'/%3E%3Ccircle fill-opacity='.22' stroke='none' cx='236' cy='10' r='1'/%3E%3C/g%3E%3C/svg%3E"), radial-gradient(ellipse at 30% 30%, #7a4e2a, transparent 50%), radial-gradient(ellipse at 70% 75%, #5a2e1a, transparent 55%), repeating-radial-gradient(circle at 40% 60%, #6b3f22 0 6px, #4f2a16 6px 11px, #7e5230 11px 14px); }
-.tome.opening .tomecover.flap { animation: coverOpen 1.1s cubic-bezier(.5,.05,.3,1) forwards; }
-.tome.closing .tomecover.flap { animation: coverOpen 1s cubic-bezier(.5,.05,.3,1) reverse forwards; }
-@keyframes coverOpen { 0% { transform: translateX(-50%) rotateY(0); } 30% { transform: translateX(0) rotateY(0); } 97% { transform: translateX(0) rotateY(-178deg); opacity: 1; } 100% { transform: translateX(0) rotateY(-180deg); opacity: 0; } }
-.tome.opening { animation: bookReveal 1.1s cubic-bezier(.5,.05,.3,1) forwards; }
-.tome.closing { animation: bookReveal 1s cubic-bezier(.5,.05,.3,1) reverse forwards; }
-@keyframes bookReveal { 0% { clip-path: inset(-40px 25% -40px 25%); } 30% { clip-path: inset(-40px 0 -40px 50%); } 100% { clip-path: inset(-40px -40px -40px -40px); } }
-.tome.single.opening, .tome.single.closing { animation: none; }
-.tome.single .tomecover.flap { left: 0; width: 100%; }
-.tome.single.opening .tomecover.flap { animation-name: coverOpenSingle; }
-.tome.single.closing .tomecover.flap { animation-name: coverOpenSingle; }
-@keyframes coverOpenSingle { from { transform: rotateY(0); } to { transform: rotateY(-120deg); opacity: 0; } }
 
 /* --- Inscribe: the floating words and the sigil --- */
 .wardstage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 330px); gap: 18px; align-items: center; }
@@ -2564,7 +2552,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + var(--fall))) scale(.5); background: #3b0764; }
 }
 @media (max-width: 760px) {
-  .tome { padding: 10px 10px 30px; transform: rotateX(6deg); }
+  .tome { padding: 10px 10px 30px; --tilt: 6deg; }
   .tomecover { min-height: 498px; }
   .tomepages { min-height: 480px; }
   .tomepage { padding: 26px 20px 44px; }
@@ -2577,9 +2565,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 }
 @keyframes wardBob { to { transform: translateY(calc(var(--dy) / 4)); } }
 @media (prefers-reduced-motion: reduce) {
-  .wardword, .wardmotes, .wardsigil *, .wardsigil, .tomeword, .wardtok, .wardcast, .tome.turning .tomepages > * { animation: none !important; }
+  .wardword, .wardmotes, .wardsigil *, .wardsigil, .tomeword, .wardtok, .wardcast { animation: none !important; }
   .wardsigil .link, .wardsigil .star, .wardsigil .ray { stroke-dashoffset: 0; }
-  .tomeleaf, .tomecover.flap { display: none; }
-  .tome.opening, .tome.closing { animation: none !important; }
+
 }
 </style>
