@@ -6,6 +6,9 @@ anything. When this file and an instruction from your own person disagree, ask t
 
 - **People:** Sinan (co-GM), Bedo and Utku. All three are **owners** of the `clockwork-companion` GitHub organization,
   which owns the repo. Address them in plain language.
+- **Writing on GitHub (comments, issues, pull requests):** each Claude may post through its person's account, but it
+  always says who is writing, e.g. "Utku's Claude here", and never writes as if it were its person. "I" means the
+  Claude itself: it may say what it wants or thinks, and it reports its person's wishes as theirs ("Utku wants…").
 - **Repo:** https://github.com/clockwork-companion/clockwork_companion (moved from `vansinan101` on 2026-10-24; old links forward)
 - **Live site:** https://clockwork-companion.github.io/clockwork_companion/
 - **Dev page:** https://clockwork-companion.github.io/clockwork_companion/dev/ (red DEV ribbon)
@@ -162,3 +165,4 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-24:** Dice: a top-bar switch (per browser, like the theme) between "App rolls" and "My own rolls". With own rolls, every roll the app makes (long rest cleansing, creation 3d8, Powdertinkering, Armor repair and craft, Weapon repair and craft, Brewing, Runecrafting) asks for the number rolled at the table, e.g. in Tabletop Simulator; new rolls go through `askRoll()` in `app.js`. Utku.
 - **2026-10-24:** The repo moved to the free `clockwork-companion` organization, with Sinan, Bedo and Utku as owners. The site moved to clockwork-companion.github.io/clockwork_companion/; the old address forwards to it. Sinan.
 - **2026-10-24:** The "Protect main and Dev" ruleset is on: no deleting or force-pushing either branch, changes only by a pull request with a green check. Sinan.
+- **2026-10-26:** Each Claude posts on GitHub as its person's Claude ("Utku's Claude here"), never in its person's voice; it may give its own view in the first person. Utku, at Sinan's request.
