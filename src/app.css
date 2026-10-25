@@ -2274,6 +2274,16 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .sigil { opacity: calc(var(--o) * 1.5); }
 :is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .hovercard { background: #2b1c0f; color: #f6ecd2; border-top-color: #c9483c; }
 :is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .hovercard em { color: #f0c7a8; }
+/* Powdertinkering: saved recipes (chips above the munitions) and the save box after a craft. */
+.ptsaved { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 16px 0 -2px; }
+.ptsaved .lbl { flex: 0 0 100%; }
+.ptsavedchip { display: inline-flex; align-items: center; gap: 2px; }
+.ptsaved .ptsavedchip.on .btn, .ptsaved .ptsavedchip .btn[aria-pressed="true"] { background: var(--brass); border-color: var(--brass); color: var(--brass-ink); }
+.ptsavedchip .iconbtn { width: 24px; height: 24px; font-size: 14px; }
+.ptsave { display: grid; gap: 6px; text-align: left; margin: 4px 0; }
+.ptsave .row { flex-wrap: nowrap; }
+.ptsave .inp { flex: 1 1 auto; min-width: 0; }
+.ptsavedok { font-size: 13px; color: var(--good); margin: 0; }
 /* Powdertinkering: custom parts (a tag, a remove button, the add form). */
 .ptaddbox { display: grid; }
 .ptaddbox:empty, .ptratebox:empty { display: none; }

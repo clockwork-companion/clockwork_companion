@@ -61,6 +61,9 @@ jobs:
       - name: Custom Powdertinkering parts
         run: python3 tests/powder_custom.py "$RUNNER_TEMP/site" smoke-shots
 
+      - name: Saved Powdertinkering recipes
+        run: python3 tests/powder_saved.py "$RUNNER_TEMP/site" smoke-shots
+
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v6

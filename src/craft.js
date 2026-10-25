@@ -152,8 +152,23 @@ function Powdertinkering({ c, update }) {
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   useEffect(() => { if (fRef.current && fRef.current.charId !== c.id) { timers.current.forEach(clearTimeout); setF(null); } }, [c.id]);
   const later = (fn, ms) => timers.current.push(setTimeout(fn, reduceMotion() ? Math.min(ms, 120) : ms));
-  const setRc = fn => update(x => fn(x.craft.recipe));
+  // Changing any part makes it a different recipe, so a loaded recipe's name comes off.
+  const setRc = fn => update(x => { fn(x.craft.recipe); delete x.craft.recipe.name; });
   const steps = useMemo(() => R.ptSteps(c, rc), [c]);
+  /* ---------- saved recipes: name a craft, then load every part back with one click ---------- */
+  const saved = cr.saved || [];
+  const saveRecipe = (n, recipe) => {
+    const name = String(n || "").trim().slice(0, 60); if (!name) return;
+    const r = clean(recipe); delete r.name;
+    update(x => {
+      const i = x.craft.saved.findIndex(y => y.n.toLowerCase() === name.toLowerCase());
+      const it = { k: i >= 0 ? x.craft.saved[i].k : "r" + rid(), n: name, recipe: r };
+      if (i >= 0) x.craft.saved[i] = it; else x.craft.saved.push(it);
+      x.craft.recipe = Object.assign(clean(r), { name });
+    });
+    toast(`Saved "${name}". Pick it under Saved recipes to make it again.`);
+  };
+  const loadRecipe = it => { update(x => { x.craft.recipe = Object.assign({ type: "rifle" }, clean(it.recipe), { name: it.n }); }); setFocus("coat"); };
   const sum = ptSummary(c, rc, st);
   const yieldNow = R.ptYield(c, type, st.maxFails);
   // Materials the whole craft needs if nothing fails.
@@ -206,7 +221,9 @@ function Powdertinkering({ c, update }) {
     const made = !scrap && done.some(s => s.part === "coat");
     const det = Math.max(0, f.det - f.ignored);
     const y = made ? R.ptYield(c, f.type, Math.max(0, f.maxFails - det)) : { n: 0 };
-    const name = R.ptName(f.type, done, f.recipe) + (det ? ` · ${det} Detriment${det > 1 ? "s" : ""}` : "");
+    // Made from a saved recipe with every part in place: the recipe's name. Otherwise the parts that held.
+    const whole = f.recipe.name && done.length === f.steps.length;
+    const name = (whole ? f.recipe.name : R.ptName(f.type, done, f.recipe)) + (det ? ` · ${det} Detriment${det > 1 ? "s" : ""}` : "");
     const spentTxt = Object.entries(f.spent).map(([k, g]) => `${g} g ${matName(k)}`).join(", ");
     update(x => {
       Object.entries(f.spent).forEach(([k, g]) => (x.craft.supplies[k] = Math.max(0, num(x.craft.supplies[k]) - g)));
@@ -220,7 +237,7 @@ function Powdertinkering({ c, update }) {
       x.craft.ledger = [{ id: rid(), t: Date.now(), name, qty: y.n, det, scrap, rolls: f.rolls.map(r => `${r.label} ${r.r}−${f.mod}=${r.total} vs ${r.dc} ${r.ok ? "✓" : "✗"}`), note: "" }, ...x.craft.ledger].slice(0, 20);
       addLog(x, scrap ? `Powdertinkering: the batch was scrapped (${spentTxt} lost)` : made ? `Powdertinkering: forged ${y.n} × ${name} (${spentTxt})` : `Powdertinkering: stopped before the coat held (${spentTxt} lost)`);
     });
-    patch({ phase: scrap ? "scrap" : made ? "done" : "nothing", result: { name, n: y.n, det, made } });
+    patch({ phase: scrap ? "scrap" : made ? "done" : "nothing", result: { name, n: y.n, det, made, plain: f.recipe.name || R.ptName(f.type, f.steps, f.recipe) } });
   };
   const close = () => { timers.current.forEach(clearTimeout); timers.current = []; setF(null); };
   const busy = !!forge;
@@ -253,6 +270,10 @@ function Powdertinkering({ c, update }) {
         ${st.keepFailed && html`<span class=${"flag " + (st.used.keep ? "" : "brass")} title="Novice Tinker (Powdertinker 5): keep a property you failed, as well as its Detriment. Recharges on a long rest.">Novice Tinker · ${st.used.keep ? "used" : "ready"}</span>`}
         ${st.ignoreOne && html`<span class=${"flag " + (st.used.ignore ? "" : "brass")} title="Master o' Munitions (Powdertinker 10): ignore 1 Detriment. Recharges on a long rest.">Ignore a Detriment · ${st.used.ignore ? "used" : "ready"}</span>`}</div>`}
 
+      ${saved.length > 0 && html`<div class="ptsaved" role="group" aria-label="Saved recipes"><span class="lbl">Saved recipes</span>
+        ${saved.map(it => html`<span class=${"ptsavedchip" + (rc.name === it.n ? " on" : "")}>
+          <button type="button" class="btn small" aria-pressed=${rc.name === it.n} disabled=${busy} title=${`Load every part of ${it.n}`} onClick=${() => loadRecipe(it)}>${it.n}</button>
+          <button type="button" class="iconbtn" aria-label=${`Delete the recipe ${it.n}`} disabled=${busy} onClick=${() => update(x => { x.craft.saved = x.craft.saved.filter(y => y.k !== it.k); if (x.craft.recipe.name === it.n) delete x.craft.recipe.name; })}>×</button></span>`)}</div>`}
       <div class="pttypes" role="radiogroup" aria-label="Munition">${R.MUNITIONS.map(x => html`<button type="button" role="radio" aria-checked=${x.k === type} disabled=${busy}
         onClick=${() => setRc(r => { r.type = x.k; })}><svg viewBox="0 0 24 24" aria-hidden="true">${TYPE_ICON[x.shape]}</svg><span>${x.n}</span></button>`)}</div>
 
@@ -266,8 +287,8 @@ function Powdertinkering({ c, update }) {
             ${!busy && html`<button class="btn primary big forgebtn" disabled=${!canForge} onClick=${start}>
               <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 12h11l3-3H6z M6 12v3h8v-3 M8 15v2.5 M12 15v2.5 M9 5.5l1-3 1 3" /></svg>Forge ${steps.length === 1 ? "a plain batch" : `· ${steps.length} rolls`}</button>
               ${why && html`<p class="muted ptwhy">${why}</p>`}`}
-            ${busy && html`<${ForgeReadout} f=${forge} st=${st} matName=${matName} supplies=${cr.supplies}
-              onRetry=${() => attempt(forge.idx)} onSkip=${skip} onKeep=${keepIt} onIgnore=${ignoreIt} onFinish=${() => finish(false)} onClose=${close} />`}
+            ${busy && html`<${ForgeReadout} f=${forge} st=${st} matName=${matName} supplies=${cr.supplies} saved=${saved}
+              onSave=${n => saveRecipe(n, forge.recipe)} onRetry=${() => attempt(forge.idx)} onSkip=${skip} onKeep=${keepIt} onIgnore=${ignoreIt} onFinish=${() => finish(false)} onClose=${close} />`}
           </div>
         </div>
         <div class="ptside">
@@ -309,9 +330,10 @@ function Powdertinkering({ c, update }) {
 }
 
 /* ---------- the readout under the munition while forging ---------- */
-function ForgeReadout({ f, st, matName, supplies, onRetry, onSkip, onKeep, onIgnore, onFinish, onClose }) {
+function ForgeReadout({ f, st, matName, supplies, saved, onSave, onRetry, onSkip, onKeep, onIgnore, onFinish, onClose }) {
   const s = f.steps[f.idx];
   const [spin, setSpin] = useState(0);
+  const [saveName, setSaveName] = useState(null), [didSave, setDidSave] = useState(false);
   useEffect(() => {
     if (f.phase !== "rolling" || reduceMotion()) return;
     const t = setInterval(() => setSpin(1 + Math.floor(Math.random() * 100)), 55);
@@ -327,6 +349,11 @@ function ForgeReadout({ f, st, matName, supplies, onRetry, onSkip, onKeep, onIgn
       <p class="ptbig">${f.phase === "scrap" ? "Scrapped" : f.phase === "nothing" ? "Nothing made" : `${r.n} forged`}</p>
       <p>${f.phase === "scrap" ? "One Detriment too many: the batch and every material in it are lost." : f.phase === "nothing" ? "The coat never held, so there's no munition. The materials used are gone." : r.name}</p>
       ${f.phase === "done" && html`<p class="muted">Added to the inventory${r.det ? `. ${r.det} Detriment${r.det > 1 ? "s" : ""} for the GM to decide (note them in the Ledger)` : ""}.</p>`}
+      ${f.phase !== "nothing" && (didSave ? html`<p class="ptsavedok">Saved as a recipe. It's under Saved recipes on the bench.</p>`
+        : html`<form class="ptsave" onSubmit=${e => { e.preventDefault(); const n = (saveName == null ? r.plain : saveName).trim(); if (n) { onSave(n); setDidSave(true); } }}>
+          <label class="lbl" for="pt-save-n">Save this recipe${f.recipe.name ? "" : " to make it again"}</label>
+          <div class="row"><input id="pt-save-n" class="inp" maxlength="60" placeholder="Name the ammo" value=${saveName == null ? r.plain : saveName} onInput=${e => setSaveName(e.target.value)} />
+            <button class="btn" type="submit" disabled=${!(saveName == null ? r.plain : saveName).trim()}>${(saved || []).some(x => x.n.toLowerCase() === (saveName == null ? r.plain : saveName).trim().toLowerCase()) ? "Update recipe" : "Save recipe"}</button></div></form>`)}
       <button class="btn primary" onClick=${onClose}>${f.phase === "done" ? "Back to the bench" : "Clear the bench"}</button></div>`;
   }
   const r = f.roll;

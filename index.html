@@ -2284,6 +2284,16 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .sigil { opacity: calc(var(--o) * 1.5); }
 :is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .hovercard { background: #2b1c0f; color: #f6ecd2; border-top-color: #c9483c; }
 :is([data-skin="fantasy"], [data-skin="fantasy-dark"]) .hovercard em { color: #f0c7a8; }
+/* Powdertinkering: saved recipes (chips above the munitions) and the save box after a craft. */
+.ptsaved { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: 16px 0 -2px; }
+.ptsaved .lbl { flex: 0 0 100%; }
+.ptsavedchip { display: inline-flex; align-items: center; gap: 2px; }
+.ptsaved .ptsavedchip.on .btn, .ptsaved .ptsavedchip .btn[aria-pressed="true"] { background: var(--brass); border-color: var(--brass); color: var(--brass-ink); }
+.ptsavedchip .iconbtn { width: 24px; height: 24px; font-size: 14px; }
+.ptsave { display: grid; gap: 6px; text-align: left; margin: 4px 0; }
+.ptsave .row { flex-wrap: nowrap; }
+.ptsave .inp { flex: 1 1 auto; min-width: 0; }
+.ptsavedok { font-size: 13px; color: var(--good); margin: 0; }
 /* Powdertinkering: custom parts (a tag, a remove button, the add form). */
 .ptaddbox { display: grid; }
 .ptaddbox:empty, .ptratebox:empty { display: none; }
@@ -2769,7 +2779,7 @@ const CW = (() => {
                 wounds: { light: 0, moderate: 0, mortal: 0 }, conditions: [] },
       prosthetics: [], coins: 0,
       items: [], weapons: [], armor: [], log: [],
-      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [],
+      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
                brew: { bonus: 0, known: [], recipes: [], catalysts: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
                rune: { bonus: 0, effects: [], order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
@@ -2802,6 +2812,7 @@ const CW = (() => {
     out.craft.recipe = Object.assign({ type: "rifle" }, out.craft.recipe);
     if (!Array.isArray(out.craft.ledger)) out.craft.ledger = [];
     if (!Array.isArray(out.craft.parts)) out.craft.parts = [];   // custom Powdertinkering parts (coats, tips, areas, cores, statuses)
+    if (!Array.isArray(out.craft.saved)) out.craft.saved = [];   // saved Powdertinkering recipes: { k, n, recipe }
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
@@ -3716,6 +3727,7 @@ const RULES_INFO = {
     { h: "Each part is one roll" }, { ul: ["Modifier = 3% × Powdertinker, plus any item bonus.", "Roll d100 and subtract the modifier. Under the part's difficulty, it holds.", "Each attempt uses 200 g: container materials for Coats, Tips and Areas; element solution for Cores and Status."] },
     { t: { cols: ["Part", "Difficulty", "Rating"], rows: [["Coat (always first)", "60%", "—"], ["Tip (several)", "40%, −5% per step above base", "Powdertinker"], ["Area (one)", "30%", "Powdertinker"], ["Core (one element)", "40%, −10% per step above base", "Powdertinker ÷ 2"], ["Status (match the Core)", "40%", "Powdertinker ÷ 2"]] } },
     { h: "Failures" }, { ul: ["A failed roll loses its materials and gives the batch a Detriment (the GM decides what). You may try the same part again.", "Powdertinker 3 lets you fail once; Powdertinker 6, twice. One more scraps the batch and everything in it."] },
+    { h: "Saved recipes" }, { ul: ["After a craft, name it and click \"Save recipe\". It appears under Saved recipes above the munitions.", "One click on a saved recipe puts every part back: the munition, coat, tips, area, core and statuses.", "Ammo made from a saved recipe, with every part holding, goes into the inventory under its name. Change any part and it's a new recipe again.", "Saving under a name that already exists updates that recipe; × deletes one."] },
     { h: "Your own parts" }, { ul: ["Each part has \"+ A custom …\" under the book's choices: give it a name, what it does and its difficulty.", "A custom Tip can have a Rating (each +1 makes it 5% harder); a custom Core is a new element with its own solution under Supplies (each +1 makes it 10% harder); a custom Status belongs to one element.", "They're saved on this character and marked \"custom\". The × removes one (a removed Core takes its Statuses with it).", "What a custom part does in play is up to the GM, like a Detriment."] },
     { h: "Unlocks" }, { ul: ["3: proficient, custom Coats.", "4: Tips and Cores.", "5: keep a failed property as well as its Detriment (once per long rest).", "7: Area and Status.", "8: half a batch more per unused failure.", "9: a whole batch more.", "10: ignore one Detriment (once per long rest)."] },
     { note: "The app's readings: the Component Access table (which munition takes which part) is garbled in our copy of the book and is our best guess; bombs keep a free Sphere; grenades and oils roll their base layer at 60%; both perk abilities are once per long rest." } ] },
@@ -6337,8 +6349,23 @@ function Powdertinkering({ c, update }) {
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   useEffect(() => { if (fRef.current && fRef.current.charId !== c.id) { timers.current.forEach(clearTimeout); setF(null); } }, [c.id]);
   const later = (fn, ms) => timers.current.push(setTimeout(fn, reduceMotion() ? Math.min(ms, 120) : ms));
-  const setRc = fn => update(x => fn(x.craft.recipe));
+  // Changing any part makes it a different recipe, so a loaded recipe's name comes off.
+  const setRc = fn => update(x => { fn(x.craft.recipe); delete x.craft.recipe.name; });
   const steps = useMemo(() => R.ptSteps(c, rc), [c]);
+  /* ---------- saved recipes: name a craft, then load every part back with one click ---------- */
+  const saved = cr.saved || [];
+  const saveRecipe = (n, recipe) => {
+    const name = String(n || "").trim().slice(0, 60); if (!name) return;
+    const r = clean(recipe); delete r.name;
+    update(x => {
+      const i = x.craft.saved.findIndex(y => y.n.toLowerCase() === name.toLowerCase());
+      const it = { k: i >= 0 ? x.craft.saved[i].k : "r" + rid(), n: name, recipe: r };
+      if (i >= 0) x.craft.saved[i] = it; else x.craft.saved.push(it);
+      x.craft.recipe = Object.assign(clean(r), { name });
+    });
+    toast(`Saved "${name}". Pick it under Saved recipes to make it again.`);
+  };
+  const loadRecipe = it => { update(x => { x.craft.recipe = Object.assign({ type: "rifle" }, clean(it.recipe), { name: it.n }); }); setFocus("coat"); };
   const sum = ptSummary(c, rc, st);
   const yieldNow = R.ptYield(c, type, st.maxFails);
   // Materials the whole craft needs if nothing fails.
@@ -6391,7 +6418,9 @@ function Powdertinkering({ c, update }) {
     const made = !scrap && done.some(s => s.part === "coat");
     const det = Math.max(0, f.det - f.ignored);
     const y = made ? R.ptYield(c, f.type, Math.max(0, f.maxFails - det)) : { n: 0 };
-    const name = R.ptName(f.type, done, f.recipe) + (det ? ` · ${det} Detriment${det > 1 ? "s" : ""}` : "");
+    // Made from a saved recipe with every part in place: the recipe's name. Otherwise the parts that held.
+    const whole = f.recipe.name && done.length === f.steps.length;
+    const name = (whole ? f.recipe.name : R.ptName(f.type, done, f.recipe)) + (det ? ` · ${det} Detriment${det > 1 ? "s" : ""}` : "");
     const spentTxt = Object.entries(f.spent).map(([k, g]) => `${g} g ${matName(k)}`).join(", ");
     update(x => {
       Object.entries(f.spent).forEach(([k, g]) => (x.craft.supplies[k] = Math.max(0, num(x.craft.supplies[k]) - g)));
@@ -6405,7 +6434,7 @@ function Powdertinkering({ c, update }) {
       x.craft.ledger = [{ id: rid(), t: Date.now(), name, qty: y.n, det, scrap, rolls: f.rolls.map(r => `${r.label} ${r.r}−${f.mod}=${r.total} vs ${r.dc} ${r.ok ? "✓" : "✗"}`), note: "" }, ...x.craft.ledger].slice(0, 20);
       addLog(x, scrap ? `Powdertinkering: the batch was scrapped (${spentTxt} lost)` : made ? `Powdertinkering: forged ${y.n} × ${name} (${spentTxt})` : `Powdertinkering: stopped before the coat held (${spentTxt} lost)`);
     });
-    patch({ phase: scrap ? "scrap" : made ? "done" : "nothing", result: { name, n: y.n, det, made } });
+    patch({ phase: scrap ? "scrap" : made ? "done" : "nothing", result: { name, n: y.n, det, made, plain: f.recipe.name || R.ptName(f.type, f.steps, f.recipe) } });
   };
   const close = () => { timers.current.forEach(clearTimeout); timers.current = []; setF(null); };
   const busy = !!forge;
@@ -6438,6 +6467,10 @@ function Powdertinkering({ c, update }) {
         ${st.keepFailed && html`<span class=${"flag " + (st.used.keep ? "" : "brass")} title="Novice Tinker (Powdertinker 5): keep a property you failed, as well as its Detriment. Recharges on a long rest.">Novice Tinker · ${st.used.keep ? "used" : "ready"}</span>`}
         ${st.ignoreOne && html`<span class=${"flag " + (st.used.ignore ? "" : "brass")} title="Master o' Munitions (Powdertinker 10): ignore 1 Detriment. Recharges on a long rest.">Ignore a Detriment · ${st.used.ignore ? "used" : "ready"}</span>`}</div>`}
 
+      ${saved.length > 0 && html`<div class="ptsaved" role="group" aria-label="Saved recipes"><span class="lbl">Saved recipes</span>
+        ${saved.map(it => html`<span class=${"ptsavedchip" + (rc.name === it.n ? " on" : "")}>
+          <button type="button" class="btn small" aria-pressed=${rc.name === it.n} disabled=${busy} title=${`Load every part of ${it.n}`} onClick=${() => loadRecipe(it)}>${it.n}</button>
+          <button type="button" class="iconbtn" aria-label=${`Delete the recipe ${it.n}`} disabled=${busy} onClick=${() => update(x => { x.craft.saved = x.craft.saved.filter(y => y.k !== it.k); if (x.craft.recipe.name === it.n) delete x.craft.recipe.name; })}>×</button></span>`)}</div>`}
       <div class="pttypes" role="radiogroup" aria-label="Munition">${R.MUNITIONS.map(x => html`<button type="button" role="radio" aria-checked=${x.k === type} disabled=${busy}
         onClick=${() => setRc(r => { r.type = x.k; })}><svg viewBox="0 0 24 24" aria-hidden="true">${TYPE_ICON[x.shape]}</svg><span>${x.n}</span></button>`)}</div>
 
@@ -6451,8 +6484,8 @@ function Powdertinkering({ c, update }) {
             ${!busy && html`<button class="btn primary big forgebtn" disabled=${!canForge} onClick=${start}>
               <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 12h11l3-3H6z M6 12v3h8v-3 M8 15v2.5 M12 15v2.5 M9 5.5l1-3 1 3" /></svg>Forge ${steps.length === 1 ? "a plain batch" : `· ${steps.length} rolls`}</button>
               ${why && html`<p class="muted ptwhy">${why}</p>`}`}
-            ${busy && html`<${ForgeReadout} f=${forge} st=${st} matName=${matName} supplies=${cr.supplies}
-              onRetry=${() => attempt(forge.idx)} onSkip=${skip} onKeep=${keepIt} onIgnore=${ignoreIt} onFinish=${() => finish(false)} onClose=${close} />`}
+            ${busy && html`<${ForgeReadout} f=${forge} st=${st} matName=${matName} supplies=${cr.supplies} saved=${saved}
+              onSave=${n => saveRecipe(n, forge.recipe)} onRetry=${() => attempt(forge.idx)} onSkip=${skip} onKeep=${keepIt} onIgnore=${ignoreIt} onFinish=${() => finish(false)} onClose=${close} />`}
           </div>
         </div>
         <div class="ptside">
@@ -6494,9 +6527,10 @@ function Powdertinkering({ c, update }) {
 }
 
 /* ---------- the readout under the munition while forging ---------- */
-function ForgeReadout({ f, st, matName, supplies, onRetry, onSkip, onKeep, onIgnore, onFinish, onClose }) {
+function ForgeReadout({ f, st, matName, supplies, saved, onSave, onRetry, onSkip, onKeep, onIgnore, onFinish, onClose }) {
   const s = f.steps[f.idx];
   const [spin, setSpin] = useState(0);
+  const [saveName, setSaveName] = useState(null), [didSave, setDidSave] = useState(false);
   useEffect(() => {
     if (f.phase !== "rolling" || reduceMotion()) return;
     const t = setInterval(() => setSpin(1 + Math.floor(Math.random() * 100)), 55);
@@ -6512,6 +6546,11 @@ function ForgeReadout({ f, st, matName, supplies, onRetry, onSkip, onKeep, onIgn
       <p class="ptbig">${f.phase === "scrap" ? "Scrapped" : f.phase === "nothing" ? "Nothing made" : `${r.n} forged`}</p>
       <p>${f.phase === "scrap" ? "One Detriment too many: the batch and every material in it are lost." : f.phase === "nothing" ? "The coat never held, so there's no munition. The materials used are gone." : r.name}</p>
       ${f.phase === "done" && html`<p class="muted">Added to the inventory${r.det ? `. ${r.det} Detriment${r.det > 1 ? "s" : ""} for the GM to decide (note them in the Ledger)` : ""}.</p>`}
+      ${f.phase !== "nothing" && (didSave ? html`<p class="ptsavedok">Saved as a recipe. It's under Saved recipes on the bench.</p>`
+        : html`<form class="ptsave" onSubmit=${e => { e.preventDefault(); const n = (saveName == null ? r.plain : saveName).trim(); if (n) { onSave(n); setDidSave(true); } }}>
+          <label class="lbl" for="pt-save-n">Save this recipe${f.recipe.name ? "" : " to make it again"}</label>
+          <div class="row"><input id="pt-save-n" class="inp" maxlength="60" placeholder="Name the ammo" value=${saveName == null ? r.plain : saveName} onInput=${e => setSaveName(e.target.value)} />
+            <button class="btn" type="submit" disabled=${!(saveName == null ? r.plain : saveName).trim()}>${(saved || []).some(x => x.n.toLowerCase() === (saveName == null ? r.plain : saveName).trim().toLowerCase()) ? "Update recipe" : "Save recipe"}</button></div></form>`)}
       <button class="btn primary" onClick=${onClose}>${f.phase === "done" ? "Back to the bench" : "Clear the bench"}</button></div>`;
   }
   const r = f.roll;
