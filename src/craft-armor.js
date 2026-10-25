@@ -121,9 +121,9 @@ function ArmorUpkeep({ c, update }) {
   const byNeed = [...suits].sort((a, b) => R.repairPlan(c, b).missing - R.repairPlan(c, a).missing);
   // Another player's suit on this bench (a workshop job), else one of this character's own.
   const job = run && run.kind === "repair" ? run.job : selId.startsWith("job:") ? Shop.incoming(c, "armor").find(j => "job:" + j.id === selId) || null : null;
-  const suit = job ? job.item : suits.find(a => a.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
+  const suit = job ? Shop.view(job) : suits.find(a => a.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
   const away = !job && suit ? Shop.outgoing(c, "armor", suit.id) : null;   // sent to a smith: they repair it, not us
-  const rp = suit ? Object.assign(R.repairPlan(c, suit), away ? { block: `It's at ${away.to.name}'s bench. Take it back on the Gear tab to repair it yourself.` } : {}) : null;
+  const rp = suit ? Object.assign(R.repairPlan(c, suit), away ? { block: `It's with ${away.to.name}. Take it back on the Gear tab to repair it yourself.` } : {}) : null;
   const rc = ca.recipe, cp = R.craftPlan(c, rc);
   const setRc = fn => update(x => fn(x.craft.armor.recipe));
   const T = R.ARMOR;
@@ -159,11 +159,10 @@ function ArmorUpkeep({ c, update }) {
     const f = runRef.current; if (!f) return;
     const total = f.dice.reduce((s, x) => s + x, 0), gained = Math.min(f.plan.missing, total);
     if (f.job) {
-      // Another player's suit: the result goes back to them; this smith pays the materials.
+      // Another player's suit: the repair adds to the job (the smith can repair again, then send it back); this smith pays the materials.
       const roll = `check ${f.r}−${f.mod}=${f.check} → ${f.count} × ${f.plan.die}${f.count ? ": " + total : ""}`;
-      if (!Shop.answer(f.job, "done", { gained, roll, by: c.name || "" })) { toast(`${f.job.from.name} took it back before you finished.`); patch({ done: true, phase: "done", total, gainedFinal: 0, gone: true }); return; }
+      if (!Shop.progress(f.job, gained, roll, c.name || "")) { toast(`${f.job.from.name} took it back before you finished.`); patch({ done: true, phase: "done", total, gainedFinal: 0, gone: true }); return; }
       update(x => {
-        if (f.job.pay) { Shop.give(x, f.job.pay); if (Shop.hasPay(f.job.pay) || f.job.pay.note) addLog(x, `Paid by ${f.job.from.name}: ${Shop.payText(f.job.pay)}`); }
         x.craft.supplies[f.plan.mat] = Math.max(0, num(x.craft.supplies[f.plan.mat]) - f.plan.cost);
         const txt = `${f.job.from.name}'s ${f.job.item.name || T[f.job.item.type].label + " armor"}: Soak ${f.plan.soak} → ${f.plan.soak + gained}`;
         addLedger(x, { kind: "repair", name: `${f.plan.broken ? "Rebuilt" : "Repaired"} ${txt}`, rolls: [roll] });
@@ -222,6 +221,13 @@ function ArmorUpkeep({ c, update }) {
     patch({ done: true, phase: ok ? "made" : "lost", forName: forWho ? forWho.name : "" });
   };
   const close = () => { stop(); setRun(null); };
+  // On another player's item: repair it again straight away, or send it back with every repair made.
+  const [again, setAgain] = useState(false);
+  const liveJob = run && run.job ? Shop.jobs.find(j => j.id === run.job.id && j.status === "open") || null : null;
+  const left = liveJob ? (v => (num(v.jobMax) || num(v.soakMax)) - num(v.soak))(Shop.view(liveJob)) : 0;   // still to repair
+  const repairAgain = () => { const j = run.job; close(); setSel("job:" + j.id); setAgain(true); };
+  const sendBack = () => { const j = run.job; if (Shop.finish(j, update, c.name || "")) toast(`Sent back to ${j.from.name}.`); close(); setSel(""); };
+  useEffect(() => { if (again && !run && job) { setAgain(false); startRepair(); } }, [again, !!run, job && job.id]);
 
   const repairLabels = suit && { type: `${T[suit.type].label} · ${suit.name || "unnamed"}`, av: String(num(suit.av)), soak: `${run && run.kind === "repair" ? run.plan.soak + run.gained : rp.soak} / ${rp.max}`, extra: `${rp.die} · ${rp.cost} g` };
   const craftLabels = { type: cp.t.label, av: `${cp.finalAV}${cp.plusAV ? ` (+${cp.plusAV})` : ""}`, soak: `${cp.finalSoak}${cp.plusSoak ? ` (+${5 * cp.plusSoak})` : ""}`, extra: cp.plusAV || cp.plusSoak ? `${cp.dc}% to beat` : "None" };
@@ -247,10 +253,10 @@ function ArmorUpkeep({ c, update }) {
               ${rp.block && html`<p class="muted ptwhy">${rp.block}</p>`}`}
             ${!run && mode === "craft" && html`<button class="btn primary big forgebtn" disabled=${!!cp.block} onClick=${startCraft}>${HAMMER}Forge the suit · ${cp.cost} g</button>
               ${cp.block && html`<p class="muted ptwhy">${cp.block}</p>`}`}
-            ${run && html`<${AmReadout} run=${run} onClose=${close} />`}
+            ${run && html`<${AmReadout} run=${run} onClose=${close} job=${liveJob} left=${left} onAgain=${repairAgain} onSendBack=${sendBack} />`}
           </div>
         </div>
-        <div class="ptside">${mode === "repair" ? html`<${RepairSide} c=${c} suits=${suits} suit=${suit} job=${job} selId=${selId} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
+        <div class="ptside">${mode === "repair" ? html`<${RepairSide} c=${c} update=${update} suits=${suits} suit=${suit} job=${job} selId=${selId} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
           : html`<${CraftSide} c=${c} rc=${rc} cp=${cp} st=${st} focus=${focus} setFocus=${setFocus} setRc=${setRc} busy=${busy} />`}</div>
       </div>
     </section>
@@ -275,7 +281,7 @@ function ArmorUpkeep({ c, update }) {
 }
 const HAMMER = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6.5l5-3 2.5 4-5 3z M8.8 8.3l7.7 8.2" /></svg>`;
 
-function AmReadout({ run, onClose }) {
+function AmReadout({ run, onClose, job, left, onAgain, onSendBack }) {
   const [spin, setSpin] = useState(0);
   useEffect(() => {
     if (run.phase !== "rolling" || reduceMotion()) return;
@@ -287,8 +293,11 @@ function AmReadout({ run, onClose }) {
     if (run.done) return html`<div class=${"ptread end " + (run.gainedFinal ? "done" : "nothing")} role="status">
       <p class="ptbig">${run.gainedFinal ? `+${run.gainedFinal} Soak` : "No soak recovered"}</p>
       <p>${run.count ? `${run.count} × ${p.die}: ${run.dice.length > 1 ? run.dice.join(" + ") + " = " : ""}${run.total}${run.total > run.gainedFinal ? ` (the suit was full at ${p.max})` : ""}` : "The check was too high for even one Repair Die."}</p>
-      <p class="muted">${run.gone ? "Nothing was spent." : `${p.cost} g of ${p.mat} materials used · an hour's work.`}${run.job && !run.gone ? ` It goes back to ${run.job.from.name}'s Gear.` : ""}</p>
-      <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
+      <p class="muted">${run.gone ? "Nothing was spent." : `${p.cost} g of ${p.mat} materials used · an hour's work.`}${job ? ` ${num((job.result || {}).times) > 1 ? `Repaired ${num(job.result.times)} times: +${num(job.result.gained)} ${"Soak"} in all. ` : ""}${left > 0 ? `${left} still to go. Repair again, or send it back to ${job.from.name} when you're done.` : `It's fully repaired. Send it back to ${job.from.name}.`}` : ""}</p>
+      ${job ? html`<div class="row shopnext">${left > 0 && html`<button class="btn primary" onClick=${onAgain}>Repair again</button>`}
+          <button class=${"btn" + (left > 0 ? "" : " primary")} onClick=${onSendBack}>Send it back to ${job.from.name}</button>
+          <button class="btn" onClick=${onClose}>Back to the bench</button></div>`
+        : html`<button class="btn primary" onClick=${onClose}>Back to the bench</button>`}</div>`;
     return html`<div class="ptread" role="status" aria-live="polite">
       <div class="ptstep"><span class="lbl">${run.phase === "rolling" ? "Armor Maintenance check" : "Repair Dice"}</span>
         <b>${run.phase === "rolling" ? "Inspecting the damage…" : `${run.count} × ${p.die}`}</b></div>
@@ -314,10 +323,10 @@ function AmReadout({ run, onClose }) {
   </div>`;
 }
 
-function RepairSide({ c, suits, suit, job, selId, rp, st, busy, pick }) {
+function RepairSide({ c, update, suits, suit, job, selId, rp, st, busy, pick }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>Suits</span></h3>
-    <${ShopJobs} c=${c} kind="armor" selId=${selId} pick=${pick} busy=${busy} />
+    <${ShopJobs} c=${c} kind="armor" selId=${selId} pick=${pick} busy=${busy} update=${update} />
     ${suits.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${suits.map(a => { const p = R.repairPlan(c, a);
       return html`<button type="button" class="ptopt amsuit" aria-pressed=${!job && suit && suit.id === a.id} disabled=${busy} onClick=${() => pick(a.id)}>
         <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}${Shop.outgoing(c, "armor", a.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "armor", a.id).to.name}'s</span>` : ""}</b>
