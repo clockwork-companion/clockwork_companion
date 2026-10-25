@@ -588,7 +588,7 @@ function Roster({ list, all, sel, setSel, current, create, startNew }) {
 }
 
 /* ================= character ================= */
-const CHAR_TABS = ["sheet", "vitals", "talents", "gear", "craft"];
+const CHAR_TABS = ["sheet", "vitals", "talents", "gear", "craft", "magic"];
 function Character({ c, update, tab, setTab, onDelete }) {
   animScope = c.id;   // animations only play for changes on this character, not when another one is opened
   const d = derive(c);
@@ -599,8 +599,17 @@ function Character({ c, update, tab, setTab, onDelete }) {
   const mode = canFree ? chosenMode : "karma";
   // Crafting only appears once the character has points in a crafting skill (and then only those benches).
   const crafts = craftsOpen(c).map(x => x[0]);
-  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ...(crafts.length ? [["craft", "Crafting"]] : [])];
-  useEffect(() => { if (tab === "craft" && !crafts.length) setTab("sheet"); }, [tab, crafts.length]);
+  // Magic likewise: once the character has points in a school of magic (Warding so far).
+  const magics = magicOpen(c).map(x => x[0]);
+  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ...(crafts.length ? [["craft", "Crafting"]] : []), ...(magics.length ? [["magic", "Magic"]] : [])];
+  useEffect(() => { if ((tab === "craft" && !crafts.length) || (tab === "magic" && !magics.length)) setTab("sheet"); }, [tab, crafts.length, magics.length]);
+  // The Magic tab arriving: it's inked in, rather than forged.
+  const knownMagic = useRef({ id: c.id, n: magics.length });
+  useEffect(() => {
+    const k = knownMagic.current; knownMagic.current = { id: c.id, n: magics.length };
+    if (k.id !== c.id || k.n || !magics.length) return;
+    toast(`The ink takes: Magic unlocked (${magicOpen(c).map(x => x[1]).join(", ")}).`); forgeIn(document.querySelector(".tabs .tab-magic"), "ink");
+  }, [c.id, magics.join()]);
   // Spot crafts unlocking on this character (not when another character is opened) and celebrate them.
   const known = useRef({ id: c.id, keys: crafts });
   useEffect(() => {
@@ -642,6 +651,7 @@ function Character({ c, update, tab, setTab, onDelete }) {
       ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
       ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
       ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
+      ${tab === "magic" && html`<${MagicTab} c=${c} update=${update} />`}
     </div>`;
 }
 
@@ -652,6 +662,7 @@ const TAB_ICONS = {
   talents: html`<path d="M10 2.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.8l5-.7z" />`,
   gear: html`<path d="M4 7.5h12v9.5H4z M7 7.5V5a3 3 0 0 1 6 0v2.5 M4 11h12" />`,
   craft: html`<path d="M3 11.5h10.5l3-3H5.5z M5.5 11.5v2.5h8v-2.5 M7.5 14v3 M11.5 14v3 M9 6.5l1-4 1.2 3.2" />`,
+  magic: html`<path d="M10 2.5a7.5 7.5 0 1 0 .01 0z M10 4.5L15 13H5z M10 15.5L5 7h10z" />`,
   table: html`<path d="M10 2.5l6.5 3.75v7.5L10 17.5l-6.5-3.75v-7.5z M10 10l6.5-3.75 M10 10L3.5 6.25 M10 10v7.5" />`,
 };
 // A number that can be typed over in Free edit. It saves when you leave the box or press Enter, not on every keystroke.

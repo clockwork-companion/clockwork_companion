@@ -25,20 +25,21 @@ const CraftFresh = { char: "", keys: [], take(id, k) { if (this.char !== id || !
 // The Crafting tab arriving, or a new bench in it: the button rises out of the rule glowing like hot metal,
 // with a burst of sparks. Nothing moves for reduced motion; the toast says what unlocked either way.
 // If the button is off screen (a skill is usually raised further down the sheet), it waits until it scrolls into view.
-function forgeIn(el) {
+// kind "ink" (the Magic tab): the same rise, but in ink and a spray of violet droplets.
+function forgeIn(el, kind) {
   if (!el || reduceMotion()) return;
   const r0 = el.getBoundingClientRect();
   if (r0.bottom < 0 || r0.top > innerHeight) {
     el.classList.add("forge-wait");   // hidden until it rises
-    const io = new IntersectionObserver(es => { if (es.some(e => e.intersectionRatio > .6)) { io.disconnect(); el.classList.remove("forge-wait"); forgeIn(el); } }, { threshold: [.6] });
+    const io = new IntersectionObserver(es => { if (es.some(e => e.intersectionRatio > .6)) { io.disconnect(); el.classList.remove("forge-wait"); forgeIn(el, kind); } }, { threshold: [.6] });
     io.observe(el);
     return;
   }
-  el.classList.remove("forging"); void el.offsetWidth; el.classList.add("forging");
-  setTimeout(() => el.classList.remove("forging"), 2300);
+  el.classList.remove("forging", "ink"); void el.offsetWidth; el.classList.add("forging"); if (kind === "ink") el.classList.add("ink");
+  setTimeout(() => el.classList.remove("forging", "ink"), 2300);
   // Sparks live in a page-sized layer that clips them, so they never make the page scroll sideways.
   const r = el.getBoundingClientRect(), burst = document.createElement("div"), at = document.createElement("div");
-  burst.className = "forgeburst"; burst.setAttribute("aria-hidden", "true"); burst.style.height = document.documentElement.scrollHeight + "px";
+  burst.className = "forgeburst" + (kind === "ink" ? " ink" : ""); burst.setAttribute("aria-hidden", "true"); burst.style.height = document.documentElement.scrollHeight + "px";
   at.className = "forgeat"; at.style.left = r.left + scrollX + r.width / 2 + "px"; at.style.top = r.top + scrollY + r.height * .6 + "px"; burst.appendChild(at);
   for (let i = 0; i < 26; i++) {
     const a = -Math.PI * (.05 + Math.random() * .9), v = 40 + Math.random() * 110, sp = document.createElement("i");
