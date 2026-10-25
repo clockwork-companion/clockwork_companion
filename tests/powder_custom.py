@@ -33,6 +33,8 @@ with sync_playwright() as p:
         pg.get_by_role("tab", name="Crafting").click(); pg.wait_for_timeout(500)
         if pg.locator(".craftnav .cn-powder").count(): pg.locator(".craftnav .cn-powder").click(); pg.wait_for_timeout(300)
         check(tag + "Powdertinkering bench is open", pg.locator(".ptlabel").count() > 0)
+        stray = pg.evaluate("(t => { const i = t.search(/\\*\\/|\\{ ?[a-z-]+: /); return i < 0 ? '' : t.slice(Math.max(0, i - 40), i + 60); })(document.body.innerText)")
+        check(tag + "no stylesheet text shows on the page", not stray, stray)
         me = lambda: pg.evaluate("JSON.parse(JSON.stringify(Store.chars.tink.craft))")
         def add(part, name, dc, extra=None):
             pg.locator(".ptlabel", has_text={"coat": "Coat", "tip": "Tips", "core": "Core", "status": "Status", "area": "Area"}[part]).first.click(); pg.wait_for_timeout(200)
