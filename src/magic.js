@@ -5,6 +5,7 @@
    The rules (costs, grammar, Sigils per AP, Fatigue, the Active perks) live in rules.js: wardState, wardCost, … */
 const MAGIC = [
   ["ward", "Warding", "Warding", "Sentences of Words of Power, inscribed as Sigils."],
+  ["harm", "Harmony", "Occult: Harmony", "The body's spiritual energy, guided through its chakras."],
 ];
 const magicOpen = c => MAGIC.filter(([, , skill]) => num((c.skills || {})[skill]) > 0);
 
@@ -17,6 +18,7 @@ function MagicTab({ c, update }) {
     ${open.length > 1 && html`<nav class="craftnav" aria-label="Schools">${open.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} onClick=${() => setSub(k)}>
       <span>${n}</span><small>${skill} ${num(c.skills[skill])}</small></button>`)}</nav>`}
     ${sub === "ward" && html`<${Warding} c=${c} update=${update} />`}
+    ${sub === "harm" && html`<${Harmony} c=${c} update=${update} />`}
   </div>`;
 }
 
