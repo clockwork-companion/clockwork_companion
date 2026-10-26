@@ -80,7 +80,7 @@ void main() {
 }`;
   const VERT = "attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }";
   let cv = null, gl = null, prog = null, raf = 0, last = 0, t0 = 0, uRes, uT;
-  const still = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const still = () => document.documentElement.dataset.motion === "calm" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);   // Settings → Motion → Calm, or the device
 
   function setup() {
     cv = document.createElement("canvas"); cv.className = "blackwall"; cv.setAttribute("aria-hidden", "true");
@@ -127,6 +127,7 @@ void main() {
   }
   const sync = () => (document.documentElement.dataset.skin === "cyber" && document.body ? start() : stop());
   new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin"] });
+  new MutationObserver(() => { stop(); sync(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-motion"] });   // Motion changed: restart in the new mode
   document.addEventListener("visibilitychange", () => { if (!document.hidden && cv && cv.isConnected && !raf) raf = requestAnimationFrame(draw); });
   addEventListener("resize", () => { if (cv && cv.isConnected && !raf) raf = requestAnimationFrame(draw); });
   if (document.body) sync(); else document.addEventListener("DOMContentLoaded", sync);
