@@ -1282,8 +1282,11 @@ function skillArt(skill, kind, n) {
   const list = kind === "weapon" ? WEAPON_ART : SKILL_ART[skill]; if (!list) return "";
   return `art/${list[n % list.length]}.webp`;
 }
-// Folded perks are shown one card per level: perks unlocked at the same level share it, side by side.
-const byLevel = perks => perks.reduce((out, p) => { const at = out.find(x => x.l === p.l); if (at) at.ps.push(p); else out.push({ l: p.l, ps: [p] }); return out; }, []).sort((a, b) => num(a.l) - num(b.l));
+// Folded perks: one slim card per perk name. A perk the book gives at two levels (Wreck at 3 and 4) shares one card:
+// the levels on the left, the name once, then each level's kind and uses, each marked with its level.
+const perkRows = perks => perks.reduce((out, p) => { const n = p.group || ""; const at = out.find(x => x.n === n); if (at) at.ps.push(p); else out.push({ n, ps: [p] }); return out; }, [])
+  .map(r => Object.assign(r, { ps: r.ps.slice().sort((a, b) => num(a.l) - num(b.l)) })).sort((a, b) => num(a.ps[0].l) - num(b.ps[0].l));
+const lvSpan = ls => ls.length === 1 ? String(ls[0]) : ls.every((l, i) => !i || num(l) === num(ls[i - 1]) + 1) ? `${ls[0]}–${ls[ls.length - 1]}` : ls.join("·");
 const typeKey = t => (t === "M" || t === "A" ? "A" : t === "E" ? "E" : "P");
 const TypeTag = ({ t }) => { const k = typeKey(t); return html`<span class=${"ttag tt-" + k} title=${TYPE_NAME[t] || TYPE_NAME[k]}><svg viewBox="0 0 16 16" aria-hidden="true">${PERK_ICON[k]}</svg>${k === "E" ? "Empower" : TYPE_NAME[k]}</span>`; };
 function unlockedPerks(c) {
@@ -1400,10 +1403,10 @@ function TalentsTab({ c, update, openSkill }) {
         <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small>
           <button type="button" class="foldbtn" aria-expanded=${open} onClick=${() => flip(g.name)}>${open ? "Fold" : `Open ${g.perks.length} perk${g.perks.length > 1 ? "s" : ""}`}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button></h3>
         ${open ? html`<div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div>`
-          : html`<button type="button" class="rolodex" onClick=${() => flip(g.name)} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${byLevel(g.perks).map((L, k) =>
-              html`<span class="rdx" style=${`--k:${k}`}><b class="rdxlv">${L.l}</b><span class="rdxps">${L.ps.map(p => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
-                return html`<span class=${"rdxp k-" + typeKey(t)}><span class="rdxn">${p.group || g.name}</span>
-                  ${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max}</small>`}<${TypeTag} t=${t} /></span>`; })}</span></span>`)}</button>`}</div>`; })
+          : html`<button type="button" class="rolodex" onClick=${() => flip(g.name)} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${perkRows(g.perks).map((r, k) =>
+              html`<span class="rdx" style=${`--k:${k}`}><b class=${"rdxlv" + (r.ps.length > 1 ? " span" : "")}>${lvSpan(r.ps.map(p => p.l))}</b><span class="rdxn">${r.n || g.name}</span>
+                <span class="rdxps">${r.ps.map(p => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
+                  return html`<span class=${"rdxp k-" + typeKey(t)}>${r.ps.length > 1 && html`<i class="rdxat">${p.l}</i>`}${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max}</small>`}<${TypeTag} t=${t} /></span>`; })}</span></span>`)}</button>`}</div>`; })
       : html`<p class="muted emptyline">${empty}</p>`}
     </section>
 
