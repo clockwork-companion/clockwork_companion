@@ -354,7 +354,8 @@ const CW = (() => {
     const bleed = Object.entries(WOUNDS).reduce((s, [k, w]) => s + w.bleed * num(v.wounds[k]), 0);
     const enc = encumbrance(c);
     const baseMove = 10 + sk(c, "Tumble");
-    const move = enc.tier.move == null ? 0 : Math.max(0, baseMove + enc.effectiveMove);
+    const harmony = harmonyGlance(c);   // reinforced chakras: Wind in the Opening chakra adds to Movement, the rest are listed
+    const move = enc.tier.move == null ? 0 : Math.max(0, baseMove + enc.effectiveMove + harmony.move);
     let rationsPerMeal = 2;
     if (belly >= 3) rationsPerMeal = end <= 5 ? 5 : end <= 8 ? 6 : 7;
     return {
@@ -369,7 +370,7 @@ const CW = (() => {
       exhaustionFromBlood: bloodExhaustion(cur.bp),
       exhaustionFromHunger: hungerExhaustion(cur.dp),
       overToxic: cur.tox > max.tox,
-      move, baseMove, climb: Math.floor(move / 2),
+      move, baseMove, climb: Math.floor(move / 2), harmony,
       mealsPerDay: sk(c, "Deprivation") >= 3 ? 2 : 3,
       rationsPerDay: (sk(c, "Deprivation") >= 3 ? 2 : 3) + c.prosthetics.length,
       rationsPerMeal,
@@ -810,6 +811,57 @@ const CW = (() => {
       next: CHAKRAS.find(x => lvl < x.lvl) || null,
     };
   }
+  // What the reinforced chakras do right now, for the sheet's "At a glance" panel: Wind in the Opening chakra adds to
+  // Movement itself; every other power becomes a short line with the practitioner's numbers ({ k: label, v: value, el }).
+  function harmonyGlance(c) {
+    const st = harmonyState(c), out = { move: 0, facts: [] };
+    if (!st.lvl || !Object.keys(st.held).length) return out;
+    const add = (k, v, el, ch) => out.facts.push({ k, v, el, ch });
+    Object.entries(st.held).forEach(([ch, el]) => {
+      const a = num(st.aff[el]), half = Math.floor(a / 2), h15 = clamp(half, 1, 5), h1 = Math.max(1, half);
+      const t = ch + ":" + el, rel = st.released.includes(ch);
+      switch (t) {
+        case "opening:fire": add("Reflex saves", `+${a}`, el, ch); break;
+        case "opening:earth": add("Fortitude saves", `+${a}`, el, ch); break;
+        case "opening:wind": out.move = Math.min(5, a); break;
+        case "opening:water": add("Defend", `+${a}`, el, ch); break;
+        case "opening:spirit": add("Willpower saves", `+${a}`, el, ch); break;
+        case "life:fire": add(a >= 6 ? "Presence checks" : "Presence checks (secondary)", `+${a}`, el, ch); break;
+        case "life:earth": add(a >= 6 ? "Strength, Endurance checks and melee" : "Strength, Endurance (secondary) and melee", `+${a}`, el, ch); break;
+        case "life:wind": add(a >= 6 ? "Dexterity checks and ranged" : "Dexterity (secondary) and ranged", `+${a}`, el, ch); break;
+        case "life:water": add(a >= 6 ? "Mind checks" : "Mind checks (secondary)", `+${a}`, el, ch); break;
+        case "life:spirit": add(a >= 6 ? "Wisdom, Willpower checks" : "Wisdom, Willpower (secondary)", `+${a}`, el, ch); break;
+        case "pain:fire": add("HP lost on a failed save", `−${h15}`, el, ch); break;
+        case "pain:earth": add("Brace: mitigation", `+${half}`, el, ch); break;
+        case "pain:wind": add("Toxicity gained", `−${h15}`, el, ch); break;
+        case "pain:water": add("Bleeding from wounds", `−${h1}`, el, ch); break;
+        case "pain:spirit": add("Deprivation lost (not hunger)", `−${h1}`, el, ch); break;
+        case "healing:fire": add("Short rest, once: Toxicity", `−${a}`, el, ch); break;
+        case "healing:earth": add("Short rest, once: Blood", `+${10 * a}`, el, ch); break;
+        case "healing:wind": add("Short rest, once: HP", `+${2 * a}`, el, ch); break;
+        case "healing:water": add("Healing: per 5 HP", `+${half}`, el, ch); break;
+        case "healing:spirit": add("Sanity recovered again", `up to ${a}`, el, ch); break;
+        case "limit:fire": add("Rolls hindered by ailments", `+${2 * a}`, el, ch); break;
+        case "limit:earth": add("Exhaustion stacks ignored", `${half}`, el, ch); break;
+        case "limit:wind": add("Resist deafen, paralyse, poison", `+${2 * a}`, el, ch); break;
+        case "limit:water": add("Resist blind, petrify, stun", `+${2 * a}`, el, ch); break;
+        case "limit:spirit": add("Resist charm, fright", `+${2 * a}`, el, ch); break;
+        case "view:fire": add("Fire damage", a >= 4 ? "−2, resisted" : "−2", el, ch); if (a >= 6) add("Next attack, once a round", `+${a} fire`, el, ch); break;
+        case "view:earth": add("Bludgeoning, poison damage", `−2${a >= 4 ? ", bludgeoning resisted" : ""}${a >= 6 ? ", poison resisted" : ""}`, el, ch); break;
+        case "view:wind": add("Slashing, cold damage", `−2${a >= 4 ? ", slashing resisted" : ""}${a >= 6 ? ", cold resisted" : ""}`, el, ch); break;
+        case "view:water": add("Piercing, lightning damage", `−2${a >= 4 ? ", piercing resisted" : ""}${a >= 6 ? ", lightning resisted" : ""}`, el, ch); break;
+        case "view:spirit": add("Psychic damage", `−2${a >= 6 ? ", resisted" : ""}`, el, ch); if (a >= 4) add("Sanity checks", `+${2 * a}`, el, ch); break;
+        case "death:fire": add(`Under ${2 * a} HP`, "bonus damage counts as weapon damage; re-roll a miss once a round", el, ch); break;
+        case "death:earth": add("Stabilising", `Harmony checks; wake with ${a} HP`, el, ch); break;
+        case "death:wind": add(`Under ${2 * a} HP`, `+${a} AP`, el, ch); break;
+        case "death:water": add(`Under ${2 * a} HP`, `regain ${a} HP a turn for 3 turns`, el, ch); break;
+        case "death:spirit": add("At 0 HP", `fight on for ${a} turns`, el, ch); break;
+      }
+      if (rel && ch === "view") add("View released", "temporary HP equal to your maximum, against its damage types", el, ch);
+      if (rel && ch === "death") add("Death released", "every reinforcement effect for 2 turns", el, ch);
+    });
+    return out;
+  }
   // The book's line with the practitioner's numbers filled in: "your Fire Affinity" → its value, "2xFire Affinity" → twice it,
   // "Fire Affinity/2" → half (rounded down; the book doesn't say). A line that starts "With a Fire Affinity of 6 or higher"
   // only applies from that affinity on.
@@ -1187,7 +1239,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, dreamReturn, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, demonState, dreamState, ALCH_SIZES, ALCH_SIZE_I, ALCH_LIMBS, alchState,
+           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, harmonyGlance, demonState, dreamState, ALCH_SIZES, ALCH_SIZE_I, ALCH_LIMBS, alchState,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,

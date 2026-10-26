@@ -2609,10 +2609,26 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .harmaura { transform-box: fill-box; transform-origin: center; animation: auraBreath 7s ease-in-out infinite; }
 @keyframes auraBreath { 50% { transform: scale(1.04); opacity: .8; } }
 .harmfig, .harmaura, .harmspine, .harmflare { pointer-events: none; }
-.harmsil { fill: color-mix(in srgb, var(--ink) 9%, var(--card)); stroke: color-mix(in srgb, var(--ink) 45%, transparent); stroke-width: 1.4; stroke-linejoin: round; }
-.harmfig { transform-box: fill-box; transform-origin: 50% 100%; animation: harmBreath 6s ease-in-out infinite; }
-@keyframes harmBreath { 50% { transform: scale(1.012, 1.02); } }
-.harmhand { fill: color-mix(in srgb, var(--ink) 14%, var(--card)); stroke: color-mix(in srgb, var(--ink) 45%, transparent); stroke-width: 1.2; }
+.harmf { --hs1: color-mix(in srgb, var(--ink) 10%, var(--card)); --hs2: color-mix(in srgb, var(--ink) 22%, var(--card)); }
+.harmsil { fill: url(#harm-skin); stroke: color-mix(in srgb, var(--ink) 42%, transparent); stroke-width: 1.2; stroke-linejoin: round; stroke-linecap: round; }
+.harmsil.shin, .harmsil.foot { stroke-width: 1; }
+.hfold { fill: none; stroke: color-mix(in srgb, var(--ink) 22%, transparent); stroke-width: .9; stroke-linecap: round; }
+.hhair { fill: color-mix(in srgb, var(--ink) 55%, var(--card)); }
+.hface { fill: none; stroke: color-mix(in srgb, var(--ink) 60%, transparent); stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; }
+.hmudra { fill: none; stroke: color-mix(in srgb, var(--ink) 50%, transparent); stroke-width: 1; }
+.hheart { fill: var(--aura); opacity: .1; filter: blur(8px); }
+/* breathing: the upper body rises and falls from the hips, the heart glows on the in-breath */
+.hupper { transform-box: view-box; transform-origin: 150px 296px; animation: hBreath 6.4s ease-in-out infinite; }
+@keyframes hBreath { 0%, 100% { transform: none; } 45% { transform: translateY(-1.6px) scale(1.012, 1.02); } }
+.hheart { animation: hHeart 6.4s ease-in-out infinite; }
+@keyframes hHeart { 0%, 100% { opacity: .06; } 45% { opacity: .22; } }
+.hhead { transform-box: view-box; transform-origin: 150px 104px; animation: hHead 14s ease-in-out infinite; }
+@keyframes hHead { 0%, 100% { transform: rotate(-1.2deg); } 50% { transform: rotate(1.2deg) translateY(.6px); } }
+/* motes of energy rising around the body */
+.hmotes circle { fill: var(--mote); opacity: 0; transform-box: fill-box; animation: hMote 7s linear infinite; animation-delay: calc(var(--i) * -.6s); }
+@keyframes hMote { 0% { opacity: 0; transform: translate(0, 0); } 15% { opacity: .8; } 70% { opacity: .5; } 100% { opacity: 0; transform: translate(calc((var(--i) - 6) * 2px), -230px); } }
+
+
 .harmbody.released .harmsil { stroke: #f5dc8c; filter: drop-shadow(0 0 6px #f5dc8c); fill: color-mix(in srgb, #fff2c8 16%, transparent); }
 .harmspine { stroke: url(#harm-spine); stroke-width: 3; stroke-dasharray: 6 9; animation: spineFlow 2.4s linear infinite; }
 @keyframes spineFlow { to { stroke-dashoffset: -30; } }
@@ -2692,7 +2708,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   .harmbody { max-width: 300px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .harmorb, .harmaura, .harmfig, .harmspine, .chakra *, .harmflare { animation: none !important; }
+  .harmorb, .harmaura, .harmfig *, .harmspine, .chakra *, .harmflare { animation: none !important; }
 }
 
 /* ===== Magic: Occult: Daemonology (magic-demon.js) ===== */
@@ -2951,6 +2967,10 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .alchfig .alayer, .alchfig .alayer * { fill: none; stroke: var(--ink); stroke-width: 1; stroke-linejoin: round; stroke-linecap: round; }
 .alchfig .alayer.signs path, .alchfig .alayer.sign { stroke-width: 1.4; }
 .alchfig .aglow { fill: none; }
+.alchfig .alayer.dots circle { fill: var(--ink); stroke: none; }
+.alchfig .alayer.words text { fill: var(--ink); stroke: none; font: 600 9px var(--f-display); letter-spacing: .12em; }
+.alchfig.active .alayer.words text { fill: #bff2ff; }
+.alchfig.active .alayer.dots circle { fill: #bff2ff; }
 .alchfig.big { max-width: 380px; }
 .alchfig.big .alayer { animation: alayerIn .5s ease-out both; }
 @keyframes alayerIn { from { opacity: 0; } }
@@ -3000,6 +3020,15 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .alchsym svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
 .alchsym.on { border-color: var(--brass); background: var(--brass-soft); }
 .alchadd { gap: 6px; flex-wrap: wrap; align-items: center; }
+.alchrandom { gap: 10px; align-items: center; flex-wrap: wrap; }
+.alchrandom .muted { font-size: 12.5px; }
+.alchwords { flex: 1 1 200px; min-width: 0; color: var(--ink); background: var(--sunk); border: 1px solid var(--hair); padding: 3px 6px; font: 600 13px var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
+/* the key of signs under the circle */
+.alchkey { margin: 4px 0 0; display: grid; gap: 4px; width: 100%; max-width: 380px; }
+.alchkey div { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 8px; align-items: baseline; font-size: 13px; border-bottom: 1px dashed var(--hair); padding-bottom: 3px; }
+.alchkey dt { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.alchkey dt svg { width: 16px; height: 16px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.alchkey dd { margin: 0; color: var(--ink-3); }
 .alchsave { gap: 10px; align-items: center; flex-wrap: wrap; }
 .alchuse { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--rule); display: grid; gap: 8px; }
 .alchuse p { margin: 0; font-size: 13.5px; }
@@ -3030,4 +3059,11 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @media (prefers-reduced-motion: reduce) {
   .alchfig .alayer, .alchfig .alayer *, .aarcs path, .aflash, .alchfig .aglow { animation: none !important; }
 }
+
+/* At a glance: what the reinforced chakras give (magic-harmony.js, harmonyGlance in rules.js) */
+.glancefrom { font: 600 11px var(--f-mono); color: var(--good); margin-left: 4px; white-space: nowrap; }
+.glanceharm { margin-top: 8px; display: grid; gap: 4px; }
+.glanceharm > .lbl { font-size: 11px; }
+.fact.harmfact { border-left: 3px solid var(--ec); padding-left: 8px; }
+.fact.harmfact b { color: var(--ec); font-size: 14px; }
 </style>

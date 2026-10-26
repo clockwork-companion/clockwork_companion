@@ -1126,11 +1126,15 @@ function RestBay({ c, d, update }) {
 function GlanceCard({ d }) {
   const [open, setOpen] = useState(() => lsGet("cw-glance", true));
   const flip = () => { lsSet("cw-glance", !open); setOpen(!open); };
-  const facts = [["Movement", `${d.move} m`], ["Climb · swim", `${d.climb} m`], ["Wound at", `${d.woundAt.light} / ${d.woundAt.moderate} / ${d.woundAt.mortal}`], ["Blood potency", d.potency],
+  const hm = d.harmony || { move: 0, facts: [] };
+  const facts = [["Movement", hm.move && d.move ? html`${d.move} m <small class="glancefrom" title="From your Opening chakra's Wind">+${hm.move} Harmony</small>` : `${d.move} m`], ["Climb · swim", `${d.climb} m`], ["Wound at", `${d.woundAt.light} / ${d.woundAt.moderate} / ${d.woundAt.mortal}`], ["Blood potency", d.potency],
     ["Rations per meal", d.rationsPerMeal], ["Rations per day", d.rationsPerDay], ["Cleanse die", d.cleanse], ["HP per long rest", d.hpRegen]];
   return html`<div class=${"glance" + (open ? " open" : "")}>
     <button type="button" class="glancetog" aria-expanded=${open} onClick=${flip}>At a glance<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button>
     ${open && html`<div class="facts glancefacts">${facts.map(([k, val]) => html`<div class="fact"><span>${k}</span><b>${val}</b></div>`)}</div>`}
+    ${open && hm.facts.length > 0 && html`<div class="glanceharm" aria-label="From your chakras"><span class="lbl">From your chakras</span>
+      <div class="facts glancefacts">${hm.facts.map(f => html`<div class="fact harmfact" style=${`--ec:${(typeof HARM_COLOR !== "undefined" && HARM_COLOR[f.el]) || "var(--brass)"}`}
+        title=${`${R.CHAKRA_BY[f.ch].n} chakra, ${R.HARMONY_ELEMENTS.find(x => x[0] === f.el)[1]}`}><span>${f.k}</span><b>${f.v}</b></div>`)}</div></div>`}
   </div>`;
 }
 
