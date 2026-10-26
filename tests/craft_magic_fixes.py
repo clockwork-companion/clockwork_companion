@@ -23,7 +23,8 @@ checks = []
 def check(name, ok, got=""): checks.append(ok); print(("ok   " if ok else "FAIL ") + name + (f"  ({got})" if got and not ok else ""))
 SK = ["Powdertinker", "Brewing", "Runecrafting", "Weapon Maintenance", "Armor Maintenance", "Warding", "Occult: Harmony", "Demonology", "Dreamwalking", "Alchemy"]
 ALL = {"id": "al", "name": "Everything", "players": [], "attrs": {k: {"base": 20, "value": 20} for k in ["STR", "DEX", "END", "MND", "WIL", "WIS", "PRS"]},
-       "skills": {s: 10 for s in SK}, "weapons": [{"id": "w1", "name": "Old sabre"}], "armor": [{"id": "a1", "name": "Ringmail", "type": "medium", "worn": True}]}
+       "skills": {s: 10 for s in SK}, "weapons": [{"id": "w1", "name": "Old sabre"}], "armor": [{"id": "a1", "name": "Ringmail", "type": "medium", "worn": True}],
+       "craft": {"saved": [{"k": "s1", "n": "Sikici", "recipe": {"type": "heavy", "coat": "Bludgeoning", "tips": {"Impale": 0}, "core": {"el": "Acid", "inc": 0}, "status": ["Dissolve"], "area": {"k": "Cross"}}}]}}
 # every label inside its own button, and no word split across lines
 NAV = """sel => [...document.querySelectorAll(sel + ' button')].flatMap(b => { const r = b.getBoundingClientRect(), bad = [];
   b.querySelectorAll('span, small').forEach(t => { const q = t.getBoundingClientRect();
@@ -62,6 +63,14 @@ with sync_playwright() as p:
         check(tag + "explosives too", "CORE None" in labels(), labels())
         pg.locator(P + " .pttypes button", has_text="Rifle ammo").click(); pg.wait_for_timeout(1500)
         check(tag + "back on rifle ammo, its parts are still there", labels() == rifle, (labels(), ch()["craft"].get("recipes")))
+        # loading a saved recipe opens the Coat; picking Status or Area afterwards must show only that part's choices
+        # (the coat's list used to stay behind underneath)
+        COATWORDS = ("default coat", "damage type to bludgeoning")
+        for part in ["status", "area"]:
+            pg.locator(P + " .ptsavedchip", has_text="Sikici").locator("button").first.click(); pg.wait_for_timeout(400)
+            label(part).click(); pg.wait_for_timeout(400)
+            t = pg.locator(P + " .ptpick").inner_text().lower()
+            check(tag + f"saved recipe, then {part}: no coat choices left behind", not any(w in t for w in COATWORDS), t[:300])
         # Armor upkeep: a suit with no stats yet
         pg.locator(P + " > .craftnav .cn-armor").click(); pg.wait_for_timeout(1200)
         suit = pg.locator(P + " .amsuit").first.inner_text()

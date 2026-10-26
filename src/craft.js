@@ -302,7 +302,7 @@ function Powdertinkering({ c, update }) {
           </div>
         </div>
         <div class="ptside">
-          <${PartPicker} part=${focus} c=${c} rc=${rc} st=${st} m=${m} sum=${sum} setRc=${setRc} update=${update} disabled=${busy} />
+          <${PartPicker} key=${focus} part=${focus} c=${c} rc=${rc} st=${st} m=${m} sum=${sum} setRc=${setRc} update=${update} disabled=${busy} />
           <div class="ptplan">
             <${PlanHead} title="The craft" busy=${busy} onReset=${() => update(x => { x.craft.recipe = { type }; })} />
             <ol>${steps.map(s => html`<li><span>${s.label}</span><span class="muted">${s.dc}% · ${s.chance}% to land · 200 g ${s.mat === "container" ? "container" : s.mat.toLowerCase()}</span></li>`)}</ol>
@@ -458,7 +458,7 @@ function PartPicker({ part, c, rc, st, m, sum, setRc, update, disabled }) {
   return html`<div class=${"ptpick part-" + part}>
     <h3 class="ptpickh"><span>${PT_LABEL[part]}</span>${s.access && s.open && s.value ? html`<small>${s.value}</small>` : ""}</h3>
     <p class="muted ptrule">${PT_RULE[part]}</p>
-    ${body}</div>`;
+    <div class="ptbody" key=${part}>${body}</div></div>`;
 }
 
 // A custom part: a name, what it does, its difficulty, and for a tip whether it has a Rating, for a status its element.
