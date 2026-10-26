@@ -42,7 +42,11 @@ const Shop = {
     const u = uids || [];
     return u.includes(this.me()) || (u.length === 0 && Store.table.role === "gm");
   },
-  cardOf(c) { const n = norm(c); return { name: n.name || "Unnamed", uids: playersOf(n), campaign: String(n.campaign || "").trim(), weapon: R.wmState(n).lvl, armor: R.amState(n).lvl }; },
+  // The public card: what the workshop needs (smith levels) and what the Table page shows (face, attributes, short bio).
+  cardOf(c) { const n = norm(c), attrs = {}; R.ATTRS.forEach(a => (attrs[a.k] = R.attr(n, a.k)));
+    return { name: n.name || "Unnamed", uids: playersOf(n), campaign: String(n.campaign || "").trim(), weapon: R.wmState(n).lvl, armor: R.amState(n).lvl,
+      player: String(n.player || ""), profession: String(n.profession || ""), bio: String(n.bio || "").slice(0, 1200), attrs,
+      portraitAsset: n.portraitAsset || "", portraitUrl: /^https?:\/\//.test(n.portraitUrl || "") ? n.portraitUrl : "", emblem: n.emblem || "" }; },
   // Jobs only go between characters of the same campaign; a character with no campaign set has nobody to send to.
   camp(x) { return String((x && x.campaign) || "").trim().toLowerCase(); },
   same(c, r) { const k = this.camp(c); return !!k && k === this.camp(r); },
@@ -62,7 +66,7 @@ const Shop = {
     Object.values(Store.chars).forEach(c => {
       if (c.companionOf || !(!Store.table || Store.table.role === "gm" || playersOf(c).includes(this.me()))) return;
       const card = this.cardOf(c), key = JSON.stringify(card), have = this.roster.find(r => r.id === c.id);
-      if (this.cards[c.id] === key || (have && JSON.stringify({ name: have.name, uids: have.uids, campaign: have.campaign || "", weapon: have.weapon, armor: have.armor }) === key)) { this.cards[c.id] = key; return; }
+      if (this.cards[c.id] === key || (have && JSON.stringify(Object.fromEntries(Object.keys(card).map(k => [k, have[k]]))) === key)) { this.cards[c.id] = key; return; }
       this.cards[c.id] = key;
       Store.db.doc("roster/" + c.id).set(card).catch(() => this.fail());
     });

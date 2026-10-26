@@ -89,6 +89,21 @@ service cloud.firestore {
       allow delete: if isGM(t) || (isMember(t) && (plays(resource.data.from.uids) || plays(resource.data.to.uids)));
     }
 
+    // The Table page. The board (setting, recap, next session) is one doc per campaign, written by GMs and read by all.
+    // The party stash is shared: anyone at the table may change it. Handouts are written by GMs; players read only
+    // the ones the GM has shown (the app asks for them with where("shown", "==", true)).
+    match /tables/{t}/board/{id} {
+      allow read: if isMember(t);
+      allow write: if isGM(t);
+    }
+    match /tables/{t}/stash/{id} {
+      allow read, write: if isMember(t);
+    }
+    match /tables/{t}/handouts/{id} {
+      allow read: if isGM(t) || (isMember(t) && resource.data.shown == true);
+      allow write: if isGM(t);
+    }
+
     // The initiative deck is the GM's.
     match /tables/{t}/encounters/{id} {
       allow read, write: if isGM(t);

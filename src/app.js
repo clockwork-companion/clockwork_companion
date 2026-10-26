@@ -467,11 +467,11 @@ function App() {
   const gm = isGM();
   if (!gm && view === "gm") setView("chars");
   // Which page is showing (characters, GM table, settings) and which way we moved, for themes that animate the
-  // change (Mossheart blows a gust of leaves across). Order matches the top bar: Characters, GM table, Settings.
-  const page = settings ? "settings" : view === "gm" && gm ? "gm" : "chars";
+  // change (Mossheart blows a gust of leaves across). Order matches the top bar: Characters, Table, GM table, Settings.
+  const page = settings ? "settings" : view === "gm" && gm ? "gm" : view === "table" ? "table" : "chars";
   const pageNav = useRef({ page, dir: "" });
   if (pageNav.current.page !== page) {
-    const order = ["chars", "gm", "settings"];
+    const order = ["chars", "table", "gm", "settings"];
     pageNav.current = { page, dir: order.indexOf(page) > order.indexOf(pageNav.current.page) ? "r" : "l" };
   }
   const current = sel && all[sel] ? norm(all[sel]) : null;
@@ -514,8 +514,8 @@ function App() {
   return html`<div class="wrap">
     <header class="top">
       <div class="brand">Clockwork<small>Companion</small></div>
-      <${CharMenu} list=${list} all=${all} sel=${sel} current=${current} gm=${gm} on=${!settings && view === "chars"} gmOn=${!settings && view === "gm"}
-        goChars=${() => { setView("chars"); setSettings(false); }} goGm=${() => { setView("gm"); setSettings(false); }}
+      <${CharMenu} list=${list} all=${all} sel=${sel} current=${current} gm=${gm} on=${!settings && view === "chars"} gmOn=${!settings && view === "gm"} tableOn=${!settings && view === "table"}
+        goChars=${() => { setView("chars"); setSettings(false); }} goGm=${() => { setView("gm"); setSettings(false); }} goTable=${() => { setView("table"); setSettings(false); }}
         pick=${id => { setSel(id); setView("chars"); setSettings(false); window.scrollTo(0, 0); }} create=${create} startNew=${startNew} />
       <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
@@ -529,7 +529,8 @@ function App() {
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
     <div class="viewswap" key=${page} data-dir=${pageNav.current.dir}>
     ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} onBack=${() => openSettings(false)} />`
-      : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
+      : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />`
+      : view === "table" ? html`<${TableView} chars=${list} current=${current} />` : html`
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
       : Store.mode === "loading" ? html`<div class="empty"><p class="muted">Opening the character ledger…</p></div>`
       : html`<div class="empty">
@@ -550,7 +551,7 @@ function App() {
 // "Characters" in the top bar opens the last character you had open. Hovering it (or the arrow beside it, on phones and
 // keyboards) drops down every character you can open, grouped by campaign, companions under their master, with a search
 // box when the list grows long, and the buttons for a new character or a companion.
-function CharMenu({ list, all, sel, current, gm, on, gmOn, goChars, goGm, pick, create, startNew }) {
+function CharMenu({ list, all, sel, current, gm, on, gmOn, tableOn, goChars, goGm, goTable, pick, create, startNew }) {
   const [open, setOpen] = useState(false); const [q, setQ] = useState("");
   const ref = useRef(), searchRef = useRef(), timer = useRef();
   const later = (v, ms) => { clearTimeout(timer.current); timer.current = setTimeout(() => setOpen(v), ms); };
@@ -573,15 +574,16 @@ function CharMenu({ list, all, sel, current, gm, on, gmOn, goChars, goGm, pick, 
   const hp = c => { const d = derive(c); return d.max.hp ? R.clamp((d.cur.hp / d.max.hp) * 100, 0, 100) : 0; };
   const cur = current, m = master(cur);
   const hover = matchMedia && matchMedia("(hover: hover)").matches;
-  return html`<nav class="charnav" ref=${ref} aria-label="Pages" onMouseEnter=${() => hover && later(true, 120)} onMouseLeave=${() => hover && later(false, 260)}>
+  return html`<nav class="charnav" ref=${ref} aria-label="Pages" onMouseLeave=${() => hover && later(false, 260)}>
     <div class="seg viewseg">
-      <span class="cnwrap"><button type="button" class="cnbtn" aria-pressed=${on} onClick=${() => { goChars(); setOpen(false); }}
+      <span class="cnwrap" onMouseEnter=${() => hover && later(true, 120)}><button type="button" class="cnbtn" aria-pressed=${on} onClick=${() => { goChars(); setOpen(false); }}
           title=${cur ? `Open ${cur.name || "your character"}` : "Characters"}>Characters${cur && on ? "" : cur ? html`<small> · ${cur.name || "Unnamed"}</small>` : ""}</button>
         <button type="button" class="cnchev" aria-expanded=${open} aria-haspopup="true" aria-label="Choose a character" onClick=${() => setOpen(!open)}>
           <svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></span>
-      ${gm && html`<button aria-pressed=${gmOn} onClick=${goGm}>GM table</button>`}
+      <button aria-pressed=${tableOn} onClick=${() => { later(false, 0); goTable(); }}>Table</button>
+      ${gm && html`<button aria-pressed=${gmOn} onClick=${() => { later(false, 0); goGm(); }}>GM table</button>`}
     </div>
-    ${open && html`<div class="rpanel cnmenu" role="dialog" aria-label="Choose a character">
+    ${open && html`<div class="rpanel cnmenu" role="dialog" aria-label="Choose a character" onMouseEnter=${() => hover && later(true, 0)}>
       ${list.length > 6 && html`<input ref=${searchRef} class="rsearch" type="search" placeholder="Find a character, profession or player…" value=${q} onInput=${e => setQ(e.target.value)} />`}
       ${groups.map(g => html`<div class="rgroup"><h4>${g.k || "No campaign"}</h4><div class="rgrid">
         ${g.rows.map(c => html`<div class=${"rcard" + (c.id === sel ? " on" : "")}>
@@ -923,7 +925,9 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill, onDelete
 
     <section class="frame"><${Sigils} seed="notes" n=${1} lead="note" side="r" /><h2 class="h"><span>Notes</span><i class="orn" aria-hidden="true"></i></h2>
       <div class="field"><label for=${"notes-" + c.id}>Backstory, anything else</label>
-      <textarea id=${"notes-" + c.id} rows="5" value=${c.notes} onInput=${e => update(x => { x.notes = e.target.value; })}></textarea></div></section>
+      <textarea id=${"notes-" + c.id} rows="5" value=${c.notes} onInput=${e => update(x => { x.notes = e.target.value; })}></textarea></div>
+      <div class="field"><label for=${"bio-" + c.id}>Short bio (the whole table sees this on the Table page)</label>
+      <textarea id=${"bio-" + c.id} rows="3" maxlength="1200" placeholder="Who they are, in a few lines." value=${c.bio || ""} onInput=${e => update(x => { x.bio = e.target.value; })}></textarea></div></section>
     <${DeleteCharacter} c=${c} onDelete=${onDelete} />
   </div>`;
 }
