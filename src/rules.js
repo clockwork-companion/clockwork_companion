@@ -130,7 +130,8 @@ const CW = (() => {
       // Warding: the Words of Power the warder knows, extra grammar words, saved and formulaic wards, Fatigue.
       ward: { bonus: 0, fatigue: 0, words: [], extra: { subject: [], adverb: [], conj: [] }, wards: [], board: [], ledger: [] },
       harmony: { els: [], ch: {}, rel: [], turns: 0, kept: 0, ledger: [] },
-      demon: { daemons: [], out: [], guardian: "", today: 0, army: false, ledger: [] },   // Demonology: contracts, who is summoned, summons used today   // Occult: Harmony: known elements, chakra → element, released chakras
+      demon: { daemons: [], out: [], guardian: "", today: 0, army: false, ledger: [] },
+      dream: { inRealm: false, mundane: false, travelers: 0, tolls: [], vault: [], sphere: null, seeds: [], ledger: [] },   // Dreamwalking: what the dreamwalker sustains   // Demonology: contracts, who is summoned, summons used today   // Occult: Harmony: known elements, chakra → element, released chakras
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
@@ -182,6 +183,10 @@ const CW = (() => {
     out.demon.daemons.forEach(x => { if (!Array.isArray(x.abilities)) x.abilities = []; });
     out.demon.out = out.demon.out.filter(id => out.demon.daemons.some(x => x.id === id));
     out.demon.today = Math.max(0, num(out.demon.today)); if (typeof out.demon.guardian !== "string") out.demon.guardian = ""; out.demon.army = !!out.demon.army && out.demon.out.length > 0;
+    out.dream = Object.assign({}, b.dream, out.dream);
+    ["tolls", "vault", "seeds", "ledger"].forEach(k => { if (!Array.isArray(out.dream[k])) out.dream[k] = []; });
+    out.dream.inRealm = !!out.dream.inRealm; out.dream.mundane = !!out.dream.mundane; out.dream.travelers = Math.max(0, num(out.dream.travelers));
+    if (out.dream.sphere && typeof out.dream.sphere !== "object") out.dream.sphere = null;
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
@@ -449,6 +454,14 @@ const CW = (() => {
     if (refreshUses(c, false)) parts.push("abilities recharged");
     if (c.ward && num(c.ward.fatigue)) { parts.push(`Warding Fatigue ${num(c.ward.fatigue)} → 0`); c.ward.fatigue = 0; }   // all Fatigue clears after a long rest
     if (c.demon && num(c.demon.today)) { parts.push("daemon summons renewed"); c.demon.today = 0; }   // the app counts a day of summons from long rest to long rest
+    if (c.dream) {   // Dreamwalking tolls disperse; items lost to a failed sending come back; dreamseeds stay
+      const d = c.dream, back = d.vault.filter(v => v.lost);
+      if (d.tolls.length || d.vault.some(v => num(v.pct))) parts.push("dreamwalking Toll cleared");
+      d.tolls = []; d.vault.forEach(v => { v.pct = 0; });
+      back.forEach(v => { const have = (c.items || []).find(i => i.name === v.name); if (have) have.qty = num(have.qty) + num(v.qty); else (c.items = c.items || []).push({ id: v.id, name: v.name, qty: num(v.qty), size: v.size || "small" }); });
+      if (back.length) parts.push(`${back.length} lost item${back.length === 1 ? "" : "s"} back from the dream realm`);
+      d.vault = d.vault.filter(v => !v.lost); d.sphere = null;
+    }
     return "Long rest: " + parts.join(" · ");
   }
 
@@ -825,6 +838,33 @@ const CW = (() => {
     };
   }
 
+  // ---------- Dreamwalking (rulebook 2020.1, 12.3) ----------
+  // Toll (%) is the pressure of everything the dreamwalker sustains: GM-set tolls on translocations and transfigurations,
+  // items in the dream realm, the Observation Active (+5% until a long rest), dreamwalking during a mundane task (+15%),
+  // travellers (+8% each), a dreamsphere's extra size (+4% per 2 m) and extra turns (+5% each), dreamseeds past two (+15%
+  // each, until destroyed). Bonus = modifier − Toll; Calamity chance = 5% + Toll. Tolls disperse when released or at a
+  // long rest (dreamseeds stay until destroyed).
+  function dreamState(c) {
+    const lvl = sk(c, "Dreamwalking"), d = c.dream || {}, u = c.uses || {};
+    const parts = [];
+    (d.tolls || []).forEach(t => parts.push([t.n || "Manipulation", Math.max(0, num(t.pct)), t.id]));
+    (d.vault || []).forEach(v => { if (!v.lost && num(v.pct)) parts.push([`${v.name} in the dream realm`, Math.max(0, num(v.pct)), "v:" + v.id]); });
+    if (d.inRealm && d.mundane) parts.push(["Dreaming while awake", 15, "mundane"]);
+    if (d.inRealm && num(d.travelers)) parts.push([`${num(d.travelers)} traveller${num(d.travelers) === 1 ? "" : "s"}`, 8 * num(d.travelers), "travel"]);
+    const sp = d.sphere;
+    if (sp && (num(sp.grow) || num(sp.extra))) parts.push(["The dreamsphere", 4 * num(sp.grow) + 5 * num(sp.extra), "sphere"]);
+    const seeds = (d.seeds || []).length;
+    if (seeds > 2) parts.push([`${seeds - 2} dreamseed${seeds - 2 === 1 ? "" : "s"} past two`, 15 * (seeds - 2), "seeds"]);
+    const toll = parts.reduce((a, p) => a + p[1], 0), mod = skillModifier(c, "Dreamwalking");
+    return {
+      lvl, mod, toll, parts, bonus: mod - toll, calamity: 5 + toll,
+      enter: lvl >= 3, easyEnter: lvl >= 6, transpose: lvl >= 4, vault: lvl >= 5, translocate: lvl >= 5, observe: lvl >= 6,
+      observeLeft: lvl >= 6 ? Math.max(0, 2 - num(u["p:Dreamwalking:6"])) : 0, spheres: lvl >= 7, transfigure: lvl >= 7,
+      travellers: lvl >= 8, sphereAP: lvl >= 9 ? 1 : 2, sphereLeft: lvl >= 7 ? Math.max(0, 3 - num(u["p:Dreamwalking:7"])) : 0,
+      delay: lvl >= 9, seeds: lvl >= 10,
+    };
+  }
+
   // ---------- Armor Maintenance (rulebook 16.5 and the Armor chapter) ----------
   // Repair (book): cost = the type's grams × Armor Value; roll an Armor Maintenance check (d100 − modifier);
   // Repair Count = 10 − check ÷ 10, rounded down; roll the type's Repair Die that many times and add it to the Soak Pool.
@@ -1100,7 +1140,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, demonState,
+           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, demonState, dreamState,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
