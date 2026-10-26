@@ -13,7 +13,7 @@ const NIGHT_STARS = Array.from({ length: 22 }, (_, i) => [wardSeed("nx" + i) * 6
    frown, quicker breath, a twitch) from 10%, and past 30% a nightmare (tossing, sweat, a clenched hand) while shadow
    hands creep in from the dark. Awake, the eyes open and the dream shrinks to a dim orb; waking pops the bubble and
    the sleeper starts. Only transforms and opacity are animated, so it stays smooth. */
-function DreamSleeper({ D, st, sphere }) {
+function DreamSleeper({ D, st, sphere, update }) {
   const awake = !D.inRealm, eyesOpen = awake || D.mundane;
   const mood = awake ? "awake" : st.toll > 30 ? "night" : st.toll >= 10 ? "uneasy" : "calm";
   const reach = Math.max(0, Math.min(1, (st.toll - 15) / 45));     // how far the shadow hands have crept in
@@ -24,6 +24,16 @@ function DreamSleeper({ D, st, sphere }) {
     prev.current = D.inRealm;
   }, [D.inRealm]);
   const sr = 62 + 6 * num(sphere && sphere.grow);
+  // The dreamsphere can be dragged anywhere in the scene (mouse, finger or arrow keys); where it is is saved with it.
+  const svgRef = useRef(null), [drag, setDrag] = useState(null);
+  const fit = (x, y) => [Math.max(Math.min(sr, 300), Math.min(Math.max(600 - sr, 300), x)), Math.max(Math.min(sr, 170), Math.min(Math.max(340 - sr, 170), y))];
+  const spot = sphere ? fit(drag ? drag.x : Number.isFinite(+sphere.x) && sphere.x != null ? +sphere.x : 236, drag ? drag.y : Number.isFinite(+sphere.y) && sphere.y != null ? +sphere.y : 262) : [236, 262];
+  const toSvg = e => { const m = svgRef.current.getScreenCTM().inverse(), p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m); return [p.x, p.y]; };
+  const keep = (x, y) => update(c => { if (c.dream.sphere) { c.dream.sphere.x = Math.round(x); c.dream.sphere.y = Math.round(y); } });
+  const down = e => { if (e.button > 0) return; e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); const [px, py] = toSvg(e); setDrag({ x: spot[0], y: spot[1], ox: px - spot[0], oy: py - spot[1] }); };
+  const move = e => { if (!drag) return; const [px, py] = toSvg(e); const [x, y] = fit(px - drag.ox, py - drag.oy); setDrag(Object.assign({}, drag, { x, y })); };
+  const up = () => { if (!drag) return; keep(drag.x, drag.y); setDrag(null); };
+  const key = e => { const d = { ArrowLeft: [-12, 0], ArrowRight: [12, 0], ArrowUp: [0, -12], ArrowDown: [0, 12] }[e.key]; if (!d) return; e.preventDefault(); const [x, y] = fit(spot[0] + d[0], spot[1] + d[1]); keep(x, y); };
   const face = eyesOpen
     ? html`<path class="drlid" d="M147.3 250.2 Q151 248.6 154.7 250.4" /><circle class="dreye" cx="151.2" cy="251.6" r="1.35" />`
     : mood === "night" ? html`<path class="drlash" d="M147.3 252.2 Q151 250 154.9 252.2 M146.6 249.6 L149.5 251 M156 249.4 L153.4 251" />`
@@ -36,7 +46,7 @@ function DreamSleeper({ D, st, sphere }) {
     <path d="M-2 -6 C8 -11 20 -12 28 -9 L50 -17 C54 -18 55 -14 52 -12 L33 -4 L58 -6 C62 -6 62 -1 58 -1 L34 2 L55 9 C59 10 57 14 54 13 L31 7 L44 18 C46 20 44 23 41 21 L25 11 C14 13 4 12 -2 8Z" /></g></g>`;
 
   return html`<div class=${"dreamscene mood-" + mood + (D.inRealm ? " open" : "") + (jolt ? " jolt" : "")} style=${`--reach:${reach.toFixed(2)}`}>
-    <svg viewBox="0 0 600 340" role="img" aria-label=${`The sleeper. Toll ${st.toll}%.${D.inRealm ? " You are in the dream realm." : " You are awake."}`}>
+    <svg ref=${svgRef} viewBox="0 0 600 340" role="img" aria-label=${`The sleeper. Toll ${st.toll}%.${D.inRealm ? " You are in the dream realm." : " You are awake."}`}>
       <defs>
         <linearGradient id="dr-night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#090d22" /><stop offset=".7" stop-color="#151a3a" /><stop offset="1" stop-color="#1c1d3d" /></linearGradient>
         <radialGradient id="dr-moonlight" cx=".85" cy="0" r="1"><stop offset="0" stop-color="#c9d4ff" stop-opacity=".16" /><stop offset="1" stop-color="#c9d4ff" stop-opacity="0" /></radialGradient>
@@ -72,7 +82,7 @@ function DreamSleeper({ D, st, sphere }) {
         ${hand("h3", -70 + 150 * reach, -60 + 170 * reach, 38)}
       </g>
 
-      ${sphere && html`<g class="drsphere"><circle cx="236" cy="262" r=${sr} fill="url(#dr-sph)" /><text x="236" y=${262 - sr + 18}>${num(sphere.turns) ? `${sphere.turns} turn${sphere.turns === 1 ? "" : "s"}` : "held open"}</text></g>`}
+
       <rect x="78" y="284" width="446" height="20" rx="10" fill="url(#dr-roll)" />
       <path class="drrollseam" d="M90 292 H512" />
       <path d="M96 293 C92 277 104 265 128 264 C150 263 176 267 183 277 C187 287 179 295 160 296 L112 297 C102 297 97 296 96 293Z" fill="url(#dr-pillow)" />
@@ -123,6 +133,11 @@ function DreamSleeper({ D, st, sphere }) {
         <circle class="drrim" cx="372" cy="122" r="104" />
         <path class="drshine" d="M296 70 C314 44 340 30 368 26" />
       </g>
+      ${sphere && html`<g class=${"drsphere" + (drag ? " dragging" : "")} transform=${`translate(${spot[0].toFixed(1)} ${spot[1].toFixed(1)})`}
+        tabindex="0" role="button" aria-label="Dreamsphere: drag it, or use the arrow keys, to move it"
+        onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onPointerCancel=${up} onKeyDown=${key}>
+        <title>Drag to move the dreamsphere</title>
+        <g class="drsphereb"><circle r=${sr} fill="url(#dr-sph)" /></g><text y=${-sr + 18}>${num(sphere.turns) ? `${sphere.turns} turn${sphere.turns === 1 ? "" : "s"}` : "held open"}</text></g>`}
       ${pop > 0 && html`<g class="drpop" key=${pop} aria-hidden="true"><circle class="drpopring" cx="372" cy="122" r="104" />
         ${Array.from({ length: 14 }, (_, i) => html`<circle class="drmote" cx="372" cy="122" r=${(1.6 + (i % 3) * .8).toFixed(1)} style=${`--a:${(i * 25.7).toFixed(0)}deg`} />`)}</g>`}
     </svg>
@@ -155,7 +170,7 @@ function Dreamwalking({ c, update }) {
     <section class=${"frame dreamf" + (D.inRealm ? " asleep" : "") + (st.toll > 30 ? " nightmare" : "")}>
       <h2 class="h"><span>The dreamscape</span><i class="orn" aria-hidden="true"></i></h2>
       <div class="dreamstage">
-        <${DreamSleeper} D=${D} st=${st} sphere=${sphere} />
+        <${DreamSleeper} D=${D} st=${st} sphere=${sphere} update=${update} />
 
         <div class="dreamtoll" aria-label="Your Toll">
           <div class="dtmeter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow=${st.toll} aria-label=${`Toll ${st.toll}%`}>
@@ -268,40 +283,56 @@ function DreamManip({ st, kind, update, addToll, log, onClose }) {
 // The dream realm's vault: items from the inventory sent across (a check), floating in the dreamscape; renewed daily.
 function DreamVault({ c, st, update, log }) {
   const D = c.dream, [pick, setPick] = useState(""), [pct, setPct] = useState(""), [sending, setSending] = useState(false), [renewing, setRenewing] = useState(false);
-  const item = (c.items || []).find(i => i.id === pick);
+  // Anything you're touching and can lift: inventory items, weapons and suits of armor (not one that's away at a smith's).
+  const things = [
+    ...(c.items || []).map(i => ({ k: "item:" + i.id, kind: "item", it: i, label: `${i.name || "Item"}${num(i.qty) > 1 ? ` ×${i.qty}` : ""}` })),
+    ...(c.weapons || []).filter(w => !Shop.outgoing(c, "weapon", w.id)).map(w => ({ k: "weapon:" + w.id, kind: "weapon", it: w, label: w.name || "Unnamed weapon", tag: "weapon" })),
+    ...(c.armor || []).filter(a => !Shop.outgoing(c, "armor", a.id)).map(a => ({ k: "armor:" + a.id, kind: "armor", it: a, label: a.name || "Unnamed armor", tag: a.worn ? "armor, worn" : "armor" })),
+  ];
+  const chosen = things.find(t => t.k === pick);
   const send = ok => update(x => {
-    const i = x.items.findIndex(y => y.id === pick); if (i < 0) return;
-    const it = x.items[i]; x.items.splice(i, 1);
-    x.dream.vault.push({ id: it.id, name: it.name, qty: num(it.qty), size: it.size || "small", pct: ok === false ? 0 : Math.max(0, Math.round(num(pct))), lost: ok === false });
-    log(x, ok === false ? `${it.name} slipped away into the dream realm: lost until the next long rest` : `sent ${it.name} into the dream realm (+${num(pct)}% Toll)`);
+    if (!chosen) return;
+    const lost = ok === false, toll = lost ? 0 : Math.max(0, Math.round(num(pct)));
+    let entry;
+    if (chosen.kind === "item") {
+      const i = x.items.findIndex(y => y.id === chosen.it.id); if (i < 0) return;
+      const it = x.items[i]; x.items.splice(i, 1);
+      entry = { id: it.id, name: it.name, qty: num(it.qty), size: it.size || "small" };
+    } else {
+      const list = chosen.kind === "weapon" ? x.weapons : x.armor, i = list.findIndex(y => y.id === chosen.it.id); if (i < 0) return;
+      const o = list[i]; list.splice(i, 1);
+      entry = { id: o.id, name: o.name || (chosen.kind === "weapon" ? "Unnamed weapon" : "Unnamed armor"), qty: 1, kind: chosen.kind, obj: Object.assign({}, o, { worn: false }) };
+      if (chosen.kind === "armor" && o.worn) log(x, `took off ${entry.name}`);
+    }
+    x.dream.vault.push(Object.assign(entry, { pct: toll, lost }));
+    log(x, lost ? `${entry.name} slipped away into the dream realm: lost until the next long rest` : `sent ${entry.name} into the dream realm (+${toll}% Toll)`);
   });
   const back = v => update(x => {
-    x.dream.vault = x.dream.vault.filter(y => y.id !== v.id);
-    const have = x.items.find(i => i.name === v.name);
-    if (have) have.qty = num(have.qty) + num(v.qty); else x.items.push({ id: v.id, name: v.name, qty: num(v.qty), size: v.size || "small" });
+    x.dream.vault = x.dream.vault.filter(y => y.id !== v.id); R.dreamReturn(x, v);
     log(x, `brought ${v.name} back from the dream realm`);
   });
   const allBack = () => update(x => {
-    x.dream.vault.filter(v => !v.lost).forEach(v => { const have = x.items.find(i => i.name === v.name); if (have) have.qty = num(have.qty) + num(v.qty); else x.items.push({ id: v.id, name: v.name, qty: num(v.qty), size: v.size || "small" }); });
+    x.dream.vault.filter(v => !v.lost).forEach(v => R.dreamReturn(x, v));
     x.dream.vault = x.dream.vault.filter(v => v.lost); log(x, "the binding failed: everything came back from the dream realm");
   });
   return html`<section class="frame dreamvault">
     <h2 class="h"><span>The dream realm's vault</span><i class="orn" aria-hidden="true"></i></h2>
-    <p class="sub">Send things you're touching and can lift into the dream realm (1 AP, 3 minutes' concentration and a check). Renew the binding each day, or everything comes back.</p>
-    ${D.vault.length ? html`<div class="dvitems">${D.vault.map(v => html`<div class=${"dvitem" + (v.lost ? " lost" : "")}>
-        <span class="dvorb" aria-hidden="true"></span><span class="dvn"><b>${v.name}</b>${num(v.qty) > 1 ? ` ×${v.qty}` : ""}<small>${v.lost ? "Lost until the next long rest" : num(v.pct) ? `${v.pct}% Toll` : "No Toll"}</small></span>
+    <p class="sub">Send things you're touching and can lift (items, weapons, armor) into the dream realm (1 AP, 3 minutes' concentration and a check). Renew the binding each day, or everything comes back.</p>
+    ${D.vault.length ? html`<div class="dvitems" key="list">${D.vault.map(v => html`<div class=${"dvitem" + (v.lost ? " lost" : "")}>
+        <span class="dvorb" aria-hidden="true"></span><span class="dvn"><b>${v.name}</b>${num(v.qty) > 1 ? ` ×${v.qty}` : ""}<small>${v.kind ? (v.kind === "weapon" ? "Weapon · " : "Armor · ") : ""}${v.lost ? "Lost until the next long rest" : num(v.pct) ? `${v.pct}% Toll` : "No Toll"}</small></span>
         ${!v.lost && html`<button class="btn small" onClick=${() => back(v)}>Bring it back</button>`}</div>`)}</div>`
-      : html`<p class="muted">The vault is empty.</p>`}
-    <div class="row harmhow">
-      <button class=${"btn small" + (sending ? " primary" : "")} disabled=${!(c.items || []).length} onClick=${() => { setSending(!sending); setRenewing(false); }}>Send an item…</button>
+      : html`<p class="muted" key="empty">The vault is empty.</p>`}
+    <div class="row harmhow" key="acts">
+      <button class=${"btn small" + (sending ? " primary" : "")} disabled=${!things.length} onClick=${() => { setSending(!sending); setRenewing(false); }}>Send something…</button>
       ${D.vault.some(v => !v.lost) && html`<button class=${"btn small" + (renewing ? " primary" : "")} onClick=${() => { setRenewing(!renewing); setSending(false); }}>Renew the binding…</button>`}
     </div>
-    ${sending && html`<div class="dreamform">
-      <div class="dvpick" role="list" aria-label="Your items">${(c.items || []).map(i => html`<button type="button" role="listitem" class=${"dvchip" + (pick === i.id ? " on" : "")} aria-pressed=${pick === i.id} onClick=${() => setPick(i.id)}>${i.name || "Item"}${num(i.qty) > 1 ? ` ×${i.qty}` : ""}</button>`)}</div>
-      ${item && html`<div class="row harmhow"><span class="mini warddc"><label for="dv-pct">Toll %</label><input id="dv-pct" type="number" min="0" value=${pct} onInput=${e => setPct(e.target.value)} placeholder="By size" /></span></div>
-        <${DreamRoll} st=${st} inline=${true} title="Send it" onDone=${ok => { send(ok); setPick(""); setPct(""); }} />`}
+    ${sending && html`<div class="dreamform" key="send">
+      <div class="dvpick" role="list" aria-label="What you can send">${things.map(t => html`<button type="button" role="listitem" class=${"dvchip" + (pick === t.k ? " on" : "") + (t.tag ? " gear" : "")} aria-pressed=${pick === t.k} onClick=${() => setPick(t.k)}>${t.label}${t.tag && html` <small>${t.tag}</small>`}</button>`)}</div>
+      ${chosen && chosen.kind === "armor" && chosen.it.worn && html`<p class="muted">You'll take it off to send it.</p>`}
+      ${chosen && html`<div class="row harmhow"><span class="mini warddc"><label for="dv-pct">Toll %</label><input id="dv-pct" type="number" min="0" value=${pct} onInput=${e => setPct(e.target.value)} placeholder="By size" /></span></div>
+        <${DreamRoll} st=${st} inline=${true} title="Send it" onDone=${(ok, line) => { const n = chosen.it.name || "It"; send(ok); setPick(""); setPct(""); setSending(false); toast(ok === false ? `${n} slipped away (${line}): lost until the next long rest.` : `${n} is in the dream realm (${line}).`); }} />`}
     </div>`}
-    ${renewing && html`<div class="dreamform"><${DreamRoll} st=${st} inline=${true} title="Renew" note=""
+    ${renewing && html`<div class="dreamform" key="renew"><${DreamRoll} st=${st} inline=${true} title="Renew" note=""
       onDone=${(ok, line) => { if (ok === false) allBack(); else update(x => log(x, `renewed the binding (${line})`)); setRenewing(false); }} /></div>`}
   </section>`;
 }

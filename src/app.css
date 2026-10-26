@@ -2894,8 +2894,13 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .drgrasp { transform-origin: 0 0; animation: drGrasp 4.2s ease-in-out infinite; }
 .drhand.h2 .drgrasp { animation-delay: -1.4s; } .drhand.h3 .drgrasp { animation-delay: -2.8s; }
 @keyframes drGrasp { 0%, 100% { transform: none; } 50% { transform: translateX(10px) scale(1.04, .9); } }
-.drsphere circle { stroke: #bfefff; stroke-width: 1.2; transform-box: fill-box; transform-origin: center; animation: sphereBreath 3s ease-in-out infinite alternate; }
-.drsphere text { font: 600 10px var(--f-head); fill: #e9fbff; text-anchor: middle; letter-spacing: .06em; text-transform: uppercase; }
+.drsphere { cursor: grab; touch-action: none; outline: none; }
+.drsphere.dragging { cursor: grabbing; }
+.drsphere:focus-visible circle { stroke: #fff; stroke-width: 2.4; }
+.drsphere circle { stroke: #bfefff; stroke-width: 1.2; }
+.drsphereb { transform-box: fill-box; transform-origin: center; animation: sphereBreath 3s ease-in-out infinite alternate; transition: transform .25s ease; }
+.drsphere.dragging .drsphereb { animation-play-state: paused; transform: scale(1.04); }
+.drsphere text { font: 600 10px var(--f-head); fill: #e9fbff; text-anchor: middle; letter-spacing: .06em; text-transform: uppercase; pointer-events: none; user-select: none; }
 @keyframes sphereBreath { to { transform: scale(1.03); } }
 .dreamstate { position: absolute; left: 10px; top: 8px; margin: 0; padding: 3px 8px; font-size: 12.5px; color: #e9e6ff; background: #0b0a1fcc; border-radius: 3px; }
 /* the Toll meter */
@@ -2930,12 +2935,13 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .dvpick { display: flex; flex-wrap: wrap; gap: 6px; }
 .dvchip { padding: 4px 10px; border: 1px solid var(--rule); border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer; font-size: 13.5px; }
 .dvchip.on { border-color: #8e7cf0; background: color-mix(in srgb, #b9a8ff 20%, var(--card)); }
+.dvchip small { color: var(--ink-3); font-size: 11.5px; }
 @media (max-width: 760px) {
   .dreamstage { grid-template-columns: minmax(0, 1fr); }
   .dtmeter { min-height: 120px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .drstars circle, .drmist, .draurora path, .drbubble, .drsphere circle, .dvorb, .dreamscene *, .dreamscene { animation: none !important; transition: none !important; }
+  .drstars circle, .drmist, .draurora path, .drbubble, .drsphereb, .dvorb, .dreamscene *, .dreamscene { animation: none !important; transition: none !important; }
   .drpop { display: none; }
 }
 
