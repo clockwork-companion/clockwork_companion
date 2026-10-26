@@ -11,7 +11,8 @@
    Rules: huntState, salvagePlan, salvageRest, combineCount in rules.js; data in c.craft.hunt. */
 
 const HuntFrag = preact.Fragment;
-const HUNT_PAGES = [["case", "Trophies & belt"], ["carve", "Carving"], ["merge", "Merging"]];
+// One page: the trophies on top; Carving and Merging fold open beneath them and take over the picture above.
+const HUNT_DROPS = [["carve", "Carving"], ["merge", "Merging"]];
 const huntSrc = t => !t ? "" : t.img ? (Store.assets && Store.assets.urlFor ? Store.assets.urlFor(t.img) : "") : t.imgData || "";
 const HUNT_KIND = { pos: ["+", "Positive"], neg: ["−", "Negative"], void: ["∅", "Void"] };
 
@@ -95,19 +96,28 @@ const HuntMedal = ({ t, size = 64, cls = "" }) => { const src = huntSrc(t);   //
 
 function Hunting({ c, update }) {
   const st = R.huntState(c), h = c.craft.hunt;
-  const [page, setPageState] = useState(() => lsGet("cw-hunt-page", "case"));
+  const [page, setPageState] = useState(() => { const p = lsGet("cw-hunt-page", "case"); return p === "carve" || p === "merge" ? p : "case"; });
+  const [busy, setBusy] = useState(false), wrap = useRef(null), first = useRef(true);
   const setPage = p => { setPageState(p); lsSet("cw-hunt-page", p); };
+  // Opening a drop-down changes the picture above it: bring that into view if it scrolled away.
+  useEffect(() => { if (first.current) { first.current = false; return; }
+    const el = wrap.current && wrap.current.querySelector(".huntone"); if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: "start", behavior: reduceMotion() ? "auto" : "smooth" }); }, [page]);
+  const bars = body => html`<div class="huntdrops">${HUNT_DROPS.map(([k, n]) => { const on = page === k;
+    return html`<div class=${"huntdrop" + (on ? " open" : "")} key=${k}>
+      <button type="button" class="huntdropb" aria-expanded=${on} disabled=${busy} title=${on ? "Close: back to your trophies" : ""} onClick=${() => setPage(on ? "case" : k)}>
+        ${k === "carve" ? KNIFE : MERGE_ICON}<span>${n}</span><svg class="hchev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg></button>
+      ${on && html`<div class="huntdropbody" key="b">${body}</div>`}</div>`; })}</div>`;
   const log = (x, name, rolls) => { x.craft.hunt.ledger = [{ id: rid(), t: Date.now(), name, rolls: rolls || [] }, ...x.craft.hunt.ledger].slice(0, 30); addLog(x, "Hunting: " + name); };
-  return html`<div class="hunting">
+  const kids = { c, st, update, log, bars, onBusy: setBusy, toCase: () => setPage("case") };
+  return html`<div class="hunting" ref=${wrap}>
     <section class="frame hunthead"><${Head} title="Hunting" topic="hunting" />
       <div class="facts ptfacts">${[["Hunting", `${st.lvl} · ${st.mod}%`], ["Trophies you can use", st.maxLvl ? `Up to level ${st.maxLvl}` : "From Hunting 3"],
         ["Belt", `${st.belted.length} of ${st.slots}${st.attuned.length ? ` · ${st.attuned.length} attuned` : ""}`]].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>
       <${HuntMyths} c=${c} st=${st} update=${update} />
     </section>
-    <div class="seg huntpages" role="tablist" aria-label="Hunting">${HUNT_PAGES.map(([k, n]) => html`<button role="tab" aria-selected=${page === k} aria-pressed=${page === k} onClick=${() => setPage(k)}>${n}</button>`)}</div>
-    ${page === "case" && html`<${HuntCase} key="case" c=${c} st=${st} update=${update} log=${log} toCarve=${() => setPage("carve")} />`}
-    ${page === "carve" && html`<${HuntCarve} key="carve" c=${c} st=${st} update=${update} log=${log} toCase=${() => setPage("case")} />`}
-    ${page === "merge" && html`<${HuntMerge} key="merge" c=${c} st=${st} update=${update} log=${log} />`}
+    ${page === "case" && html`<${HuntCase} key="case" ...${kids} toCarve=${() => setPage("carve")} />`}
+    ${page === "carve" && html`<${HuntCarve} key="carve" ...${kids} />`}
+    ${page === "merge" && html`<${HuntMerge} key="merge" ...${kids} />`}
     <${HuntLedger} c=${c} update=${update} />
   </div>`;
 }
@@ -124,7 +134,7 @@ function HuntMyths({ c, st, update }) {
 }
 
 /* ---------------- Trophies & belt ---------------- */
-function HuntCase({ c, st, update, log, toCarve }) {
+function HuntCase({ c, st, update, log, toCarve, bars }) {
   const h = c.craft.hunt, [sel, setSel] = useState(""), [edit, setEdit] = useState(null), [fx, setFx] = useState(null);
   const flash = (id, kind) => { setFx({ id, kind, k: Date.now() }); setTimeout(() => setFx(f => f && f.id === id && f.kind === kind ? null : f), reduceMotion() ? 50 : 1600); };
   const cur = h.trophies.find(t => t.id === sel);
@@ -162,7 +172,7 @@ function HuntCase({ c, st, update, log, toCarve }) {
       ["release", "second"].forEach(k => { if (x.craft.hunt[k] && x.craft.hunt[k].id === t.id) x.craft.hunt[k] = null; }); }); setSel(""); };
 
   const blank = () => setEdit({ n: "", monster: "", part: "other", lvl: 1, props: [{ id: rid(), kind: "pos", t: "" }, { id: rid(), kind: "void", t: "" }], note: "" });
-  return html`<section class="frame huntbeltf">
+  return html`<section class="frame huntone huntbeltf">
     <h2 class="h"><span>Your trophies</span><i class="orn" aria-hidden="true"></i>${!edit && html`<button class="btn small hadd" key="add" onClick=${blank} title="Add a trophy you found or bought">+ Add</button>`}</h2>
     <div class="huntbeltwrap">
       <${HuntBelt} st=${st} h=${h} belt=${belt} sel=${sel} fx=${fx} onPick=${id => setSel(id === sel ? "" : id)} />
@@ -187,6 +197,7 @@ function HuntCase({ c, st, update, log, toCarve }) {
       : h.trophies.length ? html`<div class="huntcards" key="cards">${h.trophies.map(t => html`<${TrophyCard} key=${t.id} t=${t} st=${st} sel=${sel === t.id} rel=${rel && rel.id === t.id}
           onBelt=${() => (t.belted ? offBelt(t) : toBelt(t))} onEdit=${() => setEdit(t)} onRemove=${() => remove(t)} onPick=${() => setSel(t.id)} />`)}</div>`
       : html`<p class="muted" key="none">No trophies yet. ${st.salvage ? html`<a href="#" onClick=${e => { e.preventDefault(); toCarve(); }}>Carve one</a>, or add` : "Add"} one you found or bought.</p>`}
+    ${!edit && bars(null)}
   </section>`;
 }
 
@@ -306,7 +317,7 @@ function HuntLedger({ c, update }) {
 }
 
 /* ---------------- Carving ---------------- */
-function HuntCarve({ c, st, update, log, toCase }) {
+function HuntCarve({ c, st, update, log, toCase, bars, onBusy }) {
   const [part, setPart] = useState("horn"), [monster, setMonster] = useState(""), [lvl, setLvl] = useState(1);
   const [run, setRunState] = useState(null), runRef = useRef(null), timers = useRef([]);
   const setRun = r => { runRef.current = r; setRunState(r); };
@@ -316,6 +327,7 @@ function HuntCarve({ c, st, update, log, toCase }) {
   const P = HUNT_PARTS.find(p => p.k === part) || HUNT_PARTS[0];
   const block = !st.salvage ? `Carving trophies needs Hunting 4. ${c.name || "This character"} has ${st.lvl}.` : "";
   const busy = !!run && !run.done;
+  useEffect(() => { onBusy(busy); }, [busy]); useEffect(() => () => onBusy(false), []);
   const carve = async () => {
     if (block || busy) return;
     const n = 2 * lvl, name = monster.trim();
@@ -351,38 +363,30 @@ function HuntCarve({ c, st, update, log, toCase }) {
     toast(`${t.n || "The trophy"} is in your trophy case.`); setRun(null); toCase();
   };
   const sum = run && run.kinds ? run.kinds : [];
-  return html`<${HuntFrag}>
-    <section class="frame huntcarvef">
-      <h2 class="h"><span>Carving</span><i class="orn" aria-hidden="true"></i></h2>
-      <div class="ptgrid">
-        <div class="ptstage">
-          <${HuntCarcass} part=${run ? run.part : part} run=${run} onPick=${k => !busy && setPart(k)} />
-          <div class="ptforge">
-            ${!run ? html`<button class="btn primary big forgebtn" key="go" disabled=${!!block} onClick=${carve}>${KNIFE}Carve the ${P.n.toLowerCase()}</button>${block && html`<p class="muted ptwhy">${block}</p>`}`
-              : html`<div class="huntread" key="read" aria-live="polite">
-                <p><b>${run.phase === "cut" ? "Cutting…" : run.phase === "fail" ? "The trophy is ruined." : run.plan ? `${run.r} − ${st.mod} = ${run.total}` : ""}</b>
-                  ${run.plan && !run.plan.fail && html` · ${run.plan.neg === run.plan.n ? "all negative" : run.plan.pos ? `${run.plan.pos} positive${run.plan.capped ? " (a trophy can't be all positive)" : ""}` : `${run.plan.neg} negative`}${run.plan.rest ? `, ${run.plan.rest} to roll` : ""}`}</p>
-                <div class="hkinds">${Array.from({ length: 2 * run.lvl }, (_, i) => html`<span key=${i} class=${"hk " + (sum[i] ? "hp-" + sum[i] : "wait")}>${sum[i] ? HUNT_KIND[sum[i]][0] : ""}</span>`)}</div>
-                ${run.phase === "fail" && html`<button class="btn small" onClick=${() => setRun(null)}>Done</button>`}
-              </div>`}
-          </div>
-        </div>
-        <div class="ptside">
-          ${run && run.phase === "name" ? html`<${TrophyForm} key="name" title="Name your trophy" fixedKinds=${true}
-              init=${{ n: run.monster ? `${run.monster}'s ${P.n}` : "", monster: run.monster, part: run.part, lvl: run.lvl, props: run.kinds.map(k => ({ kind: k, t: "" })), note: "" }}
-              onSave=${keep} onCancel=${null} />`
-            : html`<div class="ptpick huntpick" key="pick">
-              <div class="mini"><label for="hc-m">Monster</label><input id="hc-m" value=${monster} disabled=${busy} placeholder="e.g. Chimera" onInput=${e => setMonster(e.target.value)} /></div>
-              <span class="lbl">Part</span>
-              <div class="hparts">${HUNT_PARTS.map(p => html`<button type="button" class=${"dvchip" + (part === p.k ? " on" : "")} aria-pressed=${part === p.k} disabled=${busy} onClick=${() => setPart(p.k)}><${HuntGlyph} part=${p.k} />${p.n}</button>`)}</div>
-              <span class="lbl">Level (the GM's) · ${2 * lvl} properties</span>
-              <div class="seg huntlvl" role="group" aria-label="Trophy level">${[1, 2, 3, 4, 5].map(l => html`<button type="button" aria-pressed=${lvl === l} disabled=${busy} onClick=${() => setLvl(l)}>${l}</button>`)}</div>
-              ${st.maxLvl && lvl > st.maxLvl && html`<small class="muted">You can only use up to level ${st.maxLvl} for now.</small>`}
-            </div>`}
-        </div>
-      </div>
-    </section>
-  </${HuntFrag}>`;
+  return html`<section class="frame huntone huntcarvef">
+    <h2 class="h"><span>Carving</span><i class="orn" aria-hidden="true"></i></h2>
+    <div class="huntstage" key="stage">
+      <${HuntCarcass} part=${run ? run.part : part} run=${run} onPick=${k => !busy && setPart(k)} />
+      ${run && html`<div class="ptforge"><div class="huntread" key="read" aria-live="polite">
+        <p><b>${run.phase === "cut" ? "Cutting…" : run.phase === "fail" ? "The trophy is ruined." : run.plan ? `${run.r} − ${st.mod} = ${run.total}` : ""}</b>
+          ${run.plan && !run.plan.fail && html` · ${run.plan.neg === run.plan.n ? "all negative" : run.plan.pos ? `${run.plan.pos} positive${run.plan.capped ? " (a trophy can't be all positive)" : ""}` : `${run.plan.neg} negative`}${run.plan.rest ? `, ${run.plan.rest} to roll` : ""}`}</p>
+        <div class="hkinds">${Array.from({ length: 2 * run.lvl }, (_, i) => html`<span key=${i} class=${"hk " + (sum[i] ? "hp-" + sum[i] : "wait")}>${sum[i] ? HUNT_KIND[sum[i]][0] : ""}</span>`)}</div>
+        ${run.phase === "fail" && html`<button class="btn small" onClick=${() => setRun(null)}>Done</button>`}
+      </div></div>`}
+    </div>
+    ${bars(run && run.phase === "name" ? html`<${TrophyForm} key="name" title="Name your trophy" fixedKinds=${true}
+        init=${{ n: run.monster ? `${run.monster}'s ${P.n}` : "", monster: run.monster, part: run.part, lvl: run.lvl, props: run.kinds.map(k => ({ kind: k, t: "" })), note: "" }}
+        onSave=${keep} onCancel=${null} />`
+      : html`<div class="huntpick" key="pick">
+        <div class="mini"><label for="hc-m">Monster</label><input id="hc-m" value=${monster} disabled=${busy} placeholder="e.g. Chimera" onInput=${e => setMonster(e.target.value)} /></div>
+        <div class="mini"><span class="lbl">Level (the GM's) · ${2 * lvl} properties</span>
+          <div class="seg huntlvl" role="group" aria-label="Trophy level">${[1, 2, 3, 4, 5].map(l => html`<button type="button" aria-pressed=${lvl === l} disabled=${busy} onClick=${() => setLvl(l)}>${l}</button>`)}</div></div>
+        <div class="mini hpartsw"><span class="lbl">Part</span>
+          <div class="hparts">${HUNT_PARTS.map(p => html`<button type="button" class=${"dvchip" + (part === p.k ? " on" : "")} aria-pressed=${part === p.k} disabled=${busy} onClick=${() => setPart(p.k)}><${HuntGlyph} part=${p.k} />${p.n}</button>`)}</div></div>
+        ${st.maxLvl && lvl > st.maxLvl && html`<small class="muted hpartsw">You can only use up to level ${st.maxLvl} for now.</small>`}
+        <div class="huntgo">${!run && html`<button class="btn primary forgebtn" key="go" disabled=${!!block} onClick=${carve}>${KNIFE}Carve the ${P.n.toLowerCase()}</button>`}${block && html`<small class="muted">${block}</small>`}</div>
+      </div>`)}
+  </section>`;
 }
 const KNIFE = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17 12.5 7.5 15 5c1.5-1.5 2.5-1 2.5-1s.5 1-1 2.5L14 9 4.5 18.5Z M10.5 9.5l2 2" /></svg>`;
 
@@ -450,7 +454,7 @@ function HuntCarcass({ part, run, onPick }) {
 }
 
 /* ---------------- Merging ---------------- */
-function HuntMerge({ c, st, update, log }) {
+function HuntMerge({ c, st, update, log, bars, onBusy, toCase }) {
   const h = c.craft.hunt, [recv, setRecv] = useState(""), [give, setGive] = useState(""), [cost, setCost] = useState("");
   const [run, setRunState] = useState(null), runRef = useRef(null), timers = useRef([]);
   const setRun = r => { runRef.current = r; setRunState(r); };
@@ -460,6 +464,7 @@ function HuntMerge({ c, st, update, log }) {
   const R1 = h.trophies.find(t => t.id === recv), G1 = h.trophies.find(t => t.id === give);
   const gPos = G1 ? G1.props.filter(p => p.kind === "pos") : [];
   const busy = !!run && !run.done;
+  useEffect(() => { onBusy(busy); }, [busy]); useEffect(() => () => onBusy(false), []);
   const block = !st.combine ? `Merging trophies needs Hunting 7. ${c.name || "This character"} has ${st.lvl}.`
     : !R1 || !G1 ? "Choose a trophy to receive and one to give." : !gPos.length ? `${G1.n || "The giver"} has no positive properties to pass on.` : "";
   const roll = async again => {
@@ -503,44 +508,35 @@ function HuntMerge({ c, st, update, log }) {
     patch({ phase: "made", done: true, moved: moving.length }); setGive("");
   };
   const fresh = run && run.phase === "made" ? h.trophies.find(t => t.id === run.recv.id) : null;
-  const pickRow = (label, val, set, other) => html`<div class="mini"><label>${label}</label>
+  const pickRow = (label, val, set, other) => html`<div class="mini hpartsw"><label>${label}</label>
     <div class="hmergepick">${h.trophies.filter(t => t.id !== other).map(t => html`<button type="button" key=${t.id} class=${"hmchip" + (val === t.id ? " on" : "")} aria-pressed=${val === t.id} disabled=${busy} onClick=${() => set(t.id)}>
       <${HuntMedal} t=${t} size=${26} /><span>${t.n || "Unnamed"}</span><small>${t.props.filter(p => p.kind === "pos").length}+</small></button>`)}</div></div>`;
-  return html`<${HuntFrag}>
-    <section class="frame huntmergef">
-      <h2 class="h"><span>Merging</span><i class="orn" aria-hidden="true"></i></h2>
-      <div class="ptgrid">
-        <div class="ptstage">
-          <${HuntAltar} recv=${run ? run.recv : R1} give=${run ? run.give : G1} run=${run} fresh=${fresh} />
-          <div class="ptforge">
-            ${!run ? html`<button class="btn primary big forgebtn" key="go" disabled=${!!block} onClick=${start}>${MERGE_ICON}Merge</button>${block && html`<p class="muted ptwhy">${block}</p>`}`
-              : html`<div class="huntread" key="read" aria-live="polite">
-                ${run.phase === "fuse" && html`<p><b>The trophies fuse…</b></p>`}
-                ${run.phase === "read" && html`<div key="read2"><p><b>${last.r} − ${st.mod} = ${last.total}</b> · ${last.res.fail ? "nothing passes" : `${last.res.n} positive propert${last.res.n === 1 ? "y" : "ies"} can pass`}${!last.res.fail && last.res.n > nMove ? ` (the giver has ${nMove})` : ""}</p>
-                  ${nMove > 0 && run.give.props.filter(p => p.kind === "pos").length > nMove && html`<div class="hmovepick">${run.give.props.filter(p => p.kind === "pos").map(p => html`<label class="demonguard" key=${p.id}>
-                    <input type="checkbox" checked=${chosen.includes(p.id)} disabled=${!chosen.includes(p.id) && chosen.length >= nMove} onChange=${e => setChosen(e.target.checked ? [...chosen, p.id] : chosen.filter(i => i !== p.id))} /> ${p.t || "Positive property"}</label>`)}</div>`}
-                  <div class="row">${st.reroll && !run.rerolled && html`<button class="btn small" onClick=${again}>Ignore it and roll again (cost ×3)</button>`}
-                    <button class="btn small primary" onClick=${apply}>${nMove ? `Pass ${chosen.length} to ${run.recv.n || "the receiver"}` : "Burn the giver"}</button>
-                    <button class="btn small" onClick=${() => setRun(null)}>Cancel</button></div></div>`}
-                ${run.phase === "made" && html`<p key="made"><b>${run.moved ? `${run.moved} propert${run.moved === 1 ? "y" : "ies"} passed to ${run.recv.n || "the receiver"}.` : "Nothing passed; the giver is gone."}</b></p>`}
-              </div>`}
-          </div>
-        </div>
-        <div class="ptside">
-          ${run && run.phase === "made" && fresh ? html`<div key="rename">
-              <${TrophyForm} key=${"rn" + fresh.id} init=${fresh} onSave=${t => { update(x => { const i = x.craft.hunt.trophies.findIndex(y => y.id === t.id); if (i >= 0) x.craft.hunt.trophies[i] = Object.assign({}, x.craft.hunt.trophies[i], t); }); setRun(null); toast(`${t.n || "The trophy"} is saved.`); }}
-                onCancel=${() => setRun(null)} /></div>`
-            : html`<div class="ptpick" key="pick">
-              ${h.trophies.length < 2 ? html`<p class="muted">You need two trophies to merge.</p>` : html`<${HuntFrag}>
-                ${pickRow("Receiver", recv, setRecv, give)}
-                ${pickRow("Giver (burns)", give, setGive, recv)}
-                <div class="mini"><label for="hm-cost">Cost (the GM's)</label><input id="hm-cost" type="number" min="0" value=${cost} placeholder="e.g. 200" disabled=${busy} onInput=${e => setCost(e.target.value)} /></div>
-</${HuntFrag}>`}
-            </div>`}
-        </div>
-      </div>
-    </section>
-  </${HuntFrag}>`;
+  return html`<section class="frame huntone huntmergef">
+    <h2 class="h"><span>Merging</span><i class="orn" aria-hidden="true"></i></h2>
+    <div class="huntstage" key="stage">
+      <${HuntAltar} recv=${run ? run.recv : R1} give=${run ? run.give : G1} run=${run} fresh=${fresh} />
+      ${run && html`<div class="ptforge"><div class="huntread" key="read" aria-live="polite">
+        ${run.phase === "fuse" && html`<p><b>The trophies fuse…</b></p>`}
+        ${run.phase === "read" && html`<div key="read2"><p><b>${last.r} − ${st.mod} = ${last.total}</b> · ${last.res.fail ? "nothing passes" : `${last.res.n} positive propert${last.res.n === 1 ? "y" : "ies"} can pass`}${!last.res.fail && last.res.n > nMove ? ` (the giver has ${nMove})` : ""}</p>
+          ${nMove > 0 && run.give.props.filter(p => p.kind === "pos").length > nMove && html`<div class="hmovepick">${run.give.props.filter(p => p.kind === "pos").map(p => html`<label class="demonguard" key=${p.id}>
+            <input type="checkbox" checked=${chosen.includes(p.id)} disabled=${!chosen.includes(p.id) && chosen.length >= nMove} onChange=${e => setChosen(e.target.checked ? [...chosen, p.id] : chosen.filter(i => i !== p.id))} /> ${p.t || "Positive property"}</label>`)}</div>`}
+          <div class="row">${st.reroll && !run.rerolled && html`<button class="btn small" onClick=${again}>Ignore it and roll again (cost ×3)</button>`}
+            <button class="btn small primary" onClick=${apply}>${nMove ? `Pass ${chosen.length} to ${run.recv.n || "the receiver"}` : "Burn the giver"}</button>
+            <button class="btn small" onClick=${() => setRun(null)}>Cancel</button></div></div>`}
+        ${run.phase === "made" && html`<p key="made"><b>${run.moved ? `${run.moved} propert${run.moved === 1 ? "y" : "ies"} passed to ${run.recv.n || "the receiver"}.` : "Nothing passed; the giver is gone."}</b></p>`}
+      </div></div>`}
+    </div>
+    ${bars(run && run.phase === "made" && fresh ? html`<${TrophyForm} key=${"rn" + fresh.id} init=${fresh} onSave=${t => { update(x => { const i = x.craft.hunt.trophies.findIndex(y => y.id === t.id); if (i >= 0) x.craft.hunt.trophies[i] = Object.assign({}, x.craft.hunt.trophies[i], t); }); setRun(null); toast(`${t.n || "The trophy"} is saved.`); toCase(); }}
+        onCancel=${() => { setRun(null); toCase(); }} />`
+      : html`<div class="huntpick" key="pick">
+        ${h.trophies.length < 2 ? html`<p class="muted hpartsw">You need two trophies to merge.</p>` : html`<${HuntFrag}>
+          ${pickRow("Receiver", recv, setRecv, give)}
+          ${pickRow("Giver (burns)", give, setGive, recv)}
+          <div class="mini"><label for="hm-cost">Cost (the GM's)</label><input id="hm-cost" type="number" min="0" value=${cost} placeholder="e.g. 200" disabled=${busy} onInput=${e => setCost(e.target.value)} /></div>
+        </${HuntFrag}>`}
+        <div class="huntgo">${!run && html`<button class="btn primary forgebtn" key="go" disabled=${!!block} onClick=${start}>${MERGE_ICON}Merge</button>`}${block && h.trophies.length >= 2 && html`<small class="muted">${block}</small>`}</div>
+      </div>`)}
+  </section>`;
 }
 const BELT_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M1 7h18v5H1z M7 5.5h5v8H7z M9.5 13.5v2.5 M8 17.5a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" /></svg>`;
 const MERGE_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="10" r="4.5" /><circle cx="13" cy="10" r="4.5" /></svg>`;

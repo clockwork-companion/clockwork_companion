@@ -31,10 +31,13 @@ with sync_playwright() as p:
         pg.goto(url); pg.wait_for_timeout(1500)
         pg.get_by_role("tab", name="Crafting").click(); pg.wait_for_timeout(1200)
         ch = lambda: pg.evaluate("Store.chars.hu")
-        check(tag + "the Hunting bench is in Crafting, trophies & belt first", pg.locator(".hunting").count() == 1 and pg.locator(".huntpages button").all_inner_texts()[0].lower() == "trophies & belt")
+        check(tag + "the Hunting bench is one page: the belt on top, Carving and Merging folded under it", pg.locator(".hunting").count() == 1 and pg.locator(".huntbelt").count() == 1
+              and [x.strip() for x in pg.locator(".huntdropb").all_inner_texts()] == ["Carving", "Merging"] and pg.locator(".huntdropbody").count() == 0)
         pg.evaluate("CW.rollDie = () => 1")
         # carve a level 3 fang from a chimera
-        pg.locator(".huntpages button", has_text="Carving").click(); pg.wait_for_timeout(400)
+        pg.locator(".huntdropb", has_text="Carving").click(); pg.wait_for_timeout(400)
+        check(tag + "opening Carving swaps the belt for the beast", pg.locator(".huntcarcass").count() == 1 and pg.locator(".huntbelt").count() == 0 and pg.locator(".huntdrop.open").count() == 1)
+        pg.screenshot(path=str(SHOTS / f"hunt-carve-{W}.png"), full_page=True)
         pg.fill("#hc-m", "Chimera"); pg.locator(".hparts .dvchip", has_text="Fang").click(); pg.locator(".huntlvl button", has_text="3").click()
         pg.locator(".forgebtn", has_text="Carve").click(); pg.wait_for_selector(".trophyform .hpe input", timeout=30000); pg.wait_for_timeout(300)
         kinds = [k.get_attribute("class").split()[-1] for k in pg.locator(".hkinds .hk").all()]
@@ -45,7 +48,7 @@ with sync_playwright() as p:
         t = ch()["craft"]["hunt"]["trophies"]
         check(tag + "the trophy is saved: name, monster, part, level, properties", len(t) == 1 and t[0]["n"] == "Chimera's Fang" and t[0]["monster"] == "Chimera" and t[0]["part"] == "fang"
               and t[0]["lvl"] == 3 and [p["kind"] for p in t[0]["props"]] == ["pos"] * 5 + ["void"] and t[0]["props"][0]["t"] == "Power 1", t)
-        check(tag + "and it's back on the trophy case", pg.locator(".huntcard").count() == 1)
+        check(tag + "and it's back on the trophy case, Carving folded", pg.locator(".huntcard").count() == 1 and pg.locator(".huntdropbody").count() == 0)
         # one found by hand
         pg.locator(".hadd").click(); pg.fill("#tf-n", "Wyrm Scale"); pg.locator(".trophyform .hpe input").first.fill("+2 AV against fire")
         pg.locator(".trophyform .btn.primary").click(); pg.wait_for_timeout(400)
@@ -64,10 +67,13 @@ with sync_playwright() as p:
         pg.wait_for_timeout(1500)
         check(tag + "after 3 turns the release ends", ch()["craft"]["hunt"]["release"] is None)
         # merge: the fang gives to the scale; −29 passes up to 8, the fang has 5
-        pg.locator(".huntpages button", has_text="Merging").click(); pg.wait_for_timeout(400)
+        pg.screenshot(path=str(SHOTS / f"hunt-case-{W}.png"), full_page=True)
+        pg.locator(".huntdropb", has_text="Merging").click(); pg.wait_for_timeout(400)
+        check(tag + "opening Merging swaps in the altar", pg.locator(".huntaltar").count() == 1 and pg.locator(".huntbelt").count() == 0)
         pg.locator(".hmergepick").nth(0).locator(".hmchip", has_text="Wyrm").click(); pg.locator(".hmergepick").nth(1).locator(".hmchip", has_text="Chimera").click()
         pg.locator(".forgebtn", has_text="Merge").click(); pg.wait_for_selector(".huntread .btn.primary", timeout=30000); pg.wait_for_timeout(300)
         check(tag + "−29 on the Combining Roll: up to 8 pass, the giver has 5", "8 positive properties can pass" in pg.locator(".huntread").inner_text())
+        pg.screenshot(path=str(SHOTS / f"hunt-merge-{W}.png"), full_page=True)
         pg.locator(".huntread .btn.primary").click(); pg.wait_for_timeout(1500)
         t = ch()["craft"]["hunt"]["trophies"]
         check(tag + "the giver burns; its 5 positives fill the scale's void, then are added", len(t) == 1 and t[0]["n"] == "Wyrm Scale"
