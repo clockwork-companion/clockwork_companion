@@ -656,6 +656,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .cnchev[aria-expanded="true"] svg { transform: rotate(180deg); }
 .cnmenu { left: auto; right: 0; width: min(760px, calc(100vw - 32px)); }
 .cnadd { justify-content: flex-start; padding-top: 6px; border-top: 1px solid var(--hair); }
+/* the menu drops over the page, so it needs a solid base even where a theme paints its panels see-through (Cyberpunk, Retro) */
+:root[data-skin] .rpanel.cnmenu { background-color: var(--paper); }
 @media (max-width: 560px) { .charnav { margin-left: 0; width: 100%; } }   /* on phones the menu is the bottom sheet (.rpanel) */
 
 .campbar { gap: 6px; }
@@ -886,6 +888,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .phead .uline + .ttag { margin-left: 10px; }
 .phead .pname + .ttag { margin-left: auto; }
 .ttag.tt-A { color: var(--card); background: var(--ink); border-color: var(--ink); }
+:root[data-skin="glass"] .ttag.tt-A { color: var(--paper); }   /* Glass cards are see-through white, so the label text takes the page colour */
 .ttag.tt-E { color: var(--att-ink, var(--life)); border-color: currentColor; box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 18%, transparent); }
 .perkcard.k-A { box-shadow: 3px 3px 0 color-mix(in srgb, var(--ink) 22%, transparent); }
 .perkcard.k-E { outline: 1.5px solid color-mix(in srgb, var(--att, var(--life)) 55%, transparent); outline-offset: 2px; box-shadow: 0 0 14px color-mix(in srgb, var(--att, var(--life)) 22%, transparent); }
@@ -12465,11 +12468,11 @@ function TableView({ chars, current }) {
     </header>
 
     <div class="tgrid">
-      <div class="tcol">
+      <div class="tcol frame">
         <${GmText} title="The setting" icon="book" camp=${camp} field="setting" rows=${10} empty=${gm ? "Write what the players should know about the world: places, powers, the mood of the age." : "The GM hasn't written about the setting yet."} hint="The world, its powers and its mood…" />
         <${GmText} title="Last time…" icon="info" camp=${camp} field="recap" empty=${gm ? "After each session, a few lines on what happened." : "No recap yet."} hint="What happened last session…" />
       </div>
-      <div class="tcol">
+      <div class="tcol frame">
         <section class="tsec"><${Banner} title="The party" i="star" tag="h3" />
           ${party.length ? html`<div class="tparty">${party.map(r => html`<button type="button" class="tmember" onClick=${() => setWho(r)}>
               <${Thumb} c=${r} lg /><span class="who"><b>${r.name}</b><span>${[r.profession, r.player].filter(Boolean).join(" · ") || "—"}</span></span></button>`)}</div>`
@@ -12530,7 +12533,7 @@ function Handouts({ camp }) {
   const img = h => (h.img && Store.assets && Store.assets.urlFor(h.img)) || h.imgUrl || "";
   const upload = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f || !Store.assets) return; setBusy(true);
     try { const r = await Store.assets.upload(f, null); setEdit(x => Object.assign({}, x, { img: r.id })); } catch { toast("Couldn't upload that picture. Use a PNG, JPG or WebP."); } setBusy(false); };
-  return html`<section class="tsec thandouts"><div class="tsech"><${Banner} title="Handouts" i="info" tag="h3" />
+  return html`<section class="tsec thandouts frame"><div class="tsech"><${Banner} title="Handouts" i="info" tag="h3" />
       ${gm && !edit && html`<button type="button" class="btn small" onClick=${() => setEdit({ camp: k, title: "", text: "", img: "", imgUrl: "", shown: false })}>+ New handout</button>`}</div>
     ${edit && html`<div class="tedit hedit">
       <input class="inp" aria-label="Handout title" placeholder="A letter sealed in black wax" value=${edit.title} onInput=${e => setEdit(Object.assign({}, edit, { title: e.target.value }))} />
