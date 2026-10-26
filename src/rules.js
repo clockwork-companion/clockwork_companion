@@ -139,6 +139,9 @@ const CW = (() => {
                brew: { bonus: 0, known: [], recipes: [], catalysts: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
                rune: { bonus: 0, effects: [], order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
                        second: null, hoax: false, pay: "hp", hours: 1 }, ledger: [] },
+               // Hunting: trophies carved from monsters (props: pos / neg / void), the belt they hang on, attunement and the
+               // two empowerments (Release, a second attunement) counted in turns.
+               hunt: { bonus: 0, slots: 4, myths: [], trophies: [], ledger: [], release: null, second: null },
                weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" }, for: "" }, ledger: [] }, jobsDone: [] },
       talents: [], uses: {},
       // Crafting and Magic are modules the player turns on (null: not asked yet; asked once the character has points in one).
@@ -216,6 +219,14 @@ const CW = (() => {
     out.craft.rune = Object.assign({}, b.craft.rune, out.craft.rune);
     out.craft.rune.order = Object.assign({}, b.craft.rune.order, out.craft.rune.order);
     ["effects", "ledger"].forEach(k => { if (!Array.isArray(out.craft.rune[k])) out.craft.rune[k] = []; });
+    out.craft.hunt = Object.assign({}, b.craft.hunt, out.craft.hunt);
+    ["myths", "trophies", "ledger"].forEach(k => { if (!Array.isArray(out.craft.hunt[k])) out.craft.hunt[k] = []; });
+    out.craft.hunt.slots = clamp(Math.round(num(out.craft.hunt.slots) || 4), 1, 12);
+    out.craft.hunt.trophies = out.craft.hunt.trophies.filter(t => t && typeof t === "object").map(t => Object.assign({ n: "", monster: "", part: "", lvl: 1, note: "", img: "", imgData: "", belted: false, attuned: false }, t,
+      { lvl: clamp(Math.round(num(t.lvl) || 1), 1, 5), props: (Array.isArray(t.props) ? t.props : []).filter(p => p && ["pos", "neg", "void"].includes(p.kind)).map(p => Object.assign({ t: "" }, p)) }));
+    // a belt holds only as many as it has loops, and only belted trophies can be attuned
+    let onBelt = 0; out.craft.hunt.trophies.forEach(t => { if (t.belted && ++onBelt > out.craft.hunt.slots) t.belted = false; if (!t.belted) t.attuned = false; });
+    ["release", "second"].forEach(k => { const e = out.craft.hunt[k]; if (!e || typeof e !== "object" || !out.craft.hunt.trophies.some(t => t.id === e.id)) out.craft.hunt[k] = null; });
     if (!Array.isArray(out.craft.jobsDone)) out.craft.jobsDone = [];
     // Older sheets: a prosthetic count becomes that many unnamed entries; per-slot items become bundles or ammo.
     if (!Array.isArray(out.prosthetics)) out.prosthetics = Array.from({ length: Math.max(0, num(out.prosthetics)) }, (_, i) => ({ id: "pr" + i, name: "", type: PROSTHETIC_TYPES[0], props: "" }));
@@ -1168,6 +1179,34 @@ const CW = (() => {
     return { pot: row[1], capped: false };
   }
   const HOAX_PAY = { hp: { n: "hit points", per: 2 }, bp: { n: "blood points", per: 10 }, dp: { n: "deprivation points", per: 5 } };
+  /* ---------- Hunting (Presence) ---------- */
+  // Salvaging Roll: the Hunting check's result → how many of the trophy's properties are positive or negative.
+  const SALVAGE = [[-Infinity, -30, "pos", 8], [-29, -20, "pos", 7], [-19, -10, "pos", 6], [-9, 0, "pos", 5], [1, 10, "pos", 4], [11, 20, "pos", 3], [21, 30, "pos", 2], [31, 50, "pos", 1],
+    [51, 60, "neg", 1], [61, 70, "neg", 2], [71, 80, "neg", "all"], [81, Infinity, "fail", 0]];
+  function salvageRow(total) { return SALVAGE.find(([lo, hi]) => total >= lo && total <= hi); }
+  // A trophy of level L has 2 × L properties (the book's example: level 3, 6 properties). The roll decides some of them;
+  // a trophy can't be all positive. Every property left over is rolled again: a result in the negative rows (51 or more)
+  // makes it negative, anything lower leaves it void (the app's reading of the book's example).
+  function salvagePlan(lvl, total) {
+    const n = 2 * clamp(Math.round(num(lvl)) || 1, 1, 5), row = salvageRow(total);
+    if (row[2] === "fail") return { n, fail: true, pos: 0, neg: 0, rest: 0, row };
+    if (row[3] === "all") return { n, fail: false, pos: 0, neg: n, rest: 0, row };
+    const pos = row[2] === "pos" ? Math.min(row[3], n - 1) : 0, neg = row[2] === "neg" ? Math.min(row[3], n) : 0;
+    return { n, fail: false, pos, neg, rest: n - pos - neg, row, capped: row[2] === "pos" && row[3] > n - 1 };
+  }
+  const salvageRest = total => total >= 51 ? "neg" : "void";
+  // Combining Roll: how many of the giver's positive properties move to the receiver.
+  const COMBINE = [[-30, 9], [-20, 8], [-10, 7], [0, 6], [10, 5], [20, 4], [30, 3], [50, 2], [60, 1], [80, 0]];
+  function combineCount(total) { if (total >= 80) return { fail: true, n: 0 }; const r = COMBINE.find(([under]) => total < under); return { fail: false, n: r ? r[1] : 0 }; }
+  function huntState(c) {
+    const lvl = sk(c, "Hunting"), h = (c.craft && c.craft.hunt) || {}, trophies = h.trophies || [];
+    const belted = trophies.filter(t => t.belted), attuned = trophies.filter(t => t.attuned);
+    return { lvl, mod: skillModifier(c, "Hunting") + num(h.bonus), bonus: num(h.bonus),
+      use: lvl >= 3, maxLvl: lvl >= 3 ? Math.min(5, lvl - 2) : 0, salvage: lvl >= 4, release: lvl >= 5, second: lvl >= 6, combine: lvl >= 7, reroll: lvl >= 8,
+      together: lvl >= 9, ap: lvl >= 9 ? 0 : 1, legend: lvl >= 10, myths: lvl >= 3 ? lvl - 2 : 0,
+      slots: clamp(Math.round(num(h.slots)) || 4, 1, 12), belted, attuned, attuneMax: lvl >= 3 ? 1 : 0 };
+  }
+
   function runeState(c) {
     const lvl = sk(c, "Runecrafting"), b = (c.craft && c.craft.rune) || {};
     return { lvl, mod: skillModifier(c, "Runecrafting") + num(b.bonus), bonus: num(b.bonus), identify: lvl >= 3, semi: lvl >= 4, precious: lvl >= 5,
@@ -1254,6 +1293,7 @@ const CW = (() => {
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
            BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allCatalysts, allBrews, findBrew, brewOne, brewPlan,
-           GEMS, RUNE_TABLE, runePotency, HOAX_PAY, runeState, runePlan };
+           GEMS, RUNE_TABLE, runePotency, HOAX_PAY, runeState, runePlan,
+           SALVAGE, salvageRow, salvagePlan, salvageRest, COMBINE, combineCount, huntState };
 })();
 if (typeof module !== "undefined") module.exports = CW;
