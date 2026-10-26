@@ -334,17 +334,16 @@ html[data-text="large"] .wrap { zoom: 1.15; }
 /* Attributes & Skills: one block per attribute. Its colour runs down a spine with its emblem (the same language as the
    perk cards); the attribute's bar sits on top and its skills are nested underneath. */
 .ablocks { display: grid; gap: 14px; }
-.ablock { display: grid; grid-template-columns: 46px minmax(0, 1fr); border: 1.5px solid color-mix(in srgb, var(--att) 40%, var(--hair)); background: color-mix(in srgb, var(--card) 55%, transparent); }
-.abspine { display: grid; align-content: start; justify-items: center; gap: 4px; padding: 12px 0; color: #fff; text-shadow: 0 1px 1px rgb(0 0 0 / .35);
-  background: radial-gradient(circle at 50% 14%, rgb(255 255 255 / .22), transparent 50%), repeating-linear-gradient(135deg, rgb(255 255 255 / .05) 0 2px, transparent 2px 7px),
-    linear-gradient(180deg, color-mix(in srgb, var(--att) 88%, #fff), var(--att) 40%, color-mix(in srgb, var(--att) 68%, #000)); }
-.abspine .aglyph { width: 26px; height: 26px; filter: drop-shadow(0 1px 1px rgb(0 0 0 / .35)); }
-.abspine small { font: 700 10.5px/1 var(--f-mono); letter-spacing: .12em; }
-.abmain { min-width: 0; padding: 4px 14px 10px; }
+.ablock { position: relative; border: 1.5px solid color-mix(in srgb, var(--att) 30%, var(--hair)); background: color-mix(in srgb, var(--card) 55%, transparent); }
+/* the attribute's badge: a small square in its colour, top left, carrying its emblem and name */
+.abspine { position: absolute; left: 12px; top: 12px; width: 40px; height: 40px; display: grid; place-content: center; justify-items: center; gap: 1px; border-radius: 3px; color: #fff;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--att) 85%, #fff), var(--att) 55%, color-mix(in srgb, var(--att) 75%, #000)); box-shadow: 0 1px 0 rgb(0 0 0 / .15); text-shadow: 0 1px 1px rgb(0 0 0 / .3); }
+.abspine .aglyph { width: 19px; height: 19px; }
+.abspine small { font: 700 8.5px/1 var(--f-mono); letter-spacing: .08em; }
+.abmain { min-width: 0; padding: 4px 14px 10px 66px; }
 .abmain > .attr { border-bottom: 0; padding: 8px 0 6px; }
-.abmain > .attr .nm { color: var(--att-ink); }
 .abmain > .attr.is-broken .nm { color: var(--bad); }
-.abskills { border-top: 2px solid color-mix(in srgb, var(--att) 55%, var(--hair)); padding-top: 4px; }
+.abskills { border-top: 1.5px solid color-mix(in srgb, var(--att) 35%, var(--hair)); padding-top: 4px; }
 .abhead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 2px 0 2px; }
 .abhead span { font: 600 11.5px var(--f-head); letter-spacing: .12em; text-transform: uppercase; color: var(--att-ink); }
 .abhead small { font: 600 12px var(--f-mono); color: var(--ink-3); }
@@ -357,7 +356,7 @@ html[data-text="large"] .wrap { zoom: 1.15; }
 .legendbox .legend { margin: 10px 0 8px; }
 .legendbox .hint { margin: 0 0 2px; }
 @media (max-width: 900px) { .abgrid { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 560px) { .ablock { grid-template-columns: 30px minmax(0, 1fr); } .abspine .aglyph { width: 20px; height: 20px; } .abspine small { font-size: 9px; letter-spacing: .04em; } .abmain { padding: 2px 10px 8px; } }
+@media (max-width: 560px) { .abspine { left: 8px; top: 10px; width: 32px; height: 32px; } .abspine .aglyph { width: 16px; height: 16px; } .abspine small { display: none; } .abmain { padding: 2px 10px 8px 48px; } }
 .skillcols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 32px; }
 .sgroup h3 { font-family: var(--f-display); font-weight: 400; font-size: 24px; margin: 0 0 4px; display: flex; justify-content: space-between; align-items: baseline;
   border-bottom: 3px solid var(--rule); padding-bottom: 2px; }
@@ -762,6 +761,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
    that fades out) instead of boxed headings; lists are light rows; the explainer and tip boxes lose their frames */
 .sphead { align-items: center; justify-content: flex-start; }
 .sphead .sptt { flex: 1; min-width: 0; }
+.spflavor { margin: 4px 0 0; font-style: italic; font-size: 13.5px; line-height: 1.4; color: var(--ink-2); }
 .sp-medal { width: 46px; height: 46px; flex: none; border-radius: 50%; display: grid; place-items: center; color: var(--paper);
   background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--rule) 70%, #fff), var(--rule) 60%); box-shadow: 0 0 0 2px var(--card), 0 0 0 3.5px var(--brass); }
 .sp-medal.att { color: #fff; background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--att) 78%, #fff), var(--att) 60%, color-mix(in srgb, var(--att) 70%, #000)); box-shadow: 0 0 0 2px var(--card), 0 0 0 3.5px var(--att); }
@@ -864,6 +864,24 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .perkcard.hasart { overflow: hidden; }
 .perkcard.hasart > :not(.partbg) { position: relative; }
 .perkcard.hasart .pmain p { text-shadow: 0 0 6px var(--card), 0 0 2px var(--card); }
+/* folded skills: a rolodex of slim cards, one per perk, each overlapping the one above; click to open the full cards */
+.perkgroup h3 .foldbtn { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: 0; background: none; padding: 2px 0; cursor: pointer;
+  font: 600 11.5px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.perkgroup h3 .foldbtn:hover { color: var(--ink); }
+.foldbtn svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform .2s; }
+.perkgroup.open .foldbtn svg { transform: rotate(180deg); }
+.rolodex { display: grid; width: 100%; max-width: 640px; padding: 0 0 4px; border: 0; background: none; cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.rdx { position: relative; z-index: calc(50 - var(--k)); display: flex; align-items: center; gap: 10px; min-width: 0; padding: 7px 10px 7px 0; margin-top: -5px;
+  background: var(--card); border: 1.5px solid color-mix(in srgb, var(--att, var(--hair)) 35%, var(--hair)); border-radius: 3px 3px 0 0; box-shadow: 0 -2px 4px rgb(0 0 0 / .05);
+  transition: transform .15s ease-out; }
+.rdx:first-child { margin-top: 0; }
+.rolodex:hover .rdx { transform: translateY(calc(var(--k) * 1.5px)); }
+.rdxlv { flex: none; width: 34px; align-self: stretch; margin: -7px 0; display: grid; place-items: center; color: #fff; font: 700 15px var(--f-display);
+  background: var(--att, var(--rule)); border-radius: 2px 0 0 0; }
+.rdxn { flex: 1; min-width: 0; font: 600 13px var(--f-head); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rdxuse { flex: none; font: 600 11px var(--f-mono); color: var(--ink-3); }
+.rdx .ttag { margin-left: 0; }
+@media (max-width: 560px) { .rdx .ttag { font-size: 0; gap: 0; padding: 3px; } .rdxuse { display: none; } }
 .segicon { width: 12px; height: 12px; margin-right: 4px; vertical-align: -1px; }
 /* the attribute filter: pick any number; with 3+ invested skills among them, those skills are listed to narrow further */
 .attfilter { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 2px; }
