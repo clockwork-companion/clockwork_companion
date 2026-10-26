@@ -52,7 +52,7 @@
     remove: id => fs.doc(`${root}/portraits/${id}`).delete().catch(() => {}),
   };
   const table = {
-    get uid() { return me.uid; }, get role() { return me.role; }, get name() { return me.name; },
+    get uid() { return me.uid; }, get role() { return me.role; }, get name() { return me.name; }, get owner() { return me.owner || ""; },
     members: (cb, err) => fs.collection(`${root}/members`).onSnapshot(s => cb(s.docs.map(d => Object.assign({ uid: d.id }, d.data()))), err || (() => {})),
     setRole: (uid, role) => fs.doc(`${root}/members/${uid}`).update({ role }),
     remove: uid => fs.doc(`${root}/members/${uid}`).delete(),
@@ -76,7 +76,7 @@
     else { role = owner === user.uid || claim ? "gm" : "player"; await meRef.set(Object.assign({ role, joined: Date.now() }, profile(user))); }
     root = `tables/${key}`; lsSet(KEY, key);
     fs.doc(`users/${user.uid}`).set({ table: key }).catch(() => {});   // so signing in on another device finds this table
-    me = { uid: user.uid, role, name: profile(user).name };
+    me = { uid: user.uid, role, name: profile(user).name, owner: owner || (claim ? user.uid : "") };   // owner: who created the table
     // If the GM changes this person's role, reload so they get the right view; if they're removed, send them out.
     meRef.onSnapshot(s => {
       if (!s.exists) { lsSet(KEY, null); alertLeft(); return; }
