@@ -2704,6 +2704,114 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @media (prefers-reduced-motion: reduce) {
   .harmorb, .harmaura, .harmfig, .harmspine, .chakra *, .harmflare { animation: none !important; }
 }
+
+/* ===== Magic: Occult: Daemonology (magic-demon.js) ===== */
+.demonology { display: grid; gap: 0; }
+.demonstage { display: grid; grid-template-columns: minmax(240px, 360px) minmax(0, 1fr); gap: 20px; align-items: center; }
+.demoncircle { width: 100%; max-width: 360px; justify-self: center; overflow: visible; }
+.dring { fill: none; stroke: color-mix(in srgb, var(--ink) 55%, transparent); stroke-width: 1.4; }
+.dring.thin { stroke-width: .7; stroke-dasharray: 3 4; }
+.dring.inner { stroke-width: 1; }
+.dband { transform-box: view-box; transform-origin: 0 0; animation: spin 160s linear infinite; }
+.drune { fill: none; stroke: color-mix(in srgb, var(--ink) 50%, transparent); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.dstar { fill: none; stroke: color-mix(in srgb, var(--blood) 70%, var(--ink)); stroke-width: 1.4; stroke-linejoin: round; opacity: .55; }
+.dglow { opacity: 0; transition: opacity 1s; }
+.dsmoke circle { fill: color-mix(in srgb, var(--ink) 35%, transparent); opacity: 0; }
+.dsil { fill: color-mix(in srgb, var(--ink) 75%, transparent); }
+.dframe { fill: none; stroke: hsl(var(--seal) 55% 45%); stroke-width: 2.5; }
+.dmini .dframe { stroke-width: 2; }
+.dguard { font: 600 9px var(--f-head); letter-spacing: .08em; text-transform: uppercase; fill: var(--ink-3); text-anchor: middle; }
+.dcandle rect { fill: color-mix(in srgb, #efe1bf 80%, var(--card)); stroke: color-mix(in srgb, var(--ink) 40%, transparent); stroke-width: .8; }
+.dflame { fill: #ffb347; opacity: 0; transform-box: fill-box; transform-origin: 50% 100%; }
+/* a daemon is here: the candles burn and the circle glows */
+.demoncircf.present .dflame { opacity: 1; filter: drop-shadow(0 0 4px #ff8a2a); animation: flicker .18s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -.05s); }
+.demoncircf.present .dglow { opacity: .55; }
+.demoncircf.present .dstar { opacity: .9; stroke: color-mix(in srgb, var(--blood) 85%, #ff7a3a); }
+.demoncircf.present .dsmoke circle { animation: smokeRise 5s ease-out infinite; animation-delay: calc(var(--i) * 1s); }
+.demoncircf.present .dwho { animation: dwFloat 5s ease-in-out infinite alternate; }
+@keyframes flicker { from { transform: scale(1, 1) skewX(-3deg); } to { transform: scale(.88, 1.12) skewX(3deg); } }
+@keyframes smokeRise { 0% { opacity: 0; transform: translateY(20px) scale(.6); } 30% { opacity: .55; } 100% { opacity: 0; transform: translateY(-90px) scale(1.6); } }
+@keyframes dwFloat { to { transform: translateY(-4px); } }
+/* the summoning: candles catch one by one, the star is drawn, smoke rises and the daemon comes out of it */
+.demoncircf.calling .dflame { animation: catchFire .5s calc(var(--i) * .13s) ease-out forwards, flicker .18s calc(.5s + var(--i) * .13s) ease-in-out infinite alternate; }
+@keyframes catchFire { from { opacity: 0; transform: scale(.2); } 60% { opacity: 1; transform: scale(1.4); } to { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 4px #ff8a2a); } }
+.demoncircf.calling .dstar { stroke-dasharray: 1400; stroke-dashoffset: 1400; opacity: 1; stroke: color-mix(in srgb, var(--blood) 85%, #ff7a3a); animation: wardInk 1.1s .35s ease-in-out forwards; }
+.demoncircf.calling .dglow { opacity: .8; transition-duration: 2s; }
+.demoncircf.calling .dband { animation-duration: 8s; }
+.demoncircf.calling .dsmoke circle { animation: smokeRise 1.8s ease-out infinite; animation-delay: calc(.9s + var(--i) * .18s); }
+.demoncircf.calling .dwho { animation: daemonRise 1.4s 1.15s cubic-bezier(.2,.7,.3,1) both; }
+@keyframes daemonRise { from { opacity: 0; transform: translateY(26px) scale(.7); filter: blur(8px) brightness(.2); } 60% { filter: blur(2px) brightness(1.4); } to { opacity: 1; transform: none; filter: none; } }
+.demonchant { margin: 0; font: italic 19px var(--f-display); color: var(--blood); animation: haloBeat .6s ease-in-out infinite alternate; }
+.demonnow { display: grid; gap: 10px; align-content: center; }
+.demonhere { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1.5px solid hsl(var(--seal) 45% 45%); background: var(--card); animation: inkIn .4s ease-out both; }
+.demonhere span { display: grid; line-height: 1.2; }
+.demonhere b { font: 400 19px var(--f-display); }
+.demonhere small { color: var(--ink-3); font-size: 12.5px; }
+.demonarmy { margin: 0; font-size: 13.5px; color: var(--blood); }
+.demonbanish { display: grid; gap: 6px; justify-items: start; }
+.demonbanish .demoncheck { justify-self: stretch; }
+/* faces: an uploaded picture, or a horned shadow */
+.dface { width: 72px; height: 72px; object-fit: cover; border-radius: 50%; display: block; background: color-mix(in srgb, var(--ink) 12%, var(--card)); }
+.dface.small { width: 44px; height: 44px; }
+.dface.sil { fill: color-mix(in srgb, var(--ink) 70%, transparent); padding: 10px 6px 0; box-sizing: border-box; }
+/* the grimoire */
+.demoncards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-top: 8px; }
+.demoncard, .demonform { position: relative; display: grid; gap: 10px; align-content: start; padding: 14px; border: 1.5px solid var(--rule);
+  background: linear-gradient(160deg, color-mix(in srgb, hsl(var(--seal) 30% 50%) 7%, var(--card)), var(--card) 60%); box-shadow: 0 2px 10px rgb(0 0 0 / .08); }
+.demoncard.out { border-color: hsl(var(--seal) 50% 45%); box-shadow: 0 0 0 1px hsl(var(--seal) 50% 45% / .4), 0 0 22px hsl(var(--seal) 60% 45% / .25); }
+.demoncard.calling { animation: cardCall .6s ease-in-out infinite alternate; }
+@keyframes cardCall { to { box-shadow: 0 0 26px #ff7a3a66; } }
+.demoncardh { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.demonpic { position: relative; width: 72px; height: 72px; }
+.demonpic.big { width: 120px; height: 120px; }
+.demonpic.big .dface { width: 120px; height: 120px; }
+.demonpic .over { position: absolute; inset: auto 0 -6px 0; font-size: 11px; padding: 3px 4px; border: 1px solid var(--rule); background: var(--card); cursor: pointer; }
+/* the wax seal on the contract */
+.demonseal { position: absolute; right: -6px; bottom: -4px; width: 26px; height: 26px; border-radius: 50% 46% 52% 48%; display: grid; place-items: center;
+  font: 700 12px var(--f-display); font-style: normal; color: hsl(var(--seal) 40% 88%);
+  background: radial-gradient(circle at 35% 30%, hsl(var(--seal) 55% 52%), hsl(var(--seal) 60% 30%)); box-shadow: 0 1px 2px rgb(0 0 0 / .4), inset 0 0 0 2px hsl(var(--seal) 50% 38%); }
+.demonname { display: grid; gap: 2px; min-width: 0; }
+.demonname b { font: 400 21px/1.15 var(--f-display); }
+.demonname small { color: var(--ink-3); font-size: 13px; }
+.demonname .flag { justify-self: start; }
+.demonterms { margin: 0; padding: 6px 10px; border-left: 3px solid hsl(var(--seal) 45% 45%); font: italic 15px/1.4 var(--f-display); display: grid; gap: 2px; }
+.demonterms .lbl { font-style: normal; }
+.demonabs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.demonabs li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: start; padding: 6px 0; border-top: 1px dashed var(--hair); font-size: 14px; }
+.demonabs li .demoncheck { grid-column: 1 / -1; }
+.demonabacts { display: flex; gap: 6px; }
+.demonnote { margin: 0; font-size: 13px; }
+.demoncardf { gap: 8px; align-items: center; flex-wrap: wrap; }
+.demonwhy { font-size: 12.5px; flex: 1 1 160px; }
+.demonguard { display: inline-flex; gap: 4px; align-items: center; font-size: 13px; }
+.demoncheck { display: grid; gap: 6px; padding: 8px 10px; border: 1px solid var(--rule); background: var(--sunk); }
+.demoncheck p { margin: 0; font-size: 13px; }
+.demonnew { min-height: 160px; border: 1.5px dashed var(--rule); background: none; color: var(--ink-3); cursor: pointer; display: grid; place-content: center; justify-items: center; gap: 4px; font: 400 18px var(--f-display); }
+.demonnew span { font-size: 34px; line-height: 1; }
+.demonnew:hover { color: var(--ink); border-color: var(--brass); }
+.demonformtop { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
+.demonformf { display: grid; gap: 8px; }
+.demonformf .row { gap: 8px; flex-wrap: nowrap; }
+.demonformf .mini { flex: 1 1 auto; min-width: 0; }
+.demonwp { flex: 0 0 90px !important; }
+.demonform input, .demonform textarea { width: 100%; box-sizing: border-box; }
+.demonform textarea { font: inherit; color: var(--ink); background: var(--sunk); border: 1px solid var(--hair); padding: 6px 8px; resize: vertical; }
+.demonaddab { justify-self: start; background: none; border: 0; border-bottom: 1px dashed var(--brass); padding: 2px 0; color: var(--ink-2, var(--ink)); cursor: pointer; font: 400 15px var(--f-display); }
+.demonformabs { display: grid; gap: 6px; }
+.demonformab { gap: 6px; flex-wrap: nowrap; }
+.demonformab input:first-child { flex: 0 0 34%; }
+.demonformab .grow { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 760px) {
+  .demonstage { grid-template-columns: minmax(0, 1fr); }
+  .demoncircle { max-width: 290px; }
+  .demonformtop { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  .demonformtop .demonformf { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dband, .dflame, .dsmoke circle, .dwho, .dstar, .demoncard.calling, .demonchant { animation: none !important; }
+  .demoncircf.calling .dflame, .demoncircf.present .dflame { opacity: 1; }
+  .demoncircf.calling .dstar { stroke-dashoffset: 0; }
+}
 </style>
 <div id="app"></div>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
@@ -3185,7 +3293,8 @@ const CW = (() => {
       prosthetics: [], coins: 0,
       // Warding: the Words of Power the warder knows, extra grammar words, saved and formulaic wards, Fatigue.
       ward: { bonus: 0, fatigue: 0, words: [], extra: { subject: [], adverb: [], conj: [] }, wards: [], board: [], ledger: [] },
-      harmony: { els: [], ch: {}, rel: [], turns: 0, kept: 0, ledger: [] },   // Occult: Harmony: known elements, chakra → element, released chakras
+      harmony: { els: [], ch: {}, rel: [], turns: 0, kept: 0, ledger: [] },
+      demon: { daemons: [], out: [], guardian: "", today: 0, army: false, ledger: [] },   // Demonology: contracts, who is summoned, summons used today   // Occult: Harmony: known elements, chakra → element, released chakras
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
@@ -3231,6 +3340,12 @@ const CW = (() => {
     if (!out.harmony.ch || typeof out.harmony.ch !== "object" || Array.isArray(out.harmony.ch)) out.harmony.ch = {};
     ["rel", "ledger"].forEach(k => { if (!Array.isArray(out.harmony[k])) out.harmony[k] = []; });
     out.harmony.turns = Math.max(0, num(out.harmony.turns)); out.harmony.kept = Math.max(0, num(out.harmony.kept));
+    out.demon = Object.assign({}, b.demon, out.demon);
+    ["daemons", "out", "ledger"].forEach(k => { if (!Array.isArray(out.demon[k])) out.demon[k] = []; });
+    out.demon.daemons = out.demon.daemons.filter(x => x && typeof x === "object").map(x => Object.assign({ id: "", n: "", realm: "", wp: "", terms: "", note: "", img: "", imgData: "", abilities: [] }, x));
+    out.demon.daemons.forEach(x => { if (!Array.isArray(x.abilities)) x.abilities = []; });
+    out.demon.out = out.demon.out.filter(id => out.demon.daemons.some(x => x.id === id));
+    out.demon.today = Math.max(0, num(out.demon.today)); if (typeof out.demon.guardian !== "string") out.demon.guardian = ""; out.demon.army = !!out.demon.army && out.demon.out.length > 0;
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
@@ -3497,6 +3612,7 @@ const CW = (() => {
     if (st !== num(v.exhaustion)) parts.push(`Stamina ${num(v.exhaustion)} → ${st} lost`); setStamina(c, st);
     if (refreshUses(c, false)) parts.push("abilities recharged");
     if (c.ward && num(c.ward.fatigue)) { parts.push(`Warding Fatigue ${num(c.ward.fatigue)} → 0`); c.ward.fatigue = 0; }   // all Fatigue clears after a long rest
+    if (c.demon && num(c.demon.today)) { parts.push("daemon summons renewed"); c.demon.today = 0; }   // the app counts a day of summons from long rest to long rest
     return "Long rest: " + parts.join(" · ");
   }
 
@@ -3855,6 +3971,24 @@ const CW = (() => {
     return { parts, need: need ? +need : 0 };
   }
 
+  // ---------- Occult: Daemonology (rulebook 2020.1, 10.1) ----------
+  // Daemons are summoned once a contract is formed: 2 AP to summon, 1 to dismiss (1 and 0 from Demonology 7), one at a
+  // time. Summons a day: 1 per 2 SP; a daemon can stay half an hour per SP. Perks: partial summon (4, 2 uses), boost (5,
+  // 2 uses), unlimited partial summons for materials (6), banish (7, 1 use), +2 AP a turn for daemons' innate abilities (7),
+  // unlimited boosts for materials (8), a Guardian outside the duration (9), up to 5 at once (10: 5 AP, 3 Stamina).
+  function demonState(c) {
+    const lvl = sk(c, "Demonology"), d = c.demon || {}, u = c.uses || {};
+    const left = (lv, n) => Math.max(0, n - num(u["p:Demonology:" + lv]));
+    const perDay = Math.floor(lvl / 2), used = Math.max(0, num(d.today));
+    return {
+      lvl, mod: skillModifier(c, "Demonology"), perDay, used, left: Math.max(0, perDay - used), hours: lvl / 2,
+      summonAP: lvl >= 7 ? 1 : 2, dismissAP: lvl >= 7 ? 0 : 1, extraAP: lvl >= 7 ? 2 : 0,
+      contracts: lvl >= 3, partial: lvl >= 4, partialLeft: lvl >= 4 ? left(4, 2) : 0, partialMat: lvl >= 6,
+      boost: lvl >= 5, boostLeft: lvl >= 5 ? left(5, 2) : 0, boostMat: lvl >= 8,
+      banish: lvl >= 7, banishLeft: lvl >= 7 ? left(7, 1) : 0, guardian: lvl >= 9, army: lvl >= 10,
+    };
+  }
+
   // ---------- Armor Maintenance (rulebook 16.5 and the Armor chapter) ----------
   // Repair (book): cost = the type's grams × Armor Value; roll an Armor Maintenance check (d100 − modifier);
   // Repair Count = 10 − check ÷ 10, rounded down; roll the type's Repair Die that many times and add it to the Soak Pool.
@@ -4130,7 +4264,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine,
+           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, demonState,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
@@ -4336,6 +4470,20 @@ const RULES_INFO = {
     { h: "Kinds of Ward" }, { ul: ["Formulaic (Warding 3): learned from manuals or a teacher, with a set effect, Sigil cost, casting time and materials.", "Ritual (Warding 4): any Ward inscribed slowly, 5 AP's worth of Sigils an hour. Fatigue under 10 becomes 1; over 10 is halved.", "Spontaneous (Warding 5): your own sentences of Words of Power."] },
     { h: "Perks" }, { ul: ["3: Formulaic Wards; Warding only out of combat. 4: Ritual Wards.", "5: Spontaneous Wards. Active (3 uses): 2× Sigils per AP and 2× Fatigue on the next non-Ritual Ward.", "6: repeat an Adjective to amplify it. Active (2 a long rest): no Fatigue on the next non-Ritual Ward.", "7: Conjunctions. Active (3 a long rest): up to 3 Words of Power cost 1 Sigil on the next non-Ritual Ward.", "8: inscribe Wards as reactions. 9: Subjects cost 3 less, Adverbs 1 less."] },
     { note: "The app's readings: Fatigue of exactly 10 on a Ritual is halved (the book says under 10 and over 10); the app's grammar check is a guide (Subject first, a verb somewhere, adjectives lead into a noun), and the GM has the last word on whether a sentence works." } ] },
+  demonology: { kicker: "Magic", title: "Occult: Daemonology", body: [
+    "Summoning otherworldly beings called daemons, and forming contracts to control them.",
+    { h: "Contracts" }, { ul: ["From Demonology 3 you can summon daemons and form contracts with them.", "What each contract asks for depends on the daemon. Once it's formed, you can summon that daemon to the prime plane."] },
+    { h: "Summoning" }, { ul: ["Summoning costs 2 AP and dismissing costs 1 AP (1 and 0 from Demonology 7).", "Only one daemon can be summoned at a time.", "Summons a day: 1 per 2 points of Demonology.", "A daemon can stay half an hour per point of Demonology."] },
+    { h: "Perks" }, { ul: ["4, Active (2 uses a long rest, 1 AP and the ability's cost): partial summon. Use one of a daemon's abilities with a Demonology check, without summoning it; it can't be damaged. Only for abilities that take effect in a single turn. The difficulty depends on the ability.",
+      "5, Active (2 uses a long rest, 3 AP): boost one of your daemon's abilities with a Demonology check. The boost and the difficulty depend on the ability.",
+      "6: partial summons as often as you like, for a material cost that depends on the ability.",
+      "7, Active (1 use a long rest, 3 AP): banish a daemon to its realm. Roll Demonology against its Willpower; on a failure it can't be banished for 24 hours.",
+      "7: summoning and dismissing cost 1 AP less. You get 2 more AP each turn, only for your daemons' innate abilities.",
+      "8: boosts as often as you like, for a material cost that depends on the ability.",
+      "9: name a Guardian daemon. It isn't bound by the summon duration and can stay with you, beside your normal summons.",
+      "10, Empowered (5 AP, 3 Stamina, 3 turns): summon up to 5 contracted daemons at once. These don't count towards your daily summons."] },
+    { note: "The app's readings: the book counts summons \"a day\"; the app renews them at each long rest. Checks are rolled like the other schools (d100 minus your modifier, under the GM's difficulty); for banishing, the app shows your roll beside the daemon's Willpower and the GM decides." },
+  ] },
   harmony: { kicker: "Magic", title: "Occult: Harmony", body: [
     "Controlling the flow of your body's spiritual energy through its chakras, each reinforced with a harmonic element.",
     { h: "Chakras" }, { ul: ["One more chakra opens at each level from 3 to 10: Opening, Life, Pain, Healing, Limit, Wonder, View, Death.", "Each chakra holds one element at a time and gives that element's power from its table.", "You can only reinforce a chakra with an element you know."] },
@@ -9271,6 +9419,7 @@ function RuneSide({ c, st, plan, o, setO, focus, busy, update }) {
 const MAGIC = [
   ["ward", "Warding", "Warding", "Sentences of Words of Power, inscribed as Sigils."],
   ["harm", "Harmony", "Occult: Harmony", "The body's spiritual energy, guided through its chakras."],
+  ["demon", "Daemonology", "Demonology", "Contracts with daemons, summoned to the prime plane."],
 ];
 const magicOpen = c => MAGIC.filter(([, , skill]) => num((c.skills || {})[skill]) > 0);
 
@@ -9284,6 +9433,7 @@ function MagicTab({ c, update }) {
       <span>${n}</span><small>${skill} ${num(c.skills[skill])}</small></button>`)}</nav>`}
     ${sub === "ward" && html`<${Warding} c=${c} update=${update} />`}
     ${sub === "harm" && html`<${Harmony} c=${c} update=${update} />`}
+    ${sub === "demon" && html`<${Demonology} c=${c} update=${update} />`}
   </div>`;
 }
 
@@ -10163,6 +10313,278 @@ function HarmKeep({ c, st, update }) {
     <button class="btn small primary" onClick=${go}>Keep them open: roll</button>
     ${roll && html`<span class=${"harmkeepr " + (roll.held === false ? "bad" : "ok")}>${roll.r} − ${st.mod} = <b>${roll.total}</b>${roll.held == null ? "" : roll.held ? " · held" : " · they close"}</span>`}
   </span>`;
+}
+/* ================= Magic → Occult: Daemonology =================
+   A summoning circle (a ring of runes, a seven-pointed star, seven candles) and a grimoire of contracts, one card per
+   daemon, each with its own picture (uploaded like a portrait), contract terms and abilities. Summoning lights the
+   candles one by one, draws the star, and the daemon rises out of smoke into the circle. The counts (summons a day,
+   AP, how long a daemon may stay) and the perks' uses are demonState in rules.js; data in c.demon. */
+const DAEMON_SIL = "M60 14c-5 0-9 3-10 8L39 8l3 20c-4 4-6 10-6 16 0 9 5 17 12 21-15 4-28 13-32 29h88c-4-16-17-25-32-29 7-4 12-12 12-21 0-6-2-12-6-16l3-20-11 14c-1-5-5-8-10-8z";
+const demonSrc = d => !d ? "" : d.img ? (Store.assets && Store.assets.urlFor ? Store.assets.urlFor(d.img) : "") : d.imgData || "";
+const demonHue = d => Math.round(wardSeed("seal" + (d.id || d.n)) * 360);
+const DaemonFace = ({ d, cls = "" }) => demonSrc(d) ? html`<img class=${"dface " + cls} src=${demonSrc(d)} alt="" />`
+  : html`<svg class=${"dface sil " + cls} viewBox="0 0 120 100" aria-hidden="true"><path d=${DAEMON_SIL} /></svg>`;
+const DEMON_CANDLES = 7;
+const DEMON_CALL_MS = 2600;
+
+function Demonology({ c, update }) {
+  const st = R.demonState(c), D = c.demon;
+  const [calling, setCalling] = useState(""), [editing, setEditing] = useState(""), [banishing, setBanishing] = useState(false);
+  const busy = useRef(false), timer = useRef(0);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const byId = id => D.daemons.find(x => x.id === id);
+  const guardian = st.guardian ? D.guardian : "";
+  const crowd = D.out.filter(id => id !== guardian);   // the summoned daemons that count against "one at a time"
+  const stamina = num(c.vitals && c.vitals.exhaustion);
+
+  const why = d => !st.contracts ? "From Demonology 3." : D.army ? (crowd.length >= 5 ? "Five are already here." : "")
+    : d.id === guardian ? "" : crowd.length ? `Dismiss ${(byId(crowd[0]) || {}).n || "the other daemon"} first: one at a time.` : !st.left ? "No summons left today. A long rest renews them." : "";
+  const summon = d => {
+    if (busy.current || why(d)) return;
+    const done = () => {
+      update(x => {
+        x.demon.out.push(d.id);
+        if (!x.demon.army) x.demon.today = num(x.demon.today) + 1;   // summons under Solomon Unchained don't count
+        const what = `Summoned ${d.n || "a daemon"}${x.demon.army ? " (Solomon Unchained)" : ` (${st.summonAP} AP)`}`;
+        x.demon.ledger = [{ id: rid(), t: Date.now(), what }, ...x.demon.ledger].slice(0, 30);
+        addLog(x, "Demonology: " + what);
+      });
+      busy.current = false; setCalling("");
+    };
+    busy.current = true;
+    if (reduceMotion()) { done(); return; }
+    setCalling(d.id); timer.current = setTimeout(done, DEMON_CALL_MS);
+  };
+  const dismiss = d => update(x => {
+    x.demon.out = x.demon.out.filter(id => id !== d.id);
+    if (!x.demon.out.length) x.demon.army = false;
+    x.demon.ledger = [{ id: rid(), t: Date.now(), what: `Dismissed ${d.n || "a daemon"} (${st.dismissAP} AP)` }, ...x.demon.ledger].slice(0, 30);
+    addLog(x, `Demonology: dismissed ${d.n || "a daemon"}`);
+  });
+  const unchain = () => update(x => {
+    x.demon.army = true; R.setStamina(x, num(x.vitals.exhaustion) + 3);
+    x.demon.ledger = [{ id: rid(), t: Date.now(), what: "Solomon Unchained: up to 5 daemons at once for 3 turns (5 AP, 3 Stamina)" }, ...x.demon.ledger].slice(0, 30);
+    addLog(x, "Demonology: Solomon Unchained (5 AP, 3 Stamina)");
+  });
+  const save = (id, v) => update(x => {
+    const i = x.demon.daemons.findIndex(y => y.id === id);
+    if (i >= 0) x.demon.daemons[i] = Object.assign({}, x.demon.daemons[i], v); else x.demon.daemons.push(Object.assign({ id: id || "d" + rid() }, v));
+  });
+  const remove = d => {
+    if (d.img && Store.assets && Store.assets.remove) Store.assets.remove(d.img);
+    update(x => { x.demon.daemons = x.demon.daemons.filter(y => y.id !== d.id); x.demon.out = x.demon.out.filter(id => id !== d.id); if (x.demon.guardian === d.id) x.demon.guardian = ""; });
+    setEditing("");
+  };
+  const here = D.out.map(byId).filter(Boolean), call = calling ? byId(calling) : null;
+  const shown = call || here[here.length - 1] || null;
+
+  return html`<div class="demonology">
+    <section class="frame demonhead"><${Head} title="Occult: Daemonology" topic="demonology" />
+      <p class="sub">Daemons you have a contract with can be summoned to the prime plane. Each one here is a card in your grimoire.</p>
+      <div class="facts ptfacts">${[
+        ["Demonology", `${st.lvl}`],
+        ["Modifier", `${st.mod}%`],
+        ["Summons today", st.contracts ? `${st.used} of ${st.perDay}` : "From 3"],
+        ["A daemon stays", `up to ${st.hours} h`],
+        ["Summon / dismiss", `${st.summonAP} AP / ${st.dismissAP} AP`],
+        ...(st.extraAP ? [["Each turn", `+${st.extraAP} AP for daemons' abilities`]] : []),
+      ].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>
+    </section>
+
+    <section class=${"frame demoncircf" + (call ? " calling" : here.length ? " present" : "")}>
+      <h2 class="h"><span>The circle</span><i class="orn" aria-hidden="true"></i></h2>
+      <div class="demonstage">
+        <${DemonCircle} shown=${shown} call=${call} here=${here} guardian=${guardian} />
+        <div class="demonnow" aria-live="polite">
+          ${call ? html`<p class="demonchant">The candles catch… ${call.n || "the daemon"} answers.</p>`
+            : !here.length ? html`<p class="muted">The circle is quiet. Summon a daemon from your grimoire below.</p>`
+            : here.map(d => html`<div class="demonhere" style=${`--seal:${demonHue(d)}`}>
+                <${DaemonFace} d=${d} cls="small" />
+                <span><b>${d.n || "A daemon"}</b><small>${d.id === guardian ? "Guardian: stays with you" : D.army ? "For 3 turns (Solomon Unchained)" : `Can stay up to ${st.hours} h`}</small></span>
+                <button class="btn small" onClick=${() => dismiss(d)}>Dismiss: ${st.dismissAP} AP</button></div>`)}
+          ${D.army && html`<p class="demonarmy">Solomon Unchained: up to 5 at once; they don't count towards today's summons.</p>`}
+          ${st.army && !D.army && html`<button class="btn small" disabled=${stamina + 3 >= 10} title="Demonology 10, Empowered: summon up to 5 contracted daemons at once for 3 turns"
+            onClick=${unchain}>Solomon Unchained: 5 AP, 3 Stamina</button>`}
+          ${st.banish && html`<div class="demonbanish">${banishing ? html`<${DemonBanish} c=${c} st=${st} update=${update} daemons=${D.daemons} onClose=${() => setBanishing(false)} />`
+            : html`<button class="btn small" disabled=${!st.banishLeft} onClick=${() => setBanishing(true)} title="Demonology 7, Active: 3 AP, 1 use a long rest">Banish a daemon… (${st.banishLeft} left)</button>`}</div>`}
+        </div>
+      </div>
+    </section>
+
+    <section class="frame demongrim">
+      <h2 class="h"><span>Grimoire</span><i class="orn" aria-hidden="true"></i></h2>
+      ${!st.contracts && html`<p class="ptlocked">You can form contracts from Demonology 3. You can write your daemons in now.</p>`}
+      <div class="demoncards">
+        ${D.daemons.map(d => editing === d.id ? html`<${DaemonForm} key=${d.id} init=${d} onCancel=${() => setEditing("")} onSave=${v => { save(d.id, v); setEditing(""); }} onDelete=${() => remove(d)} />`
+          : html`<${DaemonCard} key=${d.id} c=${c} d=${d} st=${st} update=${update} out=${D.out.includes(d.id)} guardian=${guardian} calling=${calling}
+              why=${why(d)} onSummon=${() => summon(d)} onDismiss=${() => dismiss(d)} onEdit=${() => setEditing(d.id)} />`)}
+        ${editing === "new" ? html`<${DaemonForm} onCancel=${() => setEditing("")} onSave=${v => { save("", v); setEditing(""); toast(`${v.n || "The daemon"} is in your grimoire.`); }} />`
+          : html`<button type="button" class="demonnew" onClick=${() => setEditing("new")}><span>+</span>Write a new contract</button>`}
+      </div>
+      ${D.ledger.length > 0 && html`<h3 class="lbl wardsubh">Ledger</h3><div class="ptledger">${D.ledger.map(e => html`<div class="pled"><small class="muted">${new Date(e.t).toLocaleString()}</small> ${e.what}</div>`)}</div>`}
+    </section>
+  </div>`;
+}
+
+// The summoning circle: a ring of runes, a seven-pointed star and seven candles; the daemon stands in the middle.
+function DemonCircle({ shown, call, here, guardian }) {
+  const band = useMemo(() => Array.from({ length: 24 }, (_, i) => wardRune("demon" + i)), []);
+  const pts = Array.from({ length: DEMON_CANDLES }, (_, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / DEMON_CANDLES; return [Math.cos(a) * 118, Math.sin(a) * 118]; });
+  const star = pts.map((_, i) => pts[(i * 3) % DEMON_CANDLES]).map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ") + " Z";
+  const src = demonSrc(shown), others = here.filter(d => !shown || d.id !== shown.id);
+  return html`<svg class="demoncircle" viewBox="-150 -160 300 310" role="img" aria-label=${shown ? `${shown.n || "A daemon"} in the circle` : "The summoning circle, empty"}>
+    <defs><clipPath id="demon-clip"><circle r="54" /></clipPath>
+      <radialGradient id="demon-glow"><stop offset="0" stop-color="#ff5a2a" stop-opacity=".55" /><stop offset="1" stop-color="#ff5a2a" stop-opacity="0" /></radialGradient>
+      <filter id="demon-smoke" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7" /></filter></defs>
+    <circle class="dglow" r="140" fill="url(#demon-glow)" />
+    <circle class="dring" r="140" /><circle class="dring thin" r="126" />
+    <g class="dband">${band.map((d, i) => html`<g transform=${`rotate(${i * 15}) translate(0 -133) scale(.6)`}><path class="drune" d=${d} /></g>`)}</g>
+    <path class="dstar" d=${star} key=${call ? "draw" + call.id : "still"} />
+    <circle class="dring inner" r="60" />
+    <g class="dsmoke" filter="url(#demon-smoke)">${[0, 1, 2, 3, 4].map(i => html`<circle style=${`--i:${i}`} cx=${(i - 2) * 16} cy="30" r=${16 + (i % 2) * 6} />`)}</g>
+    ${shown && html`<g class="dwho" key=${"who" + shown.id + (call ? "c" : "")}>
+      ${src ? html`<image href=${src} x="-54" y="-54" width="108" height="108" preserveAspectRatio="xMidYMid slice" clip-path="url(#demon-clip)" />`
+        : html`<path class="dsil" d=${DAEMON_SIL} transform="translate(-48 -46) scale(.8)" />`}
+      <circle class="dframe" r="54" style=${`--seal:${demonHue(shown)}`} /></g>`}
+    ${others.slice(0, 4).map((d, i) => { const a = Math.PI * (.25 + i * .5), x = Math.cos(a) * 92, y = Math.sin(a) * 92;
+      return html`<g class="dmini" transform=${`translate(${x.toFixed(1)} ${y.toFixed(1)})`}><clipPath id=${"dm" + i}><circle r="18" /></clipPath>
+        ${demonSrc(d) ? html`<image href=${demonSrc(d)} x="-18" y="-18" width="36" height="36" preserveAspectRatio="xMidYMid slice" clip-path=${`url(#dm${i})`} />` : html`<path class="dsil" d=${DAEMON_SIL} transform="translate(-16 -15) scale(.27)" />`}
+        <circle class="dframe" r="18" style=${`--seal:${demonHue(d)}`} />${d.id === guardian && html`<text class="dguard" y="30">Guardian</text>`}</g>`; })}
+    ${pts.map((p, i) => html`<g class="dcandle" style=${`--i:${i}`} transform=${`translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})`}>
+      <rect x="-4" y="-2" width="8" height="15" rx="1.5" /><path class="dflame" d="M0 -14C3 -9 4 -6 0 -2C-4 -6 -3 -9 0 -14Z" /></g>`)}
+  </svg>`;
+}
+
+// A card in the grimoire: picture, name, realm, Willpower, the contract's terms, the abilities, and what you can do.
+function DaemonCard({ c, d, st, update, out, guardian, calling, why, onSummon, onDismiss, onEdit }) {
+  const [check, setCheck] = useState(null);   // { kind: "partial" | "boost", ab }
+  const isG = guardian === d.id;
+  return html`<article class=${"demoncard" + (out ? " out" : "") + (calling === d.id ? " calling" : "")} style=${`--seal:${demonHue(d)}`}>
+    <header class="demoncardh">
+      <div class="demonpic"><${DaemonFace} d=${d} /><i class="demonseal" aria-hidden="true">${(d.n || "?").trim().charAt(0).toUpperCase()}</i></div>
+      <div class="demonname"><b>${d.n || "Unnamed daemon"}</b>
+        <small>${[d.realm, d.wp !== "" && d.wp != null && `Willpower ${d.wp}`].filter(Boolean).join(" · ") || "Realm unknown"}</small>
+        ${out && html`<span class="flag good">${isG ? "Guardian" : "Summoned"}</span>`}</div>
+      <button class="iconbtn" aria-label=${`Edit ${d.n || "daemon"}`} title="Edit the contract" onClick=${onEdit}>${PENCIL}</button>
+    </header>
+    ${d.terms && html`<blockquote class="demonterms"><span class="lbl">Contract</span>${d.terms}</blockquote>`}
+    ${d.abilities.length > 0 && html`<ul class="demonabs">${d.abilities.map(ab => html`<li key=${ab.id}>
+      <div><b>${ab.n || "Ability"}</b>${ab.text && html` ${ab.text}`}</div>
+      <span class="demonabacts">
+        ${!out && st.partial && html`<button class="btn small" disabled=${!st.partialLeft && !st.partialMat} onClick=${() => setCheck({ kind: "partial", ab })}
+          title="Demonology 4: use this ability without summoning the daemon (single-turn abilities only)">Partial summon</button>`}
+        ${out && st.boost && html`<button class="btn small" disabled=${!st.boostLeft && !st.boostMat} onClick=${() => setCheck({ kind: "boost", ab })}
+          title="Demonology 5: boost this ability">Boost</button>`}</span>
+      ${check && check.ab.id === ab.id && html`<${DemonCheck} c=${c} st=${st} update=${update} d=${d} kind=${check.kind} ab=${ab} onClose=${() => setCheck(null)} />`}
+    </li>`)}</ul>`}
+    ${d.note && html`<p class="muted demonnote">${d.note}</p>`}
+    <footer class="row demoncardf">
+      ${out ? html`<button class="btn small" onClick=${onDismiss}>Dismiss: ${st.dismissAP} AP</button>`
+        : html`<button class="btn small primary" disabled=${!!why || !!calling} title=${why || `Summon ${d.n || "this daemon"}`} onClick=${onSummon}>Summon: ${st.summonAP} AP</button>`}
+      ${st.guardian && html`<label class="demonguard"><input type="checkbox" checked=${isG} onChange=${e => update(x => { x.demon.guardian = e.target.checked ? d.id : ""; addLog(x, `Demonology: ${e.target.checked ? `${d.n} is now the Guardian` : "no Guardian"}`); })} /> Guardian</label>`}
+      ${!out && why && html`<span class="muted demonwhy">${why}</span>`}
+    </footer>
+  </article>`;
+}
+
+// A Demonology check for a partial summon or a boost: the GM's difficulty, a roll, and a use spent (or materials).
+function DemonCheck({ c, st, update, d, kind, ab, onClose }) {
+  const [dc, setDc] = useState(""), [roll, setRoll] = useState(null);
+  const lv = kind === "partial" ? 4 : 5, usesLeft = kind === "partial" ? st.partialLeft : st.boostLeft;
+  const what = kind === "partial" ? "Partial summon" : "Boost";
+  const cost = kind === "partial" ? "1 AP and the ability's cost" : "3 AP";
+  const go = async () => {
+    const r = await askRoll({ title: `${what}: ${ab.n || "ability"}`, dice: [{ n: 1, sides: 100 }], cancel: true, note: `d100 − ${st.mod}${dc !== "" ? `, under ${dc} and it works` : ". The difficulty depends on the ability's strength"}.` });
+    if (!r) return;
+    const total = r[0] - st.mod, ok = dc === "" ? null : total < num(dc), mats = !usesLeft;
+    setRoll({ r: r[0], total, ok, mats });
+    update(x => {
+      if (!mats) { x.uses = x.uses || {}; x.uses["p:Demonology:" + lv] = num(x.uses["p:Demonology:" + lv]) + 1; }
+      const line = `${what} of ${d.n || "a daemon"}'s ${ab.n || "ability"}: ${r[0]} − ${st.mod} = ${total}${dc !== "" ? ` vs ${dc}, ${ok ? "it works" : "it fails"}` : ""}${mats ? " (materials)" : ""}`;
+      x.demon.ledger = [{ id: rid(), t: Date.now(), what: line }, ...x.demon.ledger].slice(0, 30);
+      addLog(x, "Demonology: " + line);
+    });
+  };
+  return html`<div class="demoncheck" role="region" aria-label=${what}>
+    <p class="muted">${what}: ${cost}. ${usesLeft ? `${usesLeft} use${usesLeft === 1 ? "" : "s"} left before a long rest.` : "No uses left: it costs materials instead (the GM sets them)."}</p>
+    ${!roll ? html`<div class="row harmhow"><span class="mini warddc"><label for=${"dc-" + ab.id}>DC</label><input id=${"dc-" + ab.id} type="number" min="1" placeholder="GM's" value=${dc} onInput=${e => setDc(e.target.value)} /></span>
+        <button class="btn small primary" onClick=${go}>Roll Demonology</button><button class="btn small" onClick=${onClose}>Cancel</button></div>`
+      : html`<div class="row harmhow"><span class=${"harmkeepr " + (roll.ok === false ? "bad" : "ok")}>${roll.r} − ${st.mod} = <b>${roll.total}</b>${roll.ok == null ? " · the GM says whether it works" : roll.ok ? " · it works" : " · it fails"}</span>
+        <button class="btn small" onClick=${onClose}>Done</button></div>`}
+  </div>`;
+}
+
+// Banishing a daemon (yours or anyone's): a Demonology roll against its Willpower; on a failure it is immune for 24 hours.
+function DemonBanish({ c, st, update, daemons, onClose }) {
+  const [name, setName] = useState(""), [wp, setWp] = useState(""), [roll, setRoll] = useState(null);
+  const pickWp = n => { setName(n); const d = daemons.find(x => (x.n || "").toLowerCase() === n.trim().toLowerCase()); if (d && d.wp !== "") setWp(String(d.wp)); };
+  const go = async () => {
+    const r = await askRoll({ title: `Banish ${name || "a daemon"}`, dice: [{ n: 1, sides: 100 }], cancel: true, note: `Demonology (d100 − ${st.mod}) against its Willpower${wp ? ` (${wp})` : ""}.` });
+    if (!r) return;
+    const total = r[0] - st.mod;
+    setRoll({ r: r[0], total });
+    update(x => {
+      x.uses = x.uses || {}; x.uses["p:Demonology:7"] = num(x.uses["p:Demonology:7"]) + 1;
+      const line = `Banish ${name || "a daemon"}: ${r[0]} − ${st.mod} = ${total}${wp ? ` against Willpower ${wp}` : ""}`;
+      x.demon.ledger = [{ id: rid(), t: Date.now(), what: line }, ...x.demon.ledger].slice(0, 30);
+      addLog(x, "Demonology: " + line);
+    });
+  };
+  return html`<div class="demoncheck">
+    <p class="muted">Banish: 3 AP. Roll Demonology against the daemon's Willpower. If it fails, that daemon can't be banished for 24 hours.</p>
+    ${!roll ? html`<div class="row harmhow">
+        <span class="mini"><label for="ban-n">Daemon</label><input id="ban-n" list="ban-list" value=${name} onInput=${e => pickWp(e.target.value)} placeholder="Name" /></span>
+        <datalist id="ban-list">${daemons.map(d => html`<option value=${d.n} />`)}</datalist>
+        <span class="mini warddc"><label for="ban-wp">Willpower</label><input id="ban-wp" value=${wp} onInput=${e => setWp(e.target.value)} placeholder="GM's" /></span>
+        <button class="btn small primary" onClick=${go}>Roll to banish</button><button class="btn small" onClick=${onClose}>Cancel</button></div>`
+      : html`<div class="row harmhow"><span class="harmkeepr">${roll.r} − ${st.mod} = <b>${roll.total}</b>${wp ? ` against Willpower ${wp}` : ""} · the GM says whether it holds</span>
+        <button class="btn small" onClick=${onClose}>Done</button></div>`}
+  </div>`;
+}
+
+// Writing a contract: name, realm, Willpower, picture, terms, abilities, notes.
+function DaemonForm({ init, onSave, onCancel, onDelete }) {
+  const [f, setF] = useState(() => Object.assign({ n: "", realm: "", wp: "", terms: "", note: "", img: "", imgData: "", abilities: [] }, init || {}, { abilities: ((init && init.abilities) || []).map(a => Object.assign({}, a)) }));
+  const [busy, setBusy] = useState(false), [sure, setSure] = useState(false);
+  const fileRef = useRef();
+  const set = k => e => setF(Object.assign({}, f, { [k]: e.target.value }));
+  const setAb = (i, k, v) => setF(Object.assign({}, f, { abilities: f.abilities.map((a, j) => j === i ? Object.assign({}, a, { [k]: v }) : a) }));
+  const id = k => "df-" + ((init && init.id) || "new") + "-" + k;
+  const pick = async e => {
+    const file = e.target.files && e.target.files[0]; e.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    try {
+      if (Store.assets && Store.assets.upload) { const r = await Store.assets.upload(file, f.img); setF(Object.assign({}, f, { img: r.id, imgData: "" })); }
+      else setF(Object.assign({}, f, { img: "", imgData: await shrinkImage(file, 240) }));   // this browser only: a small copy kept with the character
+    } catch (err) { toast(err && err.code === "too_large" ? "That image is over 20 MB. Try a smaller one." : "Couldn't use that image. Use a PNG, JPG or WebP file."); }
+    setBusy(false);
+  };
+  return html`<form class="brform demonform" style=${`--seal:${demonHue(Object.assign({ id: (init && init.id) || "new" }, f))}`}
+    onSubmit=${e => { e.preventDefault(); onSave({ n: f.n.trim(), realm: f.realm.trim(), wp: f.wp === "" ? "" : num(f.wp), terms: f.terms.trim(), note: f.note.trim(), img: f.img, imgData: f.imgData,
+      abilities: f.abilities.filter(a => (a.n || "").trim() || (a.text || "").trim()).map(a => ({ id: a.id || rid(), n: (a.n || "").trim(), text: (a.text || "").trim() })) }); }}>
+    <div class="demonformtop">
+      <div class="demonpic big"><${DaemonFace} d=${f} />
+        <button type="button" class="over" disabled=${busy} onClick=${() => fileRef.current.click()}>${busy ? "Saving…" : demonSrc(f) ? "Replace picture" : "Add a picture"}</button>
+        <input ref=${fileRef} type="file" accept="image/*" hidden onChange=${pick} /></div>
+      <div class="demonformf">
+        <div class="mini"><label for=${id("n")}>Name</label><input id=${id("n")} value=${f.n} onInput=${set("n")} placeholder="Vex, the Ash Warden" required /></div>
+        <div class="row"><div class="mini"><label for=${id("realm")}>Realm</label><input id=${id("realm")} value=${f.realm} onInput=${set("realm")} placeholder="The Cinder Wastes" /></div>
+          <div class="mini demonwp"><label for=${id("wp")}>Willpower</label><input id=${id("wp")} type="number" value=${f.wp} onInput=${set("wp")} /></div></div>
+        ${demonSrc(f) && html`<button type="button" class="btn small" onClick=${() => setF(Object.assign({}, f, { img: "", imgData: "" }))}>Remove picture</button>`}
+      </div>
+    </div>
+    <div class="mini"><label for=${id("terms")}>The contract's terms</label><textarea id=${id("terms")} rows="2" value=${f.terms} onInput=${set("terms")} placeholder="What it asks for, and what it gives" /></div>
+    <div class="demonformabs"><span class="lbl">Abilities</span>
+      ${f.abilities.map((a, i) => html`<div class="row demonformab" key=${a.id || i}>
+        <input aria-label="Ability name" value=${a.n} onInput=${e => setAb(i, "n", e.target.value)} placeholder="Ability" />
+        <input aria-label="What it does" class="grow" value=${a.text} onInput=${e => setAb(i, "text", e.target.value)} placeholder="What it does, its cost" />
+        <button type="button" class="iconbtn" aria-label="Remove ability" onClick=${() => setF(Object.assign({}, f, { abilities: f.abilities.filter((_, j) => j !== i) }))}>×</button></div>`)}
+      <button type="button" class="demonaddab" onClick=${() => setF(Object.assign({}, f, { abilities: [...f.abilities, { id: rid(), n: "", text: "" }] }))}>+ An ability</button></div>
+    <div class="mini"><label for=${id("note")}>Notes</label><input id=${id("note")} value=${f.note} onInput=${set("note")} placeholder="Anything else" /></div>
+    <div class="row demoncardf"><button class="btn small primary" type="submit" disabled=${busy || !f.n.trim()}>Seal the contract</button><button type="button" class="btn small" onClick=${onCancel}>Cancel</button>
+      ${onDelete && html`<button type="button" class="btn small danger" onClick=${() => sure ? onDelete() : setSure(true)}>${sure ? "Really tear it up?" : "Tear up the contract"}</button>`}</div>
+  </form>`;
 }
 /* ================= character creation ================= */
 // "New character" offers two roads: a guided genesis, step by step, or an instant auto-generated sheet.
