@@ -791,7 +791,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .sp-medal.att { color: #fff; background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--att) 78%, #fff), var(--att) 60%, color-mix(in srgb, var(--att) 70%, #000)); box-shadow: 0 0 0 2px var(--card), 0 0 0 3.5px var(--att); }
 .sp-medal .pnicon { width: 24px; height: 24px; }
 .pnicon { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-:root .spanel .spban { display: flex; align-items: center; gap: 9px; margin: 4px 0 0; padding: 0; border: 0; background: none; font: 700 12.5px/1.2 var(--f-head); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
+:root :is(.spanel, .tablepage) .spban { display: flex; align-items: center; gap: 9px; margin: 4px 0 0; padding: 0; border: 0; background: none; font: 700 12.5px/1.2 var(--f-head); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
 .spmedal { width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center; color: var(--paper); background: var(--rule); }
 .spgroup .spban .aglyph { color: #fff; }
 .spmedal .pnicon { width: 15px; height: 15px; stroke-width: 2; }
@@ -3206,6 +3206,75 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .grow.harmfact { border-left: 3px solid var(--ec); padding-left: 8px; }
 .grow.harmfact > b { color: var(--ec); font-size: 13.5px; }
 .glancefrom { font: 600 11px var(--f-mono); color: var(--good); margin-left: 4px; white-space: nowrap; }
+
+/* ---------- the Table page (table.js): designed in Ledger; other themes inherit these variables ---------- */
+.tablepage { display: grid; gap: 22px; }
+.thero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px 28px; align-items: end; padding: 20px 22px; background: var(--card);
+  border: 1px solid var(--hair); border-top: 3px solid var(--rule); }
+.thero h1 { font-size: 38px; line-height: 1.05; margin: 4px 0 6px; }
+.tline { margin: 0; font-style: italic; color: var(--ink-2); font-size: 16px; max-width: 60ch; }
+.thtext .inp { width: 100%; max-width: 560px; }
+.tnext { display: grid; gap: 3px; justify-items: end; text-align: right; padding-left: 22px; border-left: 1px solid var(--hair); min-width: 190px; }
+.tnext b { font-family: var(--f-head); font-weight: 500; font-size: 18px; letter-spacing: .02em; }
+.tnext small { color: var(--brass); font-family: var(--f-mono); font-size: 12px; }
+.tnext .row { justify-content: flex-end; }
+.tgrid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 28px 36px; align-items: start; }
+.tcol { display: grid; gap: 26px; min-width: 0; }
+.tsec { display: grid; gap: 10px; min-width: 0; }
+.tsech { display: flex; align-items: center; gap: 10px; }
+.tsech .spban { flex: 1; min-width: 0; }
+:root .tablepage .spban { font-size: 13.5px; margin: 0; }
+.tprose p { margin: 0 0 .7em; max-width: 68ch; line-height: 1.55; }
+.tprose p:last-child { margin-bottom: 0; }
+.tedit { display: grid; gap: 8px; }
+.tedit textarea { width: 100%; font: inherit; }
+.tparty { display: grid; gap: 6px; }
+.tmember { display: flex; align-items: center; gap: 12px; text-align: left; padding: 8px 10px; background: var(--card); border: 1px solid var(--hair); cursor: pointer; color: inherit; font: inherit; }
+.tmember:hover, .tmember:focus-visible { border-color: var(--rule); }
+.tmember .who { display: grid; min-width: 0; }
+.tmember .who b { font-family: var(--f-head); font-weight: 500; font-size: 16px; letter-spacing: .02em; }
+.tmember .who span { color: var(--ink-3); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tcoins { display: flex; align-items: center; gap: 6px; }
+.tcoins .lbl { margin-right: 6px; }
+.titems { display: grid; gap: 5px; }
+.titem { display: grid; grid-template-columns: minmax(0, 1.4fr) 58px minmax(0, 1fr) 28px; gap: 6px; align-items: center; }
+.titem .inp, .tadd .inp { min-width: 0; }
+.tadd { flex-wrap: nowrap; }
+.tadd .inp { flex: 1; }
+.hgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.hcard { display: grid; gap: 6px; align-content: start; }
+.hcard.hidden .hopen { border-style: dashed; opacity: .72; }
+.hopen { display: grid; gap: 4px; text-align: left; padding: 0 0 10px; background: var(--card); border: 1px solid var(--hair); cursor: pointer; color: inherit; font: inherit; overflow: hidden; }
+.hopen:hover, .hopen:focus-visible { border-color: var(--rule); }
+.hopen img, .hnoimg { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: grid; place-items: center; background: var(--sunk); }
+.hnoimg .pnicon { width: 34px; height: 34px; fill: none; stroke: var(--ink-3); stroke-width: 1.4; }
+.hopen b, .hopen small { padding: 0 10px; }
+.hopen b { font-family: var(--f-head); font-weight: 500; font-size: 15px; letter-spacing: .02em; }
+.hopen small { color: var(--ink-3); font-size: 12.5px; line-height: 1.35; }
+.hgm { gap: 5px; }
+.hprev { max-width: 220px; max-height: 160px; object-fit: contain; border: 1px solid var(--hair); }
+.hview { max-width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; display: grid; gap: 12px; }
+.hview img { width: 100%; max-height: 60vh; object-fit: contain; background: var(--sunk); }
+.tface { border: 1px solid var(--rule); background: var(--sunk); }
+.tface img { display: block; width: 100%; max-height: 320px; object-fit: cover; object-position: center 25%; }
+.tattrs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.tattr { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid color-mix(in srgb, var(--att) 30%, var(--hair)); background: var(--card); }
+.tabadge { width: 26px; height: 26px; flex: 0 0 26px; display: grid; place-items: center; color: #fff;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--att) 82%, #fff), var(--att)); }
+.tabadge svg { width: 15px; height: 15px; }
+.tan { flex: 1; font-size: 13.5px; }
+.tattr b { font-family: var(--f-mono); font-size: 17px; }
+.tattr b.bad { color: var(--bad); }
+@media (max-width: 760px) {
+  .thero { grid-template-columns: 1fr; padding: 16px; }
+  .thero h1 { font-size: 30px; }
+  .tnext { justify-items: start; text-align: left; border-left: 0; border-top: 1px solid var(--hair); padding: 10px 0 0; }
+  .tnext .row { justify-content: flex-start; }
+  .tgrid { grid-template-columns: 1fr; }
+  .titem { grid-template-columns: minmax(0, 1fr) 52px 28px; }
+  .titem .inp:nth-child(3) { grid-column: 1 / 3; }
+  .hgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 </style>
 <div id="app"></div>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
@@ -3679,7 +3748,7 @@ const CW = (() => {
     const secondary = {}; SECONDARY.forEach(s => (secondary[s.name] = 0));
     return {
       v: 1, name: "", player: "", campaign: "", profession: "", faction: "", age: "", height: "", weight: "",
-      portraitAsset: "", portraitUrl: "", notes: "",
+      portraitAsset: "", portraitUrl: "", notes: "", bio: "",
       karma: 0, pool: 0,
       attrs, skills, weaponSkills: weapons, secondary,
       vitals: { hp: null, bp: null, dp: null, tox: 0, exhaustion: 0, staminaLost: 0,
@@ -5593,11 +5662,11 @@ function App() {
   const gm = isGM();
   if (!gm && view === "gm") setView("chars");
   // Which page is showing (characters, GM table, settings) and which way we moved, for themes that animate the
-  // change (Mossheart blows a gust of leaves across). Order matches the top bar: Characters, GM table, Settings.
-  const page = settings ? "settings" : view === "gm" && gm ? "gm" : "chars";
+  // change (Mossheart blows a gust of leaves across). Order matches the top bar: Characters, Table, GM table, Settings.
+  const page = settings ? "settings" : view === "gm" && gm ? "gm" : view === "table" ? "table" : "chars";
   const pageNav = useRef({ page, dir: "" });
   if (pageNav.current.page !== page) {
-    const order = ["chars", "gm", "settings"];
+    const order = ["chars", "table", "gm", "settings"];
     pageNav.current = { page, dir: order.indexOf(page) > order.indexOf(pageNav.current.page) ? "r" : "l" };
   }
   const current = sel && all[sel] ? norm(all[sel]) : null;
@@ -5640,8 +5709,8 @@ function App() {
   return html`<div class="wrap">
     <header class="top">
       <div class="brand">Clockwork<small>Companion</small></div>
-      <${CharMenu} list=${list} all=${all} sel=${sel} current=${current} gm=${gm} on=${!settings && view === "chars"} gmOn=${!settings && view === "gm"}
-        goChars=${() => { setView("chars"); setSettings(false); }} goGm=${() => { setView("gm"); setSettings(false); }}
+      <${CharMenu} list=${list} all=${all} sel=${sel} current=${current} gm=${gm} on=${!settings && view === "chars"} gmOn=${!settings && view === "gm"} tableOn=${!settings && view === "table"}
+        goChars=${() => { setView("chars"); setSettings(false); }} goGm=${() => { setView("gm"); setSettings(false); }} goTable=${() => { setView("table"); setSettings(false); }}
         pick=${id => { setSel(id); setView("chars"); setSettings(false); window.scrollTo(0, 0); }} create=${create} startNew=${startNew} />
       <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
@@ -5655,7 +5724,8 @@ function App() {
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
     <div class="viewswap" key=${page} data-dir=${pageNav.current.dir}>
     ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} onBack=${() => openSettings(false)} />`
-      : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
+      : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />`
+      : view === "table" ? html`<${TableView} chars=${list} current=${current} />` : html`
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
       : Store.mode === "loading" ? html`<div class="empty"><p class="muted">Opening the character ledger…</p></div>`
       : html`<div class="empty">
@@ -5676,7 +5746,7 @@ function App() {
 // "Characters" in the top bar opens the last character you had open. Hovering it (or the arrow beside it, on phones and
 // keyboards) drops down every character you can open, grouped by campaign, companions under their master, with a search
 // box when the list grows long, and the buttons for a new character or a companion.
-function CharMenu({ list, all, sel, current, gm, on, gmOn, goChars, goGm, pick, create, startNew }) {
+function CharMenu({ list, all, sel, current, gm, on, gmOn, tableOn, goChars, goGm, goTable, pick, create, startNew }) {
   const [open, setOpen] = useState(false); const [q, setQ] = useState("");
   const ref = useRef(), searchRef = useRef(), timer = useRef();
   const later = (v, ms) => { clearTimeout(timer.current); timer.current = setTimeout(() => setOpen(v), ms); };
@@ -5699,15 +5769,16 @@ function CharMenu({ list, all, sel, current, gm, on, gmOn, goChars, goGm, pick, 
   const hp = c => { const d = derive(c); return d.max.hp ? R.clamp((d.cur.hp / d.max.hp) * 100, 0, 100) : 0; };
   const cur = current, m = master(cur);
   const hover = matchMedia && matchMedia("(hover: hover)").matches;
-  return html`<nav class="charnav" ref=${ref} aria-label="Pages" onMouseEnter=${() => hover && later(true, 120)} onMouseLeave=${() => hover && later(false, 260)}>
+  return html`<nav class="charnav" ref=${ref} aria-label="Pages" onMouseLeave=${() => hover && later(false, 260)}>
     <div class="seg viewseg">
-      <span class="cnwrap"><button type="button" class="cnbtn" aria-pressed=${on} onClick=${() => { goChars(); setOpen(false); }}
+      <span class="cnwrap" onMouseEnter=${() => hover && later(true, 120)}><button type="button" class="cnbtn" aria-pressed=${on} onClick=${() => { goChars(); setOpen(false); }}
           title=${cur ? `Open ${cur.name || "your character"}` : "Characters"}>Characters${cur && on ? "" : cur ? html`<small> · ${cur.name || "Unnamed"}</small>` : ""}</button>
         <button type="button" class="cnchev" aria-expanded=${open} aria-haspopup="true" aria-label="Choose a character" onClick=${() => setOpen(!open)}>
           <svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></span>
-      ${gm && html`<button aria-pressed=${gmOn} onClick=${goGm}>GM table</button>`}
+      <button aria-pressed=${tableOn} onClick=${() => { later(false, 0); goTable(); }}>Table</button>
+      ${gm && html`<button aria-pressed=${gmOn} onClick=${() => { later(false, 0); goGm(); }}>GM table</button>`}
     </div>
-    ${open && html`<div class="rpanel cnmenu" role="dialog" aria-label="Choose a character">
+    ${open && html`<div class="rpanel cnmenu" role="dialog" aria-label="Choose a character" onMouseEnter=${() => hover && later(true, 0)}>
       ${list.length > 6 && html`<input ref=${searchRef} class="rsearch" type="search" placeholder="Find a character, profession or player…" value=${q} onInput=${e => setQ(e.target.value)} />`}
       ${groups.map(g => html`<div class="rgroup"><h4>${g.k || "No campaign"}</h4><div class="rgrid">
         ${g.rows.map(c => html`<div class=${"rcard" + (c.id === sel ? " on" : "")}>
@@ -6049,7 +6120,9 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill, onDelete
 
     <section class="frame"><${Sigils} seed="notes" n=${1} lead="note" side="r" /><h2 class="h"><span>Notes</span><i class="orn" aria-hidden="true"></i></h2>
       <div class="field"><label for=${"notes-" + c.id}>Backstory, anything else</label>
-      <textarea id=${"notes-" + c.id} rows="5" value=${c.notes} onInput=${e => update(x => { x.notes = e.target.value; })}></textarea></div></section>
+      <textarea id=${"notes-" + c.id} rows="5" value=${c.notes} onInput=${e => update(x => { x.notes = e.target.value; })}></textarea></div>
+      <div class="field"><label for=${"bio-" + c.id}>Short bio (the whole table sees this on the Table page)</label>
+      <textarea id=${"bio-" + c.id} rows="3" maxlength="1200" placeholder="Who they are, in a few lines." value=${c.bio || ""} onInput=${e => update(x => { x.bio = e.target.value; })}></textarea></div></section>
     <${DeleteCharacter} c=${c} onDelete=${onDelete} />
   </div>`;
 }
@@ -8377,7 +8450,11 @@ const Shop = {
     const u = uids || [];
     return u.includes(this.me()) || (u.length === 0 && Store.table.role === "gm");
   },
-  cardOf(c) { const n = norm(c); return { name: n.name || "Unnamed", uids: playersOf(n), campaign: String(n.campaign || "").trim(), weapon: R.wmState(n).lvl, armor: R.amState(n).lvl }; },
+  // The public card: what the workshop needs (smith levels) and what the Table page shows (face, attributes, short bio).
+  cardOf(c) { const n = norm(c), attrs = {}; R.ATTRS.forEach(a => (attrs[a.k] = R.attr(n, a.k)));
+    return { name: n.name || "Unnamed", uids: playersOf(n), campaign: String(n.campaign || "").trim(), weapon: R.wmState(n).lvl, armor: R.amState(n).lvl,
+      player: String(n.player || ""), profession: String(n.profession || ""), bio: String(n.bio || "").slice(0, 1200), attrs,
+      portraitAsset: n.portraitAsset || "", portraitUrl: /^https?:\/\//.test(n.portraitUrl || "") ? n.portraitUrl : "", emblem: n.emblem || "" }; },
   // Jobs only go between characters of the same campaign; a character with no campaign set has nobody to send to.
   camp(x) { return String((x && x.campaign) || "").trim().toLowerCase(); },
   same(c, r) { const k = this.camp(c); return !!k && k === this.camp(r); },
@@ -8397,7 +8474,7 @@ const Shop = {
     Object.values(Store.chars).forEach(c => {
       if (c.companionOf || !(!Store.table || Store.table.role === "gm" || playersOf(c).includes(this.me()))) return;
       const card = this.cardOf(c), key = JSON.stringify(card), have = this.roster.find(r => r.id === c.id);
-      if (this.cards[c.id] === key || (have && JSON.stringify({ name: have.name, uids: have.uids, campaign: have.campaign || "", weapon: have.weapon, armor: have.armor }) === key)) { this.cards[c.id] = key; return; }
+      if (this.cards[c.id] === key || (have && JSON.stringify(Object.fromEntries(Object.keys(card).map(k => [k, have[k]]))) === key)) { this.cards[c.id] = key; return; }
       this.cards[c.id] = key;
       Store.db.doc("roster/" + c.id).set(card).catch(() => this.fail());
     });
@@ -12171,6 +12248,202 @@ function StepAwaken({ g, back, finish }) {
     <p class="muted">${[g.campaign, `${Math.max(0, num(g.karma) - extra)} Karma to spend`].filter(Boolean).join(" · ")}</p>
     <div class="gx-final">${R.ATTRS.map(a => { const v = set[g.assign[a.k]].total; return html`<div class=${"gx-fa " + toneOf(v)}><small>${a.n}</small><b>${v}</b></div>`; })}</div>
     <${GxNav} back=${back} next=${finish} nextLabel="Begin the tale" />
+  </section>`;
+}
+/* ================= the Table page: the campaign as the players see it ================= */
+// A page for everyone at the table, beside Characters and the GM table. For the campaign picked at the top:
+//   - a banner with the campaign's name, a line of flavour and the next session (GM),
+//   - the setting and "Last time…" (a recap), written by the GM,
+//   - handouts: letters, maps, faces; the GM writes them hidden and shows them when the moment comes,
+//   - the party: every character in the campaign with who plays them; click one for their attributes and short bio,
+//   - the party stash: coins and items the whole party shares, which anyone can change.
+// Where it lives: tables/<t>/board/<campaign> (GM writes, everyone reads), tables/<t>/stash/<campaign> (everyone),
+// tables/<t>/handouts/<id> (GM writes; players read only the ones shown). In "this browser only" mode, localStorage.
+// The party comes from the workshop's roster (Shop.list()): one public card per character, which players can read.
+
+const boardKey = camp => String(camp || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "table";
+const Board = {
+  started: false, boards: {}, stashes: {}, handouts: [], err: "", listeners: new Set(),
+  emit() { this.listeners.forEach(f => f()); },
+  live() { return Store.mode === "live"; },
+  start() {
+    if (this.started || Store.mode === "loading") return;
+    this.started = true;
+    if (!this.live()) { const l = lsGet("cw-board", {}); this.boards = l.boards || {}; this.stashes = l.stashes || {}; this.handouts = l.handouts || []; this.emit(); return; }
+    const db = Store.db, byId = s => { const o = {}; s.docs.forEach(d => (o[d.id] = d.data())); return o; };
+    const fail = () => { this.err = "The table's database rules don't allow the Table page yet. Ask the GM (Sinan) to update them."; this.emit(); };
+    db.collection("board").onSnapshot(s => { this.boards = byId(s); this.emit(); }, fail);
+    db.collection("stash").onSnapshot(s => { this.stashes = byId(s); this.emit(); }, fail);
+    const ho = db.collection("handouts");
+    (isGM() ? ho : ho.where("shown", "==", true)).onSnapshot(s => { this.handouts = s.docs.map(d => Object.assign({}, d.data(), { id: d.id })); this.emit(); }, fail);
+  },
+  saveLocal() { lsSet("cw-board", { boards: this.boards, stashes: this.stashes, handouts: this.handouts }); this.emit(); },
+  board(camp) { return Object.assign({ tagline: "", setting: "", recap: "", next: "" }, this.boards[boardKey(camp)]); },
+  stash(camp) { const s = this.stashes[boardKey(camp)] || {}; return { coins: num(s.coins), items: Array.isArray(s.items) ? s.items : [] }; },
+  setBoard(camp, patch) {
+    const k = boardKey(camp), next = Object.assign(this.board(camp), patch, { camp: String(camp || ""), at: Date.now() });
+    this.boards[k] = next;
+    if (!this.live()) return this.saveLocal();
+    this.emit(); Store.db.doc("board/" + k).set(clean(next)).catch(() => toast("Couldn't save that. Only a GM can write the Table page."));
+  },
+  setStash(camp, fn) {
+    const k = boardKey(camp), s = this.stash(camp); fn(s); s.at = Date.now();
+    this.stashes[k] = s;
+    if (!this.live()) return this.saveLocal();
+    this.emit(); Store.db.doc("stash/" + k).set(clean(s)).catch(() => toast("Couldn't save the stash just now."));
+  },
+  putHandout(h) {
+    const body = clean(Object.assign({}, h, { at: Date.now() })); const id = h.id || rid(); delete body.id;
+    this.handouts = [...this.handouts.filter(x => x.id !== id), Object.assign({}, body, { id })];
+    if (!this.live()) return this.saveLocal();
+    this.emit(); Store.db.doc("handouts/" + id).set(body).catch(() => toast("Couldn't save that handout. Only a GM can."));
+  },
+  dropHandout(id) {
+    this.handouts = this.handouts.filter(x => x.id !== id);
+    if (!this.live()) return this.saveLocal();
+    this.emit(); Store.db.doc("handouts/" + id).delete().catch(() => {});
+  },
+};
+function useBoard() { const [, f] = useState(0); useEffect(() => { const g = () => f(x => x + 1); Board.listeners.add(g); Board.start(); return () => Board.listeners.delete(g); }, []); }
+
+// Light markdown for the GM's text: blank lines make paragraphs, **bold** and *italics*.
+function Prose({ text, empty }) {
+  const paras = String(text || "").split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  if (!paras.length) return html`<p class="muted">${empty}</p>`;
+  const inline = p => p.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map(x => x.startsWith("**") ? html`<b>${x.slice(2, -2)}</b>` : x.startsWith("*") && x.length > 2 ? html`<i>${x.slice(1, -1)}</i>` : x.split("\n").map((l, i) => (i ? [html`<br />`, l] : l)));
+  return html`<div class="tprose">${paras.map(p => html`<p>${inline(p)}</p>`)}</div>`;
+}
+// A section of GM-written text: read for everyone, an Edit button for GMs.
+function GmText({ title, icon, camp, field, empty, rows = 6, hint }) {
+  const b = Board.board(camp); const [edit, setEdit] = useState(null);
+  return html`<section class="tsec"><div class="tsech"><${Banner} title=${title} i=${icon} tag="h3" />
+      ${isGM() && !edit && html`<button type="button" class="btn small" onClick=${() => setEdit(b[field] || "")}>Edit</button>`}</div>
+    ${edit !== null ? html`<div class="tedit"><textarea class="inp" rows=${rows} aria-label=${title} placeholder=${hint} value=${edit} onInput=${e => setEdit(e.target.value)}></textarea>
+        <div class="row"><button class="btn small primary" onClick=${() => { Board.setBoard(camp, { [field]: edit }); setEdit(null); }}>Save</button><button class="btn small" onClick=${() => setEdit(null)}>Cancel</button>
+          <span class="muted">Leave a blank line between paragraphs. **bold**, *italics*.</span></div></div>`
+      : html`<${Prose} text=${b[field]} empty=${empty} />`}
+  </section>`;
+}
+
+const when = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString([], { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); };
+const until = iso => {
+  const ms = new Date(iso) - Date.now(); if (isNaN(ms)) return "";
+  if (ms < 0) return ms > -6 * 3600e3 ? "now" : "past";
+  const h = ms / 3600e3; return h < 1 ? "within the hour" : h < 24 ? `in ${Math.round(h)} hour${Math.round(h) === 1 ? "" : "s"}` : `in ${Math.round(h / 24)} day${Math.round(h / 24) === 1 ? "" : "s"}`;
+};
+
+function TableView({ chars, current }) {
+  useBoard(); useShop();
+  const known = [...new Set([...CAMPAIGNS, ...Shop.list().map(r => r.campaign).filter(Boolean)])];
+  const [camp, setCamp] = useState(() => { const v = lsGet("cw-table-camp", ""); return v || (current && current.campaign) || CAMPAIGNS[0]; });
+  useEffect(() => lsSet("cw-table-camp", camp), [camp]);
+  const gm = isGM(), b = Board.board(camp);
+  const [head, setHead] = useState(null);   // the GM editing the banner: { tagline, next }
+  const [who, setWho] = useState(null);     // a party member opened in the side panel
+  const party = Shop.list().filter(r => (r.campaign || "") === camp);
+  return html`<div class="tabpane tablepage">
+    ${Board.err && html`<div class="banner">${Board.err}</div>`}
+    <div class="row campbar" role="group" aria-label="Campaign"><span class="lbl">Campaign</span>${known.map(k => html`<button type="button" class=${"btn small" + (k === camp ? " primary" : "")} aria-pressed=${k === camp} onClick=${() => setCamp(k)}>${k}</button>`)}</div>
+
+    <header class="thero">
+      <div class="thtext"><span class="lbl">${Store.table ? Store.table.name : "This table"}</span><h1 class="ornate">${camp}</h1>
+        ${head ? html`<input class="inp" aria-label="A line about the campaign" placeholder="An alien world, and the tears that fell on it…" value=${head.tagline} onInput=${e => setHead(Object.assign({}, head, { tagline: e.target.value }))} />`
+          : b.tagline ? html`<p class="tline">${b.tagline}</p>` : gm ? html`<p class="tline muted">Add a line about the campaign.</p>` : ""}</div>
+      <div class="tnext"><span class="lbl">Next session</span>
+        ${head ? html`<input class="inp" type="datetime-local" aria-label="Next session" value=${head.next} onInput=${e => setHead(Object.assign({}, head, { next: e.target.value }))} />`
+          : b.next ? html`<b>${when(b.next)}</b><small>${until(b.next)}</small>` : html`<b class="muted">Not set yet</b>`}
+        ${gm && (head ? html`<div class="row"><button class="btn small primary" onClick=${() => { Board.setBoard(camp, head); setHead(null); }}>Save</button><button class="btn small" onClick=${() => setHead(null)}>Cancel</button></div>`
+          : html`<button type="button" class="btn small" onClick=${() => setHead({ tagline: b.tagline, next: b.next })}>Edit</button>`)}</div>
+    </header>
+
+    <div class="tgrid">
+      <div class="tcol">
+        <${GmText} title="The setting" icon="book" camp=${camp} field="setting" rows=${10} empty=${gm ? "Write what the players should know about the world: places, powers, the mood of the age." : "The GM hasn't written about the setting yet."} hint="The world, its powers and its mood…" />
+        <${GmText} title="Last time…" icon="info" camp=${camp} field="recap" empty=${gm ? "After each session, a few lines on what happened." : "No recap yet."} hint="What happened last session…" />
+      </div>
+      <div class="tcol">
+        <section class="tsec"><${Banner} title="The party" i="star" tag="h3" />
+          ${party.length ? html`<div class="tparty">${party.map(r => html`<button type="button" class="tmember" onClick=${() => setWho(r)}>
+              <${Thumb} c=${r} lg /><span class="who"><b>${r.name}</b><span>${[r.profession, r.player].filter(Boolean).join(" · ") || "—"}</span></span></button>`)}</div>`
+            : html`<p class="muted">Nobody is playing in ${camp} yet. A character joins the party when its campaign is set to ${camp}.</p>`}</section>
+        <${Stash} camp=${camp} />
+      </div>
+    </div>
+    <${Handouts} camp=${camp} />
+    ${who && html`<${MemberPanel} r=${who} onClose=${() => setWho(null)} />`}
+  </div>`;
+}
+
+// One party member, opened from the party list: their face, who plays them, their attributes and short bio.
+function MemberPanel({ r, onClose }) {
+  const ref = useRef();
+  useEffect(() => { const k = e => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", k); ref.current && ref.current.focus(); return () => window.removeEventListener("keydown", k); }, [r.id]);
+  const at = r.attrs || {};
+  return html`<aside class="spanel" role="dialog" aria-label=${r.name} tabindex="-1" ref=${ref}>
+    <header class="sphead"><span class="sp-medal"><${PanelIcon} i="star" /></span><div class="sptt"><span class="lbl">${[r.profession, r.campaign].filter(Boolean).join(" · ") || "Character"}</span><h2>${r.name}</h2>
+      ${r.player && html`<p class="spflavor">Played by ${r.player}</p>`}</div>
+      <button class="iconbtn" aria-label="Close" onClick=${onClose}>×</button></header>
+    <div class="spbody">
+      ${portraitSrc(r) && html`<div class="tface"><${Face} c=${r} /></div>`}
+      <${Banner} title="Attributes" i="shield" />
+      ${Object.keys(at).length ? html`<div class="tattrs">${R.ATTRS.map(a => { const v = num(at[a.k]); return html`<div class="tattr" style=${attStyle(a.k)} title=${a.n}>
+          <span class="tabadge"><${AttrGlyph} a=${a.k} /></span><span class="tan">${a.n}</span><b class=${v < 10 ? "bad" : ""}>${v}</b></div>`; })}</div>`
+        : html`<p class="muted">Their attributes show once their player opens the Companion again.</p>`}
+      <${Banner} title="In short" i="book" />
+      <${Prose} text=${r.bio} empty="No short bio yet. Each player writes their own at the foot of the Sheet." />
+    </div></aside>`;
+}
+
+// The party stash: coins and items everyone shares. Anyone at the table can change it.
+function Stash({ camp }) {
+  const s = Board.stash(camp); const [name, setName] = useState("");
+  const add = e => { e.preventDefault(); const n = name.trim(); if (!n) return; Board.setStash(camp, x => { x.items.push({ id: rid(), name: n, qty: 1, note: "" }); }); setName(""); };
+  const setItem = (i, k, v) => Board.setStash(camp, x => { x.items[i][k] = v; });
+  return html`<section class="tsec"><${Banner} title="Party stash" i="table" tag="h3" />
+    <div class="tcoins"><span class="lbl">Coins</span>
+      <button type="button" class="iconbtn" aria-label="One coin less" onClick=${() => Board.setStash(camp, x => { x.coins = Math.max(0, x.coins - 1); })}>−</button>
+      <input class="inp durin" type="number" min="0" aria-label="Coins in the stash" value=${s.coins} onChange=${e => Board.setStash(camp, x => { x.coins = Math.max(0, Math.floor(+e.target.value || 0)); })} />
+      <button type="button" class="iconbtn" aria-label="One coin more" onClick=${() => Board.setStash(camp, x => { x.coins += 1; })}>+</button></div>
+    ${s.items.length ? html`<div class="titems">${s.items.map((it, i) => html`<div class="titem" key=${it.id}>
+        <input class="inp" aria-label="Item" value=${it.name} onChange=${e => setItem(i, "name", e.target.value)} />
+        <input class="inp tqty" type="number" min="0" aria-label="How many" value=${it.qty} onChange=${e => setItem(i, "qty", Math.max(0, Math.floor(+e.target.value || 0)))} />
+        <input class="inp" aria-label="Note" placeholder="Note" value=${it.note || ""} onChange=${e => setItem(i, "note", e.target.value)} />
+        <button type="button" class="iconbtn" aria-label=${`Remove ${it.name}`} onClick=${() => Board.setStash(camp, x => { x.items.splice(i, 1); })}>×</button></div>`)}</div>`
+      : html`<p class="muted">Nothing in the stash yet.</p>`}
+    <form class="row tadd" onSubmit=${add}><input class="inp" aria-label="New item" placeholder="Add an item: a rope, a map, a strange key…" value=${name} onInput=${e => setName(e.target.value)} /><button class="btn small" type="submit">Add</button></form>
+  </section>`;
+}
+
+// Handouts: the GM writes them (title, text, a picture), hidden until shown. Players see the shown ones.
+function Handouts({ camp }) {
+  const gm = isGM(); const k = boardKey(camp);
+  const list = Board.handouts.filter(h => (h.camp || "table") === k && (gm || h.shown)).sort((a, b) => num(b.at) - num(a.at));
+  const [edit, setEdit] = useState(null), [view, setView] = useState(null), [busy, setBusy] = useState(false); const file = useRef();
+  const img = h => (h.img && Store.assets && Store.assets.urlFor(h.img)) || h.imgUrl || "";
+  const upload = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f || !Store.assets) return; setBusy(true);
+    try { const r = await Store.assets.upload(f, null); setEdit(x => Object.assign({}, x, { img: r.id })); } catch { toast("Couldn't upload that picture. Use a PNG, JPG or WebP."); } setBusy(false); };
+  return html`<section class="tsec thandouts"><div class="tsech"><${Banner} title="Handouts" i="info" tag="h3" />
+      ${gm && !edit && html`<button type="button" class="btn small" onClick=${() => setEdit({ camp: k, title: "", text: "", img: "", imgUrl: "", shown: false })}>+ New handout</button>`}</div>
+    ${edit && html`<div class="tedit hedit">
+      <input class="inp" aria-label="Handout title" placeholder="A letter sealed in black wax" value=${edit.title} onInput=${e => setEdit(Object.assign({}, edit, { title: e.target.value }))} />
+      <textarea class="inp" rows="5" aria-label="Handout text" placeholder="What the players read…" value=${edit.text} onInput=${e => setEdit(Object.assign({}, edit, { text: e.target.value }))}></textarea>
+      <div class="row">${Store.assets && html`<button type="button" class="btn small" disabled=${busy} onClick=${() => file.current.click()}>${busy ? "Uploading…" : img(edit) ? "Replace picture" : "Add a picture"}</button>
+          <input ref=${file} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange=${upload} />`}
+        <input class="inp" style="flex:1;min-width:160px" aria-label="Or a picture link" placeholder="…or a picture link (https://…)" value=${edit.imgUrl || ""} onInput=${e => setEdit(Object.assign({}, edit, { imgUrl: e.target.value.trim() }))} /></div>
+      ${img(edit) && html`<img class="hprev" src=${img(edit)} alt="" />`}
+      <div class="row"><button class="btn small primary" disabled=${!edit.title.trim()} onClick=${() => { Board.putHandout(edit); setEdit(null); }}>Save${edit.shown ? "" : " (hidden)"}</button>
+        <button class="btn small" onClick=${() => setEdit(null)}>Cancel</button></div></div>`}
+    ${list.length ? html`<div class="hgrid">${list.map(h => html`<div class=${"hcard" + (h.shown ? "" : " hidden")} key=${h.id}>
+        <button type="button" class="hopen" onClick=${() => setView(h)}>${img(h) ? html`<img src=${img(h)} alt="" />` : html`<span class="hnoimg"><${PanelIcon} i="book" /></span>`}
+          <b>${h.title}</b>${h.text && html`<small>${h.text.slice(0, 90)}${h.text.length > 90 ? "…" : ""}</small>`}</button>
+        ${gm && html`<div class="row hgm"><button class=${"btn small" + (h.shown ? " primary" : "")} onClick=${() => Board.putHandout(Object.assign({}, h, { shown: !h.shown }))}>${h.shown ? "Shown" : "Show the party"}</button>
+          <button class="btn small" onClick=${() => setEdit(Object.assign({ imgUrl: "", img: "" }, h))}>Edit</button>
+          <button class="iconbtn" aria-label=${`Delete ${h.title}`} onClick=${() => Board.dropHandout(h.id)}>×</button></div>`}</div>`)}</div>`
+      : html`<p class="muted">${gm ? "Nothing yet. Write a handout; it stays hidden until you show the party." : "The GM hasn't shared any handouts yet."}</p>`}
+    ${view && html`<div class="gx-veil" onClick=${e => { if (e.target === e.currentTarget) setView(null); }} onKeyDown=${e => e.key === "Escape" && setView(null)}>
+      <div class="gx-choose hview" role="dialog" aria-modal="true" aria-label=${view.title}>
+        <h2 class="ornate">${view.title}</h2>${img(view) && html`<img src=${img(view)} alt="" />`}<${Prose} text=${view.text} empty="" />
+        <div class="row"><button class="btn" onClick=${() => setView(null)} autofocus>Close</button></div></div></div>`}
   </section>`;
 }
 /* ================= GM table ================= */

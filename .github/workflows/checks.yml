@@ -68,7 +68,7 @@ jobs:
           - group: Daemonology, Dreamwalking, Harmony
             tests: demonology dreamwalking harmony
           - group: workshop, Alchemy, fixes
-            tests: workshop alchemy craft_magic_fixes powder_custom
+            tests: workshop alchemy craft_magic_fixes powder_custom table
     env:
       PW_CHANNEL: chrome
     steps:

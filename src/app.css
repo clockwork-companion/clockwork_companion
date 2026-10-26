@@ -781,7 +781,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .sp-medal.att { color: #fff; background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--att) 78%, #fff), var(--att) 60%, color-mix(in srgb, var(--att) 70%, #000)); box-shadow: 0 0 0 2px var(--card), 0 0 0 3.5px var(--att); }
 .sp-medal .pnicon { width: 24px; height: 24px; }
 .pnicon { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-:root .spanel .spban { display: flex; align-items: center; gap: 9px; margin: 4px 0 0; padding: 0; border: 0; background: none; font: 700 12.5px/1.2 var(--f-head); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
+:root :is(.spanel, .tablepage) .spban { display: flex; align-items: center; gap: 9px; margin: 4px 0 0; padding: 0; border: 0; background: none; font: 700 12.5px/1.2 var(--f-head); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
 .spmedal { width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center; color: var(--paper); background: var(--rule); }
 .spgroup .spban .aglyph { color: #fff; }
 .spmedal .pnicon { width: 15px; height: 15px; stroke-width: 2; }
@@ -3196,4 +3196,73 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .grow.harmfact { border-left: 3px solid var(--ec); padding-left: 8px; }
 .grow.harmfact > b { color: var(--ec); font-size: 13.5px; }
 .glancefrom { font: 600 11px var(--f-mono); color: var(--good); margin-left: 4px; white-space: nowrap; }
+
+/* ---------- the Table page (table.js): designed in Ledger; other themes inherit these variables ---------- */
+.tablepage { display: grid; gap: 22px; }
+.thero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px 28px; align-items: end; padding: 20px 22px; background: var(--card);
+  border: 1px solid var(--hair); border-top: 3px solid var(--rule); }
+.thero h1 { font-size: 38px; line-height: 1.05; margin: 4px 0 6px; }
+.tline { margin: 0; font-style: italic; color: var(--ink-2); font-size: 16px; max-width: 60ch; }
+.thtext .inp { width: 100%; max-width: 560px; }
+.tnext { display: grid; gap: 3px; justify-items: end; text-align: right; padding-left: 22px; border-left: 1px solid var(--hair); min-width: 190px; }
+.tnext b { font-family: var(--f-head); font-weight: 500; font-size: 18px; letter-spacing: .02em; }
+.tnext small { color: var(--brass); font-family: var(--f-mono); font-size: 12px; }
+.tnext .row { justify-content: flex-end; }
+.tgrid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 28px 36px; align-items: start; }
+.tcol { display: grid; gap: 26px; min-width: 0; }
+.tsec { display: grid; gap: 10px; min-width: 0; }
+.tsech { display: flex; align-items: center; gap: 10px; }
+.tsech .spban { flex: 1; min-width: 0; }
+:root .tablepage .spban { font-size: 13.5px; margin: 0; }
+.tprose p { margin: 0 0 .7em; max-width: 68ch; line-height: 1.55; }
+.tprose p:last-child { margin-bottom: 0; }
+.tedit { display: grid; gap: 8px; }
+.tedit textarea { width: 100%; font: inherit; }
+.tparty { display: grid; gap: 6px; }
+.tmember { display: flex; align-items: center; gap: 12px; text-align: left; padding: 8px 10px; background: var(--card); border: 1px solid var(--hair); cursor: pointer; color: inherit; font: inherit; }
+.tmember:hover, .tmember:focus-visible { border-color: var(--rule); }
+.tmember .who { display: grid; min-width: 0; }
+.tmember .who b { font-family: var(--f-head); font-weight: 500; font-size: 16px; letter-spacing: .02em; }
+.tmember .who span { color: var(--ink-3); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tcoins { display: flex; align-items: center; gap: 6px; }
+.tcoins .lbl { margin-right: 6px; }
+.titems { display: grid; gap: 5px; }
+.titem { display: grid; grid-template-columns: minmax(0, 1.4fr) 58px minmax(0, 1fr) 28px; gap: 6px; align-items: center; }
+.titem .inp, .tadd .inp { min-width: 0; }
+.tadd { flex-wrap: nowrap; }
+.tadd .inp { flex: 1; }
+.hgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.hcard { display: grid; gap: 6px; align-content: start; }
+.hcard.hidden .hopen { border-style: dashed; opacity: .72; }
+.hopen { display: grid; gap: 4px; text-align: left; padding: 0 0 10px; background: var(--card); border: 1px solid var(--hair); cursor: pointer; color: inherit; font: inherit; overflow: hidden; }
+.hopen:hover, .hopen:focus-visible { border-color: var(--rule); }
+.hopen img, .hnoimg { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: grid; place-items: center; background: var(--sunk); }
+.hnoimg .pnicon { width: 34px; height: 34px; fill: none; stroke: var(--ink-3); stroke-width: 1.4; }
+.hopen b, .hopen small { padding: 0 10px; }
+.hopen b { font-family: var(--f-head); font-weight: 500; font-size: 15px; letter-spacing: .02em; }
+.hopen small { color: var(--ink-3); font-size: 12.5px; line-height: 1.35; }
+.hgm { gap: 5px; }
+.hprev { max-width: 220px; max-height: 160px; object-fit: contain; border: 1px solid var(--hair); }
+.hview { max-width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; display: grid; gap: 12px; }
+.hview img { width: 100%; max-height: 60vh; object-fit: contain; background: var(--sunk); }
+.tface { border: 1px solid var(--rule); background: var(--sunk); }
+.tface img { display: block; width: 100%; max-height: 320px; object-fit: cover; object-position: center 25%; }
+.tattrs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.tattr { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid color-mix(in srgb, var(--att) 30%, var(--hair)); background: var(--card); }
+.tabadge { width: 26px; height: 26px; flex: 0 0 26px; display: grid; place-items: center; color: #fff;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--att) 82%, #fff), var(--att)); }
+.tabadge svg { width: 15px; height: 15px; }
+.tan { flex: 1; font-size: 13.5px; }
+.tattr b { font-family: var(--f-mono); font-size: 17px; }
+.tattr b.bad { color: var(--bad); }
+@media (max-width: 760px) {
+  .thero { grid-template-columns: 1fr; padding: 16px; }
+  .thero h1 { font-size: 30px; }
+  .tnext { justify-items: start; text-align: left; border-left: 0; border-top: 1px solid var(--hair); padding: 10px 0 0; }
+  .tnext .row { justify-content: flex-start; }
+  .tgrid { grid-template-columns: 1fr; }
+  .titem { grid-template-columns: minmax(0, 1fr) 52px 28px; }
+  .titem .inp:nth-child(3) { grid-column: 1 / 3; }
+  .hgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 </style>

@@ -121,7 +121,7 @@ const CW = (() => {
     const secondary = {}; SECONDARY.forEach(s => (secondary[s.name] = 0));
     return {
       v: 1, name: "", player: "", campaign: "", profession: "", faction: "", age: "", height: "", weight: "",
-      portraitAsset: "", portraitUrl: "", notes: "",
+      portraitAsset: "", portraitUrl: "", notes: "", bio: "",
       karma: 0, pool: 0,
       attrs, skills, weaponSkills: weapons, secondary,
       vitals: { hp: null, bp: null, dp: null, tox: 0, exhaustion: 0, staminaLost: 0,
