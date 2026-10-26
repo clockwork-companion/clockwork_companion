@@ -3287,8 +3287,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 /* ================= Crafting → Hunting ================= */
 .hunting { display: grid; gap: 0; --hglow: #e8b04a; --hpos: #3f8f4e; --hneg: #b8423a; --hvoid: color-mix(in srgb, var(--ink) 40%, transparent); }
 .huntpages { max-width: 560px; margin: 4px 0 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.huntmyths { margin-top: 12px; display: grid; gap: 6px; }
-.huntmyths .row { gap: 6px; flex-wrap: wrap; align-items: center; }
+.huntmyths { margin-top: 8px; gap: 6px; flex-wrap: wrap; align-items: center; }
+.huntmyths form { gap: 6px; }
 .hmyth { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border: 1px solid var(--rule); border-radius: 999px; font-size: 13px; }
 .hmyth .iconbtn { width: 20px; height: 20px; font-size: 12px; }
 .hmythin { width: 190px; }
@@ -3301,7 +3301,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .hmedal .hglyph { width: 52%; height: 52%; filter: drop-shadow(.5px .8px 0 #fff8e6aa); }
 /* the belt */
 .huntbelt { border: 1.5px solid var(--rule); background: #5a3d26; background-size: auto, 512px 256px; overflow: hidden; box-shadow: inset 0 0 30px rgb(0 0 0 / .45); }
-.huntbelt svg { display: block; width: 100%; height: auto; max-height: 300px; margin: 0 auto; overflow: visible; }
+.huntbelt svg { display: block; width: 100%; height: auto; max-height: 230px; margin: 0 auto; overflow: visible; }
 .hbstitch { fill: none; stroke: #e2c393; stroke-width: 1.3; stroke-dasharray: 4 3.5; opacity: .7; }
 .hbedge { fill: none; stroke: #1c0e05; stroke-width: 1.6; opacity: .7; }
 .hbtool { fill: none; stroke: #2a1608; stroke-width: 1; stroke-dasharray: 10 3 2 3; opacity: .45; }
@@ -3331,30 +3331,37 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .hbcharm.released .hbaura { --hglow: #ffcf5a; }
 .hbcharm.fx-release .hbswing, .hbcharm.fx-second .hbswing { animation: hbFlare 1.2s ease-out both; }
 @keyframes hbFlare { 0% { filter: brightness(1); } 30% { filter: brightness(2.2); } 100% { filter: brightness(1); } }
-@media (max-width: 560px) { .hbname { font-size: 19px; } }
+@media (max-width: 560px) { .hbname { font-size: 14px; } }
 .huntbeltctl { margin-top: 10px; gap: 12px; align-items: center; flex-wrap: wrap; }
 .huntturns { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.huntsel { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 12px; padding: 10px; border: 1.5px solid var(--rule); background: var(--sunk); }
-p.huntsel { border-style: dashed; background: transparent; }
-.huntseln { display: grid; line-height: 1.25; margin-right: auto; } .huntseln small { color: var(--ink-3); }
-.huntsel .row { gap: 6px; flex-wrap: wrap; }
-.huntsel > p { flex-basis: 100%; margin: 0; }
+.huntbeltwrap { position: relative; }
+.hloops { position: absolute; right: 8px; bottom: 8px; gap: 4px; align-items: center; padding: 2px 4px; background: rgb(20 10 4 / .55); border-radius: 3px; color: #f3e2bd; }
+.hloops b { font: 600 11.5px var(--f-mono); padding: 0 2px; } .hloops .iconbtn { width: 22px; height: 22px; font-size: 13px; background: #f3e2bd; color: #2a1608; border-color: #2a1608; } .hloops .iconbtn:disabled { opacity: .45; }
+@media (max-width: 560px) { .hloops { position: static; margin-top: 6px; display: inline-flex; background: transparent; color: var(--ink); } .hloops .iconbtn { background: var(--card); color: var(--ink); border-color: var(--rule); } }
+.huntsel { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+.huntseln { margin-right: auto; font-size: 15px; }
+.huntsel small { flex-basis: 100%; }
+.hadd { margin-left: 10px; flex: none; }
+.huntledger summary { cursor: pointer; list-style: none; } .huntledger summary::-webkit-details-marker { display: none; }
+.huntledger summary span::before { content: "▸ "; } .huntledger[open] summary span::before { content: "▾ "; }
 /* the trophy case */
-.huntcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 12px; }
-.huntcard { border: 1.5px solid var(--hair); background: var(--card); padding: 12px; display: grid; gap: 8px; align-content: start; cursor: pointer; animation: inkIn .35s ease-out both; }
+.huntcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); gap: 8px; margin-top: 12px; }
+.huntcard { border: 1.5px solid var(--hair); background: var(--card); padding: 8px 10px; display: grid; gap: 6px; align-content: start; cursor: pointer; animation: inkIn .35s ease-out both; }
 .huntcard.belted { border-color: var(--rule); } .huntcard.attuned { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass), 0 0 14px -4px var(--hglow); }
 .huntcard.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
-.huntcard header { display: flex; gap: 12px; align-items: center; }
-.huntcardn { display: grid; gap: 2px; min-width: 0; } .huntcardn b { font-size: 15.5px; } .huntcardn small { color: var(--ink-3); }
-.huntcardn .row { gap: 6px; align-items: center; flex-wrap: wrap; }
-.hprops { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 13.5px; }
+.huntcard header { display: flex; gap: 10px; align-items: center; }
+.hcardbtns { display: flex; gap: 2px; align-items: center; margin-left: auto; flex: none; } .hcardbtns .iconbtn { width: 24px; height: 24px; font-size: 13px; }
+.hbeltbtn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.hbeltbtn.on { background: var(--rule); color: var(--paper); border-color: var(--rule); }
+.huntcardn { display: grid; gap: 1px; min-width: 0; } .huntcardn b { font-size: 14.5px; } .huntcardn small { color: var(--ink-3); font-size: 12px; }
+.huntcardn .flag { font-size: 10px; padding: 0 4px; }
+.hprops { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; font-size: 13px; }
 .hprops li { display: grid; grid-template-columns: 18px 1fr; gap: 6px; align-items: baseline; }
 .hprops li > span, .hk { font: 700 13px var(--f-mono); text-align: center; }
 .hp-pos > span, .hk.hp-pos { color: var(--hpos); } .hp-neg > span, .hk.hp-neg { color: var(--hneg); } .hp-void > span, .hk.hp-void { color: var(--hvoid); }
 .hprops li.hp-void { color: var(--ink-3); }
 .huntnote { margin: 0; font-size: 13px; }
-.huntcard footer { gap: 6px; align-items: center; margin-top: 2px; }
-.huntcard footer .iconbtn { margin-left: auto; }
+.huntpick { display: grid; gap: 8px; align-content: start; }
 .huntnew { display: grid; place-items: center; align-content: center; gap: 4px; min-height: 150px; border: 1.5px dashed var(--rule); background: transparent; color: var(--ink-2); font: 500 15px var(--f-body); cursor: pointer; }
 .huntnew span { font-size: 28px; line-height: 1; } .huntnew.small { min-height: 90px; font-size: 13.5px; } .huntnew.small span { font-size: 20px; }
 .huntnew:hover { border-color: var(--ink); color: var(--ink); }
@@ -3425,7 +3432,7 @@ p.huntsel { border-style: dashed; background: transparent; }
 .hk.hp-pos { border-color: var(--hpos); } .hk.hp-neg { border-color: var(--hneg); }
 @keyframes hkPop { from { transform: scale(.4); opacity: 0; } }
 .hparts { display: flex; flex-wrap: wrap; gap: 6px; } .hparts .dvchip { display: inline-flex; gap: 6px; align-items: center; }
-.huntlvl { max-width: 260px; }
+.huntlvl { max-width: 260px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 /* merging */
 .huntaltar { border: 1.5px solid var(--rule); overflow: hidden; background: #3b3833; }
 .huntaltar svg { display: block; width: 100%; height: auto; }

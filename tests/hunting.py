@@ -47,10 +47,10 @@ with sync_playwright() as p:
               and t[0]["lvl"] == 3 and [p["kind"] for p in t[0]["props"]] == ["pos"] * 5 + ["void"] and t[0]["props"][0]["t"] == "Power 1", t)
         check(tag + "and it's back on the trophy case", pg.locator(".huntcard").count() == 1)
         # one found by hand
-        pg.locator(".huntnew.small").click(); pg.fill("#tf-n", "Wyrm Scale"); pg.locator(".trophyform .hpe input").first.fill("+2 AV against fire")
+        pg.locator(".hadd").click(); pg.fill("#tf-n", "Wyrm Scale"); pg.locator(".trophyform .hpe input").first.fill("+2 AV against fire")
         pg.locator(".trophyform .btn.primary").click(); pg.wait_for_timeout(400)
         # belt, attune, release
-        for nm in ["Chimera's Fang", "Wyrm Scale"]: pg.locator(".huntcard").filter(has_text=nm).locator(".btn", has_text="Put on the belt").click(); pg.wait_for_timeout(250)
+        for nm in ["Chimera's Fang", "Wyrm Scale"]: pg.locator(".huntcard").filter(has_text=nm).locator(".hcardbtns .hbeltbtn").click(); pg.wait_for_timeout(250)
         pg.wait_for_timeout(1500)
         check(tag + "two trophies hang from the belt", pg.locator(".hbcharm").count() == 2 and sum(x["belted"] for x in ch()["craft"]["hunt"]["trophies"]) == 2)
         pg.locator(".hbcharm").first.click(force=True); pg.locator(".huntsel .btn", has_text="Attune").click(); pg.wait_for_timeout(300)
@@ -60,7 +60,7 @@ with sync_playwright() as p:
         pg.locator(".huntsel .btn", has_text="Release").click(); pg.wait_for_timeout(1500)
         c = ch()
         check(tag + "Release: 3 turns, 1 Stamina", c["craft"]["hunt"]["release"]["turns"] == 3 and c["vitals"]["exhaustion"] == 1, (c["craft"]["hunt"]["release"], c["vitals"].get("exhaustion")))
-        for _ in range(3): pg.locator(".huntturns .btn").click(); pg.wait_for_timeout(200)
+        for _ in range(3): pg.locator(".huntsel .btn", has_text="End of turn").click(); pg.wait_for_timeout(200)
         pg.wait_for_timeout(1500)
         check(tag + "after 3 turns the release ends", ch()["craft"]["hunt"]["release"] is None)
         # merge: the fang gives to the scale; −29 passes up to 8, the fang has 5
