@@ -3305,31 +3305,34 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .hglyph { width: 1.1em; height: 1.1em; fill: currentColor; vertical-align: -.18em; }
 .hpips { display: inline-flex; gap: 3px; } .hpips i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--brass); }
 .hpips i.on { background: var(--brass); }
-.hmedal { width: var(--s); height: var(--s); flex: none; border-radius: 50%; display: grid; place-items: center; overflow: hidden; color: #f1dfb6;
-  background: radial-gradient(circle at 35% 30%, #6b5a46, #2f251d 70%); box-shadow: inset 0 0 0 2px #b98a35, inset 0 0 0 4px #3a2a1a, 0 2px 6px #0004; }
+.hmedal { width: var(--s); height: var(--s); flex: none; border-radius: 50%; display: grid; place-items: center; overflow: hidden; color: #4e3c22;
+  background: radial-gradient(circle at 38% 32%, #f1e6cc, #cdbb94 60%, #8f7b58); box-shadow: 0 0 0 2px #2a1608, 0 0 0 4px #c99a45, 0 0 0 5px #5e4012, 0 3px 8px #0006, inset 0 2px 4px #fff8, inset 0 -3px 6px #0003; }
 .hmedal img { width: 100%; height: 100%; object-fit: cover; }
-.hmedal .hglyph { width: 52%; height: 52%; }
+.hmedal .hglyph { width: 52%; height: 52%; filter: drop-shadow(.5px .8px 0 #fff8e6aa); }
 /* the belt */
-.huntbelt { border: 1.5px solid var(--rule); background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 4%, var(--card)), color-mix(in srgb, var(--ink) 10%, var(--card))); overflow: hidden; }
-.huntbelt svg { display: block; width: 100%; height: auto; max-height: 300px; margin: 0 auto; }
-.hbstitch { fill: none; stroke: #d9b98a; stroke-width: 1.2; stroke-dasharray: 4 4; opacity: .55; }
-.hbloopr { fill: #4a2a14; stroke: #2a170a; stroke-width: 1.2; }
-.hbloop.full .hbloopr { fill: #563219; }
+.huntbelt { border: 1.5px solid var(--rule); background: #5a3d26; background-size: auto, 512px 256px; overflow: hidden; box-shadow: inset 0 0 30px rgb(0 0 0 / .45); }
+.huntbelt svg { display: block; width: 100%; height: auto; max-height: 300px; margin: 0 auto; overflow: visible; }
+.hbstitch { fill: none; stroke: #e2c393; stroke-width: 1.3; stroke-dasharray: 4 3.5; opacity: .7; }
+.hbedge { fill: none; stroke: #1c0e05; stroke-width: 1.6; opacity: .7; }
+.hbtool { fill: none; stroke: #2a1608; stroke-width: 1; stroke-dasharray: 10 3 2 3; opacity: .45; }
+.hbloopr { stroke: #1c0e05; stroke-width: 1.2; }
+
 .hbcharm { cursor: pointer; outline: none; }
 .hbswing { transform-box: view-box; transform-origin: var(--x) 70px; animation: hbSway 5.5s ease-in-out infinite; animation-delay: calc(var(--d) * -1); }
 @keyframes hbSway { 0%, 100% { transform: rotate(-1.6deg); } 50% { transform: rotate(1.6deg); } }
 .hbcharm.fx-hang .hbswing { animation: hbHang 1.4s cubic-bezier(.3, 1.4, .5, 1) both; }
 @keyframes hbHang { 0% { transform: translateY(-60px) rotate(0); opacity: 0; } 35% { transform: translateY(6px) rotate(10deg); opacity: 1; } 55% { transform: rotate(-7deg); } 75% { transform: rotate(4deg); } 100% { transform: rotate(0); } }
-.hbcord { fill: none; stroke: #c8a874; stroke-width: 2; }
-.hbrim { fill: #2a1f17; stroke: url(#hb-brass); stroke-width: 4; }
-.hbdisc { fill: #3b2e23; } .hbglyph { fill: #efdcae; }
-.hbname { font: 600 10.5px var(--f-head); fill: var(--ink-2); text-anchor: middle; letter-spacing: .04em; }
+.hbcord { fill: none; stroke: #7a5a32; stroke-width: 3.2; }
+.hbcord2 { fill: none; stroke: #d8bd88; stroke-width: 1.6; stroke-dasharray: 3 3; }
+.hbrim { stroke: #3d2a0c; stroke-width: 1; }
+.hbglyph { fill: #4e3c22; }
+.hbname { font: 600 10.5px var(--f-head); fill: #f3e2bd; text-anchor: middle; letter-spacing: .04em; paint-order: stroke; stroke: #1a0e05; stroke-width: 3px; }
 .hbaura { opacity: 0; transition: opacity .6s ease; }
 .hbcharm.attuned .hbaura { opacity: 1; animation: hbPulse 3.2s ease-in-out infinite; }
 @keyframes hbPulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
 .hbring { fill: none; stroke: var(--hglow); stroke-width: 2; stroke-dasharray: 5 4; transform-box: fill-box; transform-origin: center; animation: hbRing 14s linear infinite; }
 @keyframes hbRing { to { transform: rotate(360deg); } }
-.hbcharm.sel .hbrim { stroke-width: 6; }
+.hbcharm.sel .hbrim { stroke: #fff3c8; stroke-width: 2.4; }
 .hbcharm:focus-visible .hbrim { stroke: var(--ink); }
 .hbcharm.fx-attune .hbring { animation: hbDraw 1.2s ease-out both, hbRing 14s linear 1.2s infinite; stroke-dasharray: 220; }
 @keyframes hbDraw { from { stroke-dashoffset: 220; } to { stroke-dashoffset: 0; } }
@@ -3382,20 +3385,28 @@ p.huntsel { border-style: dashed; background: transparent; }
 .hpe.hp-neg .hkind button[aria-pressed=true] { background: var(--hneg); border-color: var(--hneg); color: #fff; }
 @media (max-width: 560px) { .trophyformtop { grid-template-columns: 1fr; justify-items: center; } .trophyformf { width: 100%; } }
 /* carving */
-.huntcarcass { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 85%, color-mix(in srgb, var(--ink) 14%, var(--card)), color-mix(in srgb, var(--ink) 5%, var(--card)) 70%); }
+.huntcarcass { position: relative; overflow: hidden; background: #8a7556; box-shadow: inset 0 0 40px rgb(0 0 0 / .35); }
 .huntcarcass svg { display: block; width: 100%; height: auto; }
-.hcground { fill: color-mix(in srgb, var(--ink) 18%, transparent); }
-.hcfur { fill: url(#hc-fur); stroke: #1c1410; stroke-width: 1.4; stroke-linejoin: round; }
-.hcfur.far { fill: #2c221b; } .hcbelly { fill: #6e5b49; opacity: .55; }
-.hcspine { fill: #2a201a; stroke: #1c1410; stroke-width: 1; stroke-linejoin: round; }
+.hcgrass { fill: none; stroke: #4f5a2a; stroke-width: 1.4; stroke-linecap: round; opacity: .8; }
+.hcblood { fill: none; stroke: #2a0304; stroke-width: 2; opacity: .55; stroke-linecap: round; }
+.hctex path { mix-blend-mode: multiply; opacity: .9; } .hcsheen { pointer-events: none; }
+.hctongue { fill: #a8474b; stroke: #5a1d20; stroke-width: 1; } .hcnoseshine { fill: #fff; opacity: .5; }
+.hclash { fill: none; stroke: #1a110b; stroke-width: 1; stroke-linecap: round; }
+.hcwound { fill: none; stroke: #5a0a0d; stroke-width: 3; stroke-linecap: round; opacity: .85; }
+.hcblade { fill: #e2e6ea; stroke: #4a5056; stroke-width: .8; } .hcgrip { fill: #4a2c16; stroke: #1c0e05; stroke-width: .8; }
+.hcfur { stroke: #140e0a; stroke-opacity: .5; stroke-width: 1.2; stroke-linejoin: round; }
+.hchills { fill: #8f8a78; opacity: .55; } .hchills.near { fill: #7a6e58; opacity: .6; }
+.hcjoint { fill: none; stroke: #120c08; stroke-width: 1.2; opacity: .45; stroke-linecap: round; }
+.hcbelly { fill: #8a735c; opacity: .45; }
+.hcspine { stroke: #1c1410; stroke-opacity: .6; stroke-width: .8; stroke-linejoin: round; }
 .hcmouth { fill: #4a1416; } .hcnose { fill: #17110d; }
 .hchornring { fill: none; stroke: #6b5d48; stroke-width: 1; opacity: .7; }
 .hcarrow path { fill: none; stroke: #6b4a2b; stroke-width: 2.4; stroke-linecap: round; } .hcarrow .fl { fill: #d9d2c0; stroke: #6b5d48; stroke-width: .6; }
-.hcmane, .hcrib { fill: none; stroke: #7d6855; stroke-width: 1.6; stroke-linecap: round; opacity: .55; }
+.hcmane, .hcrib { fill: none; stroke: #8a7460; stroke-width: 1.4; stroke-linecap: round; opacity: .45; }
 .hchorn { stroke: #5a4c3a; stroke-width: 1.2; } .hcfang { fill: #efe6d2; stroke: #6a5d4a; stroke-width: .8; }
-.hceye { fill: none; stroke: #e7d9b4; stroke-width: 2; stroke-linecap: round; } .hcclaw { fill: none; stroke: #e8dfca; stroke-width: 2.2; stroke-linecap: round; }
+.hceye { fill: none; stroke: #120b07; stroke-width: 2; stroke-linecap: round; } .hcclaw { fill: none; stroke: #e1d6bc; stroke-width: 2.2; stroke-linecap: round; }
 .hcpart { cursor: pointer; outline: none; }
-.hccut { fill: none; stroke: #e9d8a6; stroke-width: 1.6; stroke-dasharray: 5 4; opacity: .45; transition: opacity .2s ease, stroke-width .2s ease; }
+.hccut { fill: none; stroke: #e9d8a6; stroke-width: 1.6; stroke-dasharray: 5 4; opacity: .28; transition: opacity .2s ease, stroke-width .2s ease; }
 .hchit { fill: transparent; }
 .hcpart:hover .hccut, .hcpart:focus-visible .hccut { opacity: .85; }
 .hcpart.on .hccut { opacity: 1; stroke: #ffd97a; stroke-width: 2.2; animation: hcMarch 1.2s linear infinite; }
@@ -3426,18 +3437,19 @@ p.huntsel { border-style: dashed; background: transparent; }
 .hparts { display: flex; flex-wrap: wrap; gap: 6px; } .hparts .dvchip { display: inline-flex; gap: 6px; align-items: center; }
 .huntlvl { max-width: 260px; }
 /* merging */
-.huntaltar { border: 1.5px solid var(--rule); overflow: hidden; background: radial-gradient(ellipse at 50% 55%, color-mix(in srgb, #e8b04a 10%, var(--card)), color-mix(in srgb, var(--ink) 8%, var(--card)) 75%); }
+.huntaltar { border: 1.5px solid var(--rule); overflow: hidden; background: #3b3833; }
 .huntaltar svg { display: block; width: 100%; height: auto; }
 .haslab { stroke: #3a3936; stroke-width: 1.2; }
-.haring { fill: none; stroke: color-mix(in srgb, var(--ink) 40%, transparent); stroke-width: 1.4; } .haring.thin { stroke-dasharray: 3 5; stroke-width: 1; }
-.hanotch { stroke: color-mix(in srgb, var(--ink) 50%, transparent); stroke-width: 1.4; }
-.harim { fill: #2a1f17; stroke: url(#hb-brass); stroke-width: 5; } .hadisc { fill: #3b2e23; }
-.haempty { fill: none; stroke: color-mix(in srgb, var(--ink) 40%, transparent); stroke-width: 1.5; stroke-dasharray: 5 5; }
-.haq { font: 600 11px var(--f-head); fill: var(--ink-3); text-anchor: middle; letter-spacing: .08em; text-transform: uppercase; }
+.haring { fill: none; stroke: #2a2724; stroke-width: 1.8; opacity: .8; } .haring.thin { stroke-dasharray: 3 5; stroke-width: 1.2; }
+.hanotch { stroke: #2a2724; stroke-width: 2; opacity: .8; }
+.harim { stroke: #3d2a0c; stroke-width: 1; }
+.haempty { fill: #0004; stroke: #e8e2d6; stroke-width: 1.5; stroke-dasharray: 5 5; opacity: .7; }
+.haq { font: 600 11px var(--f-head); fill: #e8e2d6; text-anchor: middle; letter-spacing: .08em; text-transform: uppercase; }
 .hastream { fill: none; stroke: #e8b04a; stroke-width: 2; stroke-dasharray: 2 8; opacity: 0; }
 .hamedal { transform-box: view-box; transform-origin: 300px 130px; }
 .ph-fuse .hamedal.recv { animation: haOrbitL 1.7s cubic-bezier(.5, 0, .5, 1) both; }
 .ph-fuse .hamedal.give { animation: haOrbitR 1.7s cubic-bezier(.5, 0, .5, 1) both; }
+.ph-fuse .hamedal .hbname { opacity: 0; transition: opacity .2s; }
 @keyframes haOrbitL { 50% { transform: rotate(-160deg) scale(.86); } 100% { transform: rotate(-360deg); } }
 @keyframes haOrbitR { 50% { transform: rotate(-160deg) scale(.86); } 100% { transform: rotate(-360deg) scale(.92); opacity: .75; } }
 .ph-read .hastream, .ph-fuse .hastream { opacity: .9; animation: haStream 1s linear infinite; }
@@ -10473,16 +10485,70 @@ const huntSrc = t => !t ? "" : t.img ? (Store.assets && Store.assets.urlFor ? St
 const HUNT_KIND = { pos: ["+", "Positive"], neg: ["−", "Negative"], void: ["∅", "Void"] };
 
 // The monster's parts you can carve, where they sit on the carcass (viewBox 0 0 600 320), and the line the knife follows.
+// Textures, painted once on a canvas the first time they're needed and kept as images: fur, leather, wood, stone, dirt.
+// Laid over the drawings as patterns, so nothing is redrawn while things move.
+const HUNT_TEX = {};
+function huntTex(k) {
+  if (HUNT_TEX[k] !== undefined) return HUNT_TEX[k];
+  try {
+    const W = k === "wood" ? 512 : 256, H = k === "wood" ? 256 : k === "dirt" ? 128 : 256;
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d"), rnd = Math.random;
+    // every mark is drawn again on the far side of any edge it crosses, so the texture tiles without seams
+    const wrap = (x, y, r, fn) => { for (const dx of [0, -W, W]) for (const dy of [0, -H, H]) if (x + dx + r > 0 && x + dx - r < W && y + dy + r > 0 && y + dy - r < H) fn(x + dx, y + dy); };
+    const blot = (n, rmin, rmax, dark, light) => { for (let i = 0; i < n; i++) { const x0 = rnd() * W, y0 = rnd() * H, r = rmin + rnd() * (rmax - rmin), col = rnd() < .55 ? dark : light;
+      wrap(x0, y0, r, (x, y) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, col); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }); } };
+    const grain = (n, a) => { for (let i = 0; i < n; i++) { g.fillStyle = rnd() < .5 ? `rgba(0,0,0,${a})` : `rgba(255,240,220,${a * .7})`; g.fillRect(rnd() * W, rnd() * H, 1, 1); } };
+    if (k === "fur") {
+      g.lineCap = "round";
+      for (let i = 0; i < 3400; i++) { const x0 = rnd() * W, y0 = rnd() * H, a = .22 + Math.sin(y0 / 32 * Math.PI) * .18 + (rnd() - .5) * .5, l = 5 + rnd() * 9, dark = rnd() < .7;
+        g.strokeStyle = dark ? `rgba(18,10,6,${.16 + rnd() * .22})` : `rgba(226,204,170,${.08 + rnd() * .14})`; g.lineWidth = .7 + rnd() * .8;
+        wrap(x0, y0, l, (x, y) => { g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a) * l * .5, y + Math.sin(a) * l * .5 - 1, x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); }); }
+    } else if (k === "leather") {
+      blot(420, 6, 26, "rgba(0,0,0,.07)", "rgba(255,226,190,.05)"); grain(9000, .09);
+      g.strokeStyle = "rgba(0,0,0,.12)"; g.lineWidth = .8;
+      for (let i = 0; i < 26; i++) { let x = rnd() * W, y = rnd() * H; g.beginPath(); g.moveTo(x, y); for (let j = 0; j < 5; j++) { x += (rnd() - .5) * 18; y += (rnd() - .5) * 8; g.lineTo(x, y); } g.stroke(); }
+    } else if (k === "wood") {
+      g.fillStyle = "#6a4a2f"; g.fillRect(0, 0, W, H);
+      for (let i = 0; i < 150; i++) { const y0 = rnd() * H, amp = 2 + rnd() * 5, f = .004 + rnd() * .01, ph = rnd() * 6;
+        g.strokeStyle = rnd() < .5 ? `rgba(40,24,12,${.15 + rnd() * .3})` : `rgba(160,112,70,${.1 + rnd() * .25})`; g.lineWidth = .6 + rnd() * 2.4;
+        g.beginPath(); for (let x = 0; x <= W; x += 8) { const y = y0 + Math.sin(x * f + ph) * amp + Math.sin(x * f * 3.1) * amp * .3; x ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); }
+      [[150, 90], [400, 190]].forEach(([x, y]) => { for (let r = 3; r < 26; r += 3.2) { g.strokeStyle = `rgba(40,24,12,${.35 - r / 90})`; g.lineWidth = 1.2; g.beginPath(); g.ellipse(x, y, r * 2.2, r * .8, 0, 0, 7); g.stroke(); } });
+      g.fillStyle = "rgba(0,0,0,.18)"; for (let x = 0; x < W; x += 128) g.fillRect(x, 0, 1.5, H);
+      grain(6000, .07);
+    } else if (k === "stone") {
+      blot(520, 5, 30, "rgba(0,0,0,.08)", "rgba(255,255,255,.07)"); grain(12000, .11);
+    } else if (k === "dirt") {
+      blot(260, 3, 14, "rgba(40,26,14,.18)", "rgba(220,196,160,.12)"); grain(7000, .14);
+      for (let i = 0; i < 40; i++) { const x = rnd() * W, y = rnd() * H, r = 1 + rnd() * 2.6; g.fillStyle = `rgba(${90 + rnd() * 60},${80 + rnd() * 40},${70 + rnd() * 30},.7)`; g.beginPath(); g.ellipse(x, y, r * 1.3, r, 0, 0, 7); g.fill(); }
+    }
+    HUNT_TEX[k] = cv.toDataURL("image/png");
+  } catch (e) { HUNT_TEX[k] = ""; }
+  return HUNT_TEX[k];
+}
+const HuntPattern = ({ id, k, w = 256, h = 256 }) => huntTex(k) ? html`<pattern id=${id} patternUnits="userSpaceOnUse" width=${w} height=${h}><image href=${huntTex(k)} width=${w} height=${h} /></pattern>` : null;
+
+// The monster's parts you can carve, where they sit on the carcass (viewBox 0 0 600 320), and the line the knife follows.
 const HUNT_PARTS = [
-  { k: "horn", n: "Horn", at: [160, 96], cut: "M148 136 C156 130 166 128 176 131" },
-  { k: "eye", n: "Eye", at: [138, 157], cut: "M124 157 C130 148 146 148 152 157 C146 165 130 165 124 157" },
-  { k: "fang", n: "Fang", at: [96, 194], cut: "M82 184 C84 198 98 206 114 200" },
-  { k: "claw", n: "Claw", at: [188, 286], cut: "M200 276 C204 288 192 296 180 292" },
-  { k: "hide", n: "Hide", at: [372, 188], cut: "M300 160 C340 150 400 152 440 166 C448 190 442 214 430 226 C380 234 330 234 296 222 C290 200 292 180 300 160" },
-  { k: "heart", n: "Heart", at: [270, 200], cut: "M258 186 C264 178 278 180 282 190 C284 202 274 212 268 216 C260 210 254 198 258 186" },
-  { k: "tail", n: "Tail", at: [540, 196], cut: "M496 166 C492 176 492 186 496 194" },
-  { k: "bone", n: "Bone", at: [458, 250], cut: "M444 238 C452 232 464 232 472 240" },
+  { k: "horn", n: "Horn", at: [174, 122], cut: "M158 168 C166 160 178 158 190 162" },
+  { k: "eye", n: "Eye", at: [150, 186], cut: "M136 186 C142 177 158 177 164 186 C158 194 142 194 136 186" },
+  { k: "fang", n: "Fang", at: [96, 228], cut: "M78 214 C80 230 96 240 116 230" },
+  { k: "claw", n: "Claw", at: [152, 278], cut: "M168 266 C174 278 164 290 146 288" },
+  { k: "hide", n: "Hide", at: [384, 192], cut: "M310 150 C350 138 420 138 460 156 C470 180 466 214 456 232 C400 244 340 244 304 232 C296 206 298 176 310 150" },
+  { k: "heart", n: "Heart", at: [262, 212], cut: "M250 198 C256 190 270 192 274 202 C276 214 266 224 260 228 C252 222 246 210 250 198" },
+  { k: "tail", n: "Tail", at: [548, 240], cut: "M512 214 C506 222 504 230 506 238" },
+  { k: "bone", n: "Bone", at: [492, 270], cut: "M486 256 C493 264 494 274 489 283" },
 ];
+// The carcass, as layers drawn twice: once in colour, once more with the fur texture over it.
+const HC_SHAPES = {
+  farFront: "M244 230 C228 236 212 241 196 243 C180 245 164 245 152 247 C142 249 138 255 144 259 C152 261 166 259 182 257 C204 255 226 251 250 246 Z",
+  farHind: "M452 228 C470 233 490 237 510 237 C526 237 540 237 548 241 C554 247 548 253 538 253 C520 253 498 251 476 249 C462 247 450 245 444 243 Z",
+  tail: "M500 212 C528 220 554 234 576 252 C584 258 580 266 570 263 C548 253 524 240 496 230 Z",
+  body: "M200 176 C232 150 268 132 312 124 C370 114 430 120 468 140 C500 158 512 190 504 220 C498 244 478 254 450 258 L300 262 C262 262 236 256 222 244 C208 232 200 214 194 200 Z",
+  nearFront: "M270 234 C254 246 238 254 224 258 C206 262 190 264 172 266 C160 266 150 268 146 274 C144 280 152 285 162 283 C176 281 196 279 216 276 C238 272 256 264 276 252 Z",
+  nearHind: "M426 228 C450 236 470 250 490 259 C506 265 524 267 540 267 C552 267 558 275 551 281 C539 286 520 284 502 280 C476 274 452 266 430 256 Z",
+  head: "M200 176 C190 166 172 160 150 162 C128 164 104 172 84 182 C70 188 58 196 56 206 C56 214 64 218 76 218 L118 220 C104 232 86 240 70 244 C66 250 74 256 88 256 C122 258 160 258 186 252 C204 246 210 230 206 214 C206 198 206 186 200 176 Z",
+  ear: "M184 172 C196 156 210 148 226 146 C216 160 206 170 196 180 Z",
+};
 const HUNT_GLYPH = {
   horn: "M-7 9C-5 0 -2 -6 6 -10C2 -4 2 3 4 9Z", eye: "M-9 0C-5 -6 5 -6 9 0C5 6 -5 6 -9 0Z M-2.6 0a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0",
   fang: "M-5 -9H5C5 -2 2 5 0 10C-2 5 -5 -2 -5 -9Z", claw: "M-8 8C-6 0 -1 -6 7 -9C3 -4 1 2 1 8Z M-2 9C0 3 3 -1 8 -3",
@@ -10493,7 +10559,7 @@ const HUNT_GLYPH = {
 const HuntGlyph = ({ part }) => html`<svg class="hglyph" viewBox="-11 -11 22 22" aria-hidden="true"><path d=${HUNT_GLYPH[part] || HUNT_GLYPH.other} /></svg>`;
 const HuntPips = ({ lvl }) => html`<span class="hpips" aria-label=${`Level ${lvl}`}>${[1, 2, 3, 4, 5].map(i => html`<i class=${i <= lvl ? "on" : ""}></i>`)}</span>`;
 // A trophy's medallion: its picture, or the part's glyph on a disc.
-const HuntMedal = ({ t, size = 64, cls = "" }) => { const src = huntSrc(t);
+const HuntMedal = ({ t, size = 64, cls = "" }) => { const src = huntSrc(t);   // a brass-rimmed disc of bone, or the trophy's picture
   return html`<span class=${"hmedal " + cls} style=${`--s:${size}px`}>${src ? html`<img src=${src} alt="" />` : html`<${HuntGlyph} part=${t.part} />`}</span>`; };
 
 function Hunting({ c, update }) {
@@ -10606,36 +10672,60 @@ function HuntCase({ c, st, update, log, toCarve }) {
   </${HuntFrag}>`;
 }
 
-// The belt: a strap of leather with a brass buckle and loops; each belted trophy hangs from a cord on its loop.
+// The belt, laid on a wooden table: a tooled leather strap with a brass buckle and riveted loops; each belted trophy
+// hangs from a braided cord as a brass-rimmed medallion with its picture, or the part's glyph engraved in bone.
 function HuntBelt({ st, h, belt, sel, fx, onPick }) {
-  const n = st.slots, W = 600, x0 = 120, x1 = 570, step = (x1 - x0) / n;
+  const n = st.slots, x0 = 120, x1 = 570, step = (x1 - x0) / n;
   const slot = i => x0 + step * (i + .5);
-  return html`<div class="huntbelt">
+  return html`<div class="huntbelt" style=${huntTex("wood") ? `background-image: radial-gradient(ellipse at 50% 40%, transparent 40%, rgb(20 10 4 / .55)), url(${huntTex("wood")})` : ""}>
     <svg viewBox="0 0 600 250" role="group" aria-label=${`Your belt: ${belt.length} of ${n} loops taken`}>
       <defs>
-        <linearGradient id="hb-leather" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a4a2a" /><stop offset=".45" stop-color="#5b3419" /><stop offset="1" stop-color="#3a200e" /></linearGradient>
-        <linearGradient id="hb-brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3d58a" /><stop offset=".5" stop-color="#b98a35" /><stop offset="1" stop-color="#6e4d18" /></linearGradient>
-        <radialGradient id="hb-glow"><stop offset=".55" stop-color="var(--hglow)" stop-opacity=".55" /><stop offset="1" stop-color="var(--hglow)" stop-opacity="0" /></radialGradient>
-        <clipPath id="hb-disc"><circle r="25" /></clipPath>
+        <linearGradient id="hb-leather" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5532" /><stop offset=".18" stop-color="#6e4024" /><stop offset=".8" stop-color="#4e2b16" /><stop offset="1" stop-color="#2e180a" /></linearGradient>
+        <linearGradient id="hb-loop" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a200e" /><stop offset=".3" stop-color="#6a3d20" /><stop offset=".7" stop-color="#5a321a" /><stop offset="1" stop-color="#2a170a" /></linearGradient>
+        <linearGradient id="hb-brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe7a6" /><stop offset=".3" stop-color="#d1a24a" /><stop offset=".6" stop-color="#8f6522" /><stop offset=".8" stop-color="#d8ad58" /><stop offset="1" stop-color="#5e4012" /></linearGradient>
+        <radialGradient id="hb-rivet" cx=".35" cy=".3" r=".7"><stop offset="0" stop-color="#fff2c0" /><stop offset=".45" stop-color="#c6953e" /><stop offset="1" stop-color="#4d3410" /></radialGradient>
+        <radialGradient id="hb-bone" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#f1e6cc" /><stop offset=".6" stop-color="#cdbb94" /><stop offset="1" stop-color="#8f7b58" /></radialGradient>
+        <radialGradient id="hb-glow"><stop offset=".55" stop-color="var(--hglow)" stop-opacity=".6" /><stop offset="1" stop-color="var(--hglow)" stop-opacity="0" /></radialGradient>
+        <radialGradient id="hb-shadow"><stop offset="0" stop-color="#0c0603" stop-opacity=".55" /><stop offset="1" stop-color="#0c0603" stop-opacity="0" /></radialGradient>
+        <linearGradient id="hb-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35" /><stop offset=".5" stop-color="#fff" stop-opacity="0" /></linearGradient>
+        <${HuntPattern} id="hb-tex" k="leather" />
+        <clipPath id="hb-disc"><circle r="24" /></clipPath>
       </defs>
-      <path class="hbstrap" d="M-10 52 C150 44 450 44 610 52 L610 88 C450 80 150 80 -10 88Z" fill="url(#hb-leather)" />
-      <path class="hbstitch" d="M-10 57 C150 49 450 49 610 57 M-10 83 C150 75 450 75 610 83" />
-      <g class="hbbuckle"><rect x="40" y="38" width="54" height="62" rx="7" fill="none" stroke="url(#hb-brass)" stroke-width="7" /><path d="M67 42V96" stroke="url(#hb-brass)" stroke-width="4" /><circle cx="67" cy="69" r="3.2" fill="#3a200e" /></g>
+      <path d="M-400 62 C150 52 450 52 1000 62 L1000 100 C450 90 150 90 -400 100Z" fill="#0c0603" opacity=".35" transform="translate(0 7)" />
+      <path class="hbstrap" d="M-400 54 C150 44 450 44 1000 54 L1000 90 C450 80 150 80 -400 90Z" fill="url(#hb-leather)" />
+      <path d="M-400 54 C150 44 450 44 1000 54 L1000 90 C450 80 150 80 -400 90Z" fill="url(#hb-tex)" />
+      <path class="hbedge" d="M-400 55 C150 45 450 45 1000 55 M-400 89 C150 79 450 79 1000 89" />
+      <path class="hbstitch" d="M-400 59.5 C150 49.5 450 49.5 1000 59.5 M-400 84.5 C150 74.5 450 74.5 1000 84.5" />
+      <path class="hbtool" d="M-400 69 C150 58 450 58 1000 69" />
+      <g class="hbbuckle">
+        <rect x="40" y="35" width="56" height="66" rx="8" fill="none" stroke="#1a0e05" stroke-width="9" opacity=".45" transform="translate(2 4)" />
+        <rect x="40" y="35" width="56" height="66" rx="8" fill="none" stroke="url(#hb-brass)" stroke-width="8" />
+        <rect x="40" y="35" width="56" height="66" rx="8" fill="none" stroke="#fff6d0" stroke-width="1" opacity=".5" />
+        <path d="M68 40V96" stroke="url(#hb-brass)" stroke-width="5" stroke-linecap="round" /><circle cx="68" cy="69" r="3.4" fill="#2a1608" />
+      </g>
       ${Array.from({ length: n }, (_, i) => { const x = slot(i), t = belt[i];
-        return html`<g class=${"hbloop" + (t ? " full" : "")} key=${"loop" + i}><rect x=${x - 15} y="44" width="30" height="44" rx="4" class="hbloopr" /><path d=${`M${x - 15} 50 H${x + 15} M${x - 15} 82 H${x + 15}`} class="hbstitch" /></g>`; })}
+        return html`<g class=${"hbloop" + (t ? " full" : "")} key=${"loop" + i}>
+          <rect x=${x - 15} y="42" width="30" height="48" rx="4" fill="url(#hb-loop)" class="hbloopr" /><rect x=${x - 15} y="42" width="30" height="48" rx="4" fill="url(#hb-tex)" />
+          <path d=${`M${x - 12} 47 H${x + 12} M${x - 12} 85 H${x + 12}`} class="hbstitch" />
+          <circle cx=${x - 9} cy="52" r="2.6" fill="url(#hb-rivet)" /><circle cx=${x + 9} cy="52" r="2.6" fill="url(#hb-rivet)" /><circle cx=${x - 9} cy="80" r="2.6" fill="url(#hb-rivet)" /><circle cx=${x + 9} cy="80" r="2.6" fill="url(#hb-rivet)" /></g>`; })}
       ${belt.map((t, i) => { const x = slot(i), on = sel === t.id, released = h.release && h.release.id === t.id, f = fx && fx.id === t.id ? fx.kind : "";
         return html`<g key=${t.id} class=${"hbcharm" + (on ? " sel" : "") + (t.attuned ? " attuned" : "") + (released ? " released" : "") + (f ? " fx-" + f : "")}
             style=${`--x:${x}px; --d:${(i * .37).toFixed(2)}s`} role="button" tabindex="0" aria-label=${`${t.n || "Trophy"}${t.attuned ? ", attuned" : ""}`}
             onClick=${() => onPick(t.id)} onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(t.id); } }}>
-          <g class="hbswing"><path class="hbcord" d=${`M${x} 70 C${x - 3} 100 ${x + 3} 120 ${x} 140`} />
+          <g class="hbswing">
+            <ellipse class="hbcast" cx=${x + 10} cy="214" rx="30" ry="9" fill="url(#hb-shadow)" />
+            <path class="hbcord" d=${`M${x} 72 C${x - 3} 100 ${x + 3} 122 ${x} 142`} /><path class="hbcord2" d=${`M${x} 72 C${x - 3} 100 ${x + 3} 122 ${x} 142`} />
             <g transform=${`translate(${x} 170)`}>
-              <circle class="hbaura" r="46" fill="url(#hb-glow)" />
-              ${t.attuned && html`<circle class="hbring" r="33" />`}
-              <circle class="hbrim" r="28" />
-              ${huntSrc(t) ? html`<image href=${huntSrc(t)} x="-25" y="-25" width="50" height="50" preserveAspectRatio="xMidYMid slice" clip-path="url(#hb-disc)" />`
-                : html`<circle r="25" class="hbdisc" /><g transform="scale(1.7)"><path class="hbglyph" d=${HUNT_GLYPH[t.part] || HUNT_GLYPH.other} /></g>`}
+              <circle class="hbaura" r="48" fill="url(#hb-glow)" />
+              ${t.attuned && html`<circle class="hbring" r="35" />`}
+              <circle r="30" fill="#1a0e05" opacity=".5" transform="translate(2 3)" />
+              <circle class="hbrim" r="29" fill="url(#hb-brass)" /><circle r="25.5" fill="#2a1608" />
+              ${huntSrc(t) ? html`<image href=${huntSrc(t)} x="-24" y="-24" width="48" height="48" preserveAspectRatio="xMidYMid slice" clip-path="url(#hb-disc)" />`
+                : html`<circle r="24" fill="url(#hb-bone)" /><g transform="scale(1.6)"><path d=${HUNT_GLYPH[t.part] || HUNT_GLYPH.other} fill="#fff8e6" opacity=".7" transform="translate(.5 .7)" /><path class="hbglyph" d=${HUNT_GLYPH[t.part] || HUNT_GLYPH.other} /></g>`}
+              <circle r="24" fill="url(#hb-shine)" /><circle r="28" fill="none" stroke="#fff3c8" stroke-width=".8" opacity=".6" />
+              <circle cy="-31" r="4.5" fill="none" stroke="url(#hb-brass)" stroke-width="2.4" />
               <text y="60" class="hbname">${(t.n || "Trophy").slice(0, 16)}</text>
-              ${released && html`<g class="hbrays">${Array.from({ length: 12 }, (_, k) => html`<path d="M0 -34V-44" transform=${`rotate(${k * 30})`} />`)}</g>`}
+              ${released && html`<g class="hbrays">${Array.from({ length: 12 }, (_, k) => html`<path d="M0 -36V-46" transform=${`rotate(${k * 30})`} />`)}</g>`}
             </g></g></g>`; })}
     </svg></div>`;
 }
@@ -10780,41 +10870,55 @@ function HuntCarve({ c, st, update, log, toCase }) {
 }
 const KNIFE = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17 12.5 7.5 15 5c1.5-1.5 2.5-1 2.5-1s.5 1-1 2.5L14 9 4.5 18.5Z M10.5 9.5l2 2" /></svg>`;
 
-// A slain horned beast lying on its side, with a dashed cut line on every part you can carve.
+// A slain horned beast lying dead on its side in the dirt: legs limp along the ground, jaw slack, tongue out, arrows in
+// its flank. Fur, dirt and blood are textured; light falls from above. Every part you can carve has a dashed cut line.
 function HuntCarcass({ part, run, onPick }) {
   const P = HUNT_PARTS.find(p => p.k === part) || HUNT_PARTS[0], phase = run ? run.phase : "";
+  const order = ["farFront", "farHind", "tail", "body", "nearFront", "nearHind", "head", "ear"];
   return html`<div class=${"huntcarcass ph-" + (phase || "idle")}>
     <svg viewBox="0 0 600 320" role="group" aria-label="The slain monster: choose a part to carve">
       <defs>
-        <linearGradient id="hc-fur" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d4a3c" /><stop offset=".55" stop-color="#3f3128" /><stop offset="1" stop-color="#241b16" /></linearGradient>
-        <linearGradient id="hc-horn" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#8a7a63" /><stop offset="1" stop-color="#e6dcc4" /></linearGradient>
-        <radialGradient id="hc-pool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#5a0f12" stop-opacity=".75" /><stop offset="1" stop-color="#5a0f12" stop-opacity="0" /></radialGradient>
+        <linearGradient id="hc-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9a597" /><stop offset=".55" stop-color="#cdc3ad" /><stop offset=".64" stop-color="#9c8a6b" /><stop offset="1" stop-color="#5c4a33" /></linearGradient>
+        <linearGradient id="hc-mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8cfba" stop-opacity="0" /><stop offset=".5" stop-color="#d8cfba" stop-opacity=".75" /><stop offset="1" stop-color="#8a7556" stop-opacity="0" /></linearGradient>
+        <linearGradient id="hc-spike" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#3a2e24" /><stop offset=".6" stop-color="#8f8068" /><stop offset="1" stop-color="#d8ccb0" /></linearGradient>
+        <linearGradient id="hc-fur" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6e5a48" /><stop offset=".4" stop-color="#4a3a2d" /><stop offset="1" stop-color="#231912" /></linearGradient>
+        <linearGradient id="hc-furfar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3e3026" /><stop offset="1" stop-color="#1a120d" /></linearGradient>
+        <linearGradient id="hc-horn" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#6f6250" /><stop offset=".55" stop-color="#cdbf9f" /><stop offset=".8" stop-color="#efe6cf" /><stop offset="1" stop-color="#b9aa88" /></linearGradient>
+        <radialGradient id="hc-pool" cx=".45" cy=".5" r=".5"><stop offset="0" stop-color="#3d0507" stop-opacity=".92" /><stop offset=".7" stop-color="#5a0d10" stop-opacity=".75" /><stop offset="1" stop-color="#5a0d10" stop-opacity="0" /></radialGradient>
+        <radialGradient id="hc-contact" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#140c06" stop-opacity=".7" /><stop offset="1" stop-color="#140c06" stop-opacity="0" /></radialGradient>
+        <linearGradient id="hc-sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2d8" stop-opacity=".32" /><stop offset=".35" stop-color="#fff2d8" stop-opacity="0" /></linearGradient>
         <radialGradient id="hc-trophy"><stop offset="0" stop-color="#fff2c4" stop-opacity=".95" /><stop offset=".5" stop-color="#e8b04a" stop-opacity=".55" /><stop offset="1" stop-color="#e8b04a" stop-opacity="0" /></radialGradient>
+        <${HuntPattern} id="hc-furtex" k="fur" /><${HuntPattern} id="hc-dirt" k="dirt" h=${128} />
       </defs>
-      <ellipse cx="310" cy="282" rx="270" ry="22" class="hcground" />
-      <ellipse cx="150" cy="232" rx="110" ry="16" fill="url(#hc-pool)" />
+      <rect width="600" height="320" fill="url(#hc-sky)" />
+      <path class="hchills" d="M0 196 C60 180 110 186 160 178 C220 168 270 184 330 176 C390 168 440 182 500 174 C540 170 570 178 600 176 V206 H0 Z" />
+      <path class="hchills near" d="M0 204 C80 192 140 200 220 192 C300 186 380 198 460 190 C520 186 560 194 600 190 V210 H0 Z" />
+      <rect y="200" width="600" height="120" fill="url(#hc-dirt)" opacity=".9" />
+      <rect y="180" width="600" height="44" fill="url(#hc-mist)" />
+      <path class="hcgrass" d="M20 214 l3 -12 l2 12 M34 210 l-2 -10 l5 10 M560 212 l2 -11 l3 11 M584 222 l-3 -12 l4 12 M300 300 l2 -9 l3 9 M120 306 l-2 -10 l4 10 M430 304 l3 -9 l2 9" />
+      <ellipse cx="320" cy="266" rx="250" ry="20" fill="url(#hc-contact)" />
+      <ellipse cx="128" cy="262" rx="120" ry="16" fill="url(#hc-pool)" />
+      <path class="hcblood" d="M96 254 C112 262 140 266 170 262 M60 262 C70 270 92 272 110 268" />
       <g class="hcbody">
-        <path class="hcfur far" d="M244 214 C226 230 206 246 186 256 L172 266 C166 272 174 278 182 274 L200 262 C222 254 244 242 258 232 Z" />
-        <path class="hcfur far" d="M410 226 C420 246 424 262 420 278 L418 288 C418 294 428 294 430 288 L434 270 C438 252 434 234 426 222 Z" />
-        <path class="hcfur" d="M488 166 C512 158 540 166 558 186 C570 198 574 214 566 222 C560 212 548 198 534 190 C520 184 504 184 494 190 Z" />
-        <path class="hcfur" d="M190 146 C210 134 232 130 252 134 C300 120 364 116 422 124 C462 130 492 148 498 176 C502 200 492 222 468 232 C422 246 342 248 282 242 C252 240 230 230 214 214 C202 202 198 184 190 146 Z" />
-        <path class="hcbelly" d="M262 232 C300 240 380 242 444 232 C430 220 400 214 360 214 C320 214 284 220 262 232 Z" />
-        <path class="hcspine" d="M262 130 l7 -15 l6 13 M292 123 l8 -16 l7 14 M324 119 l8 -17 l8 15 M358 118 l8 -16 l8 15 M392 120 l7 -14 l7 13 M424 126 l6 -12 l6 11" />
-        <path class="hcfur" d="M262 224 C246 246 226 262 204 274 L190 282 C184 288 194 294 204 288 L222 278 C246 266 266 252 280 238 Z" />
-        <path class="hcfur" d="M432 214 C452 228 466 248 472 266 L476 280 C478 290 492 290 490 280 L486 262 C482 240 470 220 456 206 Z" />
-        <path class="hcfur head" d="M196 148 C180 132 156 128 136 134 C116 140 96 150 78 158 C66 163 56 170 58 178 C60 184 70 186 84 186 L120 188 C106 196 88 200 76 204 C74 210 82 214 94 214 C120 216 150 218 176 214 C198 210 212 196 208 178 C206 166 204 156 196 148 Z" />
-        <path class="hcmouth" d="M84 186 L120 188 C106 196 88 200 76 204 C77 196 80 190 84 186 Z" />
-        <path class="hcfang" d="M90 186 L94 197 L98 187 Z M104 187 L107 195 L110 188 Z M86 203 L90 194 L93 202 Z" />
-        <ellipse class="hcnose" cx="61" cy="174" rx="5" ry="3.6" />
-        <path class="hcfur" d="M178 140 C184 122 192 110 206 104 C202 118 200 130 194 144 Z" />
-        <path fill="url(#hc-horn)" class="hchorn" d="M148 136 C138 112 146 86 172 70 C164 90 164 112 176 131 Z" />
-        <path class="hchornring" d="M150 124 C156 122 162 122 168 124 M146 112 C153 108 160 108 166 110 M148 98 C154 94 160 92 166 94" />
-        <path class="hceye" d="M128 157 Q138 152 148 158" />
-        <path class="hcmane" d="M200 150 C214 140 232 138 250 142 M204 168 C220 156 240 152 258 156 M206 186 C222 174 242 170 260 174 M300 138 C330 130 370 128 408 134" />
-        <path class="hcrib" d="M318 160 C322 186 322 206 316 226 M346 158 C350 186 350 208 346 230 M374 160 C378 186 378 208 374 230" />
-        <path class="hcclaw" d="M190 284 l-8 4 M194 288 l-6 7 M200 290 l-2 8 M474 284 l1 8 M480 285 l4 7 M486 284 l6 5" />
-        <g class="hcarrow"><path d="M370 152 L336 112" /><path class="fl" d="M336 112 l-8 -2 l4 6 Z M336 112 l-2 -8 l6 4 Z" /></g>
-        <g class="hcarrow"><path d="M410 164 L398 122" /><path class="fl" d="M398 122 l-6 -4 l1 7 Z M398 122 l1 -8 l4 6 Z" /></g>
+        ${order.map(k => html`<path key=${k} class=${"hcfur " + k} d=${HC_SHAPES[k]} fill=${k.startsWith("far") ? "url(#hc-furfar)" : "url(#hc-fur)"} />`)}
+        <g class="hctex">${order.map(k => html`<path key=${"t" + k} d=${HC_SHAPES[k]} fill="url(#hc-furtex)" />`)}</g>
+        <path class="hcsheen" d=${HC_SHAPES.body} fill="url(#hc-sheen)" /><path class="hcsheen" d=${HC_SHAPES.head} fill="url(#hc-sheen)" />
+        <path class="hcbelly" d="M300 258 C340 248 410 246 452 252 L450 258 L300 262 Z" />
+        <path class="hcrib" d="M326 150 C330 186 330 216 324 244 M354 146 C358 184 358 216 354 246 M382 148 C386 184 386 218 382 246" />
+        ${[[300, 128, 14], [330, 121, 18], [362, 118, 20], [396, 119, 18], [428, 125, 15], [456, 137, 11]].map(([x, y, h], i) => html`<path key=${"sp" + i} class="hcspine"
+          d=${`M${x} ${y + 2} C${x + 2} ${y - h * .45} ${x + 5} ${y - h * .8} ${x + 11} ${y - h} C${x + 9} ${y - h * .55} ${x + 11} ${y - h * .2} ${x + 15} ${y + 3} Z`} fill="url(#hc-spike)" />`)}
+        <path class="hcmane" d="M206 178 C224 160 246 150 270 146 M214 194 C232 178 254 168 278 166 M222 212 C240 196 262 188 284 186 M312 128 C340 122 380 120 420 126" />
+        <path class="hcmouth" d="M76 218 L118 220 C104 232 86 240 70 244 C70 234 72 226 76 218 Z" />
+        <path class="hctongue" d="M84 236 C78 248 70 256 60 262 C70 268 84 264 92 252 C96 246 94 238 84 236 Z" />
+        <path class="hcfang" d="M86 218 L90 230 L94 219 Z M100 219 L103 228 L106 220 Z M80 240 L84 231 L88 239 Z" />
+        <ellipse class="hcnose" cx="59" cy="203" rx="5.5" ry="4" /><ellipse class="hcnoseshine" cx="57" cy="201" rx="1.8" ry="1" />
+        <path fill="url(#hc-horn)" class="hchorn" d="M162 166 C150 140 156 110 182 92 C176 114 178 138 188 160 Z" />
+        <path class="hchornring" d="M162 154 C168 150 176 150 182 152 M158 140 C165 136 172 135 180 137 M160 126 C166 121 172 119 180 120 M166 112 C171 107 176 104 182 104" />
+        <path class="hceye" d="M140 187 Q150 182 160 188" /><path class="hclash" d="M143 186 l-2 3 M149 184.5 l-1 3.4 M155 185 l0 3.4" />
+        <path class="hcclaw" d="M147 275 l-9 1 M148 280 l-8 5 M155 284 l-4 7 M552 271 l9 1 M552 277 l8 5 M546 283 l4 7 M142 253 l-7 0 M143 258 l-6 4" />
+        <path class="hcjoint" d="M224 258 c-4 4 -4 10 0 14 M490 259 c4 4 4 11 -1 15 M196 244 c-3 3 -3 8 0 11" />
+        <g class="hcarrow"><path d="M372 172 L344 126" /><path class="fl" d="M344 126 l-9 -3 l4 7 Z M344 126 l-3 -9 l7 5 Z" /><path class="hcwound" d="M368 168 c4 2 6 8 4 14" /></g>
+        <g class="hcarrow"><path d="M414 180 L404 136" /><path class="fl" d="M404 136 l-7 -5 l1 8 Z M404 136 l1 -9 l5 7 Z" /><path class="hcwound" d="M412 176 c4 3 5 9 3 14" /></g>
       </g>
       ${HUNT_PARTS.map(p => html`<g key=${p.k} class=${"hcpart" + (p.k === part ? " on" : "")} role="button" tabindex="0" aria-label=${`Carve the ${p.n.toLowerCase()}`}
           onClick=${() => onPick(p.k)} onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(p.k); } }}>
@@ -10822,7 +10926,7 @@ function HuntCarcass({ part, run, onPick }) {
         ${p.k === part && html`<text class="hclabel" x=${p.at[0]} y=${p.at[1] - 28}>${p.n}</text>`}</g>`)}
       ${run && html`<g key=${"run" + run.part} class="hcrun">
         <path class="hcslice" d=${P.cut} pathLength="100" />
-        <g class="hcknife" style=${`offset-path: path("${P.cut}")`}><path d="M0 0 L18 -6 L22 -2 L4 4 Z M-14 6 L0 0 L4 4 L-10 10 Z" /></g>
+        <g class="hcknife" style=${`offset-path: path("${P.cut}")`}><path class="hcblade" d="M0 0 L20 -6 L24 -2 L4 4 Z" /><path class="hcgrip" d="M-16 7 L0 0 L4 4 L-12 11 Z" /></g>
         ${phase !== "cut" && phase !== "fail" && html`<g class="hcprize" transform=${`translate(${P.at[0]} ${P.at[1]})`}><circle r="40" fill="url(#hc-trophy)" /><g transform="scale(2)"><path class="hcprizeg" d=${HUNT_GLYPH[P.k]} /></g></g>`}
         ${phase === "fail" && html`<g class="hcdust" transform=${`translate(${P.at[0]} ${P.at[1]})`}>${Array.from({ length: 10 }, (_, k) => html`<circle r="2.4" style=${`--a:${k * 36}deg`} />`)}</g>`}
       </g>`}
@@ -10931,16 +11035,26 @@ const MERGE_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="
 function HuntAltar({ recv, give, run, fresh }) {
   const phase = run ? run.phase : "", R0 = fresh || recv;
   const medal = (t, x, cls) => html`<g class=${"hamedal " + cls} style=${`--x:${x}px`}>${t ? html`<g transform=${`translate(${x} 130)`}>
-      <circle r="44" class="harim" />${huntSrc(t) ? html`<image href=${huntSrc(t)} x="-40" y="-40" width="80" height="80" preserveAspectRatio="xMidYMid slice" clip-path="url(#ha-disc)" />`
-        : html`<circle r="40" class="hadisc" /><g transform="scale(2.6)"><path class="hbglyph" d=${HUNT_GLYPH[t.part] || HUNT_GLYPH.other} /></g>`}
+      <circle r="47" fill="#0d0805" opacity=".45" transform="translate(3 5)" /><circle r="45" class="harim" fill="url(#ha-brass)" /><circle r="41" fill="#2a1608" />
+      ${huntSrc(t) ? html`<image href=${huntSrc(t)} x="-40" y="-40" width="80" height="80" preserveAspectRatio="xMidYMid slice" clip-path="url(#ha-disc)" />`
+        : html`<circle r="40" fill="url(#ha-bone)" /><g transform="scale(2.6)"><path d=${HUNT_GLYPH[t.part] || HUNT_GLYPH.other} fill="#fff8e6" opacity=".7" transform="translate(.4 .6)" /><path class="hbglyph" d=${HUNT_GLYPH[t.part] || HUNT_GLYPH.other} /></g>`}
+      <circle r="40" fill="url(#ha-shine)" />
       <text y="66" class="hbname">${(t.n || "Trophy").slice(0, 20)}</text></g>`
     : html`<g transform=${`translate(${x} 130)`}><circle r="44" class="haempty" /><text y="5" class="haq">${cls === "recv" ? "Receiver" : "Giver"}</text></g>`}</g>`;
   return html`<div class=${"huntaltar ph-" + (phase || "idle")}>
     <svg viewBox="0 0 600 280" role="img" aria-label="The merging altar">
       <defs><clipPath id="ha-disc"><circle r="40" /></clipPath>
-        <linearGradient id="ha-stone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8d8a84" /><stop offset="1" stop-color="#4b4945" /></linearGradient>
+        
+        <linearGradient id="ha-brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe7a6" /><stop offset=".3" stop-color="#d1a24a" /><stop offset=".6" stop-color="#8f6522" /><stop offset=".8" stop-color="#d8ad58" /><stop offset="1" stop-color="#5e4012" /></linearGradient>
+        <radialGradient id="ha-bone" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#f1e6cc" /><stop offset=".6" stop-color="#cdbb94" /><stop offset="1" stop-color="#8f7b58" /></radialGradient>
+        <linearGradient id="ha-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".3" /><stop offset=".5" stop-color="#fff" stop-opacity="0" /></linearGradient>
+        <radialGradient id="ha-floor" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#6b665e" /><stop offset="1" stop-color="#2b2925" /></radialGradient>
+        <${HuntPattern} id="ha-stone" k="stone" />
         <radialGradient id="ha-flare"><stop offset="0" stop-color="#fff6d8" /><stop offset=".4" stop-color="#e8b04a" stop-opacity=".6" /><stop offset="1" stop-color="#e8b04a" stop-opacity="0" /></radialGradient></defs>
-      <path d="M90 230 L510 230 L540 262 L60 262 Z" fill="url(#ha-stone)" class="haslab" />
+      <rect width="600" height="280" fill="url(#ha-floor)" /><rect width="600" height="280" fill="url(#ha-stone)" />
+      <ellipse cx="300" cy="150" rx="236" ry="112" fill="#141210" opacity=".35" />
+      <ellipse cx="300" cy="140" rx="228" ry="106" fill="#8d877d" /><ellipse cx="300" cy="140" rx="228" ry="106" fill="url(#ha-stone)" />
+      <ellipse cx="300" cy="140" rx="228" ry="106" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="2" />
       <ellipse cx="300" cy="140" rx="210" ry="100" class="haring" />
       <ellipse cx="300" cy="140" rx="190" ry="88" class="haring thin" />
       ${Array.from({ length: 24 }, (_, i) => { const a = i / 24 * Math.PI * 2; return html`<path class="hanotch" d=${`M${300 + Math.cos(a) * 196} ${140 + Math.sin(a) * 92}l${Math.cos(a) * 10} ${Math.sin(a) * 5}`} />`; })}
