@@ -5,7 +5,7 @@
 Runs in "this browser only" mode on a character with Hunting 10 (modifier 30%), at desktop and 390 px, with every die a 1
 (1 − 30 = −29: 7 positives on the table, held to 5 on a level 3 trophy; the last property rolls −29, so it's void).
 """
-import functools, http.server, json, pathlib, sys, threading
+import functools, http.server, json, os, pathlib, sys, threading
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve(); SHOTS = pathlib.Path(sys.argv[2] if len(sys.argv) > 2 else "smoke-shots"); SHOTS.mkdir(parents=True, exist_ok=True)
@@ -20,7 +20,7 @@ HUNTER = {"modules": {"craft": True, "magic": False}, "id": "hu", "name": "Batba
           "skills": {"Hunting": 10}}
 
 with sync_playwright() as p:
-    b = p.chromium.launch()
+    b = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None)
     for W in (1280, 390):
         tag = f"{W}px: "
         ctx = b.new_context(viewport={"width": W, "height": 1000}, is_mobile=W < 500, has_touch=W < 500)
@@ -36,7 +36,7 @@ with sync_playwright() as p:
         # carve a level 3 fang from a chimera
         pg.locator(".huntpages button", has_text="Carving").click(); pg.wait_for_timeout(400)
         pg.fill("#hc-m", "Chimera"); pg.locator(".hparts .dvchip", has_text="Fang").click(); pg.locator(".huntlvl button", has_text="3").click()
-        pg.locator(".forgebtn", has_text="Carve").click(); pg.wait_for_timeout(5000)
+        pg.locator(".forgebtn", has_text="Carve").click(); pg.wait_for_selector(".trophyform .hpe input", timeout=30000); pg.wait_for_timeout(300)
         kinds = [k.get_attribute("class").split()[-1] for k in pg.locator(".hkinds .hk").all()]
         check(tag + "−29 on a level 3 trophy: 5 positive (never all), the last one rolled: void", kinds == ["hp-pos"] * 5 + ["hp-void"], kinds)
         ins = pg.locator(".trophyform .hpe input")
@@ -66,7 +66,7 @@ with sync_playwright() as p:
         # merge: the fang gives to the scale; −29 passes up to 8, the fang has 5
         pg.locator(".huntpages button", has_text="Merging").click(); pg.wait_for_timeout(400)
         pg.locator(".hmergepick").nth(0).locator(".hmchip", has_text="Wyrm").click(); pg.locator(".hmergepick").nth(1).locator(".hmchip", has_text="Chimera").click()
-        pg.locator(".forgebtn", has_text="Merge").click(); pg.wait_for_timeout(2600)
+        pg.locator(".forgebtn", has_text="Merge").click(); pg.wait_for_selector(".huntread .btn.primary", timeout=30000); pg.wait_for_timeout(300)
         check(tag + "−29 on the Combining Roll: up to 8 pass, the giver has 5", "8 positive properties can pass" in pg.locator(".huntread").inner_text())
         pg.locator(".huntread .btn.primary").click(); pg.wait_for_timeout(1500)
         t = ch()["craft"]["hunt"]["trophies"]
