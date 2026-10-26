@@ -38,6 +38,11 @@ with sync_playwright() as p:
         pg.locator(".huntdropb", has_text="Carving").click(); pg.wait_for_timeout(400)
         check(tag + "opening Carving swaps the belt for the beast", pg.locator(".huntcarcass").count() == 1 and pg.locator(".huntbelt").count() == 0 and pg.locator(".huntdrop.open").count() == 1)
         pg.screenshot(path=str(SHOTS / f"hunt-carve-{W}.png"), full_page=True)
+        pg.locator(".hback").click(); pg.wait_for_timeout(400)
+        check(tag + "\"← Your trophies\" brings the belt back", pg.locator(".huntbelt").count() == 1 and pg.locator(".huntdrop.open").count() == 0)
+        pg.locator(".huntdropb", has_text="Merging").click(); pg.wait_for_timeout(300); pg.locator(".huntdropb", has_text="Merging").click(); pg.wait_for_timeout(300)
+        check(tag + "clicking an open bar again closes it", pg.locator(".huntbelt").count() == 1)
+        pg.locator(".huntdropb", has_text="Carving").click(); pg.wait_for_timeout(400)
         pg.fill("#hc-m", "Chimera"); pg.locator(".hparts .dvchip", has_text="Fang").click(); pg.locator(".huntlvl button", has_text="3").click()
         pg.locator(".forgebtn", has_text="Carve").click(); pg.wait_for_selector(".trophyform .hpe input", timeout=30000); pg.wait_for_timeout(300)
         kinds = [k.get_attribute("class").split()[-1] for k in pg.locator(".hkinds .hk").all()]

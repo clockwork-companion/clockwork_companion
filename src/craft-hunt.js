@@ -108,7 +108,8 @@ function Hunting({ c, update }) {
         ${k === "carve" ? KNIFE : MERGE_ICON}<span>${n}</span><svg class="hchev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg></button>
       ${on && html`<div class="huntdropbody" key="b">${body}</div>`}</div>`; })}</div>`;
   const log = (x, name, rolls) => { x.craft.hunt.ledger = [{ id: rid(), t: Date.now(), name, rolls: rolls || [] }, ...x.craft.hunt.ledger].slice(0, 30); addLog(x, "Hunting: " + name); };
-  const kids = { c, st, update, log, bars, onBusy: setBusy, toCase: () => setPage("case") };
+  const back = html`<button class="btn small hback" key="back" disabled=${busy} title=${busy ? "Finish this first" : "Back to your trophies"} onClick=${() => setPage("case")}>← Your trophies</button>`;
+  const kids = { c, st, update, log, bars, back, onBusy: setBusy, toCase: () => setPage("case") };
   return html`<div class="hunting" ref=${wrap}>
     <section class="frame hunthead"><${Head} title="Hunting" topic="hunting" />
       <div class="facts ptfacts">${[["Hunting", `${st.lvl} · ${st.mod}%`], ["Trophies you can use", st.maxLvl ? `Up to level ${st.maxLvl}` : "From Hunting 3"],
@@ -317,7 +318,7 @@ function HuntLedger({ c, update }) {
 }
 
 /* ---------------- Carving ---------------- */
-function HuntCarve({ c, st, update, log, toCase, bars, onBusy }) {
+function HuntCarve({ c, st, update, log, toCase, bars, back, onBusy }) {
   const [part, setPart] = useState("horn"), [monster, setMonster] = useState(""), [lvl, setLvl] = useState(1);
   const [run, setRunState] = useState(null), runRef = useRef(null), timers = useRef([]);
   const setRun = r => { runRef.current = r; setRunState(r); };
@@ -327,7 +328,8 @@ function HuntCarve({ c, st, update, log, toCase, bars, onBusy }) {
   const P = HUNT_PARTS.find(p => p.k === part) || HUNT_PARTS[0];
   const block = !st.salvage ? `Carving trophies needs Hunting 4. ${c.name || "This character"} has ${st.lvl}.` : "";
   const busy = !!run && !run.done;
-  useEffect(() => { onBusy(busy); }, [busy]); useEffect(() => () => onBusy(false), []);
+  const held = busy || (!!run && run.phase === "name");   // a carved trophy waiting for its name is lost if you leave
+  useEffect(() => { onBusy(held); }, [held]); useEffect(() => () => onBusy(false), []);
   const carve = async () => {
     if (block || busy) return;
     const n = 2 * lvl, name = monster.trim();
@@ -364,7 +366,7 @@ function HuntCarve({ c, st, update, log, toCase, bars, onBusy }) {
   };
   const sum = run && run.kinds ? run.kinds : [];
   return html`<section class="frame huntone huntcarvef">
-    <h2 class="h"><span>Carving</span><i class="orn" aria-hidden="true"></i></h2>
+    <h2 class="h"><span>Carving</span><i class="orn" aria-hidden="true"></i>${back}</h2>
     <div class="huntstage" key="stage">
       <${HuntCarcass} part=${run ? run.part : part} run=${run} onPick=${k => !busy && setPart(k)} />
       ${run && html`<div class="ptforge"><div class="huntread" key="read" aria-live="polite">
@@ -454,7 +456,7 @@ function HuntCarcass({ part, run, onPick }) {
 }
 
 /* ---------------- Merging ---------------- */
-function HuntMerge({ c, st, update, log, bars, onBusy, toCase }) {
+function HuntMerge({ c, st, update, log, bars, back, onBusy, toCase }) {
   const h = c.craft.hunt, [recv, setRecv] = useState(""), [give, setGive] = useState(""), [cost, setCost] = useState("");
   const [run, setRunState] = useState(null), runRef = useRef(null), timers = useRef([]);
   const setRun = r => { runRef.current = r; setRunState(r); };
@@ -512,7 +514,7 @@ function HuntMerge({ c, st, update, log, bars, onBusy, toCase }) {
     <div class="hmergepick">${h.trophies.filter(t => t.id !== other).map(t => html`<button type="button" key=${t.id} class=${"hmchip" + (val === t.id ? " on" : "")} aria-pressed=${val === t.id} disabled=${busy} onClick=${() => set(t.id)}>
       <${HuntMedal} t=${t} size=${26} /><span>${t.n || "Unnamed"}</span><small>${t.props.filter(p => p.kind === "pos").length}+</small></button>`)}</div></div>`;
   return html`<section class="frame huntone huntmergef">
-    <h2 class="h"><span>Merging</span><i class="orn" aria-hidden="true"></i></h2>
+    <h2 class="h"><span>Merging</span><i class="orn" aria-hidden="true"></i>${back}</h2>
     <div class="huntstage" key="stage">
       <${HuntAltar} recv=${run ? run.recv : R1} give=${run ? run.give : G1} run=${run} fresh=${fresh} />
       ${run && html`<div class="ptforge"><div class="huntread" key="read" aria-live="polite">

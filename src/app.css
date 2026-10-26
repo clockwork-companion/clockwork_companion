@@ -3376,7 +3376,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .huntsel { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
 .huntseln { margin-right: auto; font-size: 15px; }
 .huntsel small { flex-basis: 100%; }
-.hadd { margin-left: 10px; flex: none; }
+.hadd, .hback { margin-left: 10px; flex: none; }
 .huntledger summary { cursor: pointer; list-style: none; } .huntledger summary::-webkit-details-marker { display: none; }
 .huntledger summary span::before { content: "▸ "; } .huntledger[open] summary span::before { content: "▾ "; }
 /* the trophy case */
