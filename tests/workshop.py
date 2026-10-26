@@ -121,7 +121,7 @@ with sync_playwright() as p:
     pg, errs = as_player(b, "gm1", gseed)
     pg.evaluate("localStorage.setItem('cw-sel', JSON.stringify('bat'))"); pg.reload(); pg.wait_for_selector(".tabs", timeout=20000); pg.wait_for_timeout(900)
     check("GM on the sender's sheet: no pop-up", pg.locator(".shopnote").count() == 0)
-    pg.locator(".rnow").click(); pg.wait_for_timeout(300); pg.locator(".rpanel .rmain", has_text="Arslan").click(); pg.wait_for_timeout(900)
+    pg.locator(".charnav .cnchev").click(); pg.wait_for_timeout(300); pg.locator(".rpanel .rmain", has_text="Arslan").click(); pg.wait_for_timeout(900)
     check("GM opens the smith's sheet: the pop-up shows", pg.locator(".shopnote", has_text="Batbayar").count() == 1)
     pg.locator(".shopnote .btn", has_text="Later").click(); pg.wait_for_timeout(200)
     # a job for the town smith pops up for the GM and waits on the GM table

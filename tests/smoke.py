@@ -37,7 +37,7 @@ def run_case(browser, url, width, height, skin, mobile, games):
         page.goto(url); page.wait_for_timeout(1500)
         shown = page.evaluate("document.documentElement.dataset.skin || 'ledger'")
         if shown != skin: problems.append(f"theme didn't apply: asked for {skin!r}, the page shows {shown!r}")
-        page.get_by_text("+ New character").first.click(); page.wait_for_timeout(300)
+        page.locator(".charnav .cnchev").click(); page.wait_for_timeout(200); page.get_by_text("+ New character").first.click(); page.wait_for_timeout(300)
         page.get_by_text("Blank character sheet").first.click(); page.wait_for_timeout(800)
         tabs = page.get_by_role("tab")
         n = tabs.count()
