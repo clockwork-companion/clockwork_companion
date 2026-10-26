@@ -42,6 +42,16 @@ with sync_playwright() as p:
         # draw a circle: a fresh one starts with seven layers; add spokes; Medium; a Signature Circle
         pg.locator(".alchthumb.new").click(); pg.wait_for_timeout(200)
         check(tag + "a new circle starts with seven layers", pg.locator(".alchlayer").count() == 7)
+        check(tag + "the key says what the circle's signs mean", "Heat and energy" in pg.locator(".alchkey").inner_text())
+        before = pg.evaluate("document.querySelector('.alchfig.big .alayers').innerHTML")
+        pg.locator(".alchrandom .btn").click(); pg.wait_for_timeout(300)
+        check(tag + "Random circle draws a new one", pg.evaluate("document.querySelector('.alchfig.big .alayers').innerHTML") != before and pg.locator(".alchlayer").count() >= 6)
+        for k in ["Moons", "Petals", "Sun rays", "Dots", "Inscription"]: pg.locator(".alchadd .btn", has_text=k).click()
+        pg.locator(".alchwords").fill("as above so below"); pg.wait_for_timeout(200)
+        drawn = pg.evaluate("(() => { const f = document.querySelector('.alchfig.big'), w = [...f.querySelectorAll('.alayer.words text')].pop(), d = [...f.querySelectorAll('.alayer.dots')].pop(); return [w && w.textContent, d && d.querySelectorAll('circle').length]; })()")
+        check(tag + "moons, petals, rays, dots and an inscription draw", (drawn[0] or "").startswith("AS ABOVE SO BELOW") and drawn[1] == 12, drawn)
+        pg.locator(".alchlayer").first.locator(".btn", has_text="Line").click()
+        check(tag + "a ring can be dashed", "dashed" in pg.locator(".alchlayer").first.inner_text().lower())
         pg.locator(".alchadd .btn", has_text="Spokes").click()
         pg.locator(".alchmeta input").nth(0).fill("Circle of Rust Undone"); pg.locator(".alchmeta input").nth(1).fill("Breaks iron oxide back into iron")
         pg.locator(".alchsize", has_text="Huge").click()
@@ -50,7 +60,7 @@ with sync_playwright() as p:
         pg.locator(".alchsize", has_text="Medium").click(); pg.locator(".alchsave input").check()
         pg.locator(".alchsave .btn.primary").click(); pg.wait_for_timeout(1500)
         c = ch()["alch"]["circles"]
-        check(tag + "saved to the circle book: 8 layers, Medium, a Signature Circle", len(c) == 1 and len(c[0]["layers"]) == 8 and c[0]["size"] == "medium" and c[0]["sig"] and c[0]["purpose"].startswith("Breaks"),
+        check(tag + "saved to the circle book: its layers, Medium, a Signature Circle", len(c) == 1 and len(c[0]["layers"]) >= 12 and c[0]["size"] == "medium" and c[0]["sig"] and c[0]["purpose"].startswith("Breaks"),
               c and {k: v for k, v in c[0].items() if k != "layers"})
         check(tag + "the book shows it", pg.locator(".alchthumb.sig", has_text="Circle of Rust Undone").count() == 1)
         # energy: 4d6 (all 20s here), and the Medium circle eats a ration
