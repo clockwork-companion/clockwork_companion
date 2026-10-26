@@ -57,6 +57,14 @@ with sync_playwright() as p:
         check(tag + "made over a long rest", c["harmony"]["ch"] == {"opening": "fire", "life": "fire", "pain": "water"} and len(c["harmony"]["ledger"]) == 1, c["harmony"])
         check(tag + "Affinity: Fire 2, Water 1, Spirit 0", orb("Fire").get_attribute("aria-label") == "Fire, Affinity 2" and orb("Water").get_attribute("aria-label") == "Water, Affinity 1"
               and orb("Spirit").get_attribute("aria-label") == "Spirit, Affinity 0")
+        check(tag + "the figure breathes: body, head, hands and rising motes", all(pg.locator(f".harmfig {k}").count() >= 1 for k in (".hupper", ".hhead", ".hhands", ".hmotes circle")))
+        out = pg.evaluate("""(() => { const f = document.querySelector('.harmfig').getBoundingClientRect();
+          return [...document.querySelectorAll('.chakra .cring')].map(c => [c.closest('.chakra').dataset.chakra, c.getBoundingClientRect()])
+            .filter(([k, r]) => r.top < f.top || r.bottom > f.bottom || r.left < f.left || r.right > f.right).map(([k]) => k); })()""")
+        check(tag + "every chakra sits inside the figure", not out, out)
+        # the At a glance panel follows the chakras (Fire in Opening: Reflex saves; nothing on Movement yet)
+        glance = lambda: " ".join(pg.locator(".glanceharm").all_inner_texts()).lower()
+        check(tag + "At a glance lists what the chakras give", "from your chakras" in glance() and pg.locator(".glanceharm .harmfact").count() >= 2, glance())
         check(tag + "the powers list fills in the numbers", "add your Fire Affinity2" in pg.locator(".harmnow").inner_text(), pg.locator(".harmnow").inner_text()[:300])
         # one change with the level 5 Active: spends a use
         orb("Spirit").click(force=True); core("healing").click(); pg.wait_for_timeout(200)
@@ -79,6 +87,10 @@ with sync_playwright() as p:
         pg.locator(".harmrelbox .btn", has_text="Close them").click(); pg.wait_for_timeout(1500)
         c = ch()
         check(tag + "closing two costs 2 Stamina", not c["harmony"]["rel"] and c["vitals"]["exhaustion"] == 2, (c["harmony"]["rel"], c["vitals"].get("exhaustion")))
+        # Wind in the Opening chakra raises Movement in the top panel
+        pg.evaluate("(() => { const c = Store.chars.hm; c.harmony.els = ['fire', 'water', 'wind']; c.harmony.ch = { opening: 'wind', life: 'wind' }; Store.chars.hm = { ...c }; })()")
+        mv = pg.evaluate("(() => { const n = CW.normalize(JSON.parse(JSON.stringify(Store.chars.hm))); const d = CW.derived(n); return [d.move, d.baseMove, d.harmony.move]; })()")
+        check(tag + "Wind 2 in the Opening chakra adds 2 m of Movement", mv[2] == 2 and mv[0] == mv[1] + 2, mv)
         check(tag + "no sideways scroll", not pg.evaluate("document.documentElement.scrollWidth > innerWidth + 1"))
         check(tag + "no page errors", not errs, errs[:3])
         pg.locator(".harmf").screenshot(path=str(SHOTS / f"harmony-{W}.png"))
