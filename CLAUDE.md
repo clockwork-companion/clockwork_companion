@@ -124,6 +124,8 @@ version must keep working in a newer one, and the live site must survive data wr
 - **Section headings with real rules behind them** open a rules side panel (the `Head` component plus `RULES_INFO`).
   Add new topics to `rules-info.js` rather than writing long help text inline.
 - **Cards for things that have a set-up step:** weapons and talents have an edit mode and a compact "finished" card.
+- **New features are designed in the Ledger theme only** (light and dark). The other themes are brought up to date
+  when a release goes to main, so small changes don't need a pass through every theme.
 - **Themes live only in `app.css`.**
   - Each theme is a block of CSS variables plus overrides, written as `:root[data-skin="name"] …` so it wins on specificity.
   - Fonts load only when the theme is picked (the `SKINS` list in `app.js`).
@@ -197,3 +199,7 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-26:** The Sheet combines attributes and skills: one block per attribute with its colour and emblem on a spine (as on the perk cards), the attribute's bar on top and its skills nested underneath; Weaponry and Secondary skills stay separate. The bar key is a foldable box under the table. Skill and attribute names are larger. Sinan.
 - **2026-10-26:** Crafting and Magic are modules, off by default. When a character first puts points into one of their skills, a pop-up (the forge flares with sparks, or ink blooms round a rune circle) asks whether to turn the module on; Settings → Modules changes it later. Characters saved before this are asked once. Sinan.
 - **2026-10-26:** At a glance (under the header) is grouped: On the move, Wounds & blood, Food & recovery, and From your chakras, each opening with an icon banner. Rest sits under the vital bars as a small heading with two slim hold-to-rest plates. Side panels take the Duality Companion's banners (icon medal, title, fading rule) and light lists instead of boxes. On phones the details sit beside the portrait and the Karma box is a slim strip. Sinan.
+- **2026-10-26:** New features are designed and tested in the Ledger theme only (light and dark) on Dev; the other themes are converted when a release goes to main. Sinan.
+- **2026-10-26:** Attributes & Skills: the attribute's colour is a small square badge (emblem and name) top left of its block, with a faint outline in the colour; no coloured spine, and the attribute's name in plain ink (minimal look). Sinan.
+- **2026-10-26:** Skills & Talents: each skill's perks are folded like a rolodex (one slim card per perk: level in the attribute's colour, name, uses left, kind) and open into the full cards on click; which skills are open is kept per browser. Sinan.
+- **2026-10-26:** Armor has an edit mode and a flush finished card like weapons; in play only the Soak Pool (and Wear) changes. Prosthetics sit below Weapons in Gear. Each secondary skill's side panel opens with an italic flavour line (Entrada has none until the book says what it covers). Sinan.
