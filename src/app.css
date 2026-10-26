@@ -2880,6 +2880,10 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .alchfig .alayer, .alchfig .alayer * { fill: none; stroke: var(--ink); stroke-width: 1; stroke-linejoin: round; stroke-linecap: round; }
 .alchfig .alayer.signs path, .alchfig .alayer.sign { stroke-width: 1.4; }
 .alchfig .aglow { fill: none; }
+.alchfig .alayer.dots circle { fill: var(--ink); stroke: none; }
+.alchfig .alayer.words text { fill: var(--ink); stroke: none; font: 600 9px var(--f-display); letter-spacing: .12em; }
+.alchfig.active .alayer.words text { fill: #bff2ff; }
+.alchfig.active .alayer.dots circle { fill: #bff2ff; }
 .alchfig.big { max-width: 380px; }
 .alchfig.big .alayer { animation: alayerIn .5s ease-out both; }
 @keyframes alayerIn { from { opacity: 0; } }
@@ -2929,6 +2933,15 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .alchsym svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
 .alchsym.on { border-color: var(--brass); background: var(--brass-soft); }
 .alchadd { gap: 6px; flex-wrap: wrap; align-items: center; }
+.alchrandom { gap: 10px; align-items: center; flex-wrap: wrap; }
+.alchrandom .muted { font-size: 12.5px; }
+.alchwords { flex: 1 1 200px; min-width: 0; color: var(--ink); background: var(--sunk); border: 1px solid var(--hair); padding: 3px 6px; font: 600 13px var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
+/* the key of signs under the circle */
+.alchkey { margin: 4px 0 0; display: grid; gap: 4px; width: 100%; max-width: 380px; }
+.alchkey div { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 8px; align-items: baseline; font-size: 13px; border-bottom: 1px dashed var(--hair); padding-bottom: 3px; }
+.alchkey dt { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.alchkey dt svg { width: 16px; height: 16px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.alchkey dd { margin: 0; color: var(--ink-3); }
 .alchsave { gap: 10px; align-items: center; flex-wrap: wrap; }
 .alchuse { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--rule); display: grid; gap: 8px; }
 .alchuse p { margin: 0; font-size: 13.5px; }
