@@ -19,9 +19,9 @@ page_html = page_html.replace('<script src="firebase-config.js"></script>', '<sc
 
 key = hashlib.sha256(b"clockwork-table:test table").hexdigest(); T = f"tables/{key}"
 SABRE = {"id": "w1", "name": "Steppe sabre", "skill": "Slashing", "hands": 1, "damage": 6, "crit": 5, "dur": 20, "durMax": 100, "durDie": "d10", "props": "", "final": True}
-BAT = {"name": "Batbayar", "campaign": "Steppe Wars", "players": ["u1"], "weapons": [SABRE], "coins": 100, "items": [{"id": "i1", "name": "Bandages", "qty": 10, "size": "bundle"}]}
+BAT = {"modules": {"craft": True, "magic": True}, "name": "Batbayar", "campaign": "Steppe Wars", "players": ["u1"], "weapons": [SABRE], "coins": 100, "items": [{"id": "i1", "name": "Bandages", "qty": 10, "size": "bundle"}]}
 PAY = {"coins": 30, "items": [{"name": "Bandages", "qty": 2, "size": "bundle"}], "note": "a round of ale"}
-ARS = {"name": "Arslan", "campaign": "Steppe Wars", "players": ["u2"], "skills": {"Weapon Maintenance": 6}, "attrs": {"WIS": {"base": 16, "value": 16}}, "craft": {"supplies": {"weapon": 9000}}}
+ARS = {"modules": {"craft": True, "magic": True}, "name": "Arslan", "campaign": "Steppe Wars", "players": ["u2"], "skills": {"Weapon Maintenance": 6}, "attrs": {"WIS": {"base": 16, "value": 16}}, "craft": {"supplies": {"weapon": 9000}}}
 base = {f"{T}/meta/table": {"owner": "gm1"}, f"{T}/members/gm1": {"role": "gm", "name": "sinan"},
         f"{T}/members/u1": {"role": "player", "name": "utku"}, f"{T}/members/u2": {"role": "player", "name": "bedo"},
         f"{T}/characters/bat": BAT, f"{T}/characters/ars": ARS,

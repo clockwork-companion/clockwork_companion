@@ -16,7 +16,7 @@ srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Q, dir
 url = f"http://127.0.0.1:{srv.server_address[1]}/index.html"
 checks = []
 def check(name, ok, got=""): checks.append(ok); print(("ok   " if ok else "FAIL ") + name + (f"  ({got})" if got and not ok else ""))
-CH = {"id": "tink", "players": [], "name": "Tinker", "attrs": {"WIS": {"base": 17, "value": 17}, "MND": {"base": 17, "value": 17}}, "skills": {"Powdertinker": 7},
+CH = {"modules": {"craft": True, "magic": True}, "id": "tink", "players": [], "name": "Tinker", "attrs": {"WIS": {"base": 17, "value": 17}, "MND": {"base": 17, "value": 17}}, "skills": {"Powdertinker": 7},
       "craft": {"supplies": {"container": 9000, "Fire": 9000}, "recipe": {"type": "pistol", "coat": "Slashing", "tips": {"Precise": 1}, "core": {"el": "Fire", "inc": 0}, "status": ["Scorched"]}}}
 
 with sync_playwright() as p:

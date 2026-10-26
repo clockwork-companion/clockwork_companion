@@ -18,10 +18,10 @@ srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Q, dir
 url = f"http://127.0.0.1:{srv.server_address[1]}/index.html"
 checks = []
 def check(name, ok, got=""): checks.append(ok); print(("ok   " if ok else "FAIL ") + name + (f"  ({got})" if got and not ok else ""))
-WALKER = {"id": "dw", "name": "Batbayar", "players": [], "attrs": {"WIL": {"base": 17, "value": 17}}, "skills": {"Dreamwalking": 10},
+WALKER = {"modules": {"craft": True, "magic": True}, "id": "dw", "name": "Batbayar", "players": [], "attrs": {"WIL": {"base": 17, "value": 17}}, "skills": {"Dreamwalking": 10},
           "items": [{"id": "i1", "name": "Lantern", "qty": 1, "size": "small"}, {"id": "i2", "name": "Silver key", "qty": 1, "size": "small"}],
           "weapons": [{"id": "w1", "name": "Old sabre"}], "armor": [{"id": "a1", "name": "Ringmail", "type": "medium", "worn": True}]}
-PLAIN = {"id": "pl", "name": "Plain", "players": [], "skills": {"Warding": 3}}
+PLAIN = {"modules": {"craft": True, "magic": True}, "id": "pl", "name": "Plain", "players": [], "skills": {"Warding": 3}}
 
 with sync_playwright() as p:
     b = p.chromium.launch()
