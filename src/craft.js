@@ -155,6 +155,15 @@ function Powdertinkering({ c, update }) {
   const later = (fn, ms) => timers.current.push(setTimeout(fn, reduceMotion() ? Math.min(ms, 120) : ms));
   // Changing any part makes it a different recipe, so a loaded recipe's name comes off.
   const setRc = fn => update(x => { fn(x.craft.recipe); delete x.craft.recipe.name; });
+  // Each munition keeps its own parts: switching munitions parks the open recipe under its type and brings back the
+  // one that munition had (or a fresh one). They used to share one recipe, so a Core picked for rifle ammo showed up
+  // on every other munition too.
+  const ptPark = (x, next) => {
+    const cur = x.craft.recipe, park = x.craft.recipes = x.craft.recipes || {};
+    if (cur && cur.type && cur.type !== next.type) park[cur.type] = cur;
+    delete park[next.type]; x.craft.recipe = next;
+  };
+  const pickType = k => update(x => { if (x.craft.recipe.type === k) return; ptPark(x, (x.craft.recipes || {})[k] || { type: k }); });
   const steps = useMemo(() => R.ptSteps(c, rc), [c]);
   /* ---------- saved recipes: name a craft, then load every part back with one click ---------- */
   const saved = cr.saved || [];
@@ -169,7 +178,7 @@ function Powdertinkering({ c, update }) {
     });
     toast(`Saved "${name}". Pick it under Saved recipes to make it again.`);
   };
-  const loadRecipe = it => { update(x => { x.craft.recipe = Object.assign({ type: "rifle" }, clean(it.recipe), { name: it.n }); }); setFocus("coat"); };
+  const loadRecipe = it => { update(x => { ptPark(x, Object.assign({ type: "rifle" }, clean(it.recipe), { name: it.n })); }); setFocus("coat"); };
   const sum = ptSummary(c, rc, st);
   const yieldNow = R.ptYield(c, type, st.maxFails);
   // Materials the whole craft needs if nothing fails.
@@ -276,7 +285,7 @@ function Powdertinkering({ c, update }) {
           <button type="button" class="btn small" aria-pressed=${rc.name === it.n} disabled=${busy} title=${`Load every part of ${it.n}`} onClick=${() => loadRecipe(it)}>${it.n}</button>
           <button type="button" class="iconbtn" aria-label=${`Delete the recipe ${it.n}`} disabled=${busy} onClick=${() => update(x => { x.craft.saved = x.craft.saved.filter(y => y.k !== it.k); if (x.craft.recipe.name === it.n) delete x.craft.recipe.name; })}>×</button></span>`)}</div>`}
       <div class="pttypes" role="radiogroup" aria-label="Munition">${R.MUNITIONS.map(x => html`<button type="button" role="radio" aria-checked=${x.k === type} disabled=${busy}
-        onClick=${() => setRc(r => { r.type = x.k; })}><svg viewBox="0 0 24 24" aria-hidden="true">${TYPE_ICON[x.shape]}</svg><span>${x.n}</span></button>`)}</div>
+        onClick=${() => pickType(x.k)}><svg viewBox="0 0 24 24" aria-hidden="true">${TYPE_ICON[x.shape]}</svg><span>${x.n}</span></button>`)}</div>
 
       <div class="ptgrid">
         <div class="ptstage">
@@ -293,7 +302,7 @@ function Powdertinkering({ c, update }) {
           </div>
         </div>
         <div class="ptside">
-          <${PartPicker} part=${focus} c=${c} rc=${rc} st=${st} m=${m} sum=${sum} setRc=${setRc} update=${update} disabled=${busy} />
+          <${PartPicker} key=${focus} part=${focus} c=${c} rc=${rc} st=${st} m=${m} sum=${sum} setRc=${setRc} update=${update} disabled=${busy} />
           <div class="ptplan">
             <${PlanHead} title="The craft" busy=${busy} onReset=${() => update(x => { x.craft.recipe = { type }; })} />
             <ol>${steps.map(s => html`<li><span>${s.label}</span><span class="muted">${s.dc}% · ${s.chance}% to land · 200 g ${s.mat === "container" ? "container" : s.mat.toLowerCase()}</span></li>`)}</ol>
@@ -449,7 +458,7 @@ function PartPicker({ part, c, rc, st, m, sum, setRc, update, disabled }) {
   return html`<div class=${"ptpick part-" + part}>
     <h3 class="ptpickh"><span>${PT_LABEL[part]}</span>${s.access && s.open && s.value ? html`<small>${s.value}</small>` : ""}</h3>
     <p class="muted ptrule">${PT_RULE[part]}</p>
-    ${body}</div>`;
+    <div class="ptbody" key=${part}>${body}</div></div>`;
 }
 
 // A custom part: a name, what it does, its difficulty, and for a tip whether it has a Rating, for a status its element.

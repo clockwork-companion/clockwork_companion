@@ -79,6 +79,9 @@ jobs:
       - name: Alchemy (Magic tab)
         run: python3 tests/alchemy.py "$RUNNER_TEMP/site" smoke-shots
 
+      - name: Crafting and Magic fixes (menus, munition recipes, unset suits)
+        run: python3 tests/craft_magic_fixes.py "$RUNNER_TEMP/site" smoke-shots
+
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v6

@@ -1161,15 +1161,17 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .tabs .tab-craft { --tc: var(--forge, #b4532a); --ts: var(--forge-soft, #f0d6c4); }
 :root { --forge: #a8461f; --forge-soft: #f0d6c4; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --forge: #e48553; --forge-soft: #47271a; } }
-.craftnav { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 6px; margin-top: -8px; }
+.craftnav { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(184px, 100%), 1fr)); gap: 6px; margin-top: -8px; }
 .craftnav button { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; padding: 8px 12px; border: 1.5px solid var(--hair); background: transparent; color: var(--ink-2); border-radius: 2px; min-width: 0; }
 .craftnav button .tabicon { grid-row: span 2; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
-.craftnav button span { font: 600 13px/1.15 var(--f-head); letter-spacing: .07em; text-transform: uppercase; }
+.craftnav button span { font: 600 13px/1.15 var(--f-head); letter-spacing: .06em; text-transform: uppercase; min-width: 0; }
+.craftnav button :is(span, small) { grid-column: 2; }
+.craftnav button small { line-height: 1.25; }
 .craftnav button small { font-size: 11.5px; color: var(--ink-3); min-height: 1em; }
 .craftnav button:hover { border-color: var(--rule); color: var(--ink); }
 .craftnav button[aria-pressed="true"] { border-color: var(--rule); background: var(--rule); color: var(--paper); box-shadow: inset 0 -4px 0 var(--forge); }
 .craftnav button[aria-pressed="true"] small { color: color-mix(in srgb, var(--paper) 70%, transparent); }
-@media (max-width: 560px) { .craftnav button { padding: 7px 8px; column-gap: 6px; } .craftnav button span { font-size: 12px; letter-spacing: .03em; overflow-wrap: anywhere; } }
+@media (max-width: 560px) { .craftnav { grid-template-columns: repeat(2, minmax(0, 1fr)); } .craftnav button { padding: 7px 8px; column-gap: 6px; } .craftnav button span { font-size: 11.5px; letter-spacing: .02em; } .craftnav button small { font-size: 10.5px; } }
 .construct { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; padding: 14px 0 4px; }
 .construct-gears { width: 120px; height: 80px; flex: none; }
 .construct-gears path, .construct-gears circle { fill: none; stroke: var(--brass); stroke-width: 2; }
@@ -3676,7 +3678,7 @@ const CW = (() => {
       dream: { inRealm: false, mundane: false, travelers: 0, tolls: [], vault: [], sphere: null, seeds: [], ledger: [] },
       alch: { circles: [], arrays: {}, ledger: [] },   // Alchemy: saved circles (one may be a Signature Circle), arrays on the body   // Dreamwalking: what the dreamwalker sustains   // Demonology: contracts, who is summoned, summons used today   // Occult: Harmony: known elements, chakra → element, released chakras
       items: [], weapons: [], armor: [], log: [],
-      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
+      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, recipes: {}, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
                brew: { bonus: 0, known: [], recipes: [], catalysts: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
                rune: { bonus: 0, effects: [], order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
@@ -3711,6 +3713,9 @@ const CW = (() => {
     out.craft = Object.assign({}, b.craft, out.craft);
     ["supplies", "batch"].forEach(k => (out.craft[k] = Object.assign({}, b.craft[k], out.craft[k])));
     out.craft.recipe = Object.assign({ type: "rifle" }, out.craft.recipe);
+    // the other munitions' recipes, parked while another munition is open: { [type]: recipe }
+    if (!out.craft.recipes || typeof out.craft.recipes !== "object" || Array.isArray(out.craft.recipes)) out.craft.recipes = {};
+    Object.keys(out.craft.recipes).forEach(k => { const r = out.craft.recipes[k]; if (!r || typeof r !== "object" || r.type !== k) delete out.craft.recipes[k]; });
     if (!Array.isArray(out.craft.ledger)) out.craft.ledger = [];
     if (!Array.isArray(out.craft.parts)) out.craft.parts = [];   // custom Powdertinkering parts (coats, tips, areas, cores, statuses)
     if (!Array.isArray(out.craft.saved)) out.craft.saved = [];   // saved Powdertinkering recipes: { k, n, recipe }
@@ -4530,17 +4535,20 @@ const CW = (() => {
   function repairPlan(c, a) {
     const st = amState(c), t = ARMOR[a.type] || ARMOR.light, chk = armorCheck(c, a);
     // A suit sent by another player carries its wearer's own maximum (their Armor Mastery bonus included).
-    const max = a.jobMax != null ? num(a.jobMax) : chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
-    const cost = t.repairPerAV * Math.max(1, num(a.av)) * (broken ? 2 : 1);
+    const max = a.jobMax != null ? num(a.jobMax) : chk.soakMax, soak = clamp(num(a.soak), 0, max);
+    // A suit with no Soak Pool yet (a new card on the Gear tab) isn't broken: it just hasn't been given its stats.
+    const unset = max <= 0, broken = !unset && soak <= 0, av = Math.max(1, num(a.av));
+    const cost = t.repairPerAV * av * (broken ? 2 : 1);
     const sides = +String(t.repairDie).slice(1);
     const have = num(c.craft && c.craft.supplies && c.craft.supplies[a.type]);
     let block = "";
     if (!st.repair) block = `Repairing armor needs Armor Maintenance 3 ("Is that a dent?"). This character has ${st.lvl}.`;
+    else if (unset) block = "This suit has no Soak Pool set. Give it its AV and Soak on the Gear tab.";
     else if (soak >= max) block = "This suit's Soak Pool is already full.";
     else if (broken && !st.restore) block = "It's broken (Soak 0). Rebuilding it needs a skilled craftsman: Armor Maintenance 5.";
     else if (AM_FORGE.includes(a.type) && !st.forge) block = `${t.label} armor needs a forge. Tick "At a forge" under Supplies.`;
     else if (have < cost) block = `Needs ${cost} g of ${t.label.toLowerCase()} armor materials (have ${have}).`;
-    return { cost, mat: a.type, die: t.repairDie, sides, soak, max, broken, missing: max - soak, block, st };
+    return { cost, av, mat: a.type, die: t.repairDie, sides, soak, max, broken, unset, missing: max - soak, block, st };
   }
   // A crafting order: { type, av, soak, plusAV, plusSoak, name } → final stats, difficulty, cost.
   function craftPlan(c, r) {
@@ -7763,6 +7771,15 @@ function Powdertinkering({ c, update }) {
   const later = (fn, ms) => timers.current.push(setTimeout(fn, reduceMotion() ? Math.min(ms, 120) : ms));
   // Changing any part makes it a different recipe, so a loaded recipe's name comes off.
   const setRc = fn => update(x => { fn(x.craft.recipe); delete x.craft.recipe.name; });
+  // Each munition keeps its own parts: switching munitions parks the open recipe under its type and brings back the
+  // one that munition had (or a fresh one). They used to share one recipe, so a Core picked for rifle ammo showed up
+  // on every other munition too.
+  const ptPark = (x, next) => {
+    const cur = x.craft.recipe, park = x.craft.recipes = x.craft.recipes || {};
+    if (cur && cur.type && cur.type !== next.type) park[cur.type] = cur;
+    delete park[next.type]; x.craft.recipe = next;
+  };
+  const pickType = k => update(x => { if (x.craft.recipe.type === k) return; ptPark(x, (x.craft.recipes || {})[k] || { type: k }); });
   const steps = useMemo(() => R.ptSteps(c, rc), [c]);
   /* ---------- saved recipes: name a craft, then load every part back with one click ---------- */
   const saved = cr.saved || [];
@@ -7777,7 +7794,7 @@ function Powdertinkering({ c, update }) {
     });
     toast(`Saved "${name}". Pick it under Saved recipes to make it again.`);
   };
-  const loadRecipe = it => { update(x => { x.craft.recipe = Object.assign({ type: "rifle" }, clean(it.recipe), { name: it.n }); }); setFocus("coat"); };
+  const loadRecipe = it => { update(x => { ptPark(x, Object.assign({ type: "rifle" }, clean(it.recipe), { name: it.n })); }); setFocus("coat"); };
   const sum = ptSummary(c, rc, st);
   const yieldNow = R.ptYield(c, type, st.maxFails);
   // Materials the whole craft needs if nothing fails.
@@ -7884,7 +7901,7 @@ function Powdertinkering({ c, update }) {
           <button type="button" class="btn small" aria-pressed=${rc.name === it.n} disabled=${busy} title=${`Load every part of ${it.n}`} onClick=${() => loadRecipe(it)}>${it.n}</button>
           <button type="button" class="iconbtn" aria-label=${`Delete the recipe ${it.n}`} disabled=${busy} onClick=${() => update(x => { x.craft.saved = x.craft.saved.filter(y => y.k !== it.k); if (x.craft.recipe.name === it.n) delete x.craft.recipe.name; })}>×</button></span>`)}</div>`}
       <div class="pttypes" role="radiogroup" aria-label="Munition">${R.MUNITIONS.map(x => html`<button type="button" role="radio" aria-checked=${x.k === type} disabled=${busy}
-        onClick=${() => setRc(r => { r.type = x.k; })}><svg viewBox="0 0 24 24" aria-hidden="true">${TYPE_ICON[x.shape]}</svg><span>${x.n}</span></button>`)}</div>
+        onClick=${() => pickType(x.k)}><svg viewBox="0 0 24 24" aria-hidden="true">${TYPE_ICON[x.shape]}</svg><span>${x.n}</span></button>`)}</div>
 
       <div class="ptgrid">
         <div class="ptstage">
@@ -7901,7 +7918,7 @@ function Powdertinkering({ c, update }) {
           </div>
         </div>
         <div class="ptside">
-          <${PartPicker} part=${focus} c=${c} rc=${rc} st=${st} m=${m} sum=${sum} setRc=${setRc} update=${update} disabled=${busy} />
+          <${PartPicker} key=${focus} part=${focus} c=${c} rc=${rc} st=${st} m=${m} sum=${sum} setRc=${setRc} update=${update} disabled=${busy} />
           <div class="ptplan">
             <${PlanHead} title="The craft" busy=${busy} onReset=${() => update(x => { x.craft.recipe = { type }; })} />
             <ol>${steps.map(s => html`<li><span>${s.label}</span><span class="muted">${s.dc}% · ${s.chance}% to land · 200 g ${s.mat === "container" ? "container" : s.mat.toLowerCase()}</span></li>`)}</ol>
@@ -8057,7 +8074,7 @@ function PartPicker({ part, c, rc, st, m, sum, setRc, update, disabled }) {
   return html`<div class=${"ptpick part-" + part}>
     <h3 class="ptpickh"><span>${PT_LABEL[part]}</span>${s.access && s.open && s.value ? html`<small>${s.value}</small>` : ""}</h3>
     <p class="muted ptrule">${PT_RULE[part]}</p>
-    ${body}</div>`;
+    <div class="ptbody" key=${part}>${body}</div></div>`;
 }
 
 // A custom part: a name, what it does, its difficulty, and for a tip whether it has a Rating, for a status its element.
@@ -8986,11 +9003,11 @@ function RepairSide({ c, update, suits, suit, job, selId, rp, st, busy, pick }) 
     <${ShopJobs} c=${c} kind="armor" selId=${selId} pick=${pick} busy=${busy} update=${update} />
     ${suits.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${suits.map(a => { const p = R.repairPlan(c, a);
       return html`<button type="button" class="ptopt amsuit" aria-pressed=${!job && suit && suit.id === a.id} disabled=${busy} onClick=${() => pick(a.id)}>
-        <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}${Shop.outgoing(c, "armor", a.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "armor", a.id).to.name}'s</span>` : ""}</b>
+        <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : p.unset ? html` <span class="flag">No stats yet</span>` : ""}${Shop.outgoing(c, "armor", a.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "armor", a.id).to.name}'s</span>` : ""}</b>
         <span>${R.ARMOR[a.type].label} · AV ${num(a.av)} · Soak ${p.soak}/${p.max}</span>
         <i class="amtrack"><i style=${`width:${p.max ? (p.soak / p.max) * 100 : 0}%`}></i></i></button>`; })}</div>`}
     ${suit && html`<div class="ptplan"><h3 class="lbl">The repair</h3><ol>
-      <li><span>Materials: ${rp.cost} g of ${R.ARMOR[suit.type].label.toLowerCase()} materials</span><span class="muted">${R.ARMOR[suit.type].repairPerAV} g × AV ${num(suit.av)}${rp.broken ? " × 2 to rebuild a broken suit (draft rule)" : ""}</span></li>
+      <li><span>Materials: ${rp.cost} g of ${R.ARMOR[suit.type].label.toLowerCase()} materials</span><span class="muted">${R.ARMOR[suit.type].repairPerAV} g × AV ${rp.av}${num(suit.av) < 1 ? " (at least 1)" : ""}${rp.broken ? " × 2 to rebuild a broken suit (draft rule)" : ""}</span></li>
       <li><span>Check: d100 − ${st.mod}</span><span class="muted">Repair Count = 10 − check ÷ 10, rounded down, at most 10</span></li>
       <li><span>Roll ${rp.die} that many times</span><span class="muted">The total goes back into the Soak Pool (up to ${rp.max}). An hour per attempt.</span></li></ol>
       <p class="ptdc">Check 0 or less: 10 × ${rp.die} · check 40: 6 × ${rp.die} · check 90: 1 × ${rp.die}</p></div>`}
@@ -9385,7 +9402,7 @@ function WRepairSide({ c, update, ws, weapon, job, selId, rp, st, busy, pick }) 
     ${ws.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${ws.map(w => { const p = R.wRepairPlan(c, w);
       return html`<button type="button" class="ptopt amsuit" aria-pressed=${!job && weapon && weapon.id === w.id} disabled=${busy} onClick=${() => pick(w.id)}>
         <b>${w.name || "Unnamed weapon"}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}${Shop.outgoing(c, "weapon", w.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "weapon", w.id).to.name}'s</span>` : ""}</b>
-        <span>${w.shield ? "Shield" : w.skill} · ${num(w.hands) === 2 ? "two-handed" : "one-handed"} · Durability ${p.dur}/${p.max}</span>
+        <span>${[w.shield ? "Shield" : w.skill, num(w.hands) === 2 ? "two-handed" : "one-handed", p.max ? `Durability ${p.dur}/${p.max}` : "No durability yet"].filter(Boolean).join(" · ")}</span>
         <i class="amtrack"><i style=${`width:${p.max ? (p.dur / p.max) * 100 : 0}%`}></i></i></button>`; })}</div>`}
     ${weapon && html`<div class="ptplan"><h3 class="lbl">The repair</h3><ol>
       <li><span>Materials: ${rp.cost} g of weapon materials</span><span class="muted">${num(weapon.hands) === 2 ? "Two-handed 800 g" : "One-handed 400 g"}${rp.cost > (num(weapon.hands) === 2 ? 800 : 400) ? " + 400 g for Unwieldy" : ""}</span></li>
@@ -10052,6 +10069,14 @@ const MAGIC = [
   ["dream", "Dreamwalking", "Dreamwalking", "The dream realm, and bending it to your will."],
   ["alch", "Alchemy", "Alchemy", "Alchemical circles and the life energy that drives them."],
 ];
+// One small line icon per school, drawn like the crafts' (CRAFT_ICONS).
+const MAGIC_ICONS = {
+  ward: html`<circle cx="10" cy="10" r="7.5" /><path d="M10 4.5v11 M10 7l3-2 M10 10.5l-3-2.2 M10 13l3 1.6" />`,
+  harm: html`<path d="M10 4.5c1.6 1.8 2.2 4 1.8 6.8C11.5 13.4 10.8 15 10 16c-.8-1-1.5-2.6-1.8-4.7C7.8 8.5 8.4 6.3 10 4.5z M10 16c-2.4-.2-4.8-1.6-6-4.2 2.2-.6 4.2 0 5.6 1.6 M10 16c2.4-.2 4.8-1.6 6-4.2-2.2-.6-4.2 0-5.6 1.6 M4.5 17.5h11" />`,
+  demon: html`<circle cx="10" cy="10" r="7.5" /><path d="M10 3.2 13.9 15.4 3.6 7.9h12.8L6.1 15.4z" />`,
+  dream: html`<path d="M13.6 3.4A7 7 0 1 0 16.6 13 5.6 5.6 0 0 1 13.6 3.4z M14.8 5.2v2.4 M13.6 6.4H16" />`,
+  alch: html`<circle cx="10" cy="10" r="7.5" /><path d="M10 4.4 15 13H5z" /><circle cx="10" cy="10.2" r="2" />`,
+};
 const magicOpen = c => MAGIC.filter(([, , skill]) => num((c.skills || {})[skill]) > 0);
 
 function MagicTab({ c, update }) {
@@ -10061,7 +10086,7 @@ function MagicTab({ c, update }) {
   useEffect(() => lsSet("cw-magic-sub", sub), [sub]);
   return html`<div class="tabpane magic">
     ${open.length > 1 && html`<nav class="craftnav" aria-label="Schools">${open.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} onClick=${() => setSub(k)}>
-      <span>${n}</span><small>${skill} ${num(c.skills[skill])}</small></button>`)}</nav>`}
+      <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${MAGIC_ICONS[k]}</svg><span>${n}</span><small>${skill} ${num(c.skills[skill])}</small></button>`)}</nav>`}
     ${sub === "ward" && html`<${Warding} c=${c} update=${update} />`}
     ${sub === "harm" && html`<${Harmony} c=${c} update=${update} />`}
     ${sub === "demon" && html`<${Demonology} c=${c} update=${update} />`}
@@ -10561,7 +10586,7 @@ function WardCostBox({ st, plan, total, o }) {
   if (!st.spa) return null;
   return html`<div class="facts wardcostbox">${[
     ["Ward", `${total} Sigils`],
-    ["Fatigue", `−${st.fatigue} Sigils`],
+    ["Fatigue", st.fatigue ? `−${st.fatigue} Sigils` : "None"],
     ["Sigils per AP", `${plan.spa}${o.double && !o.ritual ? " (doubled)" : ""}`],
     o.ritual ? ["Takes", `${plan.hours} hour${plan.hours === 1 ? "" : "s"} (${plan.ap} AP of Sigils)`] : ["AP needed", `${plan.ap} AP → ${plan.available(plan.ap)} Sigils`],
   ].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>`;

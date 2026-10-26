@@ -10,6 +10,14 @@ const MAGIC = [
   ["dream", "Dreamwalking", "Dreamwalking", "The dream realm, and bending it to your will."],
   ["alch", "Alchemy", "Alchemy", "Alchemical circles and the life energy that drives them."],
 ];
+// One small line icon per school, drawn like the crafts' (CRAFT_ICONS).
+const MAGIC_ICONS = {
+  ward: html`<circle cx="10" cy="10" r="7.5" /><path d="M10 4.5v11 M10 7l3-2 M10 10.5l-3-2.2 M10 13l3 1.6" />`,
+  harm: html`<path d="M10 4.5c1.6 1.8 2.2 4 1.8 6.8C11.5 13.4 10.8 15 10 16c-.8-1-1.5-2.6-1.8-4.7C7.8 8.5 8.4 6.3 10 4.5z M10 16c-2.4-.2-4.8-1.6-6-4.2 2.2-.6 4.2 0 5.6 1.6 M10 16c2.4-.2 4.8-1.6 6-4.2-2.2-.6-4.2 0-5.6 1.6 M4.5 17.5h11" />`,
+  demon: html`<circle cx="10" cy="10" r="7.5" /><path d="M10 3.2 13.9 15.4 3.6 7.9h12.8L6.1 15.4z" />`,
+  dream: html`<path d="M13.6 3.4A7 7 0 1 0 16.6 13 5.6 5.6 0 0 1 13.6 3.4z M14.8 5.2v2.4 M13.6 6.4H16" />`,
+  alch: html`<circle cx="10" cy="10" r="7.5" /><path d="M10 4.4 15 13H5z" /><circle cx="10" cy="10.2" r="2" />`,
+};
 const magicOpen = c => MAGIC.filter(([, , skill]) => num((c.skills || {})[skill]) > 0);
 
 function MagicTab({ c, update }) {
@@ -19,7 +27,7 @@ function MagicTab({ c, update }) {
   useEffect(() => lsSet("cw-magic-sub", sub), [sub]);
   return html`<div class="tabpane magic">
     ${open.length > 1 && html`<nav class="craftnav" aria-label="Schools">${open.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} onClick=${() => setSub(k)}>
-      <span>${n}</span><small>${skill} ${num(c.skills[skill])}</small></button>`)}</nav>`}
+      <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${MAGIC_ICONS[k]}</svg><span>${n}</span><small>${skill} ${num(c.skills[skill])}</small></button>`)}</nav>`}
     ${sub === "ward" && html`<${Warding} c=${c} update=${update} />`}
     ${sub === "harm" && html`<${Harmony} c=${c} update=${update} />`}
     ${sub === "demon" && html`<${Demonology} c=${c} update=${update} />`}
@@ -519,7 +527,7 @@ function WardCostBox({ st, plan, total, o }) {
   if (!st.spa) return null;
   return html`<div class="facts wardcostbox">${[
     ["Ward", `${total} Sigils`],
-    ["Fatigue", `−${st.fatigue} Sigils`],
+    ["Fatigue", st.fatigue ? `−${st.fatigue} Sigils` : "None"],
     ["Sigils per AP", `${plan.spa}${o.double && !o.ritual ? " (doubled)" : ""}`],
     o.ritual ? ["Takes", `${plan.hours} hour${plan.hours === 1 ? "" : "s"} (${plan.ap} AP of Sigils)`] : ["AP needed", `${plan.ap} AP → ${plan.available(plan.ap)} Sigils`],
   ].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>`;
