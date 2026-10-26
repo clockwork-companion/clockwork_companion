@@ -136,6 +136,11 @@ version must keep working in a newer one, and the live site must survive data wr
 
 ## 6. Before you open a pull request
 
+**Ask first.** Whenever you've worked on a feature and pushed it to its branch, ask your person in a prompt (a question
+they answer, such as a multiple-choice one) whether to open a pull request into Dev now, and open it only if they say yes.
+Often they want to see the result first and tweak it before it goes to Dev. Pushing to your own feature branch needs no
+question; opening the pull request does.
+
 1. Pull the latest main into your branch.
 2. Rebuild: `python3 src/build.py --web .` (and `python3 src/build.py` if the artifact should match).
 3. Test in a browser, at both a desktop width and 390 px:
@@ -143,7 +148,7 @@ version must keep working in a newer one, and the live site must survive data wr
    - the browser console has no errors;
    - the page doesn't scroll sideways.
 4. Commit with a message saying what changed for the user. Keep the build output and the `src/` change in the same commit.
-5. Open the PR into **Dev**, not main.
+5. When your person says yes, open the PR into **Dev**, not main.
 
 ## 7. Decisions log
 
