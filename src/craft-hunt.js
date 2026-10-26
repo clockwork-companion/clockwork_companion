@@ -98,7 +98,9 @@ function Hunting({ c, update }) {
   const st = R.huntState(c), h = c.craft.hunt;
   const [page, setPageState] = useState(() => { const p = lsGet("cw-hunt-page", "case"); return p === "carve" || p === "merge" ? p : "case"; });
   const [busy, setBusy] = useState(false), wrap = useRef(null), first = useRef(true);
-  const setPage = p => { setPageState(p); lsSet("cw-hunt-page", p); };
+  const setPage = p => { lsSet("cw-hunt-page", p);
+    if (!document.startViewTransition || reduceMotion() || document.hidden) return setPageState(p);
+    document.startViewTransition(() => new Promise(res => { setPageState(p); setTimeout(res, 0); })); };
   // Opening a drop-down changes the picture above it: bring that into view if it scrolled away.
   useEffect(() => { if (first.current) { first.current = false; return; }
     const el = wrap.current && wrap.current.querySelector(".huntone"); if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: "start", behavior: reduceMotion() ? "auto" : "smooth" }); }, [page]);
@@ -208,7 +210,7 @@ function HuntCase({ c, st, update, log, toCarve, bars }) {
 function HuntBelt({ st, h, belt, sel, fx, onPick }) {
   const n = st.slots, x0 = 120, x1 = 570, step = (x1 - x0) / n;
   const slot = i => x0 + step * (i + .5);
-  return html`<div class="huntbelt" style=${huntTex("wood") ? `background-image: radial-gradient(ellipse at 50% 40%, transparent 40%, rgb(20 10 4 / .55)), url(${huntTex("wood")})` : ""}>
+  return html`<div class="huntbelt huntframe" style=${huntTex("wood") ? `background-image: radial-gradient(ellipse at 50% 40%, transparent 40%, rgb(20 10 4 / .55)), url(${huntTex("wood")})` : ""}>
     <svg viewBox="0 0 600 250" role="group" aria-label=${`Your belt: ${belt.length} of ${n} loops taken`}>
       <defs>
         <linearGradient id="hb-leather" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5532" /><stop offset=".18" stop-color="#6e4024" /><stop offset=".8" stop-color="#4e2b16" /><stop offset="1" stop-color="#2e180a" /></linearGradient>
@@ -398,8 +400,8 @@ const KNIFE = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17 12
 function HuntCarcass({ part, run, onPick }) {
   const P = HUNT_PARTS.find(p => p.k === part) || HUNT_PARTS[0], phase = run ? run.phase : "";
   const order = ["farFront", "farHind", "tail", "body", "nearFront", "nearHind", "head", "ear"];
-  return html`<div class=${"huntcarcass ph-" + (phase || "idle")}>
-    <svg viewBox="0 0 600 320" role="group" aria-label="The slain monster: choose a part to carve">
+  return html`<div class=${"huntcarcass huntframe ph-" + (phase || "idle")} style=${huntTex("dirt") ? `background-image: linear-gradient(transparent 58%, rgb(216 207 186 / .6) 64%, transparent 72%), linear-gradient(transparent 66%, rgb(92 74 51 / .15) 66%), url(${huntTex("dirt")}), linear-gradient(#adaa9b 0%, #cdc3ad 56%, #a69273 63%, #7d6849 67%, #5c4a33 100%); background-size: auto, auto, auto 34%, auto; background-position: 0 0, 0 0, left bottom, 0 0; background-repeat: no-repeat, no-repeat, repeat-x, no-repeat` : ""}>
+    <svg viewBox="-12 28 624 260" role="group" aria-label="The slain monster: choose a part to carve">
       <defs>
         <linearGradient id="hc-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9a597" /><stop offset=".55" stop-color="#cdc3ad" /><stop offset=".64" stop-color="#9c8a6b" /><stop offset="1" stop-color="#5c4a33" /></linearGradient>
         <linearGradient id="hc-mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8cfba" stop-opacity="0" /><stop offset=".5" stop-color="#d8cfba" stop-opacity=".75" /><stop offset="1" stop-color="#8a7556" stop-opacity="0" /></linearGradient>
@@ -413,11 +415,11 @@ function HuntCarcass({ part, run, onPick }) {
         <radialGradient id="hc-trophy"><stop offset="0" stop-color="#fff2c4" stop-opacity=".95" /><stop offset=".5" stop-color="#e8b04a" stop-opacity=".55" /><stop offset="1" stop-color="#e8b04a" stop-opacity="0" /></radialGradient>
         <${HuntPattern} id="hc-furtex" k="fur" /><${HuntPattern} id="hc-dirt" k="dirt" h=${128} />
       </defs>
-      <rect width="600" height="320" fill="url(#hc-sky)" />
-      <path class="hchills" d="M0 196 C60 180 110 186 160 178 C220 168 270 184 330 176 C390 168 440 182 500 174 C540 170 570 178 600 176 V206 H0 Z" />
-      <path class="hchills near" d="M0 204 C80 192 140 200 220 192 C300 186 380 198 460 190 C520 186 560 194 600 190 V210 H0 Z" />
-      <rect y="200" width="600" height="120" fill="url(#hc-dirt)" opacity=".9" />
-      <rect y="180" width="600" height="44" fill="url(#hc-mist)" />
+      <rect x="-20" width="640" height="320" fill="url(#hc-sky)" />
+      <path class="hchills" d="M-20 198 L0 196 C60 180 110 186 160 178 C220 168 270 184 330 176 C390 168 440 182 500 174 C540 170 570 178 600 176 L620 176 V206 H-20 Z" />
+      <path class="hchills near" d="M-20 205 L0 204 C80 192 140 200 220 192 C300 186 380 198 460 190 C520 186 560 194 600 190 L620 190 V210 H-20 Z" />
+      <rect x="-20" y="200" width="640" height="120" fill="url(#hc-dirt)" opacity=".9" />
+      <rect x="-20" y="180" width="640" height="44" fill="url(#hc-mist)" />
       <path class="hcgrass" d="M20 214 l3 -12 l2 12 M34 210 l-2 -10 l5 10 M560 212 l2 -11 l3 11 M584 222 l-3 -12 l4 12 M300 300 l2 -9 l3 9 M120 306 l-2 -10 l4 10 M430 304 l3 -9 l2 9" />
       <ellipse cx="320" cy="266" rx="250" ry="20" fill="url(#hc-contact)" />
       <ellipse cx="128" cy="262" rx="120" ry="16" fill="url(#hc-pool)" />
@@ -555,8 +557,8 @@ function HuntAltar({ recv, give, run, fresh }) {
       <circle r="40" fill="url(#ha-shine)" />
       <text y="66" class="hbname">${(t.n || "Trophy").slice(0, 20)}</text></g>`
     : html`<g transform=${`translate(${x} 130)`}><circle r="44" class="haempty" /><text y="5" class="haq">${cls === "recv" ? "Receiver" : "Giver"}</text></g>`}</g>`;
-  return html`<div class=${"huntaltar ph-" + (phase || "idle")}>
-    <svg viewBox="0 0 600 280" role="img" aria-label="The merging altar">
+  return html`<div class=${"huntaltar huntframe ph-" + (phase || "idle")} style=${huntTex("stone") ? `background-image: radial-gradient(ellipse 55% 110% at 50% 55%, rgb(107 102 94 / .45), rgb(43 41 37 / .9) 80%), url(${huntTex("stone")})` : ""}>
+    <svg viewBox="0 15 600 250" role="img" aria-label="The merging altar">
       <defs><clipPath id="ha-disc"><circle r="40" /></clipPath>
         
         <linearGradient id="ha-brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe7a6" /><stop offset=".3" stop-color="#d1a24a" /><stop offset=".6" stop-color="#8f6522" /><stop offset=".8" stop-color="#d8ad58" /><stop offset="1" stop-color="#5e4012" /></linearGradient>
