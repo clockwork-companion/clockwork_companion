@@ -445,6 +445,8 @@ function App() {
   const [tab, setTab] = useState(() => { const t = CHAR_TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : lsGet("cw-tab", "sheet"); return CHAR_TABS.includes(t) ? t : "sheet"; });
   const [settings, setSettings] = useState(() => location.hash === "#settings");
   const openSettings = on => { setSettings(on); window.scrollTo(0, 0); };
+  const news = useNews(), [newsSeen, setNewsSeen] = useState(() => lsGet("cw-news-seen", ""));
+  const fresh = !!(news && news.length && news[0].date > (newsSeen || ""));
   const lastEdit = useRef({});
   const [view, setView] = useState(() => (location.hash === "#gm" ? "gm" : lsGet("cw-view", "chars")));
   useEffect(() => lsSet("cw-view", view), [view]);
@@ -519,7 +521,7 @@ function App() {
         pick=${id => { setSel(id); setView("chars"); setSettings(false); window.scrollTo(0, 0); }} create=${create} startNew=${startNew} />
       <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
-      <button type="button" class="setbtn" aria-pressed=${settings} aria-label="Settings" data-tip="Settings" onClick=${() => openSettings(!settings)}><i class="seticon" aria-hidden="true"></i></button>
+      <button type="button" class=${"setbtn" + (fresh ? " hasnews" : "")} aria-pressed=${settings} aria-label=${fresh ? "Settings (something new)" : "Settings"} data-tip=${fresh ? "Settings · something new" : "Settings"} onClick=${() => openSettings(!settings)}><i class="seticon" aria-hidden="true"></i></button>
     </header>
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
       ? (window.CW_WEB.reason === "offline" ? "Couldn't reach the shared save, so for now characters are kept in this browser only. Check your connection and reload."
@@ -528,7 +530,7 @@ function App() {
     ${Store.readOnly && html`<div class="banner">You're viewing these characters read-only. To edit, ask the owner to invite you as an Editor.</div>`}
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
     <div class="viewswap" key=${page} data-dir=${pageNav.current.dir}>
-    ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} onBack=${() => openSettings(false)} />`
+    ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} news=${news} onSeen=${d => { lsSet("cw-news-seen", d); setNewsSeen(d); }} onBack=${() => openSettings(false)} />`
       : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />`
       : view === "table" ? html`<${TableView} chars=${list} current=${current} />` : html`
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
@@ -1674,13 +1676,47 @@ function TabletopPanel({ c, update }) {
 // the display choices below, never characters, the sign-in or an encounter in progress.
 const RESET_KEYS = ["cw-skin", "cw-text", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp"];
 const REPO = "https://github.com/clockwork-companion/clockwork_companion";
-function SettingsView({ c, update, chars, gm, onBack }) {
+/* ================= what's new: the changelog ================= */
+// The publish workflow writes changelog.json next to the page (tools/changelog.py): a daily summary of the pull requests
+// merged into this branch. Settings opens with it; the Settings button carries a dot until the newest day has been seen.
+// Builds without the file (a local build, the claude.ai artifact) simply don't show it.
+let newsLoad = null;
+const loadNews = () => newsLoad || (newsLoad = fetch("changelog.json", { cache: "no-cache" })
+  .then(r => (r.ok ? r.json() : null)).then(j => (j && Array.isArray(j.days) ? j.days.filter(d => d && d.date && Array.isArray(d.items)) : []))
+  .catch(() => []));
+function useNews() {
+  const [days, setDays] = useState(null);
+  useEffect(() => { let on = true; loadNews().then(d => { if (on) setDays(d); }); return () => { on = false; }; }, []);
+  return days;
+}
+const newsDay = iso => {
+  const d = new Date(iso + "T12:00:00"), today = new Date(); today.setHours(12, 0, 0, 0);
+  const ago = Math.round((today - d) / 864e5);
+  return ago === 0 ? "Today" : ago === 1 ? "Yesterday" : d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" });
+};
+function WhatsNew({ days, onSeen }) {
+  const [more, setMore] = useState(false);
+  useEffect(() => { if (days && days.length && onSeen) onSeen(days[0].date); }, [days && days.length ? days[0].date : ""]);
+  if (!days || !days.length) return null;
+  const shown = more ? days : days.slice(0, 3);
+  return html`<section class="frame whatsnew"><h2 class="h"><span>What's new</span><i class="orn" aria-hidden="true"></i></h2>
+    <p class="sub">${document.querySelector(".devflag") ? "Changes on the Dev page, a day at a time." : "Changes to the Companion, a day at a time."}</p>
+    ${shown.map(d => html`<div class="newsday"><h3>${newsDay(d.date)}</h3>
+      <ul>${d.items.map(i => html`<li><span>${i.t}</span>${i.by && html` <small class="muted">· ${i.by}</small>`}
+        <a class="newspr" href=${`${REPO}/pull/${i.pr}`} target="_blank" rel="noopener" aria-label=${`Pull request ${i.pr}`}>#${i.pr}</a></li>`)}</ul></div>`)}
+    ${days.length > 3 && html`<button type="button" class="linkbtn" onClick=${() => setMore(!more)}>${more ? "Show fewer days" : `Earlier (${days.length - 3} more days)`}</button>`}
+  </section>`;
+}
+
+function SettingsView({ c, update, chars, gm, news, onSeen, onBack }) {
   const [reset, setReset] = useState(false);
   const dev = !!document.querySelector(".devflag");
   const live = Store.mode === "live" && Store.table && window.CW_WEB;
   const doReset = () => { RESET_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch {} }); location.reload(); };
   return html`<div class="tabpane settings">
     <div class="sethead"><button type="button" class="btn small" onClick=${onBack}>← Back</button><h1 class="ornate">Settings</h1></div>
+
+    <${WhatsNew} days=${news} onSeen=${onSeen} />
 
     <section class="frame"><h2 class="h"><span>This browser</span><i class="orn" aria-hidden="true"></i></h2>
       <p class="sub">These choices are saved on this device only, so each player can set their own.</p>
@@ -1704,7 +1740,7 @@ function SettingsView({ c, update, chars, gm, onBack }) {
     <section class="frame"><h2 class="h"><span>About</span><i class="orn" aria-hidden="true"></i></h2>
       <p class="sub">${dev ? "This is the Dev test page. Use a test table password so real characters stay untouched." : "This is the live Companion your table plays with."}</p>
       <div class="row">
-        <a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>
+        ${!(news && news.length) && html`<a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>`}
         <a class="btn small" href=${`${REPO}/issues/new`} target="_blank" rel="noopener">Report a problem</a></div>
       <p class="muted">Reporting a problem needs a free GitHub account.</p>
     </section>

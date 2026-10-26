@@ -39,6 +39,14 @@ your feature branch ──PR──▶ Dev ──(tested on the Dev page)──PR
   (Branch from Dev, not main: Dev runs ahead of main between releases, so a branch from main can lack the very code it changes.)
 - **Never push to someone else's branch** unless they asked you to.
 - **One PR per feature.** The PR description says, in plain words, what changed for the user and how to test it.
+- **Every PR's title is its line in the changelog.** Each day's merges into Dev are posted in the app, in
+  Settings → What's new on the Dev page (the Settings button shows a dot until it's been seen); the live site gets
+  its own list from main. The publish workflow writes it (`tools/changelog.py` → `changelog.json`), so nobody posts it
+  by hand, but it's only as good as the titles:
+  - Write the title for players, in plain words: what they'll notice ("Skills & Talents: perks deal out of the
+    stack when a skill opens"), not the branch name or how it was built.
+  - A PR players won't notice (tests, workflows, docs, CLAUDE.md) starts its title with `CI:`, `Tests:` or `Docs:`,
+    or contains `[skip changelog]`; those stay out of the list.
 - When main changes and Dev is behind, bring Dev up to main (a pull request from main into Dev) so the Dev page
   isn't testing something older than the live site.
 
@@ -96,6 +104,7 @@ If an older branch still has it, a merge may report `sw.js` as deleted: keep it 
 | `gm.js` | GM table: players and roles, backups, the initiative deck. |
 | `web-backend.js`, `web/` | Website-only parts: sign-in, Firestore storage, the rules file, the README template. |
 | `web/art/` | The 2021 rulebook's paintings behind the perk cards: a clean 16:9 window around each skill's subject, cut from the rulebook pages by `tools/rulebook_art_focal.py` (aims in `tools/rulebook_art_focus.json`). The build copies it next to `index.html`; website only. |
+| `../tools/changelog.py` | Not in `src/`: run by the publish workflow after each build. Writes `changelog.json` beside the page: the pull requests merged into that branch, grouped by day (Istanbul time, last 30 days). Settings → What's new reads it (`WhatsNew` in `app.js`); without the file the section hides and the old commits link shows. |
 | `egg.html`, `egg-furnace.html` | Hidden mini-games (website only). They are self-contained, so don't couple app code to them. |
 | `vendor/` | Preact 10.19.3 and htm 3.1.1, inlined into the website build. |
 | `clockwork-sheet.lua` | The Tabletop Simulator sheet. It exchanges a JSON code with the app's Tabletop tab. |
@@ -209,4 +218,5 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-26:** Skills & Talents: each skill's perks are folded like a rolodex (one slim card per perk name: a perk the book gives at two levels, like Wreck at 3 and 4, shares one card, its levels on the left ("3–4") and each level's uses and kind after the name, marked with that level's number) and open into the full cards on click; which skills are open is kept per browser. Sinan.
 - **2026-10-27:** Hunting is a bench in Crafting with three pages: Trophies & belt (first), Carving, Merging. A realistic slain beast to carve (part, the GM's level, the Salvaging Roll), a leather belt the trophies hang from (attune, Release, a second attunement), a stone altar for merging (the Combining Roll; a new name and picture after). Kept compact: no explanatory text on the bench. The book's missing pieces (belt size, leftover properties, where merged properties go, a failed merge) are the app's readings, marked in the rules panel, until the GM says otherwise. Utku.
 - **2026-10-26:** Armor has an edit mode and a flush finished card like weapons; in play only the Soak Pool (and Wear) changes. Prosthetics sit below Weapons in Gear. Each secondary skill's side panel opens with an italic flavour line (Entrada has none until the book says what it covers). Sinan.
+- **2026-10-27:** Every update to Dev gets a changelog: a daily summary of the PRs merged that day, shown in the app at Settings → What's new (a dot on the Settings button until it's seen). Made automatically by the publish workflow from PR titles, so titles are written for players. Bedo.
 - **2026-10-26:** On phones (560 px and under) a skill row is two lines: the name and its percentage on top, the dots underneath, so names are never cut short (ten dots leave no room beside them). Secondary skills keep one line, with their note under the name. Sinan, from Utku's report.

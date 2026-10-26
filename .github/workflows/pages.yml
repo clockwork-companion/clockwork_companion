@@ -15,9 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with: { ref: main, path: site-main }
+        with: { ref: main, path: site-main, fetch-depth: 0 }   # full history: the changelog reads it
       - uses: actions/checkout@v5
-        with: { ref: Dev, path: site-dev }
+        with: { ref: Dev, path: site-dev, fetch-depth: 0 }
       - name: Build main at / and Dev at /dev/ from src
         run: |
           mkdir -p out/dev
@@ -37,6 +37,14 @@ jobs:
             sed -i 's#<div id="app"></div>#<div style="position:fixed;z-index:999;top:10px;left:-34px;transform:rotate(-45deg);width:130px;padding:3px 0;background:\#c0392b;color:\#fff;font:700 11px system-ui;letter-spacing:.2em;text-align:center;pointer-events:none">DEV</div><div id="app"></div>#' out/dev/index.html
           fi
           [ -f out/dev/firebase-config.js ] || cp out/firebase-config.js out/dev/
+      - name: Write each page's changelog (Settings -> What's new)
+        run: |
+          # A daily summary of the pull requests merged into each branch (tools/changelog.py). A branch without the
+          # script yet (main before the release that brings it) simply gets no changelog.
+          for b in main:out Dev:out/dev; do
+            branch=${b%%:*}; dir=${b#*:}; src=site-$(echo "$branch" | tr '[:upper:]' '[:lower:]')
+            if [ -f "$src/tools/changelog.py" ]; then python3 "$src/tools/changelog.py" "$src" HEAD "$dir/changelog.json" 30; fi
+          done
           touch out/.nojekyll
       - name: Push to gh-pages
         run: |
