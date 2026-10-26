@@ -1282,6 +1282,8 @@ function skillArt(skill, kind, n) {
   const list = kind === "weapon" ? WEAPON_ART : SKILL_ART[skill]; if (!list) return "";
   return `art/${list[n % list.length]}.webp`;
 }
+// Folded perks are shown one card per level: perks unlocked at the same level share it, side by side.
+const byLevel = perks => perks.reduce((out, p) => { const at = out.find(x => x.l === p.l); if (at) at.ps.push(p); else out.push({ l: p.l, ps: [p] }); return out; }, []).sort((a, b) => num(a.l) - num(b.l));
 const typeKey = t => (t === "M" || t === "A" ? "A" : t === "E" ? "E" : "P");
 const TypeTag = ({ t }) => { const k = typeKey(t); return html`<span class=${"ttag tt-" + k} title=${TYPE_NAME[t] || TYPE_NAME[k]}><svg viewBox="0 0 16 16" aria-hidden="true">${PERK_ICON[k]}</svg>${k === "E" ? "Empower" : TYPE_NAME[k]}</span>`; };
 function unlockedPerks(c) {
@@ -1398,9 +1400,10 @@ function TalentsTab({ c, update, openSkill }) {
         <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small>
           <button type="button" class="foldbtn" aria-expanded=${open} onClick=${() => flip(g.name)}>${open ? "Fold" : `Open ${g.perks.length} perk${g.perks.length > 1 ? "s" : ""}`}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button></h3>
         ${open ? html`<div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div>`
-          : html`<button type="button" class="rolodex" onClick=${() => flip(g.name)} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${g.perks.map((p, k) => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
-              return html`<span class=${"rdx k-" + typeKey(t)} style=${`--k:${k}`}><b class="rdxlv">${p.l}</b><span class="rdxn">${p.group || g.name}</span>
-                ${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max} left</small>`}<${TypeTag} t=${t} /></span>`; })}</button>`}</div>`; })
+          : html`<button type="button" class="rolodex" onClick=${() => flip(g.name)} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${byLevel(g.perks).map((L, k) =>
+              html`<span class="rdx" style=${`--k:${k}`}><b class="rdxlv">${L.l}</b><span class="rdxps">${L.ps.map(p => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
+                return html`<span class=${"rdxp k-" + typeKey(t)}><span class="rdxn">${p.group || g.name}</span>
+                  ${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max}</small>`}<${TypeTag} t=${t} /></span>`; })}</span></span>`)}</button>`}</div>`; })
       : html`<p class="muted emptyline">${empty}</p>`}
     </section>
 

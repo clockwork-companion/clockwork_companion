@@ -892,10 +892,14 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .rolodex:hover .rdx { transform: translateY(calc(var(--k) * 1.5px)); }
 .rdxlv { flex: none; width: 34px; align-self: stretch; margin: -7px 0; display: grid; place-items: center; color: #fff; font: 700 15px var(--f-display);
   background: var(--att, var(--rule)); border-radius: 2px 0 0 0; }
-.rdxn { flex: 1; min-width: 0; font: 600 13px var(--f-head); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* one card per level: its perks sit side by side, wrapping to a second line when there's no room */
+.rdxps { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 5px 6px; align-items: center; }
+.rdxp { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; padding: 2px 4px 2px 0; }
+.rdxp + .rdxp { padding-left: 9px; border-left: 1px solid color-mix(in srgb, var(--att, var(--hair)) 30%, var(--hair)); }
+.rdxn { min-width: 0; font: 600 13px var(--f-head); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rdxuse { flex: none; font: 600 11px var(--f-mono); color: var(--ink-3); }
 .rdx .ttag { margin-left: 0; }
-@media (max-width: 560px) { .rdx .ttag { font-size: 0; gap: 0; padding: 3px; } .rdxuse { display: none; } }
+@media (max-width: 560px) { .rdx .ttag { font-size: 0; gap: 0; padding: 3px; } .rdxn { font-size: 12px; letter-spacing: .05em; } }
 .segicon { width: 12px; height: 12px; margin-right: 4px; vertical-align: -1px; }
 /* the attribute filter: pick any number; with 3+ invested skills among them, those skills are listed to narrow further */
 .attfilter { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 2px; }
