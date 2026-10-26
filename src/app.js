@@ -134,9 +134,21 @@ function UsageLine({ u }) {
   if (!keys.length) return null;
   return html`<span class="uline">${keys.map(k => html`<span title=${`${UNAME[k]}: ${k === "recharge" ? u.recharge : k === "ap" && u.ap.includes("*") ? val.ap.replace(" ⟲", "") + " (can be a reaction)" : val[k]}`}><${Uicon} k=${k} />${val[k]}</span>`)}</span>`;
 }
+// Side panels (rules and skills) take the Duality Companion's look: sections open with a banner (a small medal with an
+// icon, the title, a rule fading out) rather than boxed headings, and lists are light rows with a small mark.
+const PANEL_ICON = {
+  book: html`<path d="M3 5.5C6 4.3 9 4.4 12 6c3-1.6 6-1.7 9-.5v13c-3-1.2-6-1.1-9 .5-3-1.6-6-1.7-9-.5z M12 6v13.5" />`,
+  table: html`<path d="M3.5 5h17v14h-17z M3.5 10h17 M3.5 14.5h17 M9.5 10v9" />`,
+  info: html`<circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5 M12 7.6v.2" />`,
+  tip: html`<path d="M9 17.5h6 M10 20.5h4 M12 3.5a6 6 0 0 0-3.6 10.8c.5.4.8 1 .8 1.7v1.5h5.6V16c0-.7.3-1.3.8-1.7A6 6 0 0 0 12 3.5z" />`,
+  shield: html`<path d="M12 2.8l7.5 3v6c0 4.7-3.2 7.9-7.5 9.4-4.3-1.5-7.5-4.7-7.5-9.4v-6z" />`,
+  star: html`<path d="M12 3l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.3l6-.8z" />`,
+};
+const PanelIcon = ({ i, a }) => (a && ATTR_GLYPH[a] ? html`<${AttrGlyph} a=${a} cls="pnicon" />` : html`<svg class="pnicon" viewBox="0 0 24 24" aria-hidden="true">${PANEL_ICON[i] || PANEL_ICON.book}</svg>`);
+const Banner = ({ title, i, a, tag = "h3" }) => html`<${tag} class="spban"><span class="spmedal"><${PanelIcon} i=${i} a=${a} /></span><span class="spbt">${title}</span><i class="spbr" aria-hidden="true"></i></${tag}>`;
 function RuleBlock({ b }) {
   if (typeof b === "string") return html`<p>${b}</p>`;
-  if (b.h) return html`<h3>${b.h}</h3>`;
+  if (b.h) return html`<${Banner} title=${b.h} i=${b.i || "book"} />`;
   if (b.ul) return html`<ul class="sprules">${b.ul.map(x => html`<li>${x}</li>`)}</ul>`;
   if (b.note) return html`<p class="muted rnote">${b.note}</p>`;
   if (b.icons) return html`<div class="ulegend">${Object.keys(UICON).map(k => html`<span><${Uicon} k=${k} /><b>${UNAME[k]}</b>${k === "recharge" ? " · L long rest, S short rest" : k === "ap" ? " · ⟲ can be a reaction" : ""}</span>`)}</div>`;
@@ -149,7 +161,7 @@ function RulePanel({ topic, onClose }) {
   useEffect(() => { const k = e => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", k); ref.current && ref.current.focus(); return () => window.removeEventListener("keydown", k); }, [topic]);
   if (!r) return null;
   return html`<aside class="spanel rpanel-rules" role="dialog" aria-label=${`${r.title} rules`} tabindex="-1" ref=${ref}>
-    <header class="sphead"><div><span class="lbl">Rules · ${r.kicker}</span><h2>${r.title}</h2></div>
+    <header class="sphead"><span class="sp-medal"><${PanelIcon} i="book" /></span><div class="sptt"><span class="lbl">Rules · ${r.kicker}</span><h2>${r.title}</h2></div>
       <button class="iconbtn" aria-label="Close" onClick=${onClose}>×</button></header>
     <div class="spbody rulebody">${r.body.map(b => html`<${RuleBlock} b=${b} />`)}</div></aside>`;
 }
@@ -587,6 +599,39 @@ function Roster({ list, all, sel, setSel, current, create, startNew }) {
   </div>`;
 }
 
+/* ================= modules: Crafting and Magic ================= */
+const MODULES = {
+  craft: { n: "Crafting", list: c => craftsOpen(c).map(x => x[2]), what: "a tab of workbenches for your crafting skills: forging, brewing, runestones, munitions and repairs",
+    icon: html`<path d="M3 10.5h12.5l-1.2 3h-2.8l1 3.5h2.5v2H6v-2h2.5l1-3.5H7c-2.2 0-4-1.2-4-3z M15 3.5l4.5 4.5-2 2L13 5.5z M14 7l-3.5 3.5" />` },
+  magic: { n: "Magic", list: c => magicOpen(c).map(x => x[2]), what: "a tab for your schools of magic: wards, chakras, daemons, dreams and alchemical circles",
+    icon: html`<circle cx="12" cy="12" r="8.6" /><path d="M12 3.4l2.4 13.9L5 8.3h14l-9.4 9z" />` },
+};
+// The pop-up that appears when a character first puts points into a crafting or magic skill: a short celebration (the
+// forge flares with sparks, or ink blooms round a rune circle) and the choice to turn the module on. Settings can change it later.
+function ModulePrompt({ c, k, update }) {
+  const m = MODULES[k]; const skills = m.list(c);
+  const choose = on => update(x => { x.modules = Object.assign({ craft: null, magic: null }, x.modules, { [k]: on }); addLog(x, `${m.n} ${on ? "turned on" : "left off"}`); });
+  return html`<div class="gx-veil modveil" onKeyDown=${e => { if (e.key === "Escape") choose(false); }}>
+    <div class=${"gx-choose modprompt mp-" + k} role="dialog" aria-modal="true" aria-labelledby="mp-title">
+      <div class="mpemblem" aria-hidden="true"><i class="mpglow"></i>${Array.from({ length: 10 }, (_, i) => html`<i class="mpfx" style=${`--i:${i}`}></i>`)}
+        <svg viewBox="0 0 24 24">${m.icon}</svg></div>
+      <h2 class="ornate" id="mp-title">${k === "craft" ? "The forge is lit" : "The ink takes"}</h2>
+      <p>You've put points into <b>${skills.join(", ")}</b>. ${m.n} is ${m.what}.</p>
+      <p>Would you like to turn ${m.n} on for ${c.name || "this character"}?</p>
+      <div class="row mpbtns"><button class="btn primary" onClick=${() => choose(true)} autofocus>Turn on ${m.n}</button><button class="btn" onClick=${() => choose(false)}>Not now</button></div>
+      <p class="muted">You can change this at any time in Settings.</p>
+    </div></div>`;
+}
+// Settings: switch the modules on or off for the open character.
+function ModulesPanel({ c, update }) {
+  return html`<section class="frame"><h2 class="h"><span>Modules</span><i class="orn" aria-hidden="true"></i></h2>
+    <p class="sub">Extra tabs for ${c.name || "this character"}. They're off until you turn them on.</p>
+    <div class="setrows">${Object.entries(MODULES).map(([k, m]) => { const on = (c.modules || {})[k] === true; const sk = m.list(c);
+      return html`<div class="setrow"><div><span class="setname">${m.n}</span><span class="muted">${m.what[0].toUpperCase() + m.what.slice(1)}. ${sk.length ? `Skills with points: ${sk.join(", ")}.` : "Shows once the character has points in one of its skills."}</span></div>
+        <button type="button" class=${"btn small modtog" + (on ? " primary" : "")} aria-pressed=${on} onClick=${() => update(x => { x.modules = Object.assign({ craft: null, magic: null }, x.modules, { [k]: !on }); addLog(x, `${m.n} turned ${on ? "off" : "on"}`); })}>${on ? "On" : "Off"}</button></div>`; })}</div>
+  </section>`;
+}
+
 /* ================= character ================= */
 const CHAR_TABS = ["sheet", "vitals", "talents", "gear", "craft", "magic"];
 function Character({ c, update, tab, setTab, onDelete }) {
@@ -597,10 +642,12 @@ function Character({ c, update, tab, setTab, onDelete }) {
   // Free edit is always there for a GM; a player gets it only when the GM switches it on for this sheet.
   const canFree = isGM() || !!c.freeEdit;
   const mode = canFree ? chosenMode : "karma";
-  // Crafting only appears once the character has points in a crafting skill (and then only those benches).
-  const crafts = craftsOpen(c).map(x => x[0]);
-  // Magic likewise: once the character has points in a school of magic (Warding so far).
-  const magics = magicOpen(c).map(x => x[0]);
+  // Crafting and Magic are modules: each shows only once the player has turned it on (Settings, or the pop-up that asks
+  // when the character first puts points into one of its skills), and then only the benches or schools with points.
+  const mods = c.modules || {};
+  const crafts = mods.craft === true ? craftsOpen(c).map(x => x[0]) : [];
+  const magics = mods.magic === true ? magicOpen(c).map(x => x[0]) : [];
+  const asking = ["craft", "magic"].find(k => mods[k] == null && (k === "craft" ? craftsOpen(c) : magicOpen(c)).length);
   const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ...(crafts.length ? [["craft", "Crafting"]] : []), ...(magics.length ? [["magic", "Magic"]] : [])];
   useEffect(() => { if ((tab === "craft" && !crafts.length) || (tab === "magic" && !magics.length)) setTab("sheet"); }, [tab, crafts.length, magics.length]);
   // The Magic tab arriving: it's inked in, rather than forged.
@@ -641,6 +688,7 @@ function Character({ c, update, tab, setTab, onDelete }) {
   }
   return html`
     <${Header} c=${c} d=${d} update=${update} mode=${mode} setMode=${setMode} canFree=${canFree} />
+    ${asking && html`<${ModulePrompt} key=${c.id + asking} c=${c} k=${asking} update=${update} />`}
     <div class="tabs" role="tablist">${tabs.map(([k, n]) => html`<button role="tab" class=${"tab-" + k} aria-selected=${tab === k} onClick=${() => setTab(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${TAB_ICONS[k]}</svg>${n}</button>`)}</div>
     ${panel && panel.kind === "rule" && html`<${RulePanel} topic=${panel.name} onClose=${() => setPanel(null)} />`}
@@ -722,7 +770,7 @@ function Header({ c, d, update, mode, setMode, canFree }) {
       ${canFree && html`<div class="seg" role="group" aria-label="Editing mode">
         <button aria-pressed=${mode === "karma"} onClick=${() => setMode("karma")}>Spend Karma</button>
         <button aria-pressed=${mode === "build"} onClick=${() => setMode("build")}>Free edit</button></div>`}
-      <div class="muted">${mode === "karma" ? html`<${Mouse} side="L" /> Left-click raises and spends Karma. <${Mouse} side="R" /> Right-click lowers and refunds it.` : "Changes cost no Karma. The pool grows or shrinks to match, so it always equals unspent + spent. You can also type over Unspent and the pool."}</div>
+      <div class="muted karmahint">${mode === "karma" ? html`<${Mouse} side="L" /> Left-click raises and spends Karma. <${Mouse} side="R" /> Right-click lowers and refunds it.` : "Changes cost no Karma. The pool grows or shrinks to match, so it always equals unspent + spent. You can also type over Unspent and the pool."}</div>
       ${Store.table && isGM() && html`<label class="row freeallow"><input type="checkbox" checked=${!!c.freeEdit} onChange=${e => update(x => { x.freeEdit = e.target.checked; addLog(x, e.target.checked ? "GM allowed Free edit" : "GM turned off Free edit"); })} />Player may use Free edit</label>`}
     </div></div>
     <${GlanceCard} d=${d} />
@@ -840,29 +888,24 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill, onDelete
   const tipFn = (kind, name) => to => levelTip(c, mode, kind, name, to, "L", "R");
   const p = d.armor;
   const nameBtn = (kind, n, extra) => html`<button type="button" class="n sname" onClick=${() => openSkill(kind, n)} title=${`What ${n} grants at each level`}>${n}${extra || ""}</button>`;
-  const groups = R.SKILL_GROUPS.map(g => ({ g, rows: g.skills.filter(([n]) => !invested.skills || num(c.skills[n]) > 0) })).filter(x => x.rows.length);
   const weap = ["STR", "DEX"].map(at => ({ at, rows: R.WEAPON_TYPES.filter(w => w[1] === at && (!invested.weapons || num(c.weaponSkills[w[0]]) > 0)) })).filter(x => x.rows.length);
   const secs = R.SECONDARY.map(sk => ({ sk, b: R.secondaryBonus(c, sk.name, p) })).filter(x => !invested.sec || x.b.trained);
   const none = what => html`<p class="muted emptyline">No ${what} invested yet. Click the diamond to show them all.</p>`;
   // How many points an attribute allows in its skills, shown beside each group's heading.
   const allowance = at => { const av = R.attr(c, at); return html`<small>${av < 10 ? "broken · no points" : `up to ${R.pointsAbove10(av)}`}</small>`; };
   return html`<div class="tabpane">
-    <section class="frame"><${Sigils} seed="attributes" n=${2} lead="attr" side="r" /><${Head} title="Attributes" topic="attributes" /><p class="sub">Ten is the measure of common folk. Fall below it and the attribute is broken.</p>
-      <div class="legend">
-        <span class="item"><i class="cell miss"></i><b>Broken</b><small>Points below 10 the character is missing</small></span>
-        <span class="item"><i class="cell up"></i><b>Natural</b><small>Points above 10 from character creation</small></span>
-        <span class="item"><i class="cell bought"></i><b>Bought</b><small>Points raised with Karma</small></span>
-        <span class="item"><i class="cell sealed"></i><b>Sealed</b><small>Karma can never raise a broken attribute past here</small></span>
-      </div>
-      <p class="hint"><${Mouse} side="L" /> Left-click to raise · <${Mouse} side="R" /> right-click to lower (long-press on a phone) · hover for the Karma cost. Skill pips work the same way.${mode === "build" ? " In Free edit, Break turns an attribute into a broken one." : ""}</p>
-      <div class="attrs">${R.ATTRS.map(a => html`<${AttrRow} key=${a.k} c=${c} a=${a} mode=${mode} set=${set("attr", a.k)} />`)}</div>
-    </section>
-
-    <section class="frame"><${Sigils} seed="skills" n=${1} lead="skill" side="l" /><${Head} title="Skills" topic="skills" tail=${diamond("skills", "skills")} /><p class="sub">Modifier shown after armor penalties. Click a skill's name to see what each level grants. ${p.armor ? `Wearing ${p.armor.name || "armor"}: casting −${p.casting}%${p.dexSkills ? `, Dexterity skills −${p.dexSkills}%` : ""}.` : ""}</p>
-      ${groups.length ? html`<div class="skillcols">${groups.map(({ g, rows }) => html`<div class="sgroup"><h3>${R.ATTR_NAME[g.attr]}${allowance(g.attr)}</h3>
-          ${rows.map(([n]) => { const lv = num(c.skills[n]); const cap = R.skillCap(c, n); const mod = R.skillModifier(c, n, p);
-            return html`<div class=${"srow" + (lv ? "" : " dim")}>${nameBtn("skill", n, html`${lv > cap ? html` <span class="flag bad">over cap</span>` : ""}${R.CASTING.includes(n) && lv && p.casting ? html` <span class="flag warn">armor</span>` : ""}`)}
-              <${Pips} value=${lv} cap=${cap} label=${n} onSet=${set("skill", n)} tipFor=${tipFn("skill", n)} /><span class="m">${lv ? pct(mod) : "—"}</span></div>`; })}</div>`)}</div>` : none("skills")}
+    <section class="frame attrsk"><${Sigils} seed="attributes" n=${2} lead="attr" side="r" /><${Head} title="Attributes & Skills" topic="attributes" tail=${diamond("skills", "skills")} />
+      <p class="sub">Ten is the measure of common folk; below it an attribute is broken. Each attribute's skills sit under it, and a skill holds one point per point its attribute has above 10. Click a skill's name to see what each level grants.${p.armor ? ` Wearing ${p.armor.name || "armor"}: casting −${p.casting}%${p.dexSkills ? `, Dexterity skills −${p.dexSkills}%` : ""}.` : ""}</p>
+      <div class="ablocks">${R.ATTRS.map(a => { const g = R.SKILL_GROUPS.find(x => x.attr === a.k); const rows = g ? g.skills.filter(([n]) => !invested.skills || num(c.skills[n]) > 0) : [];
+        return html`<div class="ablock" key=${a.k} style=${attStyle(a.k)}>
+          <div class="abspine" title=${a.n}><${AttrGlyph} a=${a.k} /><small>${a.k}</small></div>
+          <div class="abmain"><${AttrRow} c=${c} a=${a} mode=${mode} set=${set("attr", a.k)} />
+            ${rows.length ? html`<div class="abskills"><div class="abhead"><span>${a.n} skills</span>${allowance(a.k)}</div>
+              <div class="abgrid">${rows.map(([n]) => { const lv = num(c.skills[n]); const cap = R.skillCap(c, n); const mod = R.skillModifier(c, n, p);
+                return html`<div class=${"srow" + (lv ? "" : " dim")}>${nameBtn("skill", n, html`${lv > cap ? html` <span class="flag bad">over cap</span>` : ""}${R.CASTING.includes(n) && lv && p.casting ? html` <span class="flag warn">armor</span>` : ""}`)}
+                  <${Pips} value=${lv} cap=${cap} label=${n} onSet=${set("skill", n)} tipFor=${tipFn("skill", n)} /><span class="m">${lv ? pct(mod) : "—"}</span></div>`; })}</div></div>`
+            : invested.skills ? html`<p class="abnone">No ${a.n} skills invested yet.</p>` : ""}</div></div>`; })}</div>
+      <${LegendBox} mode=${mode} />
     </section>
 
     <section class="frame"><${Sigils} seed="weaponry" n=${1} lead="weap" side="r" /><${Head} title="Weaponry" topic="weaponry" tail=${diamond("weapons", "weapon skills")} /><p class="sub">Proficiency at 3, 5, 7 and 10. Accuracy needs Competent (3) and adds Precision.</p>
@@ -884,6 +927,20 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill, onDelete
     <${DeleteCharacter} c=${c} onDelete=${onDelete} />
   </div>`;
 }
+// The key to the attribute bars and the mouse controls, folded under the table; open or shut is kept per browser.
+function LegendBox({ mode }) {
+  const [open, setOpen] = useState(() => lsGet("cw-legend", false));
+  return html`<details class="legendbox" open=${open} onToggle=${e => { const o = e.currentTarget.open; if (o !== open) { setOpen(o); lsSet("cw-legend", o); } }}>
+    <summary>Key to the bars</summary>
+    <div class="legend">
+      <span class="item"><i class="cell miss"></i><b>Broken</b><small>Points below 10 the character is missing</small></span>
+      <span class="item"><i class="cell up"></i><b>Natural</b><small>Points above 10 from character creation</small></span>
+      <span class="item"><i class="cell bought"></i><b>Bought</b><small>Points raised with Karma</small></span>
+      <span class="item"><i class="cell sealed"></i><b>Sealed</b><small>Karma can never raise a broken attribute past here</small></span>
+    </div>
+    <p class="hint"><${Mouse} side="L" /> Left-click to raise · <${Mouse} side="R" /> right-click to lower (long-press on a phone) · hover for the Karma cost. Skill pips work the same way.${mode === "build" ? " In Free edit, Break turns an attribute into a broken one." : ""}</p>
+  </details>`;
+}
 function DeleteCharacter({ c, onDelete }) {
   const [del, setDel] = useState(false);
   useEffect(() => setDel(false), [c.id]);
@@ -904,9 +961,9 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
   const set = to => setLevel(c, update, mode, kind, name, to);
   const sec = kind === "sec" ? R.SECONDARY_BY_NAME[name] : null;
   const secB = sec ? R.secondaryBonus(c, name) : null;
-  return html`<aside class="spanel" role="dialog" aria-label=${`${name} levels`} tabindex="-1" ref=${ref}>
+  return html`<aside class="spanel" role="dialog" aria-label=${`${name} levels`} tabindex="-1" ref=${ref} style=${attStyle(at)}>
     <header class="sphead">
-      <div><span class="lbl">${kind === "weapon" ? "Weapon skill" : kind === "sec" ? "Secondary skill" : "Skill"} · ${an}</span><h2>${name}</h2></div>
+      <span class="sp-medal att"><${PanelIcon} a=${at} /></span><div class="sptt"><span class="lbl">${kind === "weapon" ? "Weapon skill" : kind === "sec" ? "Secondary skill" : "Skill"} · ${an}</span><h2>${name}</h2></div>
       <button class="iconbtn" aria-label="Close" onClick=${onClose}>×</button>
     </header>
     <div class="spnow">
@@ -914,18 +971,18 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
       <span class="muted">Level ${lv} of ${max}${cap < max ? ` · ${an} ${R.attr(c, at)} allows ${cap}` : ""}</span>
     </div>
     <div class="spbody">
-      ${(SKILL_TABLES[name] || []).map(t => html`<div class="sptable"><h4>${t.title}</h4>${t.note && html`<p class="muted">${t.note}</p>`}
+      ${(SKILL_TABLES[name] || []).map(t => html`<div class="sptable"><${Banner} title=${t.title} i="table" tag="h4" />${t.note && html`<p class="muted">${t.note}</p>`}
         <div class="tbl-wrap"><table><thead><tr>${t.cols.map(x => html`<th>${x}</th>`)}</tr></thead>
           <tbody>${t.rows.map(r => html`<tr>${r.map((x, i) => html`<td class=${i === 0 ? "k" : ""}>${x}</td>`)}</tr>`)}</tbody></table></div></div>`)}
       ${data && data.d && html`<p class="spdesc">${data.d}</p>`}
       ${data && data.r && html`<ul class="sprules">${data.r.map(x => html`<li>${x}</li>`)}</ul>`}
-      ${data && data.b && data.b.map(b => html`<details class="spbox"><summary>${b.title}</summary><ul>${b.lines.map(x => html`<li>${x}</li>`)}</ul></details>`)}
+      ${data && data.b && data.b.map(b => html`<details class="spbox"><summary><${Banner} title=${b.title} i="info" tag="span" /></summary><ul class="sprules">${b.lines.map(x => html`<li>${x}</li>`)}</ul></details>`)}
 
-      ${kind === "weapon" && html`<div class="spgroup"><h3>Proficiency</h3>
+      ${kind === "weapon" && html`<div class="spgroup"><${Banner} title="Proficiency" i="shield" />
         ${PROFICIENCY_ROWS.map(([l, n, t]) => html`<div class=${"perk" + (lv >= l ? " got" : l > cap ? " locked" : "")}><span class="plv">${l}</span><div><b class="pname">${n}</b><p>${t}</p></div></div>`)}</div>`}
 
       ${data && data.gs.map(g => html`<div class="spgroup">
-        ${g.n && g.n !== "Perks" && html`<h3>${g.n}</h3>`}${g.f && html`<p class="flavor">${g.f}</p>`}
+        ${g.n && g.n !== "Perks" && html`<${Banner} title=${g.n} a=${at} />`}${g.f && html`<p class="flavor">${g.f}</p>`}
         ${g.p.map(pk => html`<div class=${"perk" + (lv >= pk.l ? " got" : pk.l > cap ? " locked" : "")}>
           <span class="plv" title=${lv >= pk.l ? "Unlocked" : pk.l > cap ? `Needs ${an} ${10 + pk.l}` : `Unlocks at level ${pk.l}`}>${pk.l}</span>
           <div><span class=${"ptype t-" + pk.t}>${TYPE_NAME[pk.t]}</span><${UsageLine} u=${pk.u} />
@@ -938,7 +995,7 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
           <p>Costs ${sec.cost[l - 1]} Karma.${l > 1 ? ` Needs ${an} ${l === 2 ? 10 : 14} or more.` : ""}</p></div></div>`)}
         ${sec.primary && html`<p class="muted">Also granted by ${sec.primary} ${sec.at}. With both, the bonus is 7% per level plus 2 × ${sec.primary} level.</p>`}</div>`}
 
-      ${data && data.tips && html`<details class="spbox"><summary>Tips</summary><ul>${data.tips.map(x => html`<li>${x}</li>`)}</ul></details>`}
+      ${data && data.tips && html`<details class="spbox"><summary><${Banner} title="Tips" i="tip" tag="span" /></summary><ul class="sprules">${data.tips.map(x => html`<li>${x}</li>`)}</ul></details>`}
       ${kind === "weapon" && !data && html`<p class="muted">No perks have been written for ${name} yet.</p>`}
     </div>
   </aside>`;
@@ -1031,7 +1088,6 @@ function VitalsTab({ c, d, update }) {
   const v = c.vitals; const [cond, setCond] = useState("");
   const setV = (k, val, lo, hi) => update(x => { x.vitals[k] = R.clamp(Math.round(val), lo, hi); });
   return html`<div class="tabpane">
-    <${RestBay} c=${c} d=${d} update=${update} />
     <section class="meters">
       <${Meter} id=${"hp-" + c.id} label="Hit points" order=${0} topic="hp" cur=${d.cur.hp} max=${d.max.hp} color="var(--blood)" soft="var(--blood-soft)"
         onSet=${n => setV("hp", n, 0, d.max.hp)} note=${d.cur.hp === 0 ? "Unconscious: roll death saves (d100, 50 or lower succeeds)." : `${num(v.exhaustion) >= 7 ? "Maximum halved by Exhaustion. " : ""}Long rest restores ${d.hpRegen}.`} />
@@ -1044,6 +1100,7 @@ function VitalsTab({ c, d, update }) {
     </section>
 
     <${StaminaBar} c=${c} update=${update} />
+    <${RestBay} c=${c} d=${d} update=${update} />
 
     <section class="frame"><${Sigils} seed="exhaustion" n=${1} side="r" /><${Head} title="Exhaustion" topic="stamina" />
       <${ExhaustionList} c=${c} d=${d} update=${update} />
@@ -1110,7 +1167,7 @@ function RestBay({ c, d, update }) {
   const shortRest = () => { markRest(); update(x => { const m = R.shortRest(x); addLog(x, m); toast(m); }); };
   const longRest = () => askRoll({ title: "Long rest", dice: [{ n: 1, sides: 6 }, { n: d.cleanseDice.d4, sides: 4 }], note: "The cleansing dice: Toxicity goes down by the total.", cancel: true })
     .then(r => { if (!r) return; markRest(); update(x => { const m = R.longRest(x, r.reduce((a, b) => a + b, 0)); addLog(x, m); toast(m); }); });
-  return html`<section class="frame restbay" ref=${bay}><${Head} title="Rest" topic="rest" />
+  return html`<section class="restbay" ref=${bay} aria-label="Rest"><div class="resthead"><button type="button" class="hlink" onClick=${() => openRuleFn("rest")} aria-label="Rest: show the rules">Rest${BOOK}</button><span class="muted">Press and hold to take a rest.</span></div>
     <div class="restrow">
       <${RestPlate} kind="long" ms=${1100} title="Long rest" when="About 8 hours" onDone=${longRest}
         lines=${`+${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${st.long} Stamina, recharge every ability.`} />
@@ -1122,19 +1179,30 @@ function RestBay({ c, d, update }) {
   </section>`;
 }
 
-// At a glance: the handy numbers, as a card under the header. It can be folded away; the choice is kept per browser.
+const GLANCE_ICON = {
+  move: html`<path d="M3 12h13 M12 7l5 5-5 5 M3 7h5 M3 17h5" />`,
+  blood: html`<path d="M12 3s6 7 6 11.5a6 6 0 0 1-12 0C6 10 12 3 12 3z M9.5 15a2.5 2.5 0 0 0 2.5 2.5" />`,
+  food: html`<path d="M3 11.5h18a9 9 0 0 1-18 0z M8.5 8c0-2 2-2 2-4.5 M13.5 8c0-2 2-2 2-4.5" />`,
+  chakra: html`<path d="M12 12c0-1 1-1.6 1.8-1.2 1.3.6 1.2 2.6 0 3.4-1.8 1.2-4.2.2-4.8-1.8-.8-2.6 1-5.2 3.6-5.6 3.4-.5 6.2 2 6.4 5.2.2 4-3 7.2-6.8 7.4-4.6.2-8.4-3.4-8.4-8.2" />`,
+};
+// At a glance: the handy numbers under the header, grouped (on the move · wounds and blood · food and recovery, plus what
+// the chakras give). It can be folded away; the choice is kept per browser.
 function GlanceCard({ d }) {
   const [open, setOpen] = useState(() => lsGet("cw-glance", true));
   const flip = () => { lsSet("cw-glance", !open); setOpen(!open); };
   const hm = d.harmony || { move: 0, facts: [] };
-  const facts = [["Movement", hm.move && d.move ? html`${d.move} m <small class="glancefrom" title="From your Opening chakra's Wind">+${hm.move} Harmony</small>` : `${d.move} m`], ["Climb · swim", `${d.climb} m`], ["Wound at", `${d.woundAt.light} / ${d.woundAt.moderate} / ${d.woundAt.mortal}`], ["Blood potency", d.potency],
-    ["Rations per meal", d.rationsPerMeal], ["Rations per day", d.rationsPerDay], ["Cleanse die", d.cleanse], ["HP per long rest", d.hpRegen]];
+  const groups = [
+    ["move", "On the move", [["Movement", hm.move && d.move ? html`${d.move} m <small class="glancefrom" title="From your Opening chakra's Wind">+${hm.move} Harmony</small>` : `${d.move} m`], ["Climb · swim", `${d.climb} m`]]],
+    ["blood", "Wounds & blood", [["Wound at", html`${d.woundAt.light} / ${d.woundAt.moderate} / ${d.woundAt.mortal} <small>light · mod. · mortal</small>`], ["Blood potency", d.potency]]],
+    ["food", "Food & recovery", [["Rations", html`${d.rationsPerMeal} a meal · ${d.rationsPerDay} a day`], ["Cleanse die", d.cleanse], ["HP per long rest", d.hpRegen]]],
+  ];
+  const harm = hm.facts.length > 0 && hm.facts.map(f => [f.k, f.v, f]);
   return html`<div class=${"glance" + (open ? " open" : "")}>
     <button type="button" class="glancetog" aria-expanded=${open} onClick=${flip}>At a glance<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button>
-    ${open && html`<div class="facts glancefacts">${facts.map(([k, val]) => html`<div class="fact"><span>${k}</span><b>${val}</b></div>`)}</div>`}
-    ${open && hm.facts.length > 0 && html`<div class="glanceharm" aria-label="From your chakras"><span class="lbl">From your chakras</span>
-      <div class="facts glancefacts">${hm.facts.map(f => html`<div class="fact harmfact" style=${`--ec:${(typeof HARM_COLOR !== "undefined" && HARM_COLOR[f.el]) || "var(--brass)"}`}
-        title=${`${R.CHAKRA_BY[f.ch].n} chakra, ${R.HARMONY_ELEMENTS.find(x => x[0] === f.el)[1]}`}><span>${f.k}</span><b>${f.v}</b></div>`)}</div></div>`}
+    ${open && html`<div class="glancegroups">${groups.concat(harm ? [["chakra", "From your chakras", harm]] : []).map(([ic, title, rows]) => html`<div class=${"glancegrp g-" + ic + (ic === "chakra" ? " glanceharm" : "")}>
+      <div class="ghead"><span class="gmedal"><svg viewBox="0 0 24 24" aria-hidden="true">${GLANCE_ICON[ic]}</svg></span><b>${title}</b></div>
+      ${rows.map(([k, val, f]) => html`<div class=${"grow" + (f ? " harmfact" : "")} style=${f ? `--ec:${(typeof HARM_COLOR !== "undefined" && HARM_COLOR[f.el]) || "var(--brass)"}` : ""}
+        title=${f ? `${R.CHAKRA_BY[f.ch].n} chakra, ${R.HARMONY_ELEMENTS.find(x => x[0] === f.el)[1]}` : ""}><span>${k}</span><b>${val}</b></div>`)}</div>`)}</div>`}
   </div>`;
 }
 
@@ -1163,7 +1231,7 @@ const PERK_ICON = {
   E: html`<path d="M8 1.3c.6 2.6 3.7 4 3.7 7.4a3.7 3.7 0 0 1-7.4 0c0-1.7.9-2.8 1.7-3.6.1 1.4.7 2.1 1.5 2.4C7.3 5.7 7.4 3.4 8 1.3z" fill="currentColor" />`,
   P: html`<path d="M4.6 5.4C3 5.4 1.9 6.6 1.9 8s1.1 2.6 2.7 2.6C7 10.6 9 5.4 11.4 5.4c1.6 0 2.7 1.2 2.7 2.6s-1.1 2.6-2.7 2.6C9 10.6 7 5.4 4.6 5.4z" fill="none" stroke="currentColor" stroke-width="1.6" />`,
 };
-// The 2021 rulebook's paintings (cut from its pages by tools/rulebook_art_cutout.py), faded behind each skill's perk
+// The 2021 rulebook's paintings (a window around each skill's subject, cut from its pages by tools/rulebook_art_focal.py), faded behind each skill's perk
 // cards. A skill with several pages takes turns by perk group. Website only: the files live in art/.
 const SKILL_ART = {
   Maim: ["str_maim", "str_maim2"], Bash: ["str_bash"], Parry: ["str_parry"], "Armor Mastery": ["str_armorm"], "Strong Back": ["str_strongb"],
@@ -1546,6 +1614,8 @@ function SettingsView({ c, update, chars, gm, onBack }) {
             : html`<button class="btn small" onClick=${() => setReset(true)}>Reset…</button>`}</div>
       </div>
     </section>
+
+    ${c && html`<${ModulesPanel} c=${c} update=${update} />`}
 
     ${c ? html`<${TabletopPanel} c=${c} update=${update} />`
       : html`<section class="frame"><h2 class="h"><span>Tabletop Simulator</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Open a character first, then come back here to send them to the table.</p></section>`}

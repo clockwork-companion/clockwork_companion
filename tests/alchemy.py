@@ -17,9 +17,9 @@ srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Q, dir
 url = f"http://127.0.0.1:{srv.server_address[1]}/index.html"
 checks = []
 def check(name, ok, got=""): checks.append(ok); print(("ok   " if ok else "FAIL ") + name + (f"  ({got})" if got and not ok else ""))
-ALCHEMIST = {"id": "al", "name": "Edda", "players": [], "attrs": {"MND": {"base": 15, "value": 15}}, "skills": {"Alchemy": 9},
+ALCHEMIST = {"modules": {"craft": True, "magic": True}, "id": "al", "name": "Edda", "players": [], "attrs": {"MND": {"base": 15, "value": 15}}, "skills": {"Alchemy": 9},
              "items": [{"id": "r", "name": "Rations", "qty": 3, "size": "small"}]}
-PLAIN = {"id": "pl", "name": "Plain", "players": [], "skills": {"Warding": 3}}
+PLAIN = {"modules": {"craft": True, "magic": True}, "id": "pl", "name": "Plain", "players": [], "skills": {"Warding": 3}}
 
 with sync_playwright() as p:
     b = p.chromium.launch()

@@ -22,7 +22,7 @@ url = f"http://127.0.0.1:{srv.server_address[1]}/index.html"
 checks = []
 def check(name, ok, got=""): checks.append(ok); print(("ok   " if ok else "FAIL ") + name + (f"  ({got})" if got and not ok else ""))
 SK = ["Powdertinker", "Brewing", "Runecrafting", "Weapon Maintenance", "Armor Maintenance", "Warding", "Occult: Harmony", "Demonology", "Dreamwalking", "Alchemy"]
-ALL = {"id": "al", "name": "Everything", "players": [], "attrs": {k: {"base": 20, "value": 20} for k in ["STR", "DEX", "END", "MND", "WIL", "WIS", "PRS"]},
+ALL = {"modules": {"craft": True, "magic": True}, "id": "al", "name": "Everything", "players": [], "attrs": {k: {"base": 20, "value": 20} for k in ["STR", "DEX", "END", "MND", "WIL", "WIS", "PRS"]},
        "skills": {s: 10 for s in SK}, "weapons": [{"id": "w1", "name": "Old sabre"}], "armor": [{"id": "a1", "name": "Ringmail", "type": "medium", "worn": True}],
        "craft": {"saved": [{"k": "s1", "n": "Sikici", "recipe": {"type": "heavy", "coat": "Bludgeoning", "tips": {"Impale": 0}, "core": {"el": "Acid", "inc": 0}, "status": ["Dissolve"], "area": {"k": "Cross"}}}]}}
 # every label inside its own button, and no word split across lines
