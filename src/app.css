@@ -2809,31 +2809,95 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .dreamf { --mist: #c9c4ef; }
 .dreamf.nightmare { --mist: #7a3fc4; }
 .dreamstage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 260px); gap: 18px; align-items: start; }
-.dreamscene { position: relative; border: 1.5px solid var(--rule); overflow: hidden; background: #070b24; }
+.dreamscene { --dglow: #b9a8ff; position: relative; border: 1.5px solid var(--rule); overflow: hidden; background: #090d22; }
 .dreamscene svg { display: block; width: 100%; height: auto; }
+.dreamf.nightmare .dreamscene { --dglow: #9b4bff; }
+.drnight circle { fill: #dfe4ff; opacity: .35; }
+/* the sleeper */
+.drrollseam { fill: none; stroke: #00000055; stroke-width: 1; stroke-dasharray: 2 4; }
+.drhair { fill: #251d2c; }
+.drbrow, .drlash, .drlid, .drmouth, .drnostril { fill: none; stroke: #4a3026; stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; transition: d .8s ease; }
+.drbrow { stroke: #2d2228; stroke-width: 1.3; }
+.dreye { fill: #1e1620; }
+.drmouth.open { fill: #3b2020; stroke-width: .8; }
+.drfold { fill: none; stroke: #ffffff1c; stroke-width: 1.4; stroke-linecap: round; }
+.drfinger { fill: none; stroke: #8a6a55; stroke-width: .7; stroke-linecap: round; }
+.drear { stroke: #a98468; stroke-width: .6; }
+.drjaw, .drearin { fill: none; stroke: #8f6c56; stroke-width: .8; stroke-linecap: round; opacity: .7; }
+.drhairline { fill: none; stroke: #3c3044; stroke-width: .8; stroke-linecap: round; }
+.drsheetedge { fill: none; stroke: #7d82a2; stroke-width: .9; }
+.drarm { stroke: #6e6889; stroke-width: .7; }
+.drcuff { fill: none; stroke: #6e6889; stroke-width: .8; }
+.drsweat path { fill: #cfe8ff; opacity: 0; }
+.drsleeper, .drchest, .drhead, .drgrip, .drdream, .drthread, .drhand, .drgrasp, .drpop * { transform-box: view-box; }
+.drsleeper { transform-origin: 300px 300px; }
+.drchest { transform-origin: 250px 298px; animation: drBreath var(--br, 6s) ease-in-out infinite; }
+.drhead { transform-origin: 180px 272px; animation: drHeadBreath var(--br, 6s) ease-in-out infinite; }
+.drgrip { transform-origin: 262px 254px; transition: transform .8s ease; }
+.mood-calm { --br: 6.2s; } .mood-awake { --br: 4.6s; } .mood-uneasy { --br: 3.8s; } .mood-night { --br: 2.3s; }
+@keyframes drBreath { 0%, 100% { transform: none; } 42% { transform: scale(1.004, 1.05); } 55% { transform: scale(1.004, 1.05); } }
+@keyframes drHeadBreath { 0%, 100% { transform: none; } 48% { transform: translateY(-.7px) rotate(-.6deg); } }
+.mood-night .drchest { animation-name: drBreathHard; }
+@keyframes drBreathHard { 0%, 100% { transform: none; } 40% { transform: scale(1.006, 1.08); } }
+/* uneasy: a twitch every so often; a nightmare: tossing, the head turning, sweat, a clenched hand */
+.mood-uneasy .drsleeper { animation: drTwitch 9s ease-in-out infinite; }
+@keyframes drTwitch { 0%, 70%, 100% { transform: none; } 74% { transform: rotate(-.5deg) translateY(-.6px); } 78% { transform: rotate(.25deg); } 82% { transform: none; } }
+.mood-night .drsleeper { animation: drToss 6.5s ease-in-out infinite; }
+@keyframes drToss { 0%, 100% { transform: none; } 10% { transform: rotate(-1.1deg) translate(-1px, -1px); } 18% { transform: rotate(.6deg); } 26% { transform: rotate(-.3deg); } 34%, 56% { transform: none; }
+  62% { transform: rotate(.9deg) translate(1px, -1.2px); } 70% { transform: rotate(-.5deg); } 78% { transform: none; } }
+.mood-night .drhead { animation: drFret 3.3s ease-in-out infinite; }
+@keyframes drFret { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-4deg) translateY(-.5px); } 55% { transform: rotate(2.5deg); } 75% { transform: rotate(-1deg); } }
+.mood-night .drsweat path { animation: drSweat 3.6s ease-in infinite; }
+.mood-night .drsweat path + path { animation-delay: -1.8s; }
+@keyframes drSweat { 0% { opacity: 0; transform: none; } 15% { opacity: .9; } 80% { opacity: .7; } 100% { opacity: 0; transform: translate(-9px, 7px); } }
+.mood-night .drgrip { transform: scale(.88, 1.08) translateY(1px); }
+.mood-uneasy .drgrip { transform: scale(.95, 1.03); }
+.jolt .drhead { animation: drJolt 1.2s cubic-bezier(.2, .8, .3, 1) both; }
+.jolt .drsleeper { animation: drJoltBody 1.2s cubic-bezier(.2, .8, .3, 1) both; }
+@keyframes drJolt { 0% { transform: none; } 14% { transform: rotate(-9deg) translateY(-3px); } 40% { transform: rotate(-4deg) translateY(-1px); } 100% { transform: none; } }
+@keyframes drJoltBody { 0% { transform: none; } 14% { transform: translateY(-2.5px) rotate(-.6deg); } 100% { transform: none; } }
+/* the dream bubble: a dim orb above the head while awake, opening on the thread when you enter the realm */
+.drdream { transform-origin: 196px 214px; transform: scale(.13); opacity: .45; transition: transform 0s linear, opacity 1.1s ease .15s; }
+.jolt .drdream { transform: scale(1.12); opacity: 0; transition: transform .35s cubic-bezier(.2, .7, .4, 1), opacity .28s ease-out; }
+.open .drdream { transform: none; opacity: 1; transition: transform 1.9s cubic-bezier(.16, .84, .3, 1) .35s, opacity 1.2s ease .35s; }
+.drthread { fill: none; stroke: #cfe4ff; stroke-width: 1.4; stroke-linecap: round; stroke-dasharray: 3 7; opacity: 0; transition: opacity .5s ease; animation: drThread 2.4s linear infinite; }
+.open .drthread { opacity: .65; transition: opacity 1s ease .2s; }
+@keyframes drThread { to { stroke-dashoffset: -30; } }
+.drrim { fill: none; stroke: url(#dr-rim); stroke-width: 2; opacity: .85; }
+.drshine { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; opacity: .22; }
 .drstars circle { fill: #f2efff; animation: twinkle 3.5s ease-in-out infinite alternate; animation-delay: calc(var(--d) * -1); }
 @keyframes twinkle { from { opacity: .25; } to { opacity: .95; } }
-.drhalo { opacity: .45; }
+.drhalo { opacity: .5; }
 .drmoon { fill: #fff3d2; }
-.drshadow { fill: #0c0f2c; transition: cx 1.2s ease; }
-.drhills { fill: #0b0a1f; }
+.drshadow { fill: #0b1236; transition: cx 1.2s ease; }
+.drhills { fill: #120f2e; }
 .drmist { animation: mistDrift 9s ease-in-out infinite alternate; transition: y 1.2s ease, height 1.2s ease; }
-@keyframes mistDrift { to { transform: translateX(-24px); } }
-.draurora path { fill: none; stroke-width: 18; stroke-linecap: round; opacity: .22; filter: blur(6px); animation: aurora 7s ease-in-out infinite alternate; }
+@keyframes mistDrift { to { transform: translateX(-20px); } }
+.draurora path { fill: none; stroke-width: 22; stroke-linecap: round; opacity: .13; animation: aurora 7s ease-in-out infinite alternate; }
 .draurora path:first-child { stroke: #7ef2d0; } .draurora path:last-child { stroke: #b48cff; animation-delay: -3s; }
-@keyframes aurora { to { transform: translateY(14px); opacity: .38; } }
-.dreamf.asleep .dreamscene { box-shadow: inset 0 0 40px #7ef2d055, 0 0 18px #7ef2d033; }
-.drbubble { animation: bubbleBob 6s ease-in-out infinite alternate; animation-delay: calc(var(--d) * -1); }
-.drbubble circle { fill: #b9a8ff33; stroke: #d9ceff; stroke-width: 1; filter: drop-shadow(0 0 6px #b9a8ff); }
-.drbubble text { font: 600 9px var(--f-head); fill: #f4f0ff; text-anchor: middle; letter-spacing: .03em; }
+@keyframes aurora { to { transform: translateY(10px); opacity: .24; } }
+.drbubble { transform-box: fill-box; animation: bubbleBob 6s ease-in-out infinite alternate; animation-delay: calc(var(--d) * -1); }
+.drbubble circle { fill: #b9a8ff38; stroke: #e2d8ff; stroke-width: 1; }
+.drbubble text { font: 600 8px var(--f-head); fill: #f4f0ff; text-anchor: middle; letter-spacing: .03em; }
 .drbubble.lost { opacity: .35; }
 .drbubble.lost circle { stroke-dasharray: 3 3; }
-@keyframes bubbleBob { to { transform: translateY(-8px); } }
-.drbubble { transform-box: fill-box; }
-.drsphere circle { fill: #9fe6ff1f; stroke: #bfefff; stroke-width: 1.5; filter: drop-shadow(0 0 10px #9fe6ff); animation: sphereBreath 3s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
-.drsphere text { font: 600 11px var(--f-head); fill: #e9fbff; text-anchor: middle; letter-spacing: .06em; text-transform: uppercase; }
+@keyframes bubbleBob { to { transform: translateY(-7px); } }
+/* waking pops the bubble */
+.drpopring { fill: none; stroke: #e9e2ff; stroke-width: 2; transform-origin: 372px 122px; animation: drPopRing .7s ease-out both; }
+@keyframes drPopRing { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(1.25); } }
+.drmote { fill: #e9e2ff; transform-origin: 372px 122px; animation: drMote 1.1s cubic-bezier(.2, .7, .4, 1) both; }
+@keyframes drMote { from { opacity: 1; transform: rotate(var(--a)) translateX(100px); } to { opacity: 0; transform: rotate(var(--a)) translateX(150px) translateY(20px); } }
+/* a nightmare: violet dread at the edges and the shadow hands */
+.drdread { opacity: calc(var(--reach) * .9); transition: opacity 1.5s ease; }
+.drhand { transform-origin: 0 0; transition: transform 2.2s cubic-bezier(.3, .1, .2, 1), opacity 1.6s ease; }
+.drhand path { fill: url(#dr-hand); }
+.drgrasp { transform-origin: 0 0; animation: drGrasp 4.2s ease-in-out infinite; }
+.drhand.h2 .drgrasp { animation-delay: -1.4s; } .drhand.h3 .drgrasp { animation-delay: -2.8s; }
+@keyframes drGrasp { 0%, 100% { transform: none; } 50% { transform: translateX(10px) scale(1.04, .9); } }
+.drsphere circle { stroke: #bfefff; stroke-width: 1.2; transform-box: fill-box; transform-origin: center; animation: sphereBreath 3s ease-in-out infinite alternate; }
+.drsphere text { font: 600 10px var(--f-head); fill: #e9fbff; text-anchor: middle; letter-spacing: .06em; text-transform: uppercase; }
 @keyframes sphereBreath { to { transform: scale(1.03); } }
-.dreamstate { position: absolute; left: 10px; bottom: 8px; margin: 0; padding: 3px 8px; font-size: 12.5px; color: #e9e6ff; background: #0b0a1fcc; border-radius: 3px; }
+.dreamstate { position: absolute; left: 10px; top: 8px; margin: 0; padding: 3px 8px; font-size: 12.5px; color: #e9e6ff; background: #0b0a1fcc; border-radius: 3px; }
 /* the Toll meter */
 .dreamtoll { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: stretch; }
 .dtmeter { position: relative; min-height: 220px; border: 1.5px solid var(--rule); background: var(--sunk); display: flex; align-items: flex-end; overflow: hidden; }
@@ -2871,7 +2935,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   .dtmeter { min-height: 120px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .drstars circle, .drmist, .draurora path, .drbubble, .drsphere circle, .dvorb { animation: none !important; }
+  .drstars circle, .drmist, .draurora path, .drbubble, .drsphere circle, .dvorb, .dreamscene *, .dreamscene { animation: none !important; transition: none !important; }
+  .drpop { display: none; }
 }
 
 /* ===== Magic: Alchemy (magic-alchemy.js) ===== */

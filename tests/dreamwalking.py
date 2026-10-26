@@ -49,6 +49,8 @@ with sync_playwright() as p:
         c = ch()
         check(tag + "in the dream realm, awake, with 2 travellers: Toll 31%", c["dream"]["inRealm"] and c["dream"]["mundane"] and c["dream"]["travelers"] == 2 and fact("Toll").endswith("31%"), (c["dream"], fact("Toll")))
         check(tag + "past 30%, the dreamscape turns to nightmare", pg.locator(".dreamf.nightmare").count() == 1)
+        check(tag + "the sleeper dreams: the bubble is open and, past 30%, it's a nightmare with shadow hands", pg.locator(".dreamscene.open.mood-night").count() == 1
+              and float(pg.evaluate("getComputedStyle(document.querySelector('.drhand')).opacity")) > 0)
         # translocate something: the GM's Toll held while it lasts
         pg.locator(".dreamacts .btn", has_text="Translocate").click()
         pg.fill("#dm-what-loc", "the iron gate"); pg.fill("#dm-pct-loc", "12"); pg.fill("#dr-dc-Translocate", "50")
@@ -59,6 +61,7 @@ with sync_playwright() as p:
         check(tag + "releasing it lets the Toll go (31%)", not ch()["dream"]["tolls"] and fact("Toll").endswith("31%"), fact("Toll"))
         pg.locator(".dreamacts .btn", has_text="Wake up").click(); pg.wait_for_timeout(1500)
         check(tag + "waking ends the visit's Toll (0%)", not ch()["dream"]["inRealm"] and fact("Toll").endswith("0%"), fact("Toll"))
+        check(tag + "waking pops the bubble and the sleeper starts", pg.locator(".dreamscene.mood-awake:not(.open)").count() == 1 and pg.locator(".drpop").count() == 1)
         # observation: a use and +5% until a long rest
         pg.locator(".dreamacts .btn", has_text="Observe").click(); pg.wait_for_timeout(1500)
         check(tag + "observation: +5% Toll, one of 2 uses", fact("Toll").endswith("5%") and ch()["uses"].get("p:Dreamwalking:6") == 1)
