@@ -188,6 +188,8 @@ const CW = (() => {
     ["tolls", "vault", "seeds", "ledger"].forEach(k => { if (!Array.isArray(out.dream[k])) out.dream[k] = []; });
     out.dream.inRealm = !!out.dream.inRealm; out.dream.mundane = !!out.dream.mundane; out.dream.travelers = Math.max(0, num(out.dream.travelers));
     if (out.dream.sphere && typeof out.dream.sphere !== "object") out.dream.sphere = null;
+    if (out.dream.sphere) ["x", "y"].forEach(k => { if (out.dream.sphere[k] != null && !Number.isFinite(+out.dream.sphere[k])) delete out.dream.sphere[k]; });
+    out.dream.vault.forEach(v => { if ((v.kind === "weapon" || v.kind === "armor") && !(v.obj && typeof v.obj === "object")) delete v.kind; });
     out.alch = Object.assign({}, b.alch, out.alch);
     ["circles", "ledger"].forEach(k => { if (!Array.isArray(out.alch[k])) out.alch[k] = []; });
     out.alch.circles.forEach(x => { if (!Array.isArray(x.layers)) x.layers = []; if (!(x.size in ALCH_SIZE_I)) x.size = "small"; });
@@ -464,7 +466,7 @@ const CW = (() => {
       const d = c.dream, back = d.vault.filter(v => v.lost);
       if (d.tolls.length || d.vault.some(v => num(v.pct))) parts.push("dreamwalking Toll cleared");
       d.tolls = []; d.vault.forEach(v => { v.pct = 0; });
-      back.forEach(v => { const have = (c.items || []).find(i => i.name === v.name); if (have) have.qty = num(have.qty) + num(v.qty); else (c.items = c.items || []).push({ id: v.id, name: v.name, qty: num(v.qty), size: v.size || "small" }); });
+      back.forEach(v => dreamReturn(c, v));
       if (back.length) parts.push(`${back.length} lost item${back.length === 1 ? "" : "s"} back from the dream realm`);
       d.vault = d.vault.filter(v => !v.lost); d.sphere = null;
     }
@@ -901,6 +903,20 @@ const CW = (() => {
   // travellers (+8% each), a dreamsphere's extra size (+4% per 2 m) and extra turns (+5% each), dreamseeds past two (+15%
   // each, until destroyed). Bonus = modifier − Toll; Calamity chance = 5% + Toll. Tolls disperse when released or at a
   // long rest (dreamseeds stay until destroyed).
+  // Put something from the dream realm's vault back where it came from: a weapon or a suit of armor to Gear (a suit
+  // comes back taken off), anything else to the inventory (joining a stack of the same name).
+  function dreamReturn(c, v) {
+    if ((v.kind === "weapon" || v.kind === "armor") && v.obj && typeof v.obj === "object") {
+      const list = v.kind === "weapon" ? (c.weapons = c.weapons || []) : (c.armor = c.armor || []);
+      const o = Object.assign({}, v.obj, { id: v.obj.id || v.id });
+      if (v.kind === "armor") o.worn = false;
+      if (list.some(x => x.id === o.id)) o.id = o.id + "-" + Math.random().toString(36).slice(2, 7);
+      list.push(o); return;
+    }
+    const items = c.items = c.items || [], have = items.find(i => i.name === v.name);
+    if (have) have.qty = num(have.qty) + num(v.qty); else items.push({ id: v.id, name: v.name, qty: num(v.qty), size: v.size || "small" });
+  }
+
   function dreamState(c) {
     const lvl = sk(c, "Dreamwalking"), d = c.dream || {}, u = c.uses || {};
     const parts = [];
@@ -1221,7 +1237,7 @@ const CW = (() => {
   return { ATTRS, ATTR_NAME, SKILL_GROUPS, SKILLS, CASTING, WEAPON_TYPES, WEAPON_ATTR, RANGED_WEAPONS, weaponKind, SECONDARY, SECONDARY_BY_NAME, SIZES, ITEM_SIZES, ITEM_SIZE, PROSTHETIC_TYPES, ARMOR,
            ENCUMBRANCE, WOUNDS, EXHAUSTION, LEVELS, clamp, num, tri, karmaBetween, levelDelta, blankCharacter, normalize,
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
-           proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
+           proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, dreamReturn, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
            WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, harmonyGlance, demonState, dreamState, ALCH_SIZES, ALCH_SIZE_I, ALCH_LIMBS, alchState,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
