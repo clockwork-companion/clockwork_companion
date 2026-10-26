@@ -514,9 +514,9 @@ function App() {
   return html`<div class="wrap">
     <header class="top">
       <div class="brand">Clockwork<small>Companion</small></div>
-      ${gm && html`<div class="seg viewseg" role="group" aria-label="View">
-        <button aria-pressed=${!settings && view === "chars"} onClick=${() => { setView("chars"); setSettings(false); }}>Characters</button>
-        <button aria-pressed=${!settings && view === "gm"} onClick=${() => { setView("gm"); setSettings(false); }}>GM table</button></div>`}
+      <${CharMenu} list=${list} all=${all} sel=${sel} current=${current} gm=${gm} on=${!settings && view === "chars"} gmOn=${!settings && view === "gm"}
+        goChars=${() => { setView("chars"); setSettings(false); }} goGm=${() => { setView("gm"); setSettings(false); }}
+        pick=${id => { setSel(id); setView("chars"); setSettings(false); window.scrollTo(0, 0); }} create=${create} startNew=${startNew} />
       <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
       <button type="button" class="setbtn" aria-pressed=${settings} aria-label="Settings" data-tip="Settings" onClick=${() => openSettings(!settings)}><i class="seticon" aria-hidden="true"></i></button>
@@ -530,7 +530,6 @@ function App() {
     <div class="viewswap" key=${page} data-dir=${pageNav.current.dir}>
     ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} onBack=${() => openSettings(false)} />`
       : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
-    <${Roster} list=${list} all=${all} sel=${sel} setSel=${setSel} current=${current} create=${create} startNew=${startNew} />
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
       : Store.mode === "loading" ? html`<div class="empty"><p class="muted">Opening the character ledger…</p></div>`
       : html`<div class="empty">
@@ -547,21 +546,23 @@ function App() {
   </div>`;
 }
 
-/* ================= character switcher ================= */
-// The current character up front; everyone else in a panel that opens below it, grouped by campaign,
-// with each character's companions tucked under them and a search box when the list grows long.
-function Roster({ list, all, sel, setSel, current, create, startNew }) {
+/* ================= character menu (top bar) ================= */
+// "Characters" in the top bar opens the last character you had open. Hovering it (or the arrow beside it, on phones and
+// keyboards) drops down every character you can open, grouped by campaign, companions under their master, with a search
+// box when the list grows long, and the buttons for a new character or a companion.
+function CharMenu({ list, all, sel, current, gm, on, gmOn, goChars, goGm, pick, create, startNew }) {
   const [open, setOpen] = useState(false); const [q, setQ] = useState("");
-  const ref = useRef(), searchRef = useRef();
+  const ref = useRef(), searchRef = useRef(), timer = useRef();
+  const later = (v, ms) => { clearTimeout(timer.current); timer.current = setTimeout(() => setOpen(v), ms); };
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setQ(""); return; }
     const key = e => { if (e.key === "Escape") setOpen(false); };
     const out = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     window.addEventListener("keydown", key); document.addEventListener("pointerdown", out);
-    if (searchRef.current) searchRef.current.focus();
     return () => { window.removeEventListener("keydown", key); document.removeEventListener("pointerdown", out); };
   }, [open]);
-  const pick = id => { setSel(id); setOpen(false); setQ(""); };
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const choose = id => { setOpen(false); pick(id); };
   const master = c => (c && c.companionOf && all[c.companionOf]) || null;
   const comps = id => list.filter(c => c.companionOf === id);
   const needle = q.trim().toLowerCase();
@@ -571,32 +572,31 @@ function Roster({ list, all, sel, setSel, current, create, startNew }) {
   const groups = order.map(k => ({ k, rows: tops.filter(c => (c.campaign || "") === k) })).filter(g => g.rows.length);
   const hp = c => { const d = derive(c); return d.max.hp ? R.clamp((d.cur.hp / d.max.hp) * 100, 0, 100) : 0; };
   const cur = current, m = master(cur);
-  return html`<div class="roster" ref=${ref}>
-    <div class="rbar">
-      ${cur ? html`<button type="button" class="rnow" aria-expanded=${open} aria-haspopup="true" onClick=${() => setOpen(!open)}>
-          <${Thumb} c=${cur} lg />
-          <span class="who"><b>${cur.name || "Unnamed"}</b><span>${m ? `Companion of ${m.name || "Unnamed"}` : subtitle(cur)}</span></span>
-          <span class="rswitch">${list.length > 1 ? `Switch · ${list.length}` : "Characters"}<svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span></button>`
-        : html`<span class="muted">No character selected</span>`}
-      <span class="radd">
-        <button class="btn small" onClick=${startNew}>+ New character</button>
-        ${cur && !m && html`<button class="btn small" onClick=${() => create(false, cur)}>+ Companion</button>`}
-      </span>
+  const hover = matchMedia && matchMedia("(hover: hover)").matches;
+  return html`<nav class="charnav" ref=${ref} aria-label="Pages" onMouseEnter=${() => hover && later(true, 120)} onMouseLeave=${() => hover && later(false, 260)}>
+    <div class="seg viewseg">
+      <span class="cnwrap"><button type="button" class="cnbtn" aria-pressed=${on} onClick=${() => { goChars(); setOpen(false); }}
+          title=${cur ? `Open ${cur.name || "your character"}` : "Characters"}>Characters${cur && on ? "" : cur ? html`<small> · ${cur.name || "Unnamed"}</small>` : ""}</button>
+        <button type="button" class="cnchev" aria-expanded=${open} aria-haspopup="true" aria-label="Choose a character" onClick=${() => setOpen(!open)}>
+          <svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></span>
+      ${gm && html`<button aria-pressed=${gmOn} onClick=${goGm}>GM table</button>`}
     </div>
-    ${open && html`<div class="rpanel" role="dialog" aria-label="Choose a character">
-      <div class="rhead"><b>Characters</b><button type="button" class="iconbtn" aria-label="Close" onClick=${() => setOpen(false)}>×</button></div>
+    ${open && html`<div class="rpanel cnmenu" role="dialog" aria-label="Choose a character">
       ${list.length > 6 && html`<input ref=${searchRef} class="rsearch" type="search" placeholder="Find a character, profession or player…" value=${q} onInput=${e => setQ(e.target.value)} />`}
       ${groups.map(g => html`<div class="rgroup"><h4>${g.k || "No campaign"}</h4><div class="rgrid">
         ${g.rows.map(c => html`<div class=${"rcard" + (c.id === sel ? " on" : "")}>
-          <button type="button" class="rmain" onClick=${() => pick(c.id)}>
+          <button type="button" class="rmain" onClick=${() => choose(c.id)}>
             <${Thumb} c=${c} />
             <span class="who"><b>${c.name || "Unnamed"}</b><span>${[c.profession, c.player].filter(Boolean).join(" · ") || "No profession yet"}</span>
               <span class="bar"><i style=${`width:${hp(c)}%`}></i></span></span></button>
-          ${comps(c.id).length > 0 && html`<div class="rcomps">${comps(c.id).map(k => html`<button type="button" class=${"rcomp" + (k.id === sel ? " on" : "")} onClick=${() => pick(k.id)}><${Thumb} c=${k} />${k.name || "Unnamed"}</button>`)}</div>`}
+          ${comps(c.id).length > 0 && html`<div class="rcomps">${comps(c.id).map(k => html`<button type="button" class=${"rcomp" + (k.id === sel ? " on" : "")} onClick=${() => choose(k.id)}><${Thumb} c=${k} />${k.name || "Unnamed"}</button>`)}</div>`}
         </div>`)}</div></div>`)}
-      ${!groups.length && html`<p class="muted">Nobody matches “${q}”.</p>`}
+      ${!groups.length && list.length > 0 && html`<p class="muted">Nobody matches “${q}”.</p>`}
+      ${!list.length && html`<p class="muted">No characters yet.</p>`}
+      <div class="row cnadd"><button class="btn small" onClick=${() => { setOpen(false); startNew(); }}>+ New character</button>
+        ${cur && !m && html`<button class="btn small" onClick=${() => { setOpen(false); create(false, cur); }}>+ Companion for ${cur.name || "this character"}</button>`}</div>
     </div>`}
-  </div>`;
+  </nav>`;
 }
 
 /* ================= modules: Crafting and Magic ================= */

@@ -28,7 +28,7 @@ with sync_playwright() as p:
         pg = ctx.new_page(); errs = []; pg.on("pageerror", lambda e: errs.append(str(e)))
         tag = f"{W}px {skin}: "
         pg.goto(url); pg.wait_for_timeout(1200)
-        pg.get_by_text("+ New character").first.click(); pg.wait_for_timeout(300)
+        pg.locator(".charnav .cnchev").click(); pg.wait_for_timeout(200); pg.get_by_text("+ New character").first.click(); pg.wait_for_timeout(300)
         pg.get_by_text("Blank character sheet").first.click(); pg.wait_for_timeout(900)
         tabs = lambda: pg.evaluate("[...document.querySelectorAll('.tabs [role=tab]')].map(t => t.textContent.trim())")
         check(tag + "no Crafting tab without crafting skills", "Crafting" not in tabs(), tabs())

@@ -624,7 +624,21 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 
 /* ---------- GM table ---------- */
 .viewseg { min-width: 220px; }
-.top .viewseg { margin-left: auto; }
+/* the top bar's Characters menu: the button opens the last character; hover (or the arrow) drops the list down */
+.charnav { position: relative; margin-left: auto; z-index: 25; }
+.charnav .viewseg { display: flex; }
+.charnav .viewseg > * { flex: 1 1 auto; }
+.cnwrap { display: flex; }
+.cnwrap .cnbtn { flex: 1; border: 0; padding: 6px 4px 6px 12px; font: 600 12px/1.2 var(--f-head); letter-spacing: .08em; text-transform: uppercase; background: transparent; color: inherit; white-space: nowrap; }
+.cnbtn small { font-weight: 500; letter-spacing: .04em; text-transform: none; opacity: .75; }
+.cnbtn[aria-pressed="true"], .cnbtn[aria-pressed="true"] + .cnchev { background: var(--rule); color: var(--paper); }
+.cnchev { border: 0; padding: 6px 10px 6px 6px; background: transparent; color: inherit; cursor: pointer; display: grid; place-items: center; }
+.cnchev svg { width: 11px; height: 8px; transition: transform .15s; }
+.cnchev[aria-expanded="true"] svg { transform: rotate(180deg); }
+.cnmenu { left: auto; right: 0; width: min(760px, calc(100vw - 32px)); }
+.cnadd { justify-content: flex-start; padding-top: 6px; border-top: 1px solid var(--hair); }
+@media (max-width: 560px) { .charnav { margin-left: 0; width: 100%; } }   /* on phones the menu is the bottom sheet (.rpanel) */
+
 .campbar { gap: 6px; }
 .campbar .lbl { margin-right: 4px; }
 .gmgrid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 46px 40px; align-items: start; }
