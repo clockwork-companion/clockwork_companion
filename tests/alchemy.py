@@ -7,6 +7,7 @@ Rules from the 2020.1 book (10.2): the circle size table; (SP/2)d6 energy from t
 eats a ration; Signature Circles at 6 (Medium or below) and 9 (Large or below); arrays at 8; re-roll at 9.
 """
 import functools, http.server, json, pathlib, sys, threading
+import os
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve(); SHOTS = pathlib.Path(sys.argv[2] if len(sys.argv) > 2 else "smoke-shots"); SHOTS.mkdir(parents=True, exist_ok=True)
@@ -22,7 +23,7 @@ ALCHEMIST = {"modules": {"craft": True, "magic": True}, "id": "al", "name": "Edd
 PLAIN = {"modules": {"craft": True, "magic": True}, "id": "pl", "name": "Plain", "players": [], "skills": {"Warding": 3}}
 
 with sync_playwright() as p:
-    b = p.chromium.launch()
+    b = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None)
     for W, skin in [(1280, "ledger"), (390, "moss")]:
         tag = f"{W}px {skin}: "
         ctx = b.new_context(viewport={"width": W, "height": 900}, is_mobile=W < 500, has_touch=W < 500)

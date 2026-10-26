@@ -6,6 +6,7 @@ SITE_DIR is a website build (`python3 src/build.py --web SITE_DIR`). The page is
 scripts swapped for tests/firebase-mock.js, signed in as the GM of a test table with two player accounts.
 """
 import functools, hashlib, http.server, json, pathlib, re, shutil, sys, tempfile, threading
+import os
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve(); SHOTS = pathlib.Path(sys.argv[2] if len(sys.argv) > 2 else "smoke-shots"); SHOTS.mkdir(parents=True, exist_ok=True)
@@ -35,7 +36,7 @@ srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Q, dir
 url = f"http://127.0.0.1:{srv.server_address[1]}/index.html"
 ok = True
 with sync_playwright() as p:
-    b = p.chromium.launch(); ctx = b.new_context(viewport={"width": 1280, "height": 900})
+    b = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None); ctx = b.new_context(viewport={"width": 1280, "height": 900})
     ctx.route("**/*", lambda r: r.abort() if "fonts.g" in r.request.url else r.continue_())
     ctx.add_init_script(f"window.__MOCK_USER = {{ uid: 'gm1', email: 'sinan@test-project.firebaseapp.com' }}; window.__MOCK_SEED = {json.dumps(seed)};"
                         f"try {{ localStorage.setItem('cw-table-key', '{key}'); }} catch (e) {{}}")

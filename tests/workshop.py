@@ -6,6 +6,7 @@ Two players at one test table: u1 plays Batbayar (owns a worn sabre), u2 plays A
 Each page is one player; the stand-in's store is per page, so the other side of a job is written straight into it.
 """
 import functools, hashlib, http.server, json, pathlib, re, shutil, sys, tempfile, threading
+import os
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve(); SHOTS = pathlib.Path(sys.argv[2] if len(sys.argv) > 2 else "smoke-shots"); SHOTS.mkdir(parents=True, exist_ok=True)
@@ -53,7 +54,7 @@ jobs = lambda pg: pg.evaluate(f"[...window.__mockStore.keys()].filter(k => k.sta
 put = lambda pg, path, d: pg.evaluate(f"firebase.firestore().doc('{T}/{path}').set({json.dumps(d)})")
 
 with sync_playwright() as p:
-    b = p.chromium.launch()
+    b = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None)
     # ---- the owner (u1): sends the sabre from the Gear tab with a payment, then gets it back repaired
     pg, errs = as_player(b, "u1", base)
     me = lambda: get(pg, "characters/bat") or {}

@@ -7,6 +7,7 @@ Rules from the 2020.1 book (10.1): summon 2 AP / dismiss 1 AP (1 / 0 from 7); on
 (the app renews them at a long rest); partial summon (4, 2 uses), boost (5, 2 uses), banish (7, 1 use); Guardian (9).
 """
 import functools, http.server, json, pathlib, struct, sys, tempfile, threading, zlib
+import os
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve(); SHOTS = pathlib.Path(sys.argv[2] if len(sys.argv) > 2 else "smoke-shots"); SHOTS.mkdir(parents=True, exist_ok=True)
@@ -29,7 +30,7 @@ SUMMONER = {"modules": {"craft": True, "magic": True}, "id": "dm", "name": "Batb
 PLAIN = {"modules": {"craft": True, "magic": True}, "id": "pl", "name": "Plain", "players": [], "skills": {"Warding": 3}}
 
 with sync_playwright() as p:
-    b = p.chromium.launch()
+    b = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None)
     for W, skin in [(1280, "ledger"), (390, "moss")]:
         tag = f"{W}px {skin}: "
         ctx = b.new_context(viewport={"width": W, "height": 900}, is_mobile=W < 500, has_touch=W < 500)

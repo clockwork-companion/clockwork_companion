@@ -7,6 +7,7 @@ Rules from the 2020.1 book: Subject 5, Adverb 1, Conjunction 10 (Warding 7), Wor
 Sigils per AP = 3 × Warding; available = AP × Sigils per AP − Fatigue; Ritual Fatigue <10 → 1, else halved.
 """
 import functools, http.server, json, pathlib, sys, threading
+import os
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve(); SHOTS = pathlib.Path(sys.argv[2] if len(sys.argv) > 2 else "smoke-shots"); SHOTS.mkdir(parents=True, exist_ok=True)
@@ -21,7 +22,7 @@ WARDER = {"modules": {"craft": True, "magic": True}, "id": "wd", "name": "Batbay
 PLAIN = {"modules": {"craft": True, "magic": True}, "id": "pl", "name": "Plain", "players": []}
 
 with sync_playwright() as p:
-    b = p.chromium.launch()
+    b = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None)
     for W, skin in [(1280, "ledger"), (390, "moss")]:
         tag = f"{W}px {skin}: "
         ctx = b.new_context(viewport={"width": W, "height": 900}, is_mobile=W < 500, has_touch=W < 500)

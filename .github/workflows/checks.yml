@@ -1,5 +1,12 @@
 # Runs on every pull request into Dev or main (and by hand from the Actions tab).
 # A red check means: don't merge yet. The log says what failed; screenshots are attached to the run.
+#
+# The browser tests run in parallel groups, so the wait is the slowest group, not all of them in a row.
+# They use the Google Chrome already installed on GitHub's runners (PW_CHANNEL=chrome), so no browser
+# is downloaded. Run them locally as before: without PW_CHANNEL they use Playwright's own Chromium.
+#
+# The "Protect main and Dev" ruleset requires the job named "check". It only passes when every other job
+# passed, so keep its name. A new test goes into one of the groups under "tests" (pick the shortest).
 name: Checks
 on:
   pull_request:
@@ -11,9 +18,10 @@ concurrency:
   group: checks-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  check:
+  build:
+    name: Build and file checks
     runs-on: ubuntu-latest
-    timeout-minutes: 25   # installing the test browser alone can take 10 minutes on GitHub
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -44,48 +52,64 @@ jobs:
       - name: Built page scripts parse
         run: python3 tests/check_scripts.py "$RUNNER_TEMP/site/index.html"
 
-      - name: Install the test browser
+  tests:
+    name: Browser tests (${{ matrix.group }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # About 3½ minutes per group. Times are from the runs on 2026-10-26.
+          - group: smoke test, every theme
+            tests: smoke
+          - group: Warding and Powdertinkering
+            tests: warding powder_saved craft_unlock
+          - group: Daemonology, Dreamwalking, Harmony
+            tests: demonology dreamwalking harmony
+          - group: workshop, Alchemy, fixes
+            tests: workshop alchemy craft_magic_fixes powder_custom
+    env:
+      PW_CHANNEL: chrome
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: { python-version: "3.12" }
+
+      - name: Build the website
+        run: python3 src/build.py --web "$RUNNER_TEMP/site"
+
+      - name: Install Playwright (the browser is the runner's Chrome)
+        run: pip install "playwright>=1.44,<2"
+
+      - name: Run the tests
         run: |
-          pip install "playwright>=1.44,<2"
-          python -m playwright install --with-deps chromium
-
-      - name: Smoke test (every theme, desktop and 390 px)
-        run: python3 tests/smoke.py "$RUNNER_TEMP/site" smoke-shots
-
-      - name: Workshop jobs between players (Firebase stand-in)
-        run: python3 tests/workshop.py "$RUNNER_TEMP/site" smoke-shots
-
-      - name: Crafting appears only with crafting skills
-        run: python3 tests/craft_unlock.py "$RUNNER_TEMP/site"
-
-      - name: Custom Powdertinkering parts
-        run: python3 tests/powder_custom.py "$RUNNER_TEMP/site" smoke-shots
-
-      - name: Saved Powdertinkering recipes
-        run: python3 tests/powder_saved.py "$RUNNER_TEMP/site" smoke-shots
-
-      - name: Warding (Magic tab)
-        run: python3 tests/warding.py "$RUNNER_TEMP/site" smoke-shots
-
-      - name: Occult Harmony (Magic tab)
-        run: python3 tests/harmony.py "$RUNNER_TEMP/site" smoke-shots
-
-      - name: Daemonology (Magic tab)
-        run: python3 tests/demonology.py "$RUNNER_TEMP/site" smoke-shots
-
-      - name: Dreamwalking (Magic tab)
-        run: python3 tests/dreamwalking.py "$RUNNER_TEMP/site" smoke-shots
-
-      - name: Alchemy (Magic tab)
-        run: python3 tests/alchemy.py "$RUNNER_TEMP/site" smoke-shots
-
-      - name: Crafting and Magic fixes (menus, munition recipes, unset suits)
-        run: python3 tests/craft_magic_fixes.py "$RUNNER_TEMP/site" smoke-shots
+          failed=""
+          for t in ${{ matrix.tests }}; do
+            echo "::group::tests/$t.py"
+            python3 "tests/$t.py" "$RUNNER_TEMP/site" smoke-shots || failed="$failed $t"
+            echo "::endgroup::"
+          done
+          if [ -n "$failed" ]; then
+            echo "::error::These tests failed:$failed (open their section in the log above)"
+            exit 1
+          fi
 
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: smoke-screenshots
+          name: smoke-screenshots-${{ strategy.job-index }}
           path: smoke-shots
           if-no-files-found: ignore
+
+  check:
+    name: check
+    needs: [build, tests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every job passed
+        run: |
+          echo "build: ${{ needs.build.result }}, tests: ${{ needs.tests.result }}"
+          [ "${{ needs.build.result }}" = success ] && [ "${{ needs.tests.result }}" = success ]

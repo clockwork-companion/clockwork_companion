@@ -8,6 +8,7 @@ awake +15%; observation +5%; sphere +4% per 2 m, +5% per extra turn; dreamseeds 
 Tolls and brings lost items back.
 """
 import functools, http.server, json, pathlib, sys, threading
+import os
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve(); SHOTS = pathlib.Path(sys.argv[2] if len(sys.argv) > 2 else "smoke-shots"); SHOTS.mkdir(parents=True, exist_ok=True)
@@ -24,7 +25,7 @@ WALKER = {"modules": {"craft": True, "magic": True}, "id": "dw", "name": "Batbay
 PLAIN = {"modules": {"craft": True, "magic": True}, "id": "pl", "name": "Plain", "players": [], "skills": {"Warding": 3}}
 
 with sync_playwright() as p:
-    b = p.chromium.launch()
+    b = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None)
     for W, skin in [(1280, "ledger"), (390, "moss")]:
         tag = f"{W}px {skin}: "
         ctx = b.new_context(viewport={"width": W, "height": 900}, is_mobile=W < 500, has_touch=W < 500)

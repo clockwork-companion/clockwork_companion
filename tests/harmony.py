@@ -7,6 +7,7 @@ Rules from the 2020.1 book (12.4): a chakra opens at each level 3-10; elements a
 holding the element + Aether (1 per released chakra); released for SP turns; closing costs 1 Stamina per chakra.
 """
 import functools, http.server, json, pathlib, sys, threading
+import os
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve(); SHOTS = pathlib.Path(sys.argv[2] if len(sys.argv) > 2 else "smoke-shots"); SHOTS.mkdir(parents=True, exist_ok=True)
@@ -21,7 +22,7 @@ MONK = {"modules": {"craft": True, "magic": True}, "id": "hm", "name": "Ayla", "
 WARDER = {"modules": {"craft": True, "magic": True}, "id": "wd", "name": "Batbayar", "players": [], "attrs": {"WIL": {"base": 17, "value": 17}}, "skills": {"Warding": 3}}
 
 with sync_playwright() as p:
-    b = p.chromium.launch()
+    b = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None)
     for W, skin in [(1280, "ledger"), (390, "moss")]:
         tag = f"{W}px {skin}: "
         ctx = b.new_context(viewport={"width": W, "height": 900}, is_mobile=W < 500, has_touch=W < 500)
