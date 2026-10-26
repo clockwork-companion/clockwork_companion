@@ -153,7 +153,7 @@ version must keep working in a newer one, and the live site must survive data wr
    - the browser console has no errors;
    - the page doesn't scroll sideways.
 4. Commit with a message saying what changed for the user. Keep the build output and the `src/` change in the same commit.
-5. Open the PR into **Dev**, not main.
+5. When your person says yes, open the PR into **Dev**, not main.
 
 ## 7. Decisions log
 
