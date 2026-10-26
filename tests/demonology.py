@@ -24,9 +24,9 @@ def png(w, h, rgb):
     chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
 PNG.write_bytes(png(16, 16, (180, 40, 30)))
-SUMMONER = {"id": "dm", "name": "Batbayar", "players": [], "attrs": {"MND": {"base": 15, "value": 15}}, "skills": {"Demonology": 9},
+SUMMONER = {"modules": {"craft": True, "magic": True}, "id": "dm", "name": "Batbayar", "players": [], "attrs": {"MND": {"base": 15, "value": 15}}, "skills": {"Demonology": 9},
             "demon": {"daemons": [{"id": "b", "n": "Morrow", "realm": "The Drowned Hall", "wp": 11, "abilities": [{"id": "y1", "n": "Undertow", "text": "Pulls a creature 4 m."}]}]}}
-PLAIN = {"id": "pl", "name": "Plain", "players": [], "skills": {"Warding": 3}}
+PLAIN = {"modules": {"craft": True, "magic": True}, "id": "pl", "name": "Plain", "players": [], "skills": {"Warding": 3}}
 
 with sync_playwright() as p:
     b = p.chromium.launch()

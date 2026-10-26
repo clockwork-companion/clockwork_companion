@@ -141,6 +141,8 @@ const CW = (() => {
                        second: null, hoax: false, pay: "hp", hours: 1 }, ledger: [] },
                weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" }, for: "" }, ledger: [] }, jobsDone: [] },
       talents: [], uses: {},
+      // Crafting and Magic are modules the player turns on (null: not asked yet; asked once the character has points in one).
+      modules: { craft: null, magic: null },
     };
   }
 
@@ -157,6 +159,8 @@ const CW = (() => {
     out.vitals.wounds = Object.assign({}, b.vitals.wounds, c && c.vitals && c.vitals.wounds);
     ["items", "weapons", "armor", "log", "talents"].forEach(k => (out[k] = Array.isArray(out[k]) ? out[k] : []));
     out.uses = out.uses && typeof out.uses === "object" ? out.uses : {};
+    const mods = out.modules && typeof out.modules === "object" ? out.modules : {};
+    out.modules = { craft: typeof mods.craft === "boolean" ? mods.craft : null, magic: typeof mods.magic === "boolean" ? mods.magic : null };
     // Stamina lost and Exhaustion are one track: each Stamina stack lost is a level of Exhaustion.
     // Older sheets kept them apart, so take the higher of the two. staminaLost stays as a mirror for the Tabletop sheet.
     out.vitals.exhaustion = clamp(Math.max(num(out.vitals.exhaustion), num(out.vitals.staminaLost)), 0, 10);
