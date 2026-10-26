@@ -376,6 +376,16 @@ html[data-text="large"] .wrap { zoom: 1.15; }
 .sec { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; }
 .sec .srow { grid-template-columns: minmax(0, 1fr) auto 64px; }
 .sec .pips { --pip: 19px; }
+/* Phones: ten dots leave no room for the name on one line, so the name and its percentage sit on top and the dots
+   below; secondary skills (three dots) keep one line and drop their note under the name instead of cutting it off. */
+@media (max-width: 560px) {
+  .srow { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "n m" "p p"; row-gap: 4px; column-gap: 8px; padding: 6px 0 7px; }
+  .srow > .n { grid-area: n; white-space: normal; overflow: visible; }
+  .srow > .pips { grid-area: p; justify-self: start; }
+  .srow > .m { grid-area: m; }
+  .sec .srow { grid-template-columns: minmax(0, 1fr) auto 40px; grid-template-areas: "n p m"; }
+  .sec .srow > .n em { display: block; margin-left: 0; line-height: 1.25; }
+}
 
 /* tables */
 .tbl-wrap { overflow-x: auto; }
@@ -892,10 +902,15 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .rolodex:hover .rdx { transform: translateY(calc(var(--k) * 1.5px)); }
 .rdxlv { flex: none; width: 34px; align-self: stretch; margin: -7px 0; display: grid; place-items: center; color: #fff; font: 700 15px var(--f-display);
   background: var(--att, var(--rule)); border-radius: 2px 0 0 0; }
-.rdxn { flex: 1; min-width: 0; font: 600 13px var(--f-head); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* one card per perk name: the name once, then each level's uses and kind, marked with its level number */
+.rdxlv.span { width: 46px; font-size: 14px; letter-spacing: -.02em; }
+.rdxn { flex: 0 1 auto; min-width: 0; font: 600 13px var(--f-head); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rdxps { flex: 1 0 auto; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.rdxp { display: inline-flex; align-items: center; gap: 5px; }
+.rdxat { font: 700 11px var(--f-mono); font-style: normal; color: var(--att-ink, var(--ink-2)); }
 .rdxuse { flex: none; font: 600 11px var(--f-mono); color: var(--ink-3); }
 .rdx .ttag { margin-left: 0; }
-@media (max-width: 560px) { .rdx .ttag { font-size: 0; gap: 0; padding: 3px; } .rdxuse { display: none; } }
+@media (max-width: 560px) { .rdx .ttag { font-size: 0; gap: 0; padding: 3px; } .rdxn { font-size: 12px; letter-spacing: .05em; } .rdxps { gap: 4px 8px; } }
 .segicon { width: 12px; height: 12px; margin-right: 4px; vertical-align: -1px; }
 /* the attribute filter: pick any number; with 3+ invested skills among them, those skills are listed to narrow further */
 .attfilter { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 2px; }

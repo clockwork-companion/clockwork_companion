@@ -386,6 +386,16 @@ html[data-text="large"] .wrap { zoom: 1.15; }
 .sec { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; }
 .sec .srow { grid-template-columns: minmax(0, 1fr) auto 64px; }
 .sec .pips { --pip: 19px; }
+/* Phones: ten dots leave no room for the name on one line, so the name and its percentage sit on top and the dots
+   below; secondary skills (three dots) keep one line and drop their note under the name instead of cutting it off. */
+@media (max-width: 560px) {
+  .srow { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "n m" "p p"; row-gap: 4px; column-gap: 8px; padding: 6px 0 7px; }
+  .srow > .n { grid-area: n; white-space: normal; overflow: visible; }
+  .srow > .pips { grid-area: p; justify-self: start; }
+  .srow > .m { grid-area: m; }
+  .sec .srow { grid-template-columns: minmax(0, 1fr) auto 40px; grid-template-areas: "n p m"; }
+  .sec .srow > .n em { display: block; margin-left: 0; line-height: 1.25; }
+}
 
 /* tables */
 .tbl-wrap { overflow-x: auto; }
@@ -902,10 +912,15 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .rolodex:hover .rdx { transform: translateY(calc(var(--k) * 1.5px)); }
 .rdxlv { flex: none; width: 34px; align-self: stretch; margin: -7px 0; display: grid; place-items: center; color: #fff; font: 700 15px var(--f-display);
   background: var(--att, var(--rule)); border-radius: 2px 0 0 0; }
-.rdxn { flex: 1; min-width: 0; font: 600 13px var(--f-head); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* one card per perk name: the name once, then each level's uses and kind, marked with its level number */
+.rdxlv.span { width: 46px; font-size: 14px; letter-spacing: -.02em; }
+.rdxn { flex: 0 1 auto; min-width: 0; font: 600 13px var(--f-head); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rdxps { flex: 1 0 auto; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.rdxp { display: inline-flex; align-items: center; gap: 5px; }
+.rdxat { font: 700 11px var(--f-mono); font-style: normal; color: var(--att-ink, var(--ink-2)); }
 .rdxuse { flex: none; font: 600 11px var(--f-mono); color: var(--ink-3); }
 .rdx .ttag { margin-left: 0; }
-@media (max-width: 560px) { .rdx .ttag { font-size: 0; gap: 0; padding: 3px; } .rdxuse { display: none; } }
+@media (max-width: 560px) { .rdx .ttag { font-size: 0; gap: 0; padding: 3px; } .rdxn { font-size: 12px; letter-spacing: .05em; } .rdxps { gap: 4px 8px; } }
 .segicon { width: 12px; height: 12px; margin-right: 4px; vertical-align: -1px; }
 /* the attribute filter: pick any number; with 3+ invested skills among them, those skills are listed to narrow further */
 .attfilter { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 2px; }
@@ -6732,6 +6747,11 @@ function skillArt(skill, kind, n) {
   const list = kind === "weapon" ? WEAPON_ART : SKILL_ART[skill]; if (!list) return "";
   return `art/${list[n % list.length]}.webp`;
 }
+// Folded perks: one slim card per perk name. A perk the book gives at two levels (Wreck at 3 and 4) shares one card:
+// the levels on the left, the name once, then each level's kind and uses, each marked with its level.
+const perkRows = perks => perks.reduce((out, p) => { const n = p.group || ""; const at = out.find(x => x.n === n); if (at) at.ps.push(p); else out.push({ n, ps: [p] }); return out; }, [])
+  .map(r => Object.assign(r, { ps: r.ps.slice().sort((a, b) => num(a.l) - num(b.l)) })).sort((a, b) => num(a.ps[0].l) - num(b.ps[0].l));
+const lvSpan = ls => ls.length === 1 ? String(ls[0]) : ls.every((l, i) => !i || num(l) === num(ls[i - 1]) + 1) ? `${ls[0]}–${ls[ls.length - 1]}` : ls.join("·");
 const typeKey = t => (t === "M" || t === "A" ? "A" : t === "E" ? "E" : "P");
 const TypeTag = ({ t }) => { const k = typeKey(t); return html`<span class=${"ttag tt-" + k} title=${TYPE_NAME[t] || TYPE_NAME[k]}><svg viewBox="0 0 16 16" aria-hidden="true">${PERK_ICON[k]}</svg>${k === "E" ? "Empower" : TYPE_NAME[k]}</span>`; };
 function unlockedPerks(c) {
@@ -6848,9 +6868,10 @@ function TalentsTab({ c, update, openSkill }) {
         <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small>
           <button type="button" class="foldbtn" aria-expanded=${open} onClick=${() => flip(g.name)}>${open ? "Fold" : `Open ${g.perks.length} perk${g.perks.length > 1 ? "s" : ""}`}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button></h3>
         ${open ? html`<div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div>`
-          : html`<button type="button" class="rolodex" onClick=${() => flip(g.name)} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${g.perks.map((p, k) => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
-              return html`<span class=${"rdx k-" + typeKey(t)} style=${`--k:${k}`}><b class="rdxlv">${p.l}</b><span class="rdxn">${p.group || g.name}</span>
-                ${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max} left</small>`}<${TypeTag} t=${t} /></span>`; })}</button>`}</div>`; })
+          : html`<button type="button" class="rolodex" onClick=${() => flip(g.name)} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${perkRows(g.perks).map((r, k) =>
+              html`<span class="rdx" style=${`--k:${k}`}><b class=${"rdxlv" + (r.ps.length > 1 ? " span" : "")}>${lvSpan(r.ps.map(p => p.l))}</b><span class="rdxn">${r.n || g.name}</span>
+                <span class="rdxps">${r.ps.map(p => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
+                  return html`<span class=${"rdxp k-" + typeKey(t)}>${r.ps.length > 1 && html`<i class="rdxat">${p.l}</i>`}${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max}</small>`}<${TypeTag} t=${t} /></span>`; })}</span></span>`)}</button>`}</div>`; })
       : html`<p class="muted emptyline">${empty}</p>`}
     </section>
 
