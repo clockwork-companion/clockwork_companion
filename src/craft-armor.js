@@ -329,11 +329,11 @@ function RepairSide({ c, update, suits, suit, job, selId, rp, st, busy, pick }) 
     <${ShopJobs} c=${c} kind="armor" selId=${selId} pick=${pick} busy=${busy} update=${update} />
     ${suits.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${suits.map(a => { const p = R.repairPlan(c, a);
       return html`<button type="button" class="ptopt amsuit" aria-pressed=${!job && suit && suit.id === a.id} disabled=${busy} onClick=${() => pick(a.id)}>
-        <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}${Shop.outgoing(c, "armor", a.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "armor", a.id).to.name}'s</span>` : ""}</b>
+        <b>${a.name || "Unnamed armor"}${a.worn ? html` <span class="flag brass">Worn</span>` : ""}${p.broken ? html` <span class="flag bad">Broken</span>` : p.unset ? html` <span class="flag">No stats yet</span>` : ""}${Shop.outgoing(c, "armor", a.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "armor", a.id).to.name}'s</span>` : ""}</b>
         <span>${R.ARMOR[a.type].label} · AV ${num(a.av)} · Soak ${p.soak}/${p.max}</span>
         <i class="amtrack"><i style=${`width:${p.max ? (p.soak / p.max) * 100 : 0}%`}></i></i></button>`; })}</div>`}
     ${suit && html`<div class="ptplan"><h3 class="lbl">The repair</h3><ol>
-      <li><span>Materials: ${rp.cost} g of ${R.ARMOR[suit.type].label.toLowerCase()} materials</span><span class="muted">${R.ARMOR[suit.type].repairPerAV} g × AV ${num(suit.av)}${rp.broken ? " × 2 to rebuild a broken suit (draft rule)" : ""}</span></li>
+      <li><span>Materials: ${rp.cost} g of ${R.ARMOR[suit.type].label.toLowerCase()} materials</span><span class="muted">${R.ARMOR[suit.type].repairPerAV} g × AV ${rp.av}${num(suit.av) < 1 ? " (at least 1)" : ""}${rp.broken ? " × 2 to rebuild a broken suit (draft rule)" : ""}</span></li>
       <li><span>Check: d100 − ${st.mod}</span><span class="muted">Repair Count = 10 − check ÷ 10, rounded down, at most 10</span></li>
       <li><span>Roll ${rp.die} that many times</span><span class="muted">The total goes back into the Soak Pool (up to ${rp.max}). An hour per attempt.</span></li></ol>
       <p class="ptdc">Check 0 or less: 10 × ${rp.die} · check 40: 6 × ${rp.die} · check 90: 1 × ${rp.die}</p></div>`}

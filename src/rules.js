@@ -134,7 +134,7 @@ const CW = (() => {
       dream: { inRealm: false, mundane: false, travelers: 0, tolls: [], vault: [], sphere: null, seeds: [], ledger: [] },
       alch: { circles: [], arrays: {}, ledger: [] },   // Alchemy: saved circles (one may be a Signature Circle), arrays on the body   // Dreamwalking: what the dreamwalker sustains   // Demonology: contracts, who is summoned, summons used today   // Occult: Harmony: known elements, chakra → element, released chakras
       items: [], weapons: [], armor: [], log: [],
-      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
+      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, recipes: {}, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
                brew: { bonus: 0, known: [], recipes: [], catalysts: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
                rune: { bonus: 0, effects: [], order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
@@ -165,6 +165,9 @@ const CW = (() => {
     out.craft = Object.assign({}, b.craft, out.craft);
     ["supplies", "batch"].forEach(k => (out.craft[k] = Object.assign({}, b.craft[k], out.craft[k])));
     out.craft.recipe = Object.assign({ type: "rifle" }, out.craft.recipe);
+    // the other munitions' recipes, parked while another munition is open: { [type]: recipe }
+    if (!out.craft.recipes || typeof out.craft.recipes !== "object" || Array.isArray(out.craft.recipes)) out.craft.recipes = {};
+    Object.keys(out.craft.recipes).forEach(k => { const r = out.craft.recipes[k]; if (!r || typeof r !== "object" || r.type !== k) delete out.craft.recipes[k]; });
     if (!Array.isArray(out.craft.ledger)) out.craft.ledger = [];
     if (!Array.isArray(out.craft.parts)) out.craft.parts = [];   // custom Powdertinkering parts (coats, tips, areas, cores, statuses)
     if (!Array.isArray(out.craft.saved)) out.craft.saved = [];   // saved Powdertinkering recipes: { k, n, recipe }
@@ -984,17 +987,20 @@ const CW = (() => {
   function repairPlan(c, a) {
     const st = amState(c), t = ARMOR[a.type] || ARMOR.light, chk = armorCheck(c, a);
     // A suit sent by another player carries its wearer's own maximum (their Armor Mastery bonus included).
-    const max = a.jobMax != null ? num(a.jobMax) : chk.soakMax, soak = clamp(num(a.soak), 0, max), broken = soak <= 0;
-    const cost = t.repairPerAV * Math.max(1, num(a.av)) * (broken ? 2 : 1);
+    const max = a.jobMax != null ? num(a.jobMax) : chk.soakMax, soak = clamp(num(a.soak), 0, max);
+    // A suit with no Soak Pool yet (a new card on the Gear tab) isn't broken: it just hasn't been given its stats.
+    const unset = max <= 0, broken = !unset && soak <= 0, av = Math.max(1, num(a.av));
+    const cost = t.repairPerAV * av * (broken ? 2 : 1);
     const sides = +String(t.repairDie).slice(1);
     const have = num(c.craft && c.craft.supplies && c.craft.supplies[a.type]);
     let block = "";
     if (!st.repair) block = `Repairing armor needs Armor Maintenance 3 ("Is that a dent?"). This character has ${st.lvl}.`;
+    else if (unset) block = "This suit has no Soak Pool set. Give it its AV and Soak on the Gear tab.";
     else if (soak >= max) block = "This suit's Soak Pool is already full.";
     else if (broken && !st.restore) block = "It's broken (Soak 0). Rebuilding it needs a skilled craftsman: Armor Maintenance 5.";
     else if (AM_FORGE.includes(a.type) && !st.forge) block = `${t.label} armor needs a forge. Tick "At a forge" under Supplies.`;
     else if (have < cost) block = `Needs ${cost} g of ${t.label.toLowerCase()} armor materials (have ${have}).`;
-    return { cost, mat: a.type, die: t.repairDie, sides, soak, max, broken, missing: max - soak, block, st };
+    return { cost, av, mat: a.type, die: t.repairDie, sides, soak, max, broken, unset, missing: max - soak, block, st };
   }
   // A crafting order: { type, av, soak, plusAV, plusSoak, name } → final stats, difficulty, cost.
   function craftPlan(c, r) {

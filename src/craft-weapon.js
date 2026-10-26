@@ -350,7 +350,7 @@ function WRepairSide({ c, update, ws, weapon, job, selId, rp, st, busy, pick }) 
     ${ws.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${ws.map(w => { const p = R.wRepairPlan(c, w);
       return html`<button type="button" class="ptopt amsuit" aria-pressed=${!job && weapon && weapon.id === w.id} disabled=${busy} onClick=${() => pick(w.id)}>
         <b>${w.name || "Unnamed weapon"}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}${Shop.outgoing(c, "weapon", w.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "weapon", w.id).to.name}'s</span>` : ""}</b>
-        <span>${w.shield ? "Shield" : w.skill} · ${num(w.hands) === 2 ? "two-handed" : "one-handed"} · Durability ${p.dur}/${p.max}</span>
+        <span>${[w.shield ? "Shield" : w.skill, num(w.hands) === 2 ? "two-handed" : "one-handed", p.max ? `Durability ${p.dur}/${p.max}` : "No durability yet"].filter(Boolean).join(" · ")}</span>
         <i class="amtrack"><i style=${`width:${p.max ? (p.dur / p.max) * 100 : 0}%`}></i></i></button>`; })}</div>`}
     ${weapon && html`<div class="ptplan"><h3 class="lbl">The repair</h3><ol>
       <li><span>Materials: ${rp.cost} g of weapon materials</span><span class="muted">${num(weapon.hands) === 2 ? "Two-handed 800 g" : "One-handed 400 g"}${rp.cost > (num(weapon.hands) === 2 ? 800 : 400) ? " + 400 g for Unwieldy" : ""}</span></li>

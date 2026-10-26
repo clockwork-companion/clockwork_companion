@@ -1071,15 +1071,17 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .tabs .tab-craft { --tc: var(--forge, #b4532a); --ts: var(--forge-soft, #f0d6c4); }
 :root { --forge: #a8461f; --forge-soft: #f0d6c4; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --forge: #e48553; --forge-soft: #47271a; } }
-.craftnav { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 6px; margin-top: -8px; }
+.craftnav { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(184px, 100%), 1fr)); gap: 6px; margin-top: -8px; }
 .craftnav button { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; padding: 8px 12px; border: 1.5px solid var(--hair); background: transparent; color: var(--ink-2); border-radius: 2px; min-width: 0; }
 .craftnav button .tabicon { grid-row: span 2; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
-.craftnav button span { font: 600 13px/1.15 var(--f-head); letter-spacing: .07em; text-transform: uppercase; }
+.craftnav button span { font: 600 13px/1.15 var(--f-head); letter-spacing: .06em; text-transform: uppercase; min-width: 0; }
+.craftnav button :is(span, small) { grid-column: 2; }
+.craftnav button small { line-height: 1.25; }
 .craftnav button small { font-size: 11.5px; color: var(--ink-3); min-height: 1em; }
 .craftnav button:hover { border-color: var(--rule); color: var(--ink); }
 .craftnav button[aria-pressed="true"] { border-color: var(--rule); background: var(--rule); color: var(--paper); box-shadow: inset 0 -4px 0 var(--forge); }
 .craftnav button[aria-pressed="true"] small { color: color-mix(in srgb, var(--paper) 70%, transparent); }
-@media (max-width: 560px) { .craftnav button { padding: 7px 8px; column-gap: 6px; } .craftnav button span { font-size: 12px; letter-spacing: .03em; overflow-wrap: anywhere; } }
+@media (max-width: 560px) { .craftnav { grid-template-columns: repeat(2, minmax(0, 1fr)); } .craftnav button { padding: 7px 8px; column-gap: 6px; } .craftnav button span { font-size: 11.5px; letter-spacing: .02em; } .craftnav button small { font-size: 10.5px; } }
 .construct { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; padding: 14px 0 4px; }
 .construct-gears { width: 120px; height: 80px; flex: none; }
 .construct-gears path, .construct-gears circle { fill: none; stroke: var(--brass); stroke-width: 2; }
