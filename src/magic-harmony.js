@@ -14,15 +14,41 @@ const HARM_GLYPH = {
 const HarmGlyph = ({ el, cls = "" }) => html`<svg class=${"harmglyph " + cls} viewBox="-9 -9 18 18" aria-hidden="true"><path d=${HARM_GLYPH[el]} /></svg>`;
 // Where each chakra sits on the figure (viewBox 0 0 300 400), from the base of the spine up past the crown.
 const CHAKRA_Y = { opening: 292, life: 258, pain: 224, healing: 184, limit: 120, wonder: 84, view: 50, death: 16 };
-// The figure, seated in the lotus position: head, shoulders, arms resting on the crossed legs, hands on the knees.
-const HARM_BODY = [
-  "M60 304c0-22 36-34 90-32c54-2 90 10 90 32c0 18-40 28-90 26c-50 2-90-8-90-26z",                                     // crossed legs
-  "M150 112c-26 0-46 6-52 26c-5 20 6 58 12 92c3 18 6 32 14 44h52c8-12 11-26 14-44c6-34 17-72 12-92c-6-20-26-26-52-26z",  // torso
-  "M100 136c-14 20-20 58-18 96c1 22 8 40 22 52l10-8c-10-14-14-30-14-48c0-34 6-62 14-80z",                                // left arm
-  "M200 136c14 20 20 58 18 96c-1 22-8 40-22 52l-10-8c10-14 14-30 14-48c0-34-6-62-14-80z",                                 // right arm
-  "M141 98h18v18h-18z",                                                                                                  // neck
-];
-const HARM_HEAD = { cx: 150, cy: 80, r: 25 };
+// The figure, seated in the lotus position: legs crossed with the feet up, hands resting on the knees in a mudra,
+// shoulders soft, eyes closed. The upper body breathes (a slow rise and fall, with a glow at the heart in time); the head
+// drifts very slightly; motes of energy rise around it in the colour of the strongest element.
+function HarmFigure({ mote }) {
+  const arm = "M101 144C90 150 84 172 82 196C80 214 80 228 78 240C76 256 70 274 65 290L80 297C84 281 90 265 94 249C97 236 100 220 103 200C105 184 108 162 112 152Z";
+  const mirror = "matrix(-1 0 0 1 300 0)";
+  return html`<g class="harmfig">
+    <g class="hlegs">
+      <path class="harmsil" d="M106 286C84 288 58 295 44 307C33 317 39 332 60 334C96 340 204 340 240 334C261 332 267 317 256 307C242 295 216 288 194 286Z" />
+      <path class="harmsil shin" d="M242 321C208 309 150 308 102 313C92 315 90 323 100 326C150 323 200 325 236 333Z" />
+      <path class="harmsil shin" d="M58 321C92 307 150 305 198 311C208 313 210 321 200 324C150 321 100 323 64 333Z" />
+      <path class="harmsil foot" d="M84 315C88 306 103 305 110 311C113 318 106 324 96 324C89 324 84 320 84 315Z" />
+      <path class="harmsil foot" d="M216 313C212 304 197 303 190 309C187 316 194 322 204 322C211 322 216 318 216 313Z" />
+      <path class="hfold" d="M70 316C100 304 140 300 176 302 M232 316C214 308 196 304 176 303 M120 330C140 333 160 333 180 330" />
+    </g>
+    <g class="hupper">
+      <circle class="hheart" cx="150" cy="184" r="34" />
+      <path class="harmsil" d=${arm} /><path class="harmsil" d=${arm} transform=${mirror} />
+      <path class="harmsil torso" d="M134 126C120 130 106 134 100 146C95 158 97 178 101 198C105 220 112 240 114 260C115 274 111 286 106 296L194 296C189 286 185 274 186 260C188 240 195 220 199 198C203 178 205 158 200 146C194 134 180 130 166 126Z" />
+      <path class="hfold" d="M136 128L150 156L164 128 M114 262C130 268 170 268 186 262 M118 272C134 277 166 277 182 272 M104 160C110 176 112 196 112 214 M196 160C190 176 188 196 188 214" />
+      <path class="harmsil" d="M141 100C142 112 140 120 134 128H166C160 120 158 112 159 100Z" />
+      <g class="hhead">
+        <ellipse class="harmsil" cx="129.5" cy="87" rx="3.6" ry="6.5" /><ellipse class="harmsil" cx="170.5" cy="87" rx="3.6" ry="6.5" />
+        <ellipse class="harmsil head" cx="150" cy="81" rx="20.5" ry="25.5" />
+        <path class="hhair" d="M129.5 84C127 63 138 54 150 54C162 54 173 63 170.5 84C168 72 160 65.5 150 66.5C140 65.5 132 72 129.5 84Z" />
+        <path class="hface" d="M137 80.5Q141 78.5 145 80 M155 80Q159 78.5 163 80.5 M138 88.5Q141.5 91 145 88.5 M155 88.5Q158.5 91 162 88.5 M150 89L148.4 96.5H151.6 M145.5 100.5Q150 102.6 154.5 100.5" />
+      </g>
+    </g>
+    <g class="hhands">
+      <ellipse class="harmsil" cx="70" cy="298" rx="10" ry="6.5" transform="rotate(-18 70 298)" /><circle class="hmudra" cx="63" cy="296" r="2.6" />
+      <ellipse class="harmsil" cx="230" cy="298" rx="10" ry="6.5" transform="rotate(18 230 298)" /><circle class="hmudra" cx="237" cy="296" r="2.6" />
+    </g>
+    <g class="hmotes" style=${`--mote:${mote || "var(--brass)"}`}>${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => html`<circle style=${`--i:${i}`} cx=${(70 + (i * 37) % 160).toFixed(0)} cy=${(300 - (i % 3) * 12).toFixed(0)} r=${(1.2 + (i % 3) * .5).toFixed(1)} />`)}</g>
+  </g>`;
+}
 
 function Harmony({ c, update }) {
   const st = R.harmonyState(c), h = c.harmony;
@@ -159,13 +185,13 @@ function Harmony({ c, update }) {
 
         <svg ref=${bodyRef} class=${"harmbody" + (h.rel.length ? " released" : "")} viewBox="0 0 300 400" role="group" aria-label="Your chakras">
           <defs>
+            <linearGradient id="harm-skin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--card)" /><stop offset=".55" stop-color="var(--hs1)" /><stop offset="1" stop-color="var(--hs2)" /></linearGradient>
             <radialGradient id="harm-aura"><stop offset="0" stop-color="var(--aura)" stop-opacity=".55" /><stop offset=".6" stop-color="var(--aura)" stop-opacity=".12" /><stop offset="1" stop-color="var(--aura)" stop-opacity="0" /></radialGradient>
             <linearGradient id="harm-spine" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="var(--brass)" stop-opacity="0" /><stop offset=".5" stop-color="var(--brass)" stop-opacity=".8" /><stop offset="1" stop-color="var(--brass)" stop-opacity="0" /></linearGradient>
           </defs>
           <ellipse class="harmaura" cx="150" cy="190" rx="138" ry="190" fill="url(#harm-aura)" />
           ${flare > 0 && html`<circle class="harmflare" cx="150" cy="190" r="40" key=${"fl" + flare} />`}
-          <g class="harmfig">${HARM_BODY.map(d => html`<path class="harmsil" d=${d} />`)}<circle class="harmsil" cx=${HARM_HEAD.cx} cy=${HARM_HEAD.cy} r=${HARM_HEAD.r} />
-            <circle class="harmhand" cx="106" cy="284" r="7" /><circle class="harmhand" cx="194" cy="284" r="7" /></g>
+          <${HarmFigure} mote=${(() => { const best = st.known.slice().sort((x, y) => st.aff[y] - st.aff[x])[0]; return best && st.aff[best] ? HARM_COLOR[best] : ""; })()} />
           <line class="harmspine" x1="150" y1=${CHAKRA_Y.opening} x2="150" y2=${CHAKRA_Y[st.open[st.open.length - 1]] || CHAKRA_Y.opening} />
           ${R.CHAKRAS.map(x => {
             const open = st.open.includes(x.k), el = shown(x.k), wait = x.k in pending && (pending[x.k] || "") !== (st.held[x.k] || "");

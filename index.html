@@ -2619,10 +2619,26 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .harmaura { transform-box: fill-box; transform-origin: center; animation: auraBreath 7s ease-in-out infinite; }
 @keyframes auraBreath { 50% { transform: scale(1.04); opacity: .8; } }
 .harmfig, .harmaura, .harmspine, .harmflare { pointer-events: none; }
-.harmsil { fill: color-mix(in srgb, var(--ink) 9%, var(--card)); stroke: color-mix(in srgb, var(--ink) 45%, transparent); stroke-width: 1.4; stroke-linejoin: round; }
-.harmfig { transform-box: fill-box; transform-origin: 50% 100%; animation: harmBreath 6s ease-in-out infinite; }
-@keyframes harmBreath { 50% { transform: scale(1.012, 1.02); } }
-.harmhand { fill: color-mix(in srgb, var(--ink) 14%, var(--card)); stroke: color-mix(in srgb, var(--ink) 45%, transparent); stroke-width: 1.2; }
+.harmf { --hs1: color-mix(in srgb, var(--ink) 10%, var(--card)); --hs2: color-mix(in srgb, var(--ink) 22%, var(--card)); }
+.harmsil { fill: url(#harm-skin); stroke: color-mix(in srgb, var(--ink) 42%, transparent); stroke-width: 1.2; stroke-linejoin: round; stroke-linecap: round; }
+.harmsil.shin, .harmsil.foot { stroke-width: 1; }
+.hfold { fill: none; stroke: color-mix(in srgb, var(--ink) 22%, transparent); stroke-width: .9; stroke-linecap: round; }
+.hhair { fill: color-mix(in srgb, var(--ink) 55%, var(--card)); }
+.hface { fill: none; stroke: color-mix(in srgb, var(--ink) 60%, transparent); stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; }
+.hmudra { fill: none; stroke: color-mix(in srgb, var(--ink) 50%, transparent); stroke-width: 1; }
+.hheart { fill: var(--aura); opacity: .1; filter: blur(8px); }
+/* breathing: the upper body rises and falls from the hips, the heart glows on the in-breath */
+.hupper { transform-box: view-box; transform-origin: 150px 296px; animation: hBreath 6.4s ease-in-out infinite; }
+@keyframes hBreath { 0%, 100% { transform: none; } 45% { transform: translateY(-1.6px) scale(1.012, 1.02); } }
+.hheart { animation: hHeart 6.4s ease-in-out infinite; }
+@keyframes hHeart { 0%, 100% { opacity: .06; } 45% { opacity: .22; } }
+.hhead { transform-box: view-box; transform-origin: 150px 104px; animation: hHead 14s ease-in-out infinite; }
+@keyframes hHead { 0%, 100% { transform: rotate(-1.2deg); } 50% { transform: rotate(1.2deg) translateY(.6px); } }
+/* motes of energy rising around the body */
+.hmotes circle { fill: var(--mote); opacity: 0; transform-box: fill-box; animation: hMote 7s linear infinite; animation-delay: calc(var(--i) * -.6s); }
+@keyframes hMote { 0% { opacity: 0; transform: translate(0, 0); } 15% { opacity: .8; } 70% { opacity: .5; } 100% { opacity: 0; transform: translate(calc((var(--i) - 6) * 2px), -230px); } }
+
+
 .harmbody.released .harmsil { stroke: #f5dc8c; filter: drop-shadow(0 0 6px #f5dc8c); fill: color-mix(in srgb, #fff2c8 16%, transparent); }
 .harmspine { stroke: url(#harm-spine); stroke-width: 3; stroke-dasharray: 6 9; animation: spineFlow 2.4s linear infinite; }
 @keyframes spineFlow { to { stroke-dashoffset: -30; } }
@@ -2702,7 +2718,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   .harmbody { max-width: 300px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .harmorb, .harmaura, .harmfig, .harmspine, .chakra *, .harmflare { animation: none !important; }
+  .harmorb, .harmaura, .harmfig *, .harmspine, .chakra *, .harmflare { animation: none !important; }
 }
 
 /* ===== Magic: Occult: Daemonology (magic-demon.js) ===== */
@@ -2969,6 +2985,13 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @media (prefers-reduced-motion: reduce) {
   .alchfig .alayer, .alchfig .alayer *, .aarcs path, .aflash, .alchfig .aglow { animation: none !important; }
 }
+
+/* At a glance: what the reinforced chakras give (magic-harmony.js, harmonyGlance in rules.js) */
+.glancefrom { font: 600 11px var(--f-mono); color: var(--good); margin-left: 4px; white-space: nowrap; }
+.glanceharm { margin-top: 8px; display: grid; gap: 4px; }
+.glanceharm > .lbl { font-size: 11px; }
+.fact.harmfact { border-left: 3px solid var(--ec); padding-left: 8px; }
+.fact.harmfact b { color: var(--ec); font-size: 14px; }
 </style>
 <div id="app"></div>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
@@ -3673,7 +3696,8 @@ const CW = (() => {
     const bleed = Object.entries(WOUNDS).reduce((s, [k, w]) => s + w.bleed * num(v.wounds[k]), 0);
     const enc = encumbrance(c);
     const baseMove = 10 + sk(c, "Tumble");
-    const move = enc.tier.move == null ? 0 : Math.max(0, baseMove + enc.effectiveMove);
+    const harmony = harmonyGlance(c);   // reinforced chakras: Wind in the Opening chakra adds to Movement, the rest are listed
+    const move = enc.tier.move == null ? 0 : Math.max(0, baseMove + enc.effectiveMove + harmony.move);
     let rationsPerMeal = 2;
     if (belly >= 3) rationsPerMeal = end <= 5 ? 5 : end <= 8 ? 6 : 7;
     return {
@@ -3688,7 +3712,7 @@ const CW = (() => {
       exhaustionFromBlood: bloodExhaustion(cur.bp),
       exhaustionFromHunger: hungerExhaustion(cur.dp),
       overToxic: cur.tox > max.tox,
-      move, baseMove, climb: Math.floor(move / 2),
+      move, baseMove, climb: Math.floor(move / 2), harmony,
       mealsPerDay: sk(c, "Deprivation") >= 3 ? 2 : 3,
       rationsPerDay: (sk(c, "Deprivation") >= 3 ? 2 : 3) + c.prosthetics.length,
       rationsPerMeal,
@@ -4129,6 +4153,57 @@ const CW = (() => {
       next: CHAKRAS.find(x => lvl < x.lvl) || null,
     };
   }
+  // What the reinforced chakras do right now, for the sheet's "At a glance" panel: Wind in the Opening chakra adds to
+  // Movement itself; every other power becomes a short line with the practitioner's numbers ({ k: label, v: value, el }).
+  function harmonyGlance(c) {
+    const st = harmonyState(c), out = { move: 0, facts: [] };
+    if (!st.lvl || !Object.keys(st.held).length) return out;
+    const add = (k, v, el, ch) => out.facts.push({ k, v, el, ch });
+    Object.entries(st.held).forEach(([ch, el]) => {
+      const a = num(st.aff[el]), half = Math.floor(a / 2), h15 = clamp(half, 1, 5), h1 = Math.max(1, half);
+      const t = ch + ":" + el, rel = st.released.includes(ch);
+      switch (t) {
+        case "opening:fire": add("Reflex saves", `+${a}`, el, ch); break;
+        case "opening:earth": add("Fortitude saves", `+${a}`, el, ch); break;
+        case "opening:wind": out.move = Math.min(5, a); break;
+        case "opening:water": add("Defend", `+${a}`, el, ch); break;
+        case "opening:spirit": add("Willpower saves", `+${a}`, el, ch); break;
+        case "life:fire": add(a >= 6 ? "Presence checks" : "Presence checks (secondary)", `+${a}`, el, ch); break;
+        case "life:earth": add(a >= 6 ? "Strength, Endurance checks and melee" : "Strength, Endurance (secondary) and melee", `+${a}`, el, ch); break;
+        case "life:wind": add(a >= 6 ? "Dexterity checks and ranged" : "Dexterity (secondary) and ranged", `+${a}`, el, ch); break;
+        case "life:water": add(a >= 6 ? "Mind checks" : "Mind checks (secondary)", `+${a}`, el, ch); break;
+        case "life:spirit": add(a >= 6 ? "Wisdom, Willpower checks" : "Wisdom, Willpower (secondary)", `+${a}`, el, ch); break;
+        case "pain:fire": add("HP lost on a failed save", `−${h15}`, el, ch); break;
+        case "pain:earth": add("Brace: mitigation", `+${half}`, el, ch); break;
+        case "pain:wind": add("Toxicity gained", `−${h15}`, el, ch); break;
+        case "pain:water": add("Bleeding from wounds", `−${h1}`, el, ch); break;
+        case "pain:spirit": add("Deprivation lost (not hunger)", `−${h1}`, el, ch); break;
+        case "healing:fire": add("Short rest, once: Toxicity", `−${a}`, el, ch); break;
+        case "healing:earth": add("Short rest, once: Blood", `+${10 * a}`, el, ch); break;
+        case "healing:wind": add("Short rest, once: HP", `+${2 * a}`, el, ch); break;
+        case "healing:water": add("Healing: per 5 HP", `+${half}`, el, ch); break;
+        case "healing:spirit": add("Sanity recovered again", `up to ${a}`, el, ch); break;
+        case "limit:fire": add("Rolls hindered by ailments", `+${2 * a}`, el, ch); break;
+        case "limit:earth": add("Exhaustion stacks ignored", `${half}`, el, ch); break;
+        case "limit:wind": add("Resist deafen, paralyse, poison", `+${2 * a}`, el, ch); break;
+        case "limit:water": add("Resist blind, petrify, stun", `+${2 * a}`, el, ch); break;
+        case "limit:spirit": add("Resist charm, fright", `+${2 * a}`, el, ch); break;
+        case "view:fire": add("Fire damage", a >= 4 ? "−2, resisted" : "−2", el, ch); if (a >= 6) add("Next attack, once a round", `+${a} fire`, el, ch); break;
+        case "view:earth": add("Bludgeoning, poison damage", `−2${a >= 4 ? ", bludgeoning resisted" : ""}${a >= 6 ? ", poison resisted" : ""}`, el, ch); break;
+        case "view:wind": add("Slashing, cold damage", `−2${a >= 4 ? ", slashing resisted" : ""}${a >= 6 ? ", cold resisted" : ""}`, el, ch); break;
+        case "view:water": add("Piercing, lightning damage", `−2${a >= 4 ? ", piercing resisted" : ""}${a >= 6 ? ", lightning resisted" : ""}`, el, ch); break;
+        case "view:spirit": add("Psychic damage", `−2${a >= 6 ? ", resisted" : ""}`, el, ch); if (a >= 4) add("Sanity checks", `+${2 * a}`, el, ch); break;
+        case "death:fire": add(`Under ${2 * a} HP`, "bonus damage counts as weapon damage; re-roll a miss once a round", el, ch); break;
+        case "death:earth": add("Stabilising", `Harmony checks; wake with ${a} HP`, el, ch); break;
+        case "death:wind": add(`Under ${2 * a} HP`, `+${a} AP`, el, ch); break;
+        case "death:water": add(`Under ${2 * a} HP`, `regain ${a} HP a turn for 3 turns`, el, ch); break;
+        case "death:spirit": add("At 0 HP", `fight on for ${a} turns`, el, ch); break;
+      }
+      if (rel && ch === "view") add("View released", "temporary HP equal to your maximum, against its damage types", el, ch);
+      if (rel && ch === "death") add("Death released", "every reinforcement effect for 2 turns", el, ch);
+    });
+    return out;
+  }
   // The book's line with the practitioner's numbers filled in: "your Fire Affinity" → its value, "2xFire Affinity" → twice it,
   // "Fire Affinity/2" → half (rounded down; the book doesn't say). A line that starts "With a Fire Affinity of 6 or higher"
   // only applies from that affinity on.
@@ -4492,7 +4567,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, demonState, dreamState, ALCH_SIZES, ALCH_SIZE_I, ALCH_LIMBS, alchState,
+           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, harmonyGlance, demonState, dreamState, ALCH_SIZES, ALCH_SIZE_I, ALCH_LIMBS, alchState,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
@@ -5924,11 +5999,15 @@ function RestBay({ c, d, update }) {
 function GlanceCard({ d }) {
   const [open, setOpen] = useState(() => lsGet("cw-glance", true));
   const flip = () => { lsSet("cw-glance", !open); setOpen(!open); };
-  const facts = [["Movement", `${d.move} m`], ["Climb · swim", `${d.climb} m`], ["Wound at", `${d.woundAt.light} / ${d.woundAt.moderate} / ${d.woundAt.mortal}`], ["Blood potency", d.potency],
+  const hm = d.harmony || { move: 0, facts: [] };
+  const facts = [["Movement", hm.move && d.move ? html`${d.move} m <small class="glancefrom" title="From your Opening chakra's Wind">+${hm.move} Harmony</small>` : `${d.move} m`], ["Climb · swim", `${d.climb} m`], ["Wound at", `${d.woundAt.light} / ${d.woundAt.moderate} / ${d.woundAt.mortal}`], ["Blood potency", d.potency],
     ["Rations per meal", d.rationsPerMeal], ["Rations per day", d.rationsPerDay], ["Cleanse die", d.cleanse], ["HP per long rest", d.hpRegen]];
   return html`<div class=${"glance" + (open ? " open" : "")}>
     <button type="button" class="glancetog" aria-expanded=${open} onClick=${flip}>At a glance<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button>
     ${open && html`<div class="facts glancefacts">${facts.map(([k, val]) => html`<div class="fact"><span>${k}</span><b>${val}</b></div>`)}</div>`}
+    ${open && hm.facts.length > 0 && html`<div class="glanceharm" aria-label="From your chakras"><span class="lbl">From your chakras</span>
+      <div class="facts glancefacts">${hm.facts.map(f => html`<div class="fact harmfact" style=${`--ec:${(typeof HARM_COLOR !== "undefined" && HARM_COLOR[f.el]) || "var(--brass)"}`}
+        title=${`${R.CHAKRA_BY[f.ch].n} chakra, ${R.HARMONY_ELEMENTS.find(x => x[0] === f.el)[1]}`}><span>${f.k}</span><b>${f.v}</b></div>`)}</div></div>`}
   </div>`;
 }
 
@@ -10322,15 +10401,41 @@ const HARM_GLYPH = {
 const HarmGlyph = ({ el, cls = "" }) => html`<svg class=${"harmglyph " + cls} viewBox="-9 -9 18 18" aria-hidden="true"><path d=${HARM_GLYPH[el]} /></svg>`;
 // Where each chakra sits on the figure (viewBox 0 0 300 400), from the base of the spine up past the crown.
 const CHAKRA_Y = { opening: 292, life: 258, pain: 224, healing: 184, limit: 120, wonder: 84, view: 50, death: 16 };
-// The figure, seated in the lotus position: head, shoulders, arms resting on the crossed legs, hands on the knees.
-const HARM_BODY = [
-  "M60 304c0-22 36-34 90-32c54-2 90 10 90 32c0 18-40 28-90 26c-50 2-90-8-90-26z",                                     // crossed legs
-  "M150 112c-26 0-46 6-52 26c-5 20 6 58 12 92c3 18 6 32 14 44h52c8-12 11-26 14-44c6-34 17-72 12-92c-6-20-26-26-52-26z",  // torso
-  "M100 136c-14 20-20 58-18 96c1 22 8 40 22 52l10-8c-10-14-14-30-14-48c0-34 6-62 14-80z",                                // left arm
-  "M200 136c14 20 20 58 18 96c-1 22-8 40-22 52l-10-8c10-14 14-30 14-48c0-34-6-62-14-80z",                                 // right arm
-  "M141 98h18v18h-18z",                                                                                                  // neck
-];
-const HARM_HEAD = { cx: 150, cy: 80, r: 25 };
+// The figure, seated in the lotus position: legs crossed with the feet up, hands resting on the knees in a mudra,
+// shoulders soft, eyes closed. The upper body breathes (a slow rise and fall, with a glow at the heart in time); the head
+// drifts very slightly; motes of energy rise around it in the colour of the strongest element.
+function HarmFigure({ mote }) {
+  const arm = "M101 144C90 150 84 172 82 196C80 214 80 228 78 240C76 256 70 274 65 290L80 297C84 281 90 265 94 249C97 236 100 220 103 200C105 184 108 162 112 152Z";
+  const mirror = "matrix(-1 0 0 1 300 0)";
+  return html`<g class="harmfig">
+    <g class="hlegs">
+      <path class="harmsil" d="M106 286C84 288 58 295 44 307C33 317 39 332 60 334C96 340 204 340 240 334C261 332 267 317 256 307C242 295 216 288 194 286Z" />
+      <path class="harmsil shin" d="M242 321C208 309 150 308 102 313C92 315 90 323 100 326C150 323 200 325 236 333Z" />
+      <path class="harmsil shin" d="M58 321C92 307 150 305 198 311C208 313 210 321 200 324C150 321 100 323 64 333Z" />
+      <path class="harmsil foot" d="M84 315C88 306 103 305 110 311C113 318 106 324 96 324C89 324 84 320 84 315Z" />
+      <path class="harmsil foot" d="M216 313C212 304 197 303 190 309C187 316 194 322 204 322C211 322 216 318 216 313Z" />
+      <path class="hfold" d="M70 316C100 304 140 300 176 302 M232 316C214 308 196 304 176 303 M120 330C140 333 160 333 180 330" />
+    </g>
+    <g class="hupper">
+      <circle class="hheart" cx="150" cy="184" r="34" />
+      <path class="harmsil" d=${arm} /><path class="harmsil" d=${arm} transform=${mirror} />
+      <path class="harmsil torso" d="M134 126C120 130 106 134 100 146C95 158 97 178 101 198C105 220 112 240 114 260C115 274 111 286 106 296L194 296C189 286 185 274 186 260C188 240 195 220 199 198C203 178 205 158 200 146C194 134 180 130 166 126Z" />
+      <path class="hfold" d="M136 128L150 156L164 128 M114 262C130 268 170 268 186 262 M118 272C134 277 166 277 182 272 M104 160C110 176 112 196 112 214 M196 160C190 176 188 196 188 214" />
+      <path class="harmsil" d="M141 100C142 112 140 120 134 128H166C160 120 158 112 159 100Z" />
+      <g class="hhead">
+        <ellipse class="harmsil" cx="129.5" cy="87" rx="3.6" ry="6.5" /><ellipse class="harmsil" cx="170.5" cy="87" rx="3.6" ry="6.5" />
+        <ellipse class="harmsil head" cx="150" cy="81" rx="20.5" ry="25.5" />
+        <path class="hhair" d="M129.5 84C127 63 138 54 150 54C162 54 173 63 170.5 84C168 72 160 65.5 150 66.5C140 65.5 132 72 129.5 84Z" />
+        <path class="hface" d="M137 80.5Q141 78.5 145 80 M155 80Q159 78.5 163 80.5 M138 88.5Q141.5 91 145 88.5 M155 88.5Q158.5 91 162 88.5 M150 89L148.4 96.5H151.6 M145.5 100.5Q150 102.6 154.5 100.5" />
+      </g>
+    </g>
+    <g class="hhands">
+      <ellipse class="harmsil" cx="70" cy="298" rx="10" ry="6.5" transform="rotate(-18 70 298)" /><circle class="hmudra" cx="63" cy="296" r="2.6" />
+      <ellipse class="harmsil" cx="230" cy="298" rx="10" ry="6.5" transform="rotate(18 230 298)" /><circle class="hmudra" cx="237" cy="296" r="2.6" />
+    </g>
+    <g class="hmotes" style=${`--mote:${mote || "var(--brass)"}`}>${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => html`<circle style=${`--i:${i}`} cx=${(70 + (i * 37) % 160).toFixed(0)} cy=${(300 - (i % 3) * 12).toFixed(0)} r=${(1.2 + (i % 3) * .5).toFixed(1)} />`)}</g>
+  </g>`;
+}
 
 function Harmony({ c, update }) {
   const st = R.harmonyState(c), h = c.harmony;
@@ -10467,13 +10572,13 @@ function Harmony({ c, update }) {
 
         <svg ref=${bodyRef} class=${"harmbody" + (h.rel.length ? " released" : "")} viewBox="0 0 300 400" role="group" aria-label="Your chakras">
           <defs>
+            <linearGradient id="harm-skin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--card)" /><stop offset=".55" stop-color="var(--hs1)" /><stop offset="1" stop-color="var(--hs2)" /></linearGradient>
             <radialGradient id="harm-aura"><stop offset="0" stop-color="var(--aura)" stop-opacity=".55" /><stop offset=".6" stop-color="var(--aura)" stop-opacity=".12" /><stop offset="1" stop-color="var(--aura)" stop-opacity="0" /></radialGradient>
             <linearGradient id="harm-spine" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="var(--brass)" stop-opacity="0" /><stop offset=".5" stop-color="var(--brass)" stop-opacity=".8" /><stop offset="1" stop-color="var(--brass)" stop-opacity="0" /></linearGradient>
           </defs>
           <ellipse class="harmaura" cx="150" cy="190" rx="138" ry="190" fill="url(#harm-aura)" />
           ${flare > 0 && html`<circle class="harmflare" cx="150" cy="190" r="40" key=${"fl" + flare} />`}
-          <g class="harmfig">${HARM_BODY.map(d => html`<path class="harmsil" d=${d} />`)}<circle class="harmsil" cx=${HARM_HEAD.cx} cy=${HARM_HEAD.cy} r=${HARM_HEAD.r} />
-            <circle class="harmhand" cx="106" cy="284" r="7" /><circle class="harmhand" cx="194" cy="284" r="7" /></g>
+          <${HarmFigure} mote=${(() => { const best = st.known.slice().sort((x, y) => st.aff[y] - st.aff[x])[0]; return best && st.aff[best] ? HARM_COLOR[best] : ""; })()} />
           <line class="harmspine" x1="150" y1=${CHAKRA_Y.opening} x2="150" y2=${CHAKRA_Y[st.open[st.open.length - 1]] || CHAKRA_Y.opening} />
           ${R.CHAKRAS.map(x => {
             const open = st.open.includes(x.k), el = shown(x.k), wait = x.k in pending && (pending[x.k] || "") !== (st.held[x.k] || "");
