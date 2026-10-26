@@ -8,6 +8,7 @@ at a desktop width and at 390 px, in every theme in the theme picker. Firebase i
 closes both hidden games, opens Settings, and fails on page errors, console errors or sideways scrolling.
 """
 import functools, http.server, json, pathlib, sys, threading
+import os
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve()
@@ -68,7 +69,7 @@ def run_case(browser, url, width, height, skin, mobile, games):
 def main():
     srv, url = serve(); failed = False
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        browser = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None)
         # Every theme in the picker (new themes are picked up automatically), at a desktop width and at 390 px.
         probe = browser.new_page(); probe.goto(url); probe.wait_for_timeout(1000)
         probe.locator(".setbtn").click(); probe.wait_for_timeout(300)   # the theme picker lives in Settings

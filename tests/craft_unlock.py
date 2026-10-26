@@ -7,6 +7,7 @@ the tab appears (forged in when it scrolls into view) with only the Brewing benc
 adds that bench, whose button is forged in the next time Crafting opens. Runs at desktop and 390 px.
 """
 import functools, http.server, pathlib, sys, threading
+import os
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve()
@@ -19,7 +20,7 @@ checks = []
 def check(name, ok, got=""): checks.append(ok); print(("ok   " if ok else "FAIL ") + name + (f"  ({got})" if got and not ok else ""))
 
 with sync_playwright() as p:
-    b = p.chromium.launch()
+    b = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None)
     for W, skin in [(1280, "ledger"), (390, "moss")]:
         ctx = b.new_context(viewport={"width": W, "height": 860}, is_mobile=W < 500, has_touch=W < 500)
         ctx.route("**/*", lambda r: r.abort() if any(x in r.request.url for x in BLOCK) else r.continue_())
