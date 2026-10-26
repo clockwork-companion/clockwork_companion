@@ -67,6 +67,9 @@ jobs:
       - name: Warding (Magic tab)
         run: python3 tests/warding.py "$RUNNER_TEMP/site" smoke-shots
 
+      - name: Occult Harmony (Magic tab)
+        run: python3 tests/harmony.py "$RUNNER_TEMP/site" smoke-shots
+
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v6

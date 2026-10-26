@@ -129,6 +129,7 @@ const CW = (() => {
       prosthetics: [], coins: 0,
       // Warding: the Words of Power the warder knows, extra grammar words, saved and formulaic wards, Fatigue.
       ward: { bonus: 0, fatigue: 0, words: [], extra: { subject: [], adverb: [], conj: [] }, wards: [], board: [], ledger: [] },
+      harmony: { els: [], ch: {}, rel: [], turns: 0, kept: 0, ledger: [] },   // Occult: Harmony: known elements, chakra → element, released chakras
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
@@ -169,6 +170,11 @@ const CW = (() => {
     ["subject", "adverb", "conj"].forEach(k => { if (!Array.isArray(out.ward.extra[k])) out.ward.extra[k] = []; });
     ["words", "wards", "board", "ledger"].forEach(k => { if (!Array.isArray(out.ward[k])) out.ward[k] = []; });
     out.ward.fatigue = Math.max(0, num(out.ward.fatigue));
+    out.harmony = Object.assign({}, b.harmony, out.harmony);
+    if (!Array.isArray(out.harmony.els)) out.harmony.els = [];
+    if (!out.harmony.ch || typeof out.harmony.ch !== "object" || Array.isArray(out.harmony.ch)) out.harmony.ch = {};
+    ["rel", "ledger"].forEach(k => { if (!Array.isArray(out.harmony[k])) out.harmony[k] = []; });
+    out.harmony.turns = Math.max(0, num(out.harmony.turns)); out.harmony.kept = Math.max(0, num(out.harmony.kept));
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
@@ -693,6 +699,106 @@ const CW = (() => {
     return f;
   }
 
+  // ---------- Occult: Harmony (rulebook 2020.1, 12.4) ----------
+  // Chakras unlock one per level from 3 to 10. Each holds one harmonic element the practitioner knows; known elements
+  // come at levels 3, 5, 7 and 10 and are permanent. Affinity for an element = chakras holding it + Aether Affinity,
+  // and Aether is 1 per Released chakra while they are released (from level 7). The book leaves the Harmonic Elements
+  // table blank ("TBD"); the five elements are the ones its chakra tables use. Effect texts are the book's own.
+  const HARMONY_ELEMENTS = [["fire", "Fire"], ["earth", "Earth"], ["wind", "Wind"], ["water", "Water"], ["spirit", "Spirit"]];
+  const HARMONY_LEARN = [3, 5, 7, 10];
+  const CHAKRAS = [
+    { k: "opening", n: "Opening", lvl: 3, fx: {
+      fire: ["Whenever you roll a Reflex saving throw, you can add your Fire Affinity as a bonus to the roll."],
+      earth: ["Whenever you roll a Fortitude saving throw, you can add your Earth Affinity as a bonus to the roll."],
+      wind: ["Your movement score increases by 1 meters per Wind Affinity you have, up to a maximum of 5."],
+      water: ["Whenever you take a Defend action, you can add your Water Affinity as a bonus to the roll."],
+      spirit: ["Whenever you roll a Willpower saving throw, you can add your Spirit Affinity as a bonus to the roll."] } },
+    { k: "life", n: "Life", lvl: 4, fx: {
+      fire: ["Any secondary skill check you roll that is governed by Presence, you can add your Fire Affinity as a bonus to the roll.",
+        "With a Fire Affinity of 6 or higher, any primary skill check you roll that is governed by Presence, you can add your Fire Affinity as a bonus to the roll."],
+      earth: ["Any secondary skill check you roll that is governed by Strength or Endurance, you can add your Earth Affinity as a bonus to the roll.",
+        "With a Earth Affinity of 6 or higher, any primary skill check you roll that is governed by Strength or Endurance, you can add your Earth Affinity as a bonus to the roll.",
+        "Melee Attacks are considered Strength checks."],
+      wind: ["Any secondary skill check you roll that is governed by Dexterity, you can add your Wind Affinity as a bonus to the roll.",
+        "With a Wind Affinity of 6 or higher, any primary skill check you roll that is governed by Dexterity, you can add your Wind Affinity as a bonus to the roll.",
+        "Ranged Attacks are considered Dexterity checks."],
+      water: ["Any secondary skill check you roll that is governed by Mind, you can add your Water Affinity as a bonus to the roll.",
+        "With a Water Affinity of 6 or higher, any primary skill check you roll that is governed by Mind, you can add your Water Affinity as a bonus to the roll."],
+      spirit: ["Any secondary skill check you roll that is governed by Wisdom or Willpower, you can add your Spirit Affinity as a bonus to the roll.",
+        "With a Spirit Affinity of 6 or higher, any primary skill check you roll that is governed by Wisdom or Willpower, you can add your Spirit Affinity as a bonus to the roll."] } },
+    { k: "pain", n: "Pain", lvl: 5, fx: {
+      fire: ["Whenever you lose Hit Points, as a result of a Failed Saving Throw, you lose Fire Affinity/2, up to a maximum of 5 and a minimum of 1."],
+      earth: ["Whenever you take the Brace Action, you can add your Earth Affinity/2 to your Damage Mitigation value."],
+      wind: ["Whenever you gain Toxicity, you can reduce that number by Wind Affinity/2, up to a maximum of 5 and a minimum of 1."],
+      water: ["Whenever you bleed from a Wound, you can reduce the bleeding by Water Affinity/2 down to a minimum of 1."],
+      spirit: ["Whenever you lose Deprivation to some effect other than natural hunger, you can reduce the amount lost by Spirit Affinity/2 down to a minimum of 1."] } },
+    { k: "healing", n: "Healing", lvl: 6, fx: {
+      fire: ["You recover toxicity points equal to your Fire Affinity during a short rest. This effect can only occur once every long rest."],
+      earth: ["You recover blood points equal to 10xEarth Affinity during a short rest. This effect can only occur once every long rest."],
+      wind: ["You recover hit points equal to your 2xWind Affinity during a short rest. This effect can only occur once every long rest."],
+      water: ["For every 5 hit points you receive as healing, you receive additional hit points equal to half your Water Affinity."],
+      spirit: ["If you have recovered any sanity points since your last long rest, you recover sanity points equal to the amount you have recovered again or your Spirit Affinity, whichever is lower.",
+        "Recovery takes place during your next short rest. This effect can only occur once every long rest."] } },
+    { k: "limit", n: "Limit", lvl: 7, release: "", fx: {
+      fire: ["Whenever you roll a disadvantaged roll caused by an ailment, you can add 2xFire Affinity to your roll."],
+      earth: ["For each 2 points of Earth Affinity you have, you negate the effects of 1 stack of Exhaustion."],
+      wind: ["Whenever you roll to resist an effect that would deafen, paralyze or poison you, you can add 2xWind Affinity to your roll."],
+      water: ["Whenever you roll to resist an effect that would blind, petrify or stun you, you can add 2xWater Affinity to your roll."],
+      spirit: ["Whenever you roll to resist an effect that would charm or frighten you, you can add 2xSpirit Affinity to your roll."] } },
+    { k: "wonder", n: "Wonder", lvl: 8, release: "", fx: { fire: [], earth: [], wind: [], water: [], spirit: [] } },
+    { k: "view", n: "View", lvl: 9, release: "You gain temporary hit points equal to your maximum hit points. These hit points can only be used to defend against the damage types this chakra provide resistance against.", fx: {
+      fire: ["Whenever you take fire damage, neglect 2 points of it.", "With a Fire Affinity of 4 or higher you gain resistance to fire damage.",
+        "With a Fire Affinity of 6 or higher, your next attack gains bonus damage equal to your Fire Affinity. This effect can only occur once a round."],
+      earth: ["Whenever you take bludgeoning or poison damage, neglect 2 points of it.", "With a Earth Affinity of 4 or higher you gain resistance to bludgeoning damage.",
+        "With a Earth Affinity of 6 or higher you gain resistance to poison damage."],
+      wind: ["Whenever you take slashing or cold damage, neglect 2 points of it.", "With a Wind Affinity of 4 or higher you gain resistance to slashing damage.",
+        "With a Wind Affinity of 6 or higher you gain resistance to cold damage."],
+      water: ["Whenever you take piercing or lightning damage, neglect 2 points of it.", "With a Water Affinity of 4 or higher you gain resistance to piercing damage.",
+        "With a Water Affinity of 6 or higher you gain resistance to lightning damage."],
+      spirit: ["Whenever you take psychic damage, neglect 2 points of it.", "With a Spirit Affinity of 4 or higher, whenever you roll a Sanity check, you can add 2xSpirit Affinity to your roll.",
+        "With a Spirit Affinity of 6 or higher you gain resistance to psychic damage."] } },
+    { k: "death", n: "Death", lvl: 10, release: "You gain all reinforcement effects for the next 2 turns.", fx: {
+      fire: ["When your health drops below your 2xFire Affinity, any bonus damage you deal is now considered weapon damage.", "If an attack made by you misses, you can reroll that attack once per round."],
+      earth: ["Instead of death saving throws, you roll Occult:Harmony checks to stabilize.", "When you stabilize, you regain hit points equal to your Earth Affinity and regain consciousness. This can only occur once per long rest."],
+      wind: ["When your health drops below your 2xWind Affinity, you gain Action Points equal to your Wind Affinity."],
+      water: ["When your health drops below your 2xWater Affinity, you gain hit point regeneration equal to your Water Affinity for 3 turns."],
+      spirit: ["When your health drops to 0, instead of going unconscious, you continue fighting for a number of turns equal to your Spirit Affinity. You still roll death saving throws."] } },
+  ];
+  const CHAKRA_BY = Object.fromEntries(CHAKRAS.map(x => [x.k, x]));
+  function harmonyState(c) {
+    const lvl = sk(c, "Occult: Harmony"), h = c.harmony || {}, u = c.uses || {};
+    const learnMax = HARMONY_LEARN.filter(l => lvl >= l).length;
+    const known = (h.els || []).filter(e => HARMONY_ELEMENTS.some(x => x[0] === e)).slice(0, Math.max(learnMax, (h.els || []).length));
+    const open = CHAKRAS.filter(x => lvl >= x.lvl).map(x => x.k);
+    const held = {}; open.forEach(k => { const e = (h.ch || {})[k]; if (e && known.includes(e)) held[k] = e; });
+    const released = (h.rel || []).filter(k => open.includes(k));
+    const aether = released.length;
+    const aff = {}; known.forEach(e => { aff[e] = Object.values(held).filter(x => x === e).length + aether; });
+    return {
+      lvl, mod: skillModifier(c, "Occult: Harmony"), learnMax, known, canLearn: Math.max(0, learnMax - known.length),
+      open, held, aff, aether, released, turnsLeft: Math.max(0, num(h.turns)), kept: Math.max(0, num(h.kept)),
+      shift: lvl >= 5 ? Math.max(0, 3 - num(u["p:Occult: Harmony:5"])) : 0,   // level 5 Active: change one chakra (2 AP), 3 uses a long rest
+      canRelease: lvl >= 7, canAll: lvl >= 10, releaseTurns: lvl,              // released for SP turns from the first release
+      next: CHAKRAS.find(x => lvl < x.lvl) || null,
+    };
+  }
+  // The book's line with the practitioner's numbers filled in: "your Fire Affinity" → its value, "2xFire Affinity" → twice it,
+  // "Fire Affinity/2" → half (rounded down; the book doesn't say). A line that starts "With a Fire Affinity of 6 or higher"
+  // only applies from that affinity on.
+  function harmonyLine(text, aff) {
+    const need = (text.match(/^With a \w+ Affinity of (\d+) or higher/) || [])[1];
+    const val = (el, k) => k * num(aff[el.toLowerCase()]);
+    const parts = []; let rest = text, m;
+    const re = /(\d+)x\s?(Fire|Earth|Wind|Water|Spirit) Affinity|half your (Fire|Earth|Wind|Water|Spirit) Affinity|(Fire|Earth|Wind|Water|Spirit) Affinity\/2|(Fire|Earth|Wind|Water|Spirit) Affinity(?! of)/;
+    while ((m = rest.match(re))) {
+      const at = m.index + m[0].length;
+      const v = m[1] ? val(m[2], +m[1]) : m[3] ? Math.floor(val(m[3], 1) / 2) : m[4] ? Math.floor(val(m[4], 1) / 2) : val(m[5], 1);
+      parts.push(rest.slice(0, at), { v }); rest = rest.slice(at);
+    }
+    parts.push(rest);
+    return { parts, need: need ? +need : 0 };
+  }
+
   // ---------- Armor Maintenance (rulebook 16.5 and the Armor chapter) ----------
   // Repair (book): cost = the type's grams × Armor Value; roll an Armor Maintenance check (d100 − modifier);
   // Repair Count = 10 − check ÷ 10, rounded down; roll the type's Repair Die that many times and add it to the Soak Pool.
@@ -968,7 +1074,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue,
+           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,

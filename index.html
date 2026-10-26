@@ -2580,6 +2580,130 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   .wardsigil .link, .wardsigil .star, .wardsigil .ray { stroke-dashoffset: 0; }
 
 }
+
+/* ===== Magic: Occult: Harmony (magic-harmony.js) ===== */
+.harmony { display: grid; gap: 0; }
+.harmf { --aura: var(--brass); }
+.harmf.released { --aura: #fff2c8; }
+.harmstage { display: grid; grid-template-columns: minmax(150px, 190px) minmax(240px, 340px) minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 10px; }
+/* the elements the practitioner knows */
+.harmels { display: grid; gap: 10px; align-content: start; }
+.harmel { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; }
+.harmorb { width: 46px; height: 46px; border-radius: 50%; padding: 0; display: grid; place-items: center; cursor: grab; touch-action: none;
+  border: 1.5px solid var(--ec); color: var(--ec); background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--ec) 35%, var(--card)), var(--card) 70%);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--ec) 35%, transparent); transition: transform .15s, box-shadow .2s; animation: orbBob 5s ease-in-out infinite alternate; }
+.harmorb:hover, .harmorb:focus-visible { transform: scale(1.06); box-shadow: 0 0 22px color-mix(in srgb, var(--ec) 60%, transparent); }
+.harmorb.armed { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ec) 45%, transparent), 0 0 26px var(--ec); animation: orbArmed 1s ease-in-out infinite alternate; }
+.harmorb.small { width: 38px; height: 38px; animation: none; cursor: pointer; }
+@keyframes orbBob { to { transform: translateY(-3px); } }
+@keyframes orbArmed { to { box-shadow: 0 0 0 5px color-mix(in srgb, var(--ec) 25%, transparent), 0 0 34px var(--ec); } }
+.harmglyph { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.harmeln { font: 400 18px var(--f-display); }
+.harmaff { font: 600 18px var(--f-mono); color: var(--ec); min-width: 2ch; text-align: right; }
+.harmforget { width: 22px; height: 22px; font-size: 13px; }
+.harmlearn { display: grid; gap: 2px; justify-items: start; padding: 10px 12px; border: 1.5px dashed var(--brass); background: none; color: var(--ink); cursor: pointer; font: 400 17px var(--f-display); text-align: left; }
+.harmlearn small { font: 600 11px var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.harmlearn:hover { background: var(--brass-soft); }
+.harmpick { display: grid; gap: 8px; padding: 10px; border: 1.5px solid var(--brass); background: var(--card); }
+.harmpickrow { display: flex; flex-wrap: wrap; gap: 8px; }
+.harmaether { display: grid; grid-template-columns: auto auto; gap: 0 8px; align-items: baseline; padding: 8px 10px; border: 1.5px solid #e8d7a0; background: color-mix(in srgb, #fff2c8 18%, var(--card)); animation: inkIn .4s ease-out both; }
+.harmaether span { font: 600 12px var(--f-head); letter-spacing: .08em; text-transform: uppercase; }
+.harmaether b { font: 600 20px var(--f-mono); color: #c9a23f; }
+.harmaether small { grid-column: 1 / -1; color: var(--ink-3); font-size: 12px; }
+.harmghost { position: fixed; z-index: 90; width: 34px; height: 34px; margin: -17px 0 0 -17px; pointer-events: none; border-radius: 50%; display: grid; place-items: center;
+  color: var(--ec); background: color-mix(in srgb, var(--ec) 25%, transparent); box-shadow: 0 0 18px var(--ec); }
+.harmghost svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; }
+
+/* the figure */
+.harmbody { width: 100%; max-width: 340px; justify-self: center; overflow: visible; }
+.harmaura { transform-box: fill-box; transform-origin: center; animation: auraBreath 7s ease-in-out infinite; }
+@keyframes auraBreath { 50% { transform: scale(1.04); opacity: .8; } }
+.harmfig, .harmaura, .harmspine, .harmflare { pointer-events: none; }
+.harmsil { fill: color-mix(in srgb, var(--ink) 9%, var(--card)); stroke: color-mix(in srgb, var(--ink) 45%, transparent); stroke-width: 1.4; stroke-linejoin: round; }
+.harmfig { transform-box: fill-box; transform-origin: 50% 100%; animation: harmBreath 6s ease-in-out infinite; }
+@keyframes harmBreath { 50% { transform: scale(1.012, 1.02); } }
+.harmhand { fill: color-mix(in srgb, var(--ink) 14%, var(--card)); stroke: color-mix(in srgb, var(--ink) 45%, transparent); stroke-width: 1.2; }
+.harmbody.released .harmsil { stroke: #f5dc8c; filter: drop-shadow(0 0 6px #f5dc8c); fill: color-mix(in srgb, #fff2c8 16%, transparent); }
+.harmspine { stroke: url(#harm-spine); stroke-width: 3; stroke-dasharray: 6 9; animation: spineFlow 2.4s linear infinite; }
+@keyframes spineFlow { to { stroke-dashoffset: -30; } }
+.harmflare { fill: none; stroke: #fff2c8; stroke-width: 6; transform-box: fill-box; transform-origin: center; animation: harmFlare 1.3s ease-out forwards; }
+@keyframes harmFlare { from { opacity: 1; transform: scale(.3); } to { opacity: 0; transform: scale(5); stroke-width: .5; } }
+/* the chakras */
+.chakra { cursor: pointer; outline: none; }
+.chakra.shut { cursor: default; }
+.chakra .chalo { fill: var(--ec, var(--brass)); opacity: 0; transition: opacity .3s; }
+.chakra .cring { fill: none; stroke: var(--ink-3); stroke-width: 1.2; stroke-dasharray: 2 3; }
+.chakra .ccore { fill: var(--card); stroke: none; }
+.chakra.open .cring { stroke: color-mix(in srgb, var(--brass) 75%, transparent); stroke-dasharray: none; stroke-width: 1.6; }
+.chakra.open .ccore { fill: color-mix(in srgb, var(--brass) 14%, var(--card)); }
+.chakra.held .cring { stroke: var(--ec); stroke-width: 2; }
+.chakra.held .ccore { fill: var(--ec); }
+.chakra.held .chalo { opacity: .22; animation: chakraGlow 3.2s ease-in-out infinite; }
+.chakra .cglyph { fill: none; stroke: var(--card); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.chakra .clock { font: 600 9px var(--f-mono); fill: var(--ink-3); text-anchor: middle; }
+.chakra .cname { font: 400 13px var(--f-display); fill: var(--ink-3); opacity: 0; transition: opacity .2s; }
+.chakra.sel .cname, .chakra:hover .cname, .chakra:focus-visible .cname { opacity: 1; fill: var(--ink); }
+.chakra.sel .cring { stroke-width: 2.6; }
+.chakra:focus-visible .cring { stroke: var(--ink); }
+.chakra.wait .cring { stroke: var(--ec); stroke-dasharray: 4 3; animation: waitSpin 3s linear infinite; transform-box: fill-box; transform-origin: center; }
+.chakra.wait .ccore { fill: color-mix(in srgb, var(--ec) 40%, var(--card)); }
+.chakra.wait .chalo { opacity: .15; }
+@keyframes chakraGlow { 50% { opacity: .4; } }
+@keyframes waitSpin { to { transform: rotate(360deg); } }
+.chakra.rel .chalo { opacity: .55; fill: #fff2c8; animation: relPulse .9s ease-in-out infinite alternate; }
+.chakra.rel .cring { stroke: #fff2c8; stroke-width: 2.4; }
+@keyframes relPulse { to { opacity: .2; } }
+.harmf.releasing .chakra.open:not(.rel) .cring { stroke: #f5dc8c; animation: relInvite 1.1s ease-in-out infinite alternate; }
+@keyframes relInvite { to { stroke-width: 3.2; } }
+/* a chakra opening at a new level, and one taking its new element */
+.chakra.wake .chalo, .chakra.ignite .chalo { animation: chakraWake 1.4s ease-out both; fill: var(--ec, #fff2c8); }
+@keyframes chakraWake { 0% { opacity: 0; transform: scale(.4); } 30% { opacity: .9; } 100% { opacity: 0; transform: scale(2.2); } }
+.chakra.wake .chalo, .chakra.ignite .chalo { transform-box: fill-box; transform-origin: center; }
+/* reading a chakra */
+.harmread { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.harmreadh { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font: 400 22px var(--f-display); border-bottom: 1px solid var(--rule); }
+.harmreadh small { font: 600 12px var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.harmfx { padding: 6px 10px 7px; border-left: 3px solid color-mix(in srgb, var(--ec) 45%, transparent); }
+.harmfx.on { border-left-color: var(--ec); background: color-mix(in srgb, var(--ec) 10%, var(--card)); }
+.harmfx.unknown { opacity: .55; }
+.harmfxh { display: flex; align-items: center; gap: 6px; font: 600 12.5px var(--f-head); letter-spacing: .06em; text-transform: uppercase; color: var(--ec); }
+.harmfxh small { color: var(--ink-3); letter-spacing: .04em; }
+.harmfxh .harmglyph { width: 14px; height: 14px; }
+.harmfx p, .harmnowrow p { margin: 3px 0 0; font-size: 14px; line-height: 1.4; }
+.harmfx p.below { opacity: .5; }
+.harmv { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 3px; font: 600 12.5px var(--f-mono); color: var(--card); background: var(--ec); }
+.harmrel { margin: 0; font-size: 14px; padding: 6px 10px; border: 1px dashed #d9c27a; background: color-mix(in srgb, #fff2c8 12%, var(--card)); }
+/* changes waiting to be made, and releasing */
+.harmwait { margin-top: 14px; padding: 12px; border: 1.5px solid var(--brass); background: color-mix(in srgb, var(--brass-soft) 55%, var(--card)); display: grid; gap: 10px; animation: inkIn .3s ease-out both; }
+.harmwait p { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.harmchip { padding: 2px 8px; border: 1px solid var(--ec, var(--hair)); border-radius: 999px; font-size: 13.5px; }
+.harmhow { gap: 8px; align-items: center; flex-wrap: wrap; }
+.harmrelbox { margin-top: 14px; padding: 12px; border: 1.5px dashed var(--hair); display: grid; gap: 8px; }
+.harmrelbox.on { border: 1.5px solid #e8d7a0; background: color-mix(in srgb, #fff2c8 14%, var(--card)); box-shadow: 0 0 18px color-mix(in srgb, #fff2c8 35%, transparent); }
+.harmrelbox .muted { flex: 1 1 260px; font-size: 13px; }
+.harmrelnow { margin: 0; }
+.harmkeep { gap: 6px; align-items: end; }
+.harmkeep .warddc { width: 90px; }
+.harmkeepr { font-size: 14px; }
+.harmkeepr.bad { color: var(--bad); }
+/* what the reinforced chakras give, at the table */
+.harmnowrow { padding: 8px 12px; border-left: 3px solid var(--ec); margin-top: 8px; background: color-mix(in srgb, var(--ec) 6%, transparent); }
+.harmnowh { display: flex; align-items: center; gap: 6px; color: var(--ec); }
+.harmnowh b { font: 400 18px var(--f-display); color: var(--ink); }
+.harmnowh small { color: var(--ink-3); margin-left: auto; font: 600 12px var(--f-mono); }
+.harmnowh .harmglyph { width: 16px; height: 16px; }
+@media (max-width: 1100px) {
+  .harmstage { grid-template-columns: minmax(150px, 190px) minmax(0, 1fr); }
+  .harmread { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .harmstage { grid-template-columns: minmax(0, 1fr); }
+  .harmels { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .harmbody { max-width: 300px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .harmorb, .harmaura, .harmfig, .harmspine, .chakra *, .harmflare { animation: none !important; }
+}
 </style>
 <div id="app"></div>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
@@ -3061,6 +3185,7 @@ const CW = (() => {
       prosthetics: [], coins: 0,
       // Warding: the Words of Power the warder knows, extra grammar words, saved and formulaic wards, Fatigue.
       ward: { bonus: 0, fatigue: 0, words: [], extra: { subject: [], adverb: [], conj: [] }, wards: [], board: [], ledger: [] },
+      harmony: { els: [], ch: {}, rel: [], turns: 0, kept: 0, ledger: [] },   // Occult: Harmony: known elements, chakra → element, released chakras
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
@@ -3101,6 +3226,11 @@ const CW = (() => {
     ["subject", "adverb", "conj"].forEach(k => { if (!Array.isArray(out.ward.extra[k])) out.ward.extra[k] = []; });
     ["words", "wards", "board", "ledger"].forEach(k => { if (!Array.isArray(out.ward[k])) out.ward[k] = []; });
     out.ward.fatigue = Math.max(0, num(out.ward.fatigue));
+    out.harmony = Object.assign({}, b.harmony, out.harmony);
+    if (!Array.isArray(out.harmony.els)) out.harmony.els = [];
+    if (!out.harmony.ch || typeof out.harmony.ch !== "object" || Array.isArray(out.harmony.ch)) out.harmony.ch = {};
+    ["rel", "ledger"].forEach(k => { if (!Array.isArray(out.harmony[k])) out.harmony[k] = []; });
+    out.harmony.turns = Math.max(0, num(out.harmony.turns)); out.harmony.kept = Math.max(0, num(out.harmony.kept));
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
@@ -3625,6 +3755,106 @@ const CW = (() => {
     return f;
   }
 
+  // ---------- Occult: Harmony (rulebook 2020.1, 12.4) ----------
+  // Chakras unlock one per level from 3 to 10. Each holds one harmonic element the practitioner knows; known elements
+  // come at levels 3, 5, 7 and 10 and are permanent. Affinity for an element = chakras holding it + Aether Affinity,
+  // and Aether is 1 per Released chakra while they are released (from level 7). The book leaves the Harmonic Elements
+  // table blank ("TBD"); the five elements are the ones its chakra tables use. Effect texts are the book's own.
+  const HARMONY_ELEMENTS = [["fire", "Fire"], ["earth", "Earth"], ["wind", "Wind"], ["water", "Water"], ["spirit", "Spirit"]];
+  const HARMONY_LEARN = [3, 5, 7, 10];
+  const CHAKRAS = [
+    { k: "opening", n: "Opening", lvl: 3, fx: {
+      fire: ["Whenever you roll a Reflex saving throw, you can add your Fire Affinity as a bonus to the roll."],
+      earth: ["Whenever you roll a Fortitude saving throw, you can add your Earth Affinity as a bonus to the roll."],
+      wind: ["Your movement score increases by 1 meters per Wind Affinity you have, up to a maximum of 5."],
+      water: ["Whenever you take a Defend action, you can add your Water Affinity as a bonus to the roll."],
+      spirit: ["Whenever you roll a Willpower saving throw, you can add your Spirit Affinity as a bonus to the roll."] } },
+    { k: "life", n: "Life", lvl: 4, fx: {
+      fire: ["Any secondary skill check you roll that is governed by Presence, you can add your Fire Affinity as a bonus to the roll.",
+        "With a Fire Affinity of 6 or higher, any primary skill check you roll that is governed by Presence, you can add your Fire Affinity as a bonus to the roll."],
+      earth: ["Any secondary skill check you roll that is governed by Strength or Endurance, you can add your Earth Affinity as a bonus to the roll.",
+        "With a Earth Affinity of 6 or higher, any primary skill check you roll that is governed by Strength or Endurance, you can add your Earth Affinity as a bonus to the roll.",
+        "Melee Attacks are considered Strength checks."],
+      wind: ["Any secondary skill check you roll that is governed by Dexterity, you can add your Wind Affinity as a bonus to the roll.",
+        "With a Wind Affinity of 6 or higher, any primary skill check you roll that is governed by Dexterity, you can add your Wind Affinity as a bonus to the roll.",
+        "Ranged Attacks are considered Dexterity checks."],
+      water: ["Any secondary skill check you roll that is governed by Mind, you can add your Water Affinity as a bonus to the roll.",
+        "With a Water Affinity of 6 or higher, any primary skill check you roll that is governed by Mind, you can add your Water Affinity as a bonus to the roll."],
+      spirit: ["Any secondary skill check you roll that is governed by Wisdom or Willpower, you can add your Spirit Affinity as a bonus to the roll.",
+        "With a Spirit Affinity of 6 or higher, any primary skill check you roll that is governed by Wisdom or Willpower, you can add your Spirit Affinity as a bonus to the roll."] } },
+    { k: "pain", n: "Pain", lvl: 5, fx: {
+      fire: ["Whenever you lose Hit Points, as a result of a Failed Saving Throw, you lose Fire Affinity/2, up to a maximum of 5 and a minimum of 1."],
+      earth: ["Whenever you take the Brace Action, you can add your Earth Affinity/2 to your Damage Mitigation value."],
+      wind: ["Whenever you gain Toxicity, you can reduce that number by Wind Affinity/2, up to a maximum of 5 and a minimum of 1."],
+      water: ["Whenever you bleed from a Wound, you can reduce the bleeding by Water Affinity/2 down to a minimum of 1."],
+      spirit: ["Whenever you lose Deprivation to some effect other than natural hunger, you can reduce the amount lost by Spirit Affinity/2 down to a minimum of 1."] } },
+    { k: "healing", n: "Healing", lvl: 6, fx: {
+      fire: ["You recover toxicity points equal to your Fire Affinity during a short rest. This effect can only occur once every long rest."],
+      earth: ["You recover blood points equal to 10xEarth Affinity during a short rest. This effect can only occur once every long rest."],
+      wind: ["You recover hit points equal to your 2xWind Affinity during a short rest. This effect can only occur once every long rest."],
+      water: ["For every 5 hit points you receive as healing, you receive additional hit points equal to half your Water Affinity."],
+      spirit: ["If you have recovered any sanity points since your last long rest, you recover sanity points equal to the amount you have recovered again or your Spirit Affinity, whichever is lower.",
+        "Recovery takes place during your next short rest. This effect can only occur once every long rest."] } },
+    { k: "limit", n: "Limit", lvl: 7, release: "", fx: {
+      fire: ["Whenever you roll a disadvantaged roll caused by an ailment, you can add 2xFire Affinity to your roll."],
+      earth: ["For each 2 points of Earth Affinity you have, you negate the effects of 1 stack of Exhaustion."],
+      wind: ["Whenever you roll to resist an effect that would deafen, paralyze or poison you, you can add 2xWind Affinity to your roll."],
+      water: ["Whenever you roll to resist an effect that would blind, petrify or stun you, you can add 2xWater Affinity to your roll."],
+      spirit: ["Whenever you roll to resist an effect that would charm or frighten you, you can add 2xSpirit Affinity to your roll."] } },
+    { k: "wonder", n: "Wonder", lvl: 8, release: "", fx: { fire: [], earth: [], wind: [], water: [], spirit: [] } },
+    { k: "view", n: "View", lvl: 9, release: "You gain temporary hit points equal to your maximum hit points. These hit points can only be used to defend against the damage types this chakra provide resistance against.", fx: {
+      fire: ["Whenever you take fire damage, neglect 2 points of it.", "With a Fire Affinity of 4 or higher you gain resistance to fire damage.",
+        "With a Fire Affinity of 6 or higher, your next attack gains bonus damage equal to your Fire Affinity. This effect can only occur once a round."],
+      earth: ["Whenever you take bludgeoning or poison damage, neglect 2 points of it.", "With a Earth Affinity of 4 or higher you gain resistance to bludgeoning damage.",
+        "With a Earth Affinity of 6 or higher you gain resistance to poison damage."],
+      wind: ["Whenever you take slashing or cold damage, neglect 2 points of it.", "With a Wind Affinity of 4 or higher you gain resistance to slashing damage.",
+        "With a Wind Affinity of 6 or higher you gain resistance to cold damage."],
+      water: ["Whenever you take piercing or lightning damage, neglect 2 points of it.", "With a Water Affinity of 4 or higher you gain resistance to piercing damage.",
+        "With a Water Affinity of 6 or higher you gain resistance to lightning damage."],
+      spirit: ["Whenever you take psychic damage, neglect 2 points of it.", "With a Spirit Affinity of 4 or higher, whenever you roll a Sanity check, you can add 2xSpirit Affinity to your roll.",
+        "With a Spirit Affinity of 6 or higher you gain resistance to psychic damage."] } },
+    { k: "death", n: "Death", lvl: 10, release: "You gain all reinforcement effects for the next 2 turns.", fx: {
+      fire: ["When your health drops below your 2xFire Affinity, any bonus damage you deal is now considered weapon damage.", "If an attack made by you misses, you can reroll that attack once per round."],
+      earth: ["Instead of death saving throws, you roll Occult:Harmony checks to stabilize.", "When you stabilize, you regain hit points equal to your Earth Affinity and regain consciousness. This can only occur once per long rest."],
+      wind: ["When your health drops below your 2xWind Affinity, you gain Action Points equal to your Wind Affinity."],
+      water: ["When your health drops below your 2xWater Affinity, you gain hit point regeneration equal to your Water Affinity for 3 turns."],
+      spirit: ["When your health drops to 0, instead of going unconscious, you continue fighting for a number of turns equal to your Spirit Affinity. You still roll death saving throws."] } },
+  ];
+  const CHAKRA_BY = Object.fromEntries(CHAKRAS.map(x => [x.k, x]));
+  function harmonyState(c) {
+    const lvl = sk(c, "Occult: Harmony"), h = c.harmony || {}, u = c.uses || {};
+    const learnMax = HARMONY_LEARN.filter(l => lvl >= l).length;
+    const known = (h.els || []).filter(e => HARMONY_ELEMENTS.some(x => x[0] === e)).slice(0, Math.max(learnMax, (h.els || []).length));
+    const open = CHAKRAS.filter(x => lvl >= x.lvl).map(x => x.k);
+    const held = {}; open.forEach(k => { const e = (h.ch || {})[k]; if (e && known.includes(e)) held[k] = e; });
+    const released = (h.rel || []).filter(k => open.includes(k));
+    const aether = released.length;
+    const aff = {}; known.forEach(e => { aff[e] = Object.values(held).filter(x => x === e).length + aether; });
+    return {
+      lvl, mod: skillModifier(c, "Occult: Harmony"), learnMax, known, canLearn: Math.max(0, learnMax - known.length),
+      open, held, aff, aether, released, turnsLeft: Math.max(0, num(h.turns)), kept: Math.max(0, num(h.kept)),
+      shift: lvl >= 5 ? Math.max(0, 3 - num(u["p:Occult: Harmony:5"])) : 0,   // level 5 Active: change one chakra (2 AP), 3 uses a long rest
+      canRelease: lvl >= 7, canAll: lvl >= 10, releaseTurns: lvl,              // released for SP turns from the first release
+      next: CHAKRAS.find(x => lvl < x.lvl) || null,
+    };
+  }
+  // The book's line with the practitioner's numbers filled in: "your Fire Affinity" → its value, "2xFire Affinity" → twice it,
+  // "Fire Affinity/2" → half (rounded down; the book doesn't say). A line that starts "With a Fire Affinity of 6 or higher"
+  // only applies from that affinity on.
+  function harmonyLine(text, aff) {
+    const need = (text.match(/^With a \w+ Affinity of (\d+) or higher/) || [])[1];
+    const val = (el, k) => k * num(aff[el.toLowerCase()]);
+    const parts = []; let rest = text, m;
+    const re = /(\d+)x\s?(Fire|Earth|Wind|Water|Spirit) Affinity|half your (Fire|Earth|Wind|Water|Spirit) Affinity|(Fire|Earth|Wind|Water|Spirit) Affinity\/2|(Fire|Earth|Wind|Water|Spirit) Affinity(?! of)/;
+    while ((m = rest.match(re))) {
+      const at = m.index + m[0].length;
+      const v = m[1] ? val(m[2], +m[1]) : m[3] ? Math.floor(val(m[3], 1) / 2) : m[4] ? Math.floor(val(m[4], 1) / 2) : val(m[5], 1);
+      parts.push(rest.slice(0, at), { v }); rest = rest.slice(at);
+    }
+    parts.push(rest);
+    return { parts, need: need ? +need : 0 };
+  }
+
   // ---------- Armor Maintenance (rulebook 16.5 and the Armor chapter) ----------
   // Repair (book): cost = the type's grams × Armor Value; roll an Armor Maintenance check (d100 − modifier);
   // Repair Count = 10 − check ÷ 10, rounded down; roll the type's Repair Die that many times and add it to the Soak Pool.
@@ -3900,7 +4130,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue,
+           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
@@ -4106,6 +4336,15 @@ const RULES_INFO = {
     { h: "Kinds of Ward" }, { ul: ["Formulaic (Warding 3): learned from manuals or a teacher, with a set effect, Sigil cost, casting time and materials.", "Ritual (Warding 4): any Ward inscribed slowly, 5 AP's worth of Sigils an hour. Fatigue under 10 becomes 1; over 10 is halved.", "Spontaneous (Warding 5): your own sentences of Words of Power."] },
     { h: "Perks" }, { ul: ["3: Formulaic Wards; Warding only out of combat. 4: Ritual Wards.", "5: Spontaneous Wards. Active (3 uses): 2× Sigils per AP and 2× Fatigue on the next non-Ritual Ward.", "6: repeat an Adjective to amplify it. Active (2 a long rest): no Fatigue on the next non-Ritual Ward.", "7: Conjunctions. Active (3 a long rest): up to 3 Words of Power cost 1 Sigil on the next non-Ritual Ward.", "8: inscribe Wards as reactions. 9: Subjects cost 3 less, Adverbs 1 less."] },
     { note: "The app's readings: Fatigue of exactly 10 on a Ritual is halved (the book says under 10 and over 10); the app's grammar check is a guide (Subject first, a verb somewhere, adjectives lead into a noun), and the GM has the last word on whether a sentence works." } ] },
+  harmony: { kicker: "Magic", title: "Occult: Harmony", body: [
+    "Controlling the flow of your body's spiritual energy through its chakras, each reinforced with a harmonic element.",
+    { h: "Chakras" }, { ul: ["One more chakra opens at each level from 3 to 10: Opening, Life, Pain, Healing, Limit, Wonder, View, Death.", "Each chakra holds one element at a time and gives that element's power from its table.", "You can only reinforce a chakra with an element you know."] },
+    { h: "Harmonic elements" }, { ul: ["You learn one element at Harmony 3, and one more at 5, 7 and 10.", "The choice is permanent."] },
+    { h: "Changing reinforcements" }, { ul: ["One chakra over a short rest, or all of them over a long rest. Changes made over a long rest count as made before it.", "Harmony 5, Active (2 AP, 3 uses a long rest): change one chakra.", "Harmony 10, Empowered (2 Stamina, 1 minute of meditation): change all of them."] },
+    { h: "Harmonic Affinity" }, { ul: ["Each element you know has its own Affinity: the number of chakras it reinforces, plus your Aether Affinity.", "Many chakra powers grow with it, and some start at Affinity 4 or 6."] },
+    { h: "Releasing chakras (Harmony 7)" }, { ul: ["Release any chakra at any time, for 0 AP each. Each released chakra adds 1 Aether Affinity, which raises every other Affinity too.", "They stay released for as many turns as you have points in Harmony, counted from the first. You can keep them open after that with Harmony checks against ever harder DCs.", "When they close you lose 1 Stamina per released chakra. This can kill you.", "View, released: temporary hit points equal to your maximum, only against the damage types it resists. Death, released: every reinforcement effect for 2 turns."] },
+    { note: "The book's Harmonic Elements table is still blank (TBD); the app uses the five elements its chakra tables list: Fire, Earth, Wind, Water, Spirit. The Wonder chakra's powers and the Limit and Wonder release effects aren't written yet. Where the book halves an Affinity, the app rounds down; the book doesn't say." },
+  ] },
   powdertinkering: { kicker: "Crafting", title: "Powdertinkering", body: [
     "Custom ammunition, explosives and weapon oils, built one part at a time. You need a Powdertinker kit.",
     { h: "Each part is one roll" }, { ul: ["Modifier = 3% × Powdertinker, plus any item bonus.", "Roll d100 and subtract the modifier. Under the part's difficulty, it holds.", "Each attempt uses 200 g: container materials for Coats, Tips and Areas; element solution for Cores and Status."] },
@@ -9031,6 +9270,7 @@ function RuneSide({ c, st, plan, o, setO, focus, busy, update }) {
    The rules (costs, grammar, Sigils per AP, Fatigue, the Active perks) live in rules.js: wardState, wardCost, … */
 const MAGIC = [
   ["ward", "Warding", "Warding", "Sentences of Words of Power, inscribed as Sigils."],
+  ["harm", "Harmony", "Occult: Harmony", "The body's spiritual energy, guided through its chakras."],
 ];
 const magicOpen = c => MAGIC.filter(([, , skill]) => num((c.skills || {})[skill]) > 0);
 
@@ -9043,6 +9283,7 @@ function MagicTab({ c, update }) {
     ${open.length > 1 && html`<nav class="craftnav" aria-label="Schools">${open.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} onClick=${() => setSub(k)}>
       <span>${n}</span><small>${skill} ${num(c.skills[skill])}</small></button>`)}</nav>`}
     ${sub === "ward" && html`<${Warding} c=${c} update=${update} />`}
+    ${sub === "harm" && html`<${Harmony} c=${c} update=${update} />`}
   </div>`;
 }
 
@@ -9661,6 +9902,267 @@ function FormulaForm({ onSave, onCancel }) {
     ${fld("materials", "Material costs", "None")}${fld("effect", "Effect", "An invisible sphere of 10 m radius; you're alerted when a creature crosses it.")}
     <label class="amforge"><input type="checkbox" checked=${f.ritual} onChange=${e => set("ritual", e.target.checked)} /> A Ritual Ward <span class="muted">(needs Warding 4)</span></label>
     <div class="row"><button class="btn small primary" type="submit" disabled=${!f.n.trim()}>Save ward</button><button class="btn small" type="button" onClick=${onCancel}>Cancel</button></div></form>`;
+}
+/* ================= Magic → Occult: Harmony =================
+   A figure seated in meditation, its chakras running up the body from the Opening chakra at the base to the Death chakra
+   above the crown. Each wakes as Harmony reaches its level. The elements the practitioner knows float beside it: drag
+   one (or tap it, then tap a chakra) to reinforce that chakra. Changes wait until you say how they were made (a rest,
+   the level 5 Active, the level 10 meditation). From Harmony 7, chakras can be Released: the body flares, Aether raises
+   every Affinity, and closing them costs Stamina. The rules are harmonyState and harmonyLine in rules.js; data in c.harmony. */
+const HARM_COLOR = { fire: "#e8662a", earth: "#b8913f", wind: "#6fcdb3", water: "#3f8fd8", spirit: "#c3a3f0" };
+const HARM_NAME = Object.fromEntries(R.HARMONY_ELEMENTS);
+// The old alchemical signs: Fire and Air point up, Water and Earth down; Spirit is a star.
+const HARM_GLYPH = {
+  fire: "M0 -7L7 6H-7Z", wind: "M0 -7L7 6H-7Z M-4.6 1.2H4.6", water: "M0 7L7 -6H-7Z", earth: "M0 7L7 -6H-7Z M-4.6 -1.2H4.6",
+  spirit: "M0 -7L1.9 -2.2L7 -2.2L2.9 1L4.4 6L0 3L-4.4 6L-2.9 1L-7 -2.2L-1.9 -2.2Z",
+};
+const HarmGlyph = ({ el, cls = "" }) => html`<svg class=${"harmglyph " + cls} viewBox="-9 -9 18 18" aria-hidden="true"><path d=${HARM_GLYPH[el]} /></svg>`;
+// Where each chakra sits on the figure (viewBox 0 0 300 400), from the base of the spine up past the crown.
+const CHAKRA_Y = { opening: 292, life: 258, pain: 224, healing: 184, limit: 120, wonder: 84, view: 50, death: 16 };
+// The figure, seated in the lotus position: head, shoulders, arms resting on the crossed legs, hands on the knees.
+const HARM_BODY = [
+  "M60 304c0-22 36-34 90-32c54-2 90 10 90 32c0 18-40 28-90 26c-50 2-90-8-90-26z",                                     // crossed legs
+  "M150 112c-26 0-46 6-52 26c-5 20 6 58 12 92c3 18 6 32 14 44h52c8-12 11-26 14-44c6-34 17-72 12-92c-6-20-26-26-52-26z",  // torso
+  "M100 136c-14 20-20 58-18 96c1 22 8 40 22 52l10-8c-10-14-14-30-14-48c0-34 6-62 14-80z",                                // left arm
+  "M200 136c14 20 20 58 18 96c-1 22-8 40-22 52l-10-8c10-14 14-30 14-48c0-34-6-62-14-80z",                                 // right arm
+  "M141 98h18v18h-18z",                                                                                                  // neck
+];
+const HARM_HEAD = { cx: 150, cy: 80, r: 25 };
+
+function Harmony({ c, update }) {
+  const st = R.harmonyState(c), h = c.harmony;
+  const canFree = typeof isGM === "function" && (isGM() || !!c.freeEdit);
+  const [pending, setPending] = useState({});            // chakra → element (or "" to empty it), waiting to be made
+  const [armed, setArmed] = useState("");                 // an element picked up by tapping, ready to drop on a chakra
+  const [sel, setSel] = useState(() => st.open[0] || "opening");
+  const [learning, setLearning] = useState(false), [learnPick, setLearnPick] = useState("");
+  const [releasing, setReleasing] = useState(false), [flare, setFlare] = useState(0), [lit, setLit] = useState({});
+  const bodyRef = useRef(null);
+  const stamina = num(c.vitals && c.vitals.exhaustion);
+  const changes = Object.keys(pending).filter(k => (pending[k] || "") !== (st.held[k] || ""));
+
+  // Chakras that opened since this browser last looked wake up with a flash.
+  useEffect(() => {
+    const key = "cw-harm-seen-" + c.id, seen = num(lsGet(key, 0));
+    if (st.lvl > seen) {
+      if (seen && !reduceMotion()) { const woke = {}; R.CHAKRAS.forEach(x => { if (x.lvl > seen && x.lvl <= st.lvl) woke[x.k] = "wake"; }); setLit(woke); setTimeout(() => setLit({}), 2200); }
+      lsSet(key, st.lvl);
+    }
+  }, [st.lvl, c.id]);
+
+  const place = (k, el) => {
+    if (!st.open.includes(k)) { toast(`The ${R.CHAKRA_BY[k].n} chakra opens at Harmony ${R.CHAKRA_BY[k].lvl}.`); return; }
+    if (h.rel.length) { toast("Close your released chakras before changing them."); return; }
+    setSel(k); setArmed("");
+    setPending(p => { const n = Object.assign({}, p); if ((el || "") === (st.held[k] || "")) delete n[k]; else n[k] = el; return n; });
+  };
+  // Make the waiting changes, the way the practitioner says they were made.
+  const commit = how => {
+    const list = changes.map(k => `${R.CHAKRA_BY[k].n}: ${pending[k] ? HARM_NAME[pending[k]] : "empty"}`).join(", ");
+    update(x => {
+      changes.forEach(k => { if (pending[k]) x.harmony.ch[k] = pending[k]; else delete x.harmony.ch[k]; });
+      let what = how === "short" ? "over a short rest" : how === "long" ? "over a long rest" : how === "shift" ? "with the Active (2 AP)" : "in a minute's meditation (2 Stamina)";
+      if (how === "shift") { x.uses = x.uses || {}; x.uses["p:Occult: Harmony:5"] = num(x.uses["p:Occult: Harmony:5"]) + 1; }
+      if (how === "all") R.setStamina(x, num(x.vitals.exhaustion) + 2);
+      x.harmony.ledger = [{ id: rid(), t: Date.now(), what: `Reinforced ${what}: ${list}` }, ...x.harmony.ledger].slice(0, 20);
+      addLog(x, `Harmony: reinforced ${what} (${list})`);
+    });
+    const ig = {}; changes.forEach(k => { ig[k] = "ignite"; }); setLit(ig); setTimeout(() => setLit({}), 1300);
+    setPending({});
+  };
+  const learn = el => {
+    update(x => { if (!x.harmony.els.includes(el)) x.harmony.els.push(el); addLog(x, `Harmony: learned the ${HARM_NAME[el]} element`); });
+    setLearning(false); setLearnPick(""); toast(`You know ${HARM_NAME[el]} now.`);
+  };
+  const forget = el => update(x => {
+    x.harmony.els = x.harmony.els.filter(e => e !== el);
+    Object.keys(x.harmony.ch).forEach(k => { if (x.harmony.ch[k] === el) delete x.harmony.ch[k]; });
+    addLog(x, `Harmony: ${HARM_NAME[el]} removed (Free edit)`);
+  });
+  const release = k => {
+    if (!st.open.includes(k) || h.rel.includes(k)) return;
+    update(x => {
+      if (!x.harmony.rel.length) { x.harmony.turns = st.releaseTurns; x.harmony.kept = 0; }
+      x.harmony.rel.push(k); addLog(x, `Harmony: released the ${R.CHAKRA_BY[k].n} chakra (Aether ${x.harmony.rel.length})`);
+    });
+    setFlare(f => f + 1);
+  };
+  const closeAll = () => {
+    const n = h.rel.length;
+    update(x => {
+      R.setStamina(x, num(x.vitals.exhaustion) + n);
+      x.harmony.ledger = [{ id: rid(), t: Date.now(), what: `Closed ${n} released chakra${n === 1 ? "" : "s"}: −${n} Stamina` }, ...x.harmony.ledger].slice(0, 20);
+      addLog(x, `Harmony: closed ${n} released chakra${n === 1 ? "" : "s"}, lost ${n} Stamina`);
+      x.harmony.rel = []; x.harmony.turns = 0; x.harmony.kept = 0;
+    });
+    setReleasing(false);
+  };
+
+  // Drag an element orb onto a chakra (mouse or finger); a tap without moving picks it up instead.
+  const grab = (e, el) => {
+    if (e.button > 0) return;
+    const x0 = e.clientX, y0 = e.clientY; let ghost = null;
+    const move = ev => {
+      if (!ghost && Math.hypot(ev.clientX - x0, ev.clientY - y0) > 6) {
+        ghost = document.createElement("div"); ghost.className = "harmghost"; ghost.style.setProperty("--ec", HARM_COLOR[el]);
+        ghost.innerHTML = `<svg viewBox="-9 -9 18 18"><path d="${HARM_GLYPH[el]}" /></svg>`; document.body.appendChild(ghost);
+      }
+      if (ghost) { ghost.style.left = ev.clientX + "px"; ghost.style.top = ev.clientY + "px"; }
+    };
+    const up = ev => {
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up);
+      if (!ghost) { setArmed(a => a === el ? "" : el); return; }
+      ghost.remove();
+      const at = document.elementFromPoint(ev.clientX, ev.clientY), t = at && at.closest("[data-chakra]");
+      if (t) place(t.dataset.chakra, el);
+    };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+  };
+  const chakraClick = k => {
+    if (releasing && st.canRelease) { release(k); return; }
+    if (armed) { place(k, armed); return; }
+    setSel(k);
+  };
+  const shown = k => (k in pending ? pending[k] : st.held[k]) || "";
+
+  const selC = R.CHAKRA_BY[sel] || R.CHAKRAS[0];
+  return html`<div class="harmony">
+    <section class="frame harmhead"><${Head} title="Occult: Harmony" topic="harmony" />
+      <p class="sub">Your body's spiritual energy, guided through its chakras. Reinforce each chakra with an element you know: the more chakras an element holds, the stronger its Affinity.</p>
+      <div class="facts ptfacts">${[
+        ["Harmony", `${st.lvl}`],
+        ["Modifier", `${st.mod}%`],
+        ["Chakras open", `${st.open.length} of 8`],
+        ["Next", st.next ? `${st.next.n} at ${st.next.lvl}` : "All open"],
+      ].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>
+    </section>
+
+    <section class=${"frame harmf" + (h.rel.length ? " released" : "") + (releasing ? " releasing" : "")}>
+      <h2 class="h"><span>Chakras</span><i class="orn" aria-hidden="true"></i></h2>
+      <p class="sub">${releasing ? "Tap a chakra to release it (0 AP each)." : armed ? `Tap a chakra to reinforce it with ${HARM_NAME[armed]}.` : "Drag an element onto a chakra, or tap the element and then the chakra. Tap a chakra to read its powers."}</p>
+      <div class="harmstage">
+        <div class="harmels" role="list" aria-label="Your elements">
+          ${st.known.map(el => html`<div class="harmel" role="listitem" style=${`--ec:${HARM_COLOR[el]}`}>
+            <button type="button" class=${"harmorb" + (armed === el ? " armed" : "")} aria-pressed=${armed === el} aria-label=${`${HARM_NAME[el]}, Affinity ${st.aff[el]}`}
+              title=${`${HARM_NAME[el]}: drag onto a chakra, or tap and then tap a chakra`} onPointerDown=${e => grab(e, el)}
+              onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setArmed(a => a === el ? "" : el); } }}>
+              <${HarmGlyph} el=${el} /></button>
+            <span class="harmeln">${HARM_NAME[el]}</span>
+            <span class="harmaff" title="Affinity: chakras it holds, plus Aether">${st.aff[el]}</span>
+            ${canFree && html`<button class="iconbtn harmforget" aria-label=${`Remove ${HARM_NAME[el]} (Free edit)`} title="Remove (Free edit)" onClick=${() => forget(el)}>×</button>`}
+          </div>`)}
+          ${st.canLearn > 0 && !learning && html`<button type="button" class="harmlearn" onClick=${() => setLearning(true)}>+ Learn an element<small>${st.canLearn} to choose</small></button>`}
+          ${learning && html`<div class="harmpick">
+            <span class="lbl">Learn which element? It's permanent.</span>
+            <div class="harmpickrow">${R.HARMONY_ELEMENTS.filter(([e]) => !st.known.includes(e)).map(([e, n]) => html`<button type="button"
+              class=${"harmorb small" + (learnPick === e ? " armed" : "")} style=${`--ec:${HARM_COLOR[e]}`} aria-pressed=${learnPick === e} aria-label=${n} title=${n} onClick=${() => setLearnPick(e)}><${HarmGlyph} el=${e} /></button>`)}</div>
+            ${learnPick && html`<button class="btn small primary" onClick=${() => learn(learnPick)}>Learn ${HARM_NAME[learnPick]}</button>`}
+            <button class="btn small" onClick=${() => { setLearning(false); setLearnPick(""); }}>Cancel</button></div>`}
+          ${!st.known.length && !st.canLearn && html`<p class="muted">You learn your first element at Harmony 3.</p>`}
+          ${st.aether > 0 && html`<div class="harmaether"><span>Aether</span><b>+${st.aether}</b><small>to every Affinity</small></div>`}
+        </div>
+
+        <svg ref=${bodyRef} class=${"harmbody" + (h.rel.length ? " released" : "")} viewBox="0 0 300 400" role="group" aria-label="Your chakras">
+          <defs>
+            <radialGradient id="harm-aura"><stop offset="0" stop-color="var(--aura)" stop-opacity=".55" /><stop offset=".6" stop-color="var(--aura)" stop-opacity=".12" /><stop offset="1" stop-color="var(--aura)" stop-opacity="0" /></radialGradient>
+            <linearGradient id="harm-spine" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="var(--brass)" stop-opacity="0" /><stop offset=".5" stop-color="var(--brass)" stop-opacity=".8" /><stop offset="1" stop-color="var(--brass)" stop-opacity="0" /></linearGradient>
+          </defs>
+          <ellipse class="harmaura" cx="150" cy="190" rx="138" ry="190" fill="url(#harm-aura)" />
+          ${flare > 0 && html`<circle class="harmflare" cx="150" cy="190" r="40" key=${"fl" + flare} />`}
+          <g class="harmfig">${HARM_BODY.map(d => html`<path class="harmsil" d=${d} />`)}<circle class="harmsil" cx=${HARM_HEAD.cx} cy=${HARM_HEAD.cy} r=${HARM_HEAD.r} />
+            <circle class="harmhand" cx="106" cy="284" r="7" /><circle class="harmhand" cx="194" cy="284" r="7" /></g>
+          <line class="harmspine" x1="150" y1=${CHAKRA_Y.opening} x2="150" y2=${CHAKRA_Y[st.open[st.open.length - 1]] || CHAKRA_Y.opening} />
+          ${R.CHAKRAS.map(x => {
+            const open = st.open.includes(x.k), el = shown(x.k), wait = x.k in pending && (pending[x.k] || "") !== (st.held[x.k] || "");
+            const rel = h.rel.includes(x.k), y = CHAKRA_Y[x.k];
+            return html`<g class=${"chakra" + (open ? " open" : " shut") + (el ? " held" : "") + (wait ? " wait" : "") + (rel ? " rel" : "") + (sel === x.k ? " sel" : "") + (lit[x.k] ? " " + lit[x.k] : "")}
+              data-chakra=${x.k} transform=${`translate(150 ${y})`} style=${el ? `--ec:${HARM_COLOR[el]}` : ""}
+              role="button" tabindex=${open ? 0 : -1} aria-label=${`${x.n} chakra${open ? (el ? `, ${HARM_NAME[el]}` : ", empty") : `, opens at Harmony ${x.lvl}`}${rel ? ", released" : ""}`}
+              onClick=${() => chakraClick(x.k)} onContextMenu=${e => { e.preventDefault(); if (open && el && !releasing) place(x.k, ""); }}
+              onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); chakraClick(x.k); } }}>
+              <circle class="chalo" r="22" />
+              <circle class="cring" r="12" />
+              <circle class="ccore" r="8.5" />
+              ${el && html`<path class="cglyph" d=${HARM_GLYPH[el]} transform="scale(.62)" />`}
+              ${!open && html`<text class="clock" y="3.5">${x.lvl}</text>`}
+              <text class="cname" x=${x.k === "death" || x.k === "view" || x.k === "wonder" ? 32 : 70} y="4">${x.n}</text>
+            </g>`;
+          })}
+        </svg>
+
+        <aside class="harmread" aria-live="polite">
+          <h3 class="harmreadh"><span>${selC.n} chakra</span><small>${st.open.includes(selC.k) ? (st.held[selC.k] ? HARM_NAME[st.held[selC.k]] : "Empty") : `Opens at Harmony ${selC.lvl}`}</small></h3>
+          ${selC.release != null && html`<p class="harmrel"><b>Released:</b> ${selC.release || "Not written in the book yet."}</p>`}
+          ${R.HARMONY_ELEMENTS.map(([e, n]) => {
+            const lines = selC.fx[e], on = st.held[selC.k] === e, known = st.known.includes(e);
+            return html`<div class=${"harmfx" + (on ? " on" : "") + (known ? "" : " unknown")} style=${`--ec:${HARM_COLOR[e]}`}>
+              <span class="harmfxh"><${HarmGlyph} el=${e} /> ${n}${known ? html` <small>Affinity ${st.aff[e]}</small>` : html` <small>not known</small>`}</span>
+              ${lines.length ? lines.map(t => { const L = R.harmonyLine(t, known ? st.aff : {}); return html`<p class=${L.need && (!known || st.aff[e] < L.need) ? "below" : ""}>${L.parts.map(p => typeof p === "string" ? p : known ? html`<b class="harmv">${p.v}</b>` : "")}</p>`; })
+                : html`<p class="muted">Not written in the book yet.</p>`}
+            </div>`;
+          })}
+        </aside>
+      </div>
+
+      ${changes.length > 0 && html`<div class="harmwait" role="region" aria-label="Changes to make">
+        <p><span class="lbl">Changing</span> ${changes.map(k => html`<span class="harmchip" style=${pending[k] ? `--ec:${HARM_COLOR[pending[k]]}` : ""}>${R.CHAKRA_BY[k].n}: ${st.held[k] ? HARM_NAME[st.held[k]] : "empty"} → <b>${pending[k] ? HARM_NAME[pending[k]] : "empty"}</b></span>`)}</p>
+        <div class="row harmhow">
+          ${changes.length === 1 && html`<button class="btn small" onClick=${() => commit("short")} title="One chakra can be changed over a short rest">Over a short rest</button>`}
+          ${changes.length === 1 && st.lvl >= 5 && html`<button class="btn small primary" disabled=${!st.shift} onClick=${() => commit("shift")} title="Harmony 5, Active: change one chakra">Now: 2 AP (${st.shift} left)</button>`}
+          <button class="btn small" onClick=${() => commit("long")} title="Any number of chakras can be changed over a long rest; the changes count as made before it">Over a long rest</button>
+          ${st.canAll && html`<button class="btn small" disabled=${stamina + 2 >= 10} onClick=${() => commit("all")} title="Harmony 10, Empowered: change them all in a minute's meditation">Meditate 1 minute: 2 Stamina</button>`}
+          <button class="btn small" onClick=${() => setPending({})}>Undo</button>
+        </div></div>`}
+
+      ${st.canRelease && html`<div class=${"harmrelbox" + (h.rel.length ? " on" : "")}>
+        ${!h.rel.length ? html`<div class="row"><button class=${"btn small" + (releasing ? " primary" : "")} aria-pressed=${releasing} onClick=${() => { setReleasing(r => !r); setArmed(""); }}>${releasing ? "Done choosing" : "Release chakras…"}</button>
+            <span class="muted">0 AP each. Each one adds 1 Aether to every Affinity, for ${st.releaseTurns} turns. Closing costs 1 Stamina per chakra.</span></div>`
+        : html`<p class="harmrelnow"><b>${h.rel.map(k => R.CHAKRA_BY[k].n).join(", ")}</b> released · Aether +${st.aether} · ${st.turnsLeft ? `${st.turnsLeft} turn${st.turnsLeft === 1 ? "" : "s"} left` : "time is up"}${st.kept ? ` · kept open ${st.kept} time${st.kept === 1 ? "" : "s"}` : ""}</p>
+          <div class="row harmhow">
+            ${releasing ? html`<button class="btn small primary" onClick=${() => setReleasing(false)}>Done choosing</button>`
+              : st.open.length > h.rel.length && html`<button class="btn small" onClick=${() => setReleasing(true)}>Release another…</button>`}
+            ${st.turnsLeft > 0 ? html`<button class="btn small" onClick=${() => update(x => { x.harmony.turns = Math.max(0, num(x.harmony.turns) - 1); })}>End of turn</button>`
+              : html`<${HarmKeep} c=${c} st=${st} update=${update} />`}
+            <button class="btn small danger" onClick=${closeAll}>Close them: −${h.rel.length} Stamina</button>
+          </div>
+          ${stamina + h.rel.length >= 10 && html`<p class="ptlocked">Closing them now would take your Stamina to ${stamina + h.rel.length}. At 10 you die.</p>`}`}
+      </div>`}
+    </section>
+
+    <section class="frame harmnow">
+      <h2 class="h"><span>What your chakras give you</span><i class="orn" aria-hidden="true"></i></h2>
+      ${!Object.keys(st.held).length ? html`<p class="muted">No chakra is reinforced yet.</p>`
+        : R.CHAKRAS.filter(x => st.held[x.k]).map(x => {
+          const e = st.held[x.k];
+          return html`<div class="harmnowrow" style=${`--ec:${HARM_COLOR[e]}`}>
+            <span class="harmnowh"><${HarmGlyph} el=${e} /> <b>${x.n}</b> · ${HARM_NAME[e]} <small>Affinity ${st.aff[e]}</small></span>
+            ${x.fx[e].length ? x.fx[e].map(t => { const L = R.harmonyLine(t, st.aff); return (!L.need || st.aff[e] >= L.need) && html`<p>${L.parts.map(p => typeof p === "string" ? p : html`<b class="harmv">${p.v}</b>`)}</p>`; })
+              : html`<p class="muted">Not written in the book yet.</p>`}
+            ${h.rel.includes(x.k) && x.release && html`<p class="harmrel"><b>Released:</b> ${x.release}</p>`}
+          </div>`;
+        })}
+      ${(h.ledger || []).length > 0 && html`<h3 class="lbl wardsubh">Ledger</h3><div class="ptledger">${h.ledger.map(e => html`<div class="pled"><small class="muted">${new Date(e.t).toLocaleString()}</small> ${e.what}</div>`)}</div>`}
+    </section>
+  </div>`;
+}
+// Keeping released chakras open past their time: a Harmony check against a DC the GM raises each time.
+function HarmKeep({ c, st, update }) {
+  const [dc, setDc] = useState(""), [roll, setRoll] = useState(null);
+  const go = async () => {
+    const r = await askRoll({ title: "Keep the chakras open", dice: [{ n: 1, sides: 100 }], cancel: true, note: `d100 − ${st.mod}${dc !== "" ? `, under ${dc} to hold them open` : ". The GM sets a harder DC each time"}.` });
+    if (!r) return;
+    const total = r[0] - st.mod, held = dc === "" ? null : total < num(dc);
+    setRoll({ r: r[0], total, held });
+    update(x => {
+      if (held !== false) { x.harmony.turns = 1; x.harmony.kept = num(x.harmony.kept) + 1; }
+      addLog(x, `Harmony: kept chakras open? ${r[0]} − ${st.mod} = ${total}${dc !== "" ? ` vs ${dc}: ${held ? "held" : "failed"}` : ""}`);
+    });
+  };
+  return html`<span class="row harmkeep">
+    <span class="mini warddc"><label for="harm-dc">DC</label><input id="harm-dc" type="number" min="1" placeholder="GM's" value=${dc} onInput=${e => setDc(e.target.value)} /></span>
+    <button class="btn small primary" onClick=${go}>Keep them open: roll</button>
+    ${roll && html`<span class=${"harmkeepr " + (roll.held === false ? "bad" : "ok")}>${roll.r} − ${st.mod} = <b>${roll.total}</b>${roll.held == null ? "" : roll.held ? " · held" : " · they close"}</span>`}
+  </span>`;
 }
 /* ================= character creation ================= */
 // "New character" offers two roads: a guided genesis, step by step, or an instant auto-generated sheet.
