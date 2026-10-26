@@ -36,6 +36,7 @@ with sync_playwright() as p:
         pg.evaluate("CW.rollDie = () => 1")
         # carve a level 3 fang from a chimera
         pg.locator(".huntdropb", has_text="Carving").click(); pg.wait_for_timeout(400)
+        check(tag + "twelve parts to carve, the head and ears among them", pg.locator(".hparts .dvchip").count() == 12 and pg.locator(".hparts .dvchip", has_text="Head").count() == 1)
         check(tag + "opening Carving swaps the belt for the beast", pg.locator(".huntcarcass").count() == 1 and pg.locator(".huntbelt").count() == 0 and pg.locator(".huntdrop.open").count() == 1)
         pg.screenshot(path=str(SHOTS / f"hunt-carve-{W}.png"), full_page=True)
         pg.locator(".hback .huntdropb").click(); pg.wait_for_timeout(400)
@@ -83,6 +84,7 @@ with sync_playwright() as p:
         t = ch()["craft"]["hunt"]["trophies"]
         check(tag + "the giver burns; its 5 positives fill the scale's void, then are added", len(t) == 1 and t[0]["n"] == "Wyrm Scale"
               and [p["kind"] for p in t[0]["props"]] == ["pos"] * 6 and [p["t"] for p in t[0]["props"]][1] == "Power 1" and t[0]["merged"] == ["Chimera's Fang"], t)
+        check(tag + "the merged trophy carries the giver's fang, drawn on it", t[0].get("attached") == ["fang"] and pg.locator(".huntpic svg").count() == 1, t[0].get("attached"))
         check(tag + "no sideways scroll", not pg.evaluate("document.documentElement.scrollWidth > innerWidth + 1"))
         check(tag + "no page errors", not errs, errs[:3])
         ctx.close()

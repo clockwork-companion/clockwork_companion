@@ -3344,10 +3344,12 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .hglyph { width: 1.1em; height: 1.1em; fill: currentColor; vertical-align: -.18em; }
 .hpips { display: inline-flex; gap: 3px; } .hpips i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--brass); }
 .hpips i.on { background: var(--brass); }
-.hmedal { width: var(--s); height: var(--s); flex: none; border-radius: 50%; display: grid; place-items: center; overflow: hidden; color: #4e3c22;
-  background: radial-gradient(circle at 38% 32%, #f1e6cc, #cdbb94 60%, #8f7b58); box-shadow: 0 0 0 2px #2a1608, 0 0 0 4px #c99a45, 0 0 0 5px #5e4012, 0 3px 8px #0006, inset 0 2px 4px #fff8, inset 0 -3px 6px #0003; }
-.hmedal img { width: 100%; height: 100%; object-fit: cover; }
-.hmedal .hglyph { width: 52%; height: 52%; filter: drop-shadow(.5px .8px 0 #fff8e6aa); }
+/* a trophy on a card or chip: the drawn trophy (or its picture) on a dark leather plaque with a brass edge */
+.hart { width: var(--s); height: var(--s); flex: none; border-radius: 7px; display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(circle at 50% 38%, #4a3424, #24170f 70%, #140c07); box-shadow: inset 0 0 0 1px #0a0603, inset 0 0 10px rgb(0 0 0 / .6), 0 0 0 1.5px color-mix(in srgb, var(--brass) 75%, transparent); }
+.hart svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.hart img { width: 100%; height: 100%; object-fit: cover; }
+.htdefs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
 /* the belt */
 .huntbelt { background: #5a3d26; background-size: auto, 512px 256px; }
 .huntbelt svg { overflow: visible; }
@@ -3421,7 +3423,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .trophyform input:not([type=file]):not([type=checkbox]), .trophyform select { width: 100%; box-sizing: border-box; }
 .huntpic { position: relative; width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; cursor: pointer; color: #f1dfb6;
   background: radial-gradient(circle at 35% 30%, #6b5a46, #2f251d 70%); box-shadow: inset 0 0 0 3px #b98a35, inset 0 0 0 6px #3a2a1a; }
-.huntpic img { width: 100%; height: 100%; object-fit: cover; } .huntpic .hglyph { width: 46%; height: 46%; }
+.huntpic img { width: 100%; height: 100%; object-fit: cover; } .huntpic > svg { width: 82%; height: 82%; margin-bottom: 10px; overflow: visible; }
 .huntpic input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .huntpic span { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; font-size: 11px; color: #fff; text-shadow: 0 1px 2px #000; pointer-events: none; }
 .hpropedit { display: grid; gap: 6px; }
