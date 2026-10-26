@@ -7,6 +7,7 @@ const CRAFTS = [
   ["rune", "Runecrafting", "Runecrafting", "Runestones bound to a vessel through ritual."],
   ["weapon", "Weapon upkeep", "Weapon Maintenance", "Repairing and crafting weapons."],
   ["armor", "Armor upkeep", "Armor Maintenance", "Repairing and crafting suits of armor."],
+  ["hunt", "Hunting", "Hunting", "Trophies carved from monsters, worn on your belt."],
 ];
 const CRAFT_ICONS = {
   powder: html`<path d="M10 2.5c1.6 1.4 2.4 3.4 2.4 5.6V15H7.6V8.1c0-2.2.8-4.2 2.4-5.6z M7.6 15h4.8v2.5H7.6z M7.6 10.5h4.8" />`,
@@ -14,6 +15,7 @@ const CRAFT_ICONS = {
   rune: html`<path d="M10 2.5l6 4v7l-6 4-6-4v-7z M10 6v8 M7.5 8.5l5 3" />`,
   weapon: html`<path d="M14.5 2.5l3 3-8.5 8.5-3-3z M6 11l3 3 M4.5 12.5l3 3-2 2-3-3z" />`,
   armor: html`<path d="M10 2.5l6 2.2v4.8c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V4.7z M10 2.5v15" />`,
+  hunt: html`<path d="M4 3.5c1 3 3 4.5 6 4.5s5-1.5 6-4.5 M6.5 7c-.5 3 .5 6.5 3.5 10 3-3.5 4-7 3.5-10 M8 10.5h4" />`,
 };
 
 // The crafts this character has put points into. The Crafting tab, and each bench in it, only appear once they have.
@@ -69,7 +71,7 @@ function CraftTab({ c, update }) {
     <nav class="craftnav" aria-label="Crafts" ref=${nav}>${open.map(([k, n, skill]) => html`<button type="button" aria-pressed=${sub === k} class=${"cn-" + k} onClick=${() => setSub(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${CRAFT_ICONS[k]}</svg><span>${n}</span>
       <small>${num(c.skills[skill]) ? `${skill} ${num(c.skills[skill])}` : ""}</small></button>`)}</nav>
-    ${sub === "powder" ? html`<${Powdertinkering} c=${c} update=${update} />` : sub === "brew" ? html`<${Brewing} c=${c} update=${update} />` : sub === "rune" ? html`<${Runecrafting} c=${c} update=${update} />` : sub === "armor" ? html`<${ArmorUpkeep} c=${c} update=${update} />` : sub === "weapon" ? html`<${WeaponUpkeep} c=${c} update=${update} />` : html`<${UnderConstruction} c=${c} craft=${cur} />`}
+    ${sub === "powder" ? html`<${Powdertinkering} c=${c} update=${update} />` : sub === "brew" ? html`<${Brewing} c=${c} update=${update} />` : sub === "rune" ? html`<${Runecrafting} c=${c} update=${update} />` : sub === "armor" ? html`<${ArmorUpkeep} c=${c} update=${update} />` : sub === "weapon" ? html`<${WeaponUpkeep} c=${c} update=${update} />` : sub === "hunt" ? html`<${Hunting} c=${c} update=${update} />` : html`<${UnderConstruction} c=${c} craft=${cur} />`}
   </div>`;
 }
 

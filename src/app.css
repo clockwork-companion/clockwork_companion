@@ -3283,4 +3283,169 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   .titem .inp:nth-child(3) { grid-column: 1 / 3; }
   .hgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ================= Crafting → Hunting ================= */
+.hunting { display: grid; gap: 0; --hglow: #e8b04a; --hpos: #3f8f4e; --hneg: #b8423a; --hvoid: color-mix(in srgb, var(--ink) 40%, transparent); }
+.huntpages { max-width: 560px; margin: 4px 0 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.huntmyths { margin-top: 12px; display: grid; gap: 6px; }
+.huntmyths .row { gap: 6px; flex-wrap: wrap; align-items: center; }
+.hmyth { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border: 1px solid var(--rule); border-radius: 999px; font-size: 13px; }
+.hmyth .iconbtn { width: 20px; height: 20px; font-size: 12px; }
+.hmythin { width: 190px; }
+.hglyph { width: 1.1em; height: 1.1em; fill: currentColor; vertical-align: -.18em; }
+.hpips { display: inline-flex; gap: 3px; } .hpips i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--brass); }
+.hpips i.on { background: var(--brass); }
+.hmedal { width: var(--s); height: var(--s); flex: none; border-radius: 50%; display: grid; place-items: center; overflow: hidden; color: #f1dfb6;
+  background: radial-gradient(circle at 35% 30%, #6b5a46, #2f251d 70%); box-shadow: inset 0 0 0 2px #b98a35, inset 0 0 0 4px #3a2a1a, 0 2px 6px #0004; }
+.hmedal img { width: 100%; height: 100%; object-fit: cover; }
+.hmedal .hglyph { width: 52%; height: 52%; }
+/* the belt */
+.huntbelt { border: 1.5px solid var(--rule); background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 4%, var(--card)), color-mix(in srgb, var(--ink) 10%, var(--card))); overflow: hidden; }
+.huntbelt svg { display: block; width: 100%; height: auto; max-height: 300px; margin: 0 auto; }
+.hbstitch { fill: none; stroke: #d9b98a; stroke-width: 1.2; stroke-dasharray: 4 4; opacity: .55; }
+.hbloopr { fill: #4a2a14; stroke: #2a170a; stroke-width: 1.2; }
+.hbloop.full .hbloopr { fill: #563219; }
+.hbcharm { cursor: pointer; outline: none; }
+.hbswing { transform-box: view-box; transform-origin: var(--x) 70px; animation: hbSway 5.5s ease-in-out infinite; animation-delay: calc(var(--d) * -1); }
+@keyframes hbSway { 0%, 100% { transform: rotate(-1.6deg); } 50% { transform: rotate(1.6deg); } }
+.hbcharm.fx-hang .hbswing { animation: hbHang 1.4s cubic-bezier(.3, 1.4, .5, 1) both; }
+@keyframes hbHang { 0% { transform: translateY(-60px) rotate(0); opacity: 0; } 35% { transform: translateY(6px) rotate(10deg); opacity: 1; } 55% { transform: rotate(-7deg); } 75% { transform: rotate(4deg); } 100% { transform: rotate(0); } }
+.hbcord { fill: none; stroke: #c8a874; stroke-width: 2; }
+.hbrim { fill: #2a1f17; stroke: url(#hb-brass); stroke-width: 4; }
+.hbdisc { fill: #3b2e23; } .hbglyph { fill: #efdcae; }
+.hbname { font: 600 10.5px var(--f-head); fill: var(--ink-2); text-anchor: middle; letter-spacing: .04em; }
+.hbaura { opacity: 0; transition: opacity .6s ease; }
+.hbcharm.attuned .hbaura { opacity: 1; animation: hbPulse 3.2s ease-in-out infinite; }
+@keyframes hbPulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+.hbring { fill: none; stroke: var(--hglow); stroke-width: 2; stroke-dasharray: 5 4; transform-box: fill-box; transform-origin: center; animation: hbRing 14s linear infinite; }
+@keyframes hbRing { to { transform: rotate(360deg); } }
+.hbcharm.sel .hbrim { stroke-width: 6; }
+.hbcharm:focus-visible .hbrim { stroke: var(--ink); }
+.hbcharm.fx-attune .hbring { animation: hbDraw 1.2s ease-out both, hbRing 14s linear 1.2s infinite; stroke-dasharray: 220; }
+@keyframes hbDraw { from { stroke-dashoffset: 220; } to { stroke-dashoffset: 0; } }
+.hbrays path { stroke: #ffd97a; stroke-width: 3; stroke-linecap: round; animation: hbRay 1.1s ease-in-out infinite alternate; }
+@keyframes hbRay { from { opacity: .3; } to { opacity: 1; } }
+.hbcharm.released .hbaura { --hglow: #ffcf5a; }
+.hbcharm.fx-release .hbswing, .hbcharm.fx-second .hbswing { animation: hbFlare 1.2s ease-out both; }
+@keyframes hbFlare { 0% { filter: brightness(1); } 30% { filter: brightness(2.2); } 100% { filter: brightness(1); } }
+@media (max-width: 560px) { .hbname { font-size: 19px; } }
+.huntbeltctl { margin-top: 10px; gap: 12px; align-items: center; flex-wrap: wrap; }
+.huntturns { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.huntsel { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 12px; padding: 10px; border: 1.5px solid var(--rule); background: var(--sunk); }
+p.huntsel { border-style: dashed; background: transparent; }
+.huntseln { display: grid; line-height: 1.25; margin-right: auto; } .huntseln small { color: var(--ink-3); }
+.huntsel .row { gap: 6px; flex-wrap: wrap; }
+.huntsel > p { flex-basis: 100%; margin: 0; }
+/* the trophy case */
+.huntcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 12px; }
+.huntcard { border: 1.5px solid var(--hair); background: var(--card); padding: 12px; display: grid; gap: 8px; align-content: start; cursor: pointer; animation: inkIn .35s ease-out both; }
+.huntcard.belted { border-color: var(--rule); } .huntcard.attuned { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass), 0 0 14px -4px var(--hglow); }
+.huntcard.sel { outline: 2px solid var(--ink); outline-offset: 1px; }
+.huntcard header { display: flex; gap: 12px; align-items: center; }
+.huntcardn { display: grid; gap: 2px; min-width: 0; } .huntcardn b { font-size: 15.5px; } .huntcardn small { color: var(--ink-3); }
+.huntcardn .row { gap: 6px; align-items: center; flex-wrap: wrap; }
+.hprops { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 13.5px; }
+.hprops li { display: grid; grid-template-columns: 18px 1fr; gap: 6px; align-items: baseline; }
+.hprops li > span, .hk { font: 700 13px var(--f-mono); text-align: center; }
+.hp-pos > span, .hk.hp-pos { color: var(--hpos); } .hp-neg > span, .hk.hp-neg { color: var(--hneg); } .hp-void > span, .hk.hp-void { color: var(--hvoid); }
+.hprops li.hp-void { color: var(--ink-3); }
+.huntnote { margin: 0; font-size: 13px; }
+.huntcard footer { gap: 6px; align-items: center; margin-top: 2px; }
+.huntcard footer .iconbtn { margin-left: auto; }
+.huntnew { display: grid; place-items: center; align-content: center; gap: 4px; min-height: 150px; border: 1.5px dashed var(--rule); background: transparent; color: var(--ink-2); font: 500 15px var(--f-body); cursor: pointer; }
+.huntnew span { font-size: 28px; line-height: 1; } .huntnew.small { min-height: 90px; font-size: 13.5px; } .huntnew.small span { font-size: 20px; }
+.huntnew:hover { border-color: var(--ink); color: var(--ink); }
+/* the trophy form */
+.trophyform { display: grid; gap: 10px; padding: 12px; border: 1.5px solid var(--rule); background: var(--sunk); animation: inkIn .3s ease-out both; }
+.trophyformtop { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px; align-items: start; }
+.trophyformf { display: grid; gap: 8px; } .trophyformf .row { gap: 8px; flex-wrap: wrap; } .trophyformf .grow { flex: 1 1 140px; }
+.trophyform input:not([type=file]):not([type=checkbox]), .trophyform select { width: 100%; box-sizing: border-box; }
+.huntpic { position: relative; width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; cursor: pointer; color: #f1dfb6;
+  background: radial-gradient(circle at 35% 30%, #6b5a46, #2f251d 70%); box-shadow: inset 0 0 0 3px #b98a35, inset 0 0 0 6px #3a2a1a; }
+.huntpic img { width: 100%; height: 100%; object-fit: cover; } .huntpic .hglyph { width: 46%; height: 46%; }
+.huntpic input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.huntpic span { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; font-size: 11px; color: #fff; text-shadow: 0 1px 2px #000; pointer-events: none; }
+.hpropedit { display: grid; gap: 6px; }
+.hpe { gap: 6px; align-items: center; flex-wrap: nowrap; } .hpe .grow { flex: 1 1 auto; min-width: 0; }
+.hkind { flex: none; width: 96px; } .hkind button { font: 700 14px var(--f-mono); padding: 4px 0; }
+.hpe.hp-pos .hkind button[aria-pressed=true] { background: var(--hpos); border-color: var(--hpos); color: #fff; }
+.hpe.hp-neg .hkind button[aria-pressed=true] { background: var(--hneg); border-color: var(--hneg); color: #fff; }
+@media (max-width: 560px) { .trophyformtop { grid-template-columns: 1fr; justify-items: center; } .trophyformf { width: 100%; } }
+/* carving */
+.huntcarcass { position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 85%, color-mix(in srgb, var(--ink) 14%, var(--card)), color-mix(in srgb, var(--ink) 5%, var(--card)) 70%); }
+.huntcarcass svg { display: block; width: 100%; height: auto; }
+.hcground { fill: color-mix(in srgb, var(--ink) 18%, transparent); }
+.hcfur { fill: url(#hc-fur); stroke: #1c1410; stroke-width: 1.4; stroke-linejoin: round; }
+.hcfur.far { fill: #2c221b; } .hcbelly { fill: #6e5b49; opacity: .55; }
+.hcspine { fill: #2a201a; stroke: #1c1410; stroke-width: 1; stroke-linejoin: round; }
+.hcmouth { fill: #4a1416; } .hcnose { fill: #17110d; }
+.hchornring { fill: none; stroke: #6b5d48; stroke-width: 1; opacity: .7; }
+.hcarrow path { fill: none; stroke: #6b4a2b; stroke-width: 2.4; stroke-linecap: round; } .hcarrow .fl { fill: #d9d2c0; stroke: #6b5d48; stroke-width: .6; }
+.hcmane, .hcrib { fill: none; stroke: #7d6855; stroke-width: 1.6; stroke-linecap: round; opacity: .55; }
+.hchorn { stroke: #5a4c3a; stroke-width: 1.2; } .hcfang { fill: #efe6d2; stroke: #6a5d4a; stroke-width: .8; }
+.hceye { fill: none; stroke: #e7d9b4; stroke-width: 2; stroke-linecap: round; } .hcclaw { fill: none; stroke: #e8dfca; stroke-width: 2.2; stroke-linecap: round; }
+.hcpart { cursor: pointer; outline: none; }
+.hccut { fill: none; stroke: #e9d8a6; stroke-width: 1.6; stroke-dasharray: 5 4; opacity: .45; transition: opacity .2s ease, stroke-width .2s ease; }
+.hchit { fill: transparent; }
+.hcpart:hover .hccut, .hcpart:focus-visible .hccut { opacity: .85; }
+.hcpart.on .hccut { opacity: 1; stroke: #ffd97a; stroke-width: 2.2; animation: hcMarch 1.2s linear infinite; }
+@keyframes hcMarch { to { stroke-dashoffset: -18; } }
+.hclabel { font: 700 12px var(--f-head); fill: var(--ink); text-anchor: middle; letter-spacing: .06em; text-transform: uppercase; paint-order: stroke; stroke: var(--card); stroke-width: 4px; }
+.hcslice { fill: none; stroke: #c4171f; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: hcSlice 1.3s ease-in-out .1s forwards; }
+@keyframes hcSlice { to { stroke-dashoffset: 0; } }
+.hcknife { offset-distance: 0%; offset-rotate: auto; animation: hcKnife 1.3s ease-in-out .1s forwards; }
+.hcknife path { fill: #d8dde2; stroke: #3a3f45; stroke-width: 1; }
+.ph-read .hcknife, .ph-props .hcknife, .ph-name .hcknife, .ph-fail .hcknife { opacity: 0; transition: opacity .4s ease; }
+@keyframes hcKnife { to { offset-distance: 100%; } }
+.hcprize { animation: hcPrize 1s cubic-bezier(.2, .8, .3, 1) both; transform-box: fill-box; }
+@keyframes hcPrize { from { opacity: 0; transform: translate(var(--px, 0), 0) scale(.4); } }
+.hcprize > g { animation: hcFloat 2.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+@keyframes hcFloat { to { transform: translateY(-6px) scale(2); } }
+.hcprizeg { fill: #fff3cf; stroke: #a6772a; stroke-width: .6; }
+.hcdust circle { fill: #8a7a63; transform-box: fill-box; animation: hcDust 1s ease-out forwards; }
+@keyframes hcDust { to { transform: rotate(var(--a)) translateX(36px); opacity: 0; } }
+.ph-cut .hcbody, .ph-read .hcbody, .ph-props .hcbody { animation: hcJolt .5s ease-out .2s; transform-box: view-box; transform-origin: 300px 280px; }
+@keyframes hcJolt { 30% { transform: translateY(-2px) rotate(-.4deg); } }
+.huntread { display: grid; gap: 8px; justify-items: center; text-align: center; }
+.huntread p { margin: 0; }
+.hkinds { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.hk { width: 30px; height: 30px; display: grid; place-items: center; border: 1.5px solid var(--rule); background: var(--card); font-size: 16px; animation: hkPop .35s cubic-bezier(.3, 1.5, .5, 1) both; }
+.hk.wait { border-style: dashed; animation: none; }
+.hk.hp-pos { border-color: var(--hpos); } .hk.hp-neg { border-color: var(--hneg); }
+@keyframes hkPop { from { transform: scale(.4); opacity: 0; } }
+.hparts { display: flex; flex-wrap: wrap; gap: 6px; } .hparts .dvchip { display: inline-flex; gap: 6px; align-items: center; }
+.huntlvl { max-width: 260px; }
+/* merging */
+.huntaltar { border: 1.5px solid var(--rule); overflow: hidden; background: radial-gradient(ellipse at 50% 55%, color-mix(in srgb, #e8b04a 10%, var(--card)), color-mix(in srgb, var(--ink) 8%, var(--card)) 75%); }
+.huntaltar svg { display: block; width: 100%; height: auto; }
+.haslab { stroke: #3a3936; stroke-width: 1.2; }
+.haring { fill: none; stroke: color-mix(in srgb, var(--ink) 40%, transparent); stroke-width: 1.4; } .haring.thin { stroke-dasharray: 3 5; stroke-width: 1; }
+.hanotch { stroke: color-mix(in srgb, var(--ink) 50%, transparent); stroke-width: 1.4; }
+.harim { fill: #2a1f17; stroke: url(#hb-brass); stroke-width: 5; } .hadisc { fill: #3b2e23; }
+.haempty { fill: none; stroke: color-mix(in srgb, var(--ink) 40%, transparent); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.haq { font: 600 11px var(--f-head); fill: var(--ink-3); text-anchor: middle; letter-spacing: .08em; text-transform: uppercase; }
+.hastream { fill: none; stroke: #e8b04a; stroke-width: 2; stroke-dasharray: 2 8; opacity: 0; }
+.hamedal { transform-box: view-box; transform-origin: 300px 130px; }
+.ph-fuse .hamedal.recv { animation: haOrbitL 1.7s cubic-bezier(.5, 0, .5, 1) both; }
+.ph-fuse .hamedal.give { animation: haOrbitR 1.7s cubic-bezier(.5, 0, .5, 1) both; }
+@keyframes haOrbitL { 50% { transform: rotate(-160deg) scale(.86); } 100% { transform: rotate(-360deg); } }
+@keyframes haOrbitR { 50% { transform: rotate(-160deg) scale(.86); } 100% { transform: rotate(-360deg) scale(.92); opacity: .75; } }
+.ph-read .hastream, .ph-fuse .hastream { opacity: .9; animation: haStream 1s linear infinite; }
+@keyframes haStream { to { stroke-dashoffset: -20; } }
+.hamotes circle { fill: #ffd97a; offset-path: path("M420 130 C380 90 340 92 300 110 C260 128 220 132 180 130"); offset-distance: 0%; opacity: 0; animation: haMote 1.6s ease-in infinite; animation-delay: calc(var(--i) * .1s); }
+@keyframes haMote { 10% { opacity: 1; } 90% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+.ph-made .hamotes circle { animation-iteration-count: 1; }
+.haflare { transform-box: fill-box; transform-origin: center; animation: haFlare 1.4s ease-out both; }
+@keyframes haFlare { 0% { transform: scale(.2); opacity: 0; } 30% { opacity: 1; } 100% { transform: scale(1.2); opacity: 0; } }
+.ph-made .hamedal.recv { animation: haBloom 1.2s cubic-bezier(.3, 1.4, .5, 1) both; }
+@keyframes haBloom { from { transform: scale(.8); } }
+.hmergepick { display: flex; flex-wrap: wrap; gap: 6px; }
+.hmchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border: 1px solid var(--rule); border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer; font-size: 13.5px; }
+.hmchip small { color: var(--hpos); font: 700 12px var(--f-mono); }
+.hmchip.on { border-color: var(--brass); background: color-mix(in srgb, var(--brass) 18%, var(--card)); }
+.hmovepick { display: grid; gap: 4px; text-align: left; }
+@media (prefers-reduced-motion: reduce) {
+  .hunting *, .hunting *::before { animation: none !important; transition: none !important; }
+  .hcslice { stroke-dashoffset: 0; } .hcknife { display: none; }
+}
 </style>
