@@ -950,6 +950,35 @@ function DeleteCharacter({ c, onDelete }) {
 }
 
 /* ================= skill side panel ================= */
+// A line of flavour for each secondary skill, shown in italics under its name in the side panel, written the way a rules
+// compendium would introduce it. Entrada has none yet: the book never says what it covers.
+const SEC_FLAVOR = {
+  "Athletics": "Climbing sheer walls, swimming against the current, hauling a comrade over the gunwale: the body put to honest work.",
+  "Acrobatics": "Rolling under a closing portcullis, keeping your feet on a pitching deck, landing a leap that should have broken you.",
+  "Machine Operation": "Working the levers, valves and gauges of engines built by other hands, without losing a finger to them.",
+  "First Aid": "Pressure, bandage and a steady hand: keeping the wounded alive until someone better can see to them.",
+  "Riding": "Staying in the saddle at a gallop, through gunfire, over broken ground, on a beast that would rather be elsewhere.",
+  "Forgery": "Seals, signatures and papers that pass a clerk's eye. The ink is the easy part; the confidence is not.",
+  "Stealth": "Moving unseen and unheard, a shadow among shadows, until the moment you choose to be noticed.",
+  "Sleight of Hand": "Lifting a purse, palming a card, slipping a vial into a cup while every eye is on the speaker.",
+  "Land Navigation": "Reading stars, rivers and the lie of the land to find a way where no road has been laid.",
+  "Naval Navigation": "Charts, currents and the angle of the sun: plotting a ship's course across open water.",
+  "Sky Navigation": "Holding a heading through cloud and gale, where the winds are the only roads and the ground is a rumour.",
+  "Appraisal": "A trained eye for worth and wonder: what an item is, what it's worth, and what power sleeps inside it.",
+  "Investigation": "Piecing together the scene: the scuffed boot print, the missing page, the lie in the ledger.",
+  "Mechanical Insight": "Looking at a mechanism and understanding it: how it works, what it's for, and where it will fail.",
+  "Prosthetic Operation": "Moving a limb of brass and wire as if it had always been yours.",
+  "Sailing": "Rigging, tacking and trimming the sails: the craft of making a ship go where you want it to.",
+  "Sky-Sailing": "Crewing an airship: ballast, envelope and rudder, with nothing but air beneath the keel.",
+  "Cooking": "Turning hard rations into a meal worth sitting down for, and making the stores last longer.",
+  "Insight": "Reading the face behind the words: the flicker of fear, the rehearsed answer, the friend who isn't one.",
+  "Perception": "Noticing what others miss: a glint in the treeline, footsteps overhead, the smell of powder on the wind.",
+  "Foraging": "Living off the land: food, herbs and useful scraps gathered where others see only wilderness.",
+  "Persuasion": "Winning people over with reason, charm or a well-timed favour, so they choose to help you.",
+  "Deception": "A convincing lie, a false face, a story told so well that even you half believe it.",
+  "Intimidate": "Making the threat plain, in word or bearing, until they decide it isn't worth the trouble.",
+  "Animal Handling": "Calming the spooked horse, earning the trust of the hound, knowing when a beast is about to bolt.",
+};
 const TYPE_NAME = { P: "Passive", A: "Active", E: "Empowerment", M: "Active + passive" };
 const PROFICIENCY_ROWS = [[3, "Competent", "Weapon skill is added to accuracy."], [5, "Proficient", "Durability damage to the weapon is reduced."], [7, "Adept", "The weapon's Adept property unlocks."], [10, "Master", "The weapon's Mastery property unlocks."]];
 function SkillPanel({ c, kind, name, mode, update, onClose }) {
@@ -963,7 +992,8 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
   const secB = sec ? R.secondaryBonus(c, name) : null;
   return html`<aside class="spanel" role="dialog" aria-label=${`${name} levels`} tabindex="-1" ref=${ref} style=${attStyle(at)}>
     <header class="sphead">
-      <span class="sp-medal att"><${PanelIcon} a=${at} /></span><div class="sptt"><span class="lbl">${kind === "weapon" ? "Weapon skill" : kind === "sec" ? "Secondary skill" : "Skill"} · ${an}</span><h2>${name}</h2></div>
+      <span class="sp-medal att"><${PanelIcon} a=${at} /></span><div class="sptt"><span class="lbl">${kind === "weapon" ? "Weapon skill" : kind === "sec" ? "Secondary skill" : "Skill"} · ${an}</span><h2>${name}</h2>
+        ${kind === "sec" && SEC_FLAVOR[name] && html`<p class="spflavor">${SEC_FLAVOR[name]}</p>`}</div>
       <button class="iconbtn" aria-label="Close" onClick=${onClose}>×</button>
     </header>
     <div class="spnow">
@@ -1339,6 +1369,11 @@ function TalentsTab({ c, update, openSkill }) {
   const shown = all.filter(groupOk).map(g => Object.assign({}, g, { perks: g.perks.filter(p => typeOk(p)) })).filter(g => g.perks.length);
   const toggleAttr = a => { setAttrs(xs => (xs.includes(a) ? xs.filter(x => x !== a) : R.ATTRS.map(x => x.k).filter(k => k === a || xs.includes(k)))); };
   const spentAny = Object.values(c.uses || {}).some(v => num(v));
+  // Each skill's perks sit folded like a rolodex (a slim card per perk, overlapping); clicking opens them into full cards.
+  // Which skills are open is kept per browser. A skill picked in the attribute panel opens by itself.
+  const [openSk, setOpenSk] = useState(() => { const v = lsGet("cw-perkopen", []); return Array.isArray(v) ? v : []; });
+  const flip = n => setOpenSk(xs => { const v = xs.includes(n) ? xs.filter(x => x !== n) : xs.concat(n); lsSet("cw-perkopen", v); return v; });
+  const isOpen = n => openSk.includes(n) || focusOn === n;
   const addTalent = () => update(x => { x.talents.push({ id: rid(), name: "", source: "", type: "A", uses: 1, recharge: "Long rest", ap: "", stamina: "", turns: "", text: "", final: false }); });
   const empty = !all.length ? "No perks unlocked yet. A skill's first perk comes at level 3."
     : focusOn ? `${focusOn} has no ${filter === "all" ? "" : TYPE_NAME[filter].toLowerCase() + " "}perks yet. Its first perk comes at level 3.`
@@ -1354,9 +1389,14 @@ function TalentsTab({ c, update, openSkill }) {
       ${listed && html`<div class="attskills" role="group" aria-label=${`Skills invested in under ${attrs.map(a => R.ATTR_NAME[a]).join(", ")}`}>
         <span class="lbl">Your ${attrs.map(a => R.ATTR_NAME[a]).join(" · ")} skills</span>
         ${invested.map(x => html`<button type="button" class="skchip" style=${attStyle(x.attr)} aria-pressed=${focusOn === x.name} onClick=${() => setFocus(focusOn === x.name ? "" : x.name)}>${x.name} <small>${x.lv}</small></button>`)}</div>`}
-      ${shown.length ? shown.map(g => html`<div class="perkgroup" style=${attStyle(g.attr)}>
-        <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small></h3>
-        <div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div></div>`)
+      ${shown.length ? shown.map(g => { const open = isOpen(g.name);
+        return html`<div class=${"perkgroup" + (open ? " open" : " folded")} style=${attStyle(g.attr)}>
+        <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small>
+          <button type="button" class="foldbtn" aria-expanded=${open} onClick=${() => flip(g.name)}>${open ? "Fold" : `Open ${g.perks.length} perk${g.perks.length > 1 ? "s" : ""}`}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button></h3>
+        ${open ? html`<div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div>`
+          : html`<button type="button" class="rolodex" onClick=${() => flip(g.name)} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${g.perks.map((p, k) => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
+              return html`<span class=${"rdx k-" + typeKey(t)} style=${`--k:${k}`}><b class="rdxlv">${p.l}</b><span class="rdxn">${p.group || g.name}</span>
+                ${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max} left</small>`}<${TypeTag} t=${t} /></span>`; })}</button>`}</div>`; })
       : html`<p class="muted emptyline">${empty}</p>`}
     </section>
 
@@ -1376,7 +1416,7 @@ function GearTab({ c, d, update }) {
   const pos = (() => { const L = e.load, u = e.unit || 1; if (L <= 3 * u) return (L / (3 * u)) * 60; const extra = Math.min(4, (L - 3 * u) / u); return 60 + extra * 10; })();
   const addItem = () => update(x => { x.items.push({ id: rid(), name: "", qty: 1, size: "small" }); });
   const addWeapon = () => update(x => { x.weapons.push({ id: rid(), name: "", skill: "Slashing", hands: 1, size: "medium", damage: 6, crit: 5, accuracy: 0, dur: 100, durMax: 100, durDie: "d10", clip: 0, clipMax: 0, rangeOpt: 0, rangeMax: 0, reload: 0, props: "", where: "set", final: false }); });
-  const addArmor = () => update(x => { x.armor.push({ id: rid(), name: "", type: "light", av: 2, soak: 30, soakMax: 30, worn: !x.armor.some(a => a.worn), where: "set" }); });
+  const addArmor = () => update(x => { x.armor.push({ id: rid(), name: "", type: "light", av: 2, soak: 30, soakMax: 30, worn: !x.armor.some(a => a.worn), where: "set", final: false }); });
   const addProsthetic = () => update(x => { x.prosthetics.push({ id: rid(), name: "", type: R.PROSTHETIC_TYPES[0], props: "" }); });
   const it = (i, k) => v => update(x => { x.items[i][k] = v; });
   const ar = (i, k) => v => update(x => { x.armor[i][k] = v; });
@@ -1394,25 +1434,14 @@ function GearTab({ c, d, update }) {
     </section>
 
     <section class="frame"><${Head} title="Armor" topic="armor" /><p class="sub">Only one suit is worn at a time. Heavy armor counts as a large item, plate as huge.</p>
-      <div class="cards">${c.armor.map((a, i) => { const chk = R.armorCheck(c, a); const t = R.ARMOR[a.type] || R.ARMOR.light, away = !!Shop.outgoing(c, "armor", a.id);
-        return html`<div class=${"wcard" + (a.worn ? " worn" : "") + (away ? " away" : "")}>
-          <fieldset class="wlock" disabled=${away}>
-          <div class="title"><input aria-label="Armor name" placeholder="Armor name" value=${a.name} onInput=${ev => ar(i, "name")(ev.target.value)} />
-            <button class=${"btn small" + (a.worn ? " primary" : "")} onClick=${() => update(x => { x.armor.forEach((y, j) => (y.worn = j === i ? !y.worn : false)); })}>${a.worn ? "Worn" : "Wear"}</button></div>
-          <div class="grid2">
-            <div class="mini"><label for=${"at-" + a.id}>Type</label><select id=${"at-" + a.id} value=${a.type} onChange=${ev => ar(i, "type")(ev.target.value)}>${Object.entries(R.ARMOR).map(([k, x]) => html`<option value=${k}>${x.label}</option>`)}</select></div>
-            <${Mini} id=${"av-" + a.id} label=${`AV ${t.av[0]}–${t.av[1]}`} value=${a.av} onInput=${ar(i, "av")} />
-            <${Mini} id=${"sk-" + a.id} label="Soak" value=${a.soak} onInput=${ar(i, "soak")} />
-            <${Mini} id=${"sm-" + a.id} label="Soak max" value=${a.soakMax} onInput=${ar(i, "soakMax")} />
-          </div>
-          <div class="track" style="background:var(--sunk)"><i style=${`width:${chk.soakMax ? Math.min(100, (num(a.soak) / chk.soakMax) * 100) : 0}%;background:var(--ink-2)`}></i></div>
-          <div class="calc">Soak ${num(a.soak)}/${chk.soakMax}${chk.soakBonus ? ` (incl. +${chk.soakBonus} Armor Mastery)` : ""} · repair ${chk.repairCost} g, ${chk.repairDie}</div>
-          ${!chk.ok && html`<div class="chips">${chk.problems.map(p => html`<span class="flag bad">${p}</span>`)}</div>`}
-          </fieldset>
-          <${ShopGear} c=${c} kind="armor" item=${a} update=${update} />
-          <fieldset class="wlock" disabled=${away}><div class="row" style="justify-content:space-between"><span class="muted">${a.type === "light" ? "Casting −2×AV" : a.type === "medium" ? "Stealth −AV, casting −2×AV" : a.type === "heavy" ? "Dex skills −AV, Stealth disadv., Entrada −2×AV" : "Dex skills and saves −AV, Stealth disadv."}</span>
-            <button class="btn small danger" onClick=${() => update(x => { x.armor.splice(i, 1); })}>Remove</button></div></fieldset></div>`; })}
+      <div class="cards">${c.armor.map((a, i) => html`<${ArmorCard} key=${a.id} c=${c} a=${a} i=${i} update=${update} />`)}
         <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addArmor}>+ Add armor</button></div></div>
+    </section>
+
+
+    <section class="frame"><${Sigils} seed="weapons" n=${1} side="l" /><${Head} title="Weapons" topic="weapons" /><p class="sub">Two one-handed or one two-handed set ride free${e.freeSets > 2 ? ", plus a third from Strong Back" : ""}. Shields always count as large.</p>
+      <div class="cards">${c.weapons.map((w, i) => html`<${WeaponCard} key=${w.id} c=${c} w=${w} i=${i} update=${update} />`)}
+        <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addWeapon}>+ Add weapon</button></div></div>
     </section>
 
     <section class="frame"><${Head} title="Prosthetics" topic="prosthetics" />
@@ -1425,11 +1454,6 @@ function GearTab({ c, d, update }) {
           <td class="wide"><${AutoText} cls="inp" label="Unique properties" placeholder="Hidden blade; grip strength +2" value=${x.props} onInput=${pr(i, "props")} /></td>
           <td><button class="iconbtn" aria-label=${`Remove ${x.name || "prosthetic"}`} onClick=${() => update(y => { y.prosthetics.splice(i, 1); })}>×</button></td></tr>`)}</tbody></table></div>`}
       <div class="row" style="margin-top:10px"><button class="btn" onClick=${addProsthetic}>+ Add prosthetic</button></div>
-    </section>
-
-    <section class="frame"><${Sigils} seed="weapons" n=${1} side="l" /><${Head} title="Weapons" topic="weapons" /><p class="sub">Two one-handed or one two-handed set ride free${e.freeSets > 2 ? ", plus a third from Strong Back" : ""}. Shields always count as large.</p>
-      <div class="cards">${c.weapons.map((w, i) => html`<${WeaponCard} key=${w.id} c=${c} w=${w} i=${i} update=${update} />`)}
-        <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addWeapon}>+ Add weapon</button></div></div>
     </section>
 
     <section class="frame"><${Head} title="Inventory" topic="load" />
@@ -1450,6 +1474,51 @@ function GearTab({ c, d, update }) {
 }
 
 /* ================= weapon cards ================= */
+// A suit of armor, like a weapon: set up in edit mode, then Done folds it into a flush card for play where only the
+// Soak Pool (its durability) changes, and Wear/Worn. Suits saved before this count as finished once they have a name.
+const ARMOR_PENALTY = { light: "Casting −2×AV", medium: "Stealth −AV, casting −2×AV", heavy: "Dex skills −AV, Stealth disadv., Entrada −2×AV", plate: "Dex skills and saves −AV, Stealth disadv." };
+function ArmorCard({ c, a, i, update }) {
+  const ar = k => v => update(x => { x.armor[i][k] = v; });
+  const chk = R.armorCheck(c, a); const t = R.ARMOR[a.type] || R.ARMOR.light;
+  useShop(); const away = !!Shop.outgoing(c, "armor", a.id);
+  const isFinal = a.final === true || (a.final === undefined && !!a.name);
+  const card = useRef();
+  useChange(isFinal, () => replay(card.current, isFinal ? "settle" : "unfold", 0, ["settle", "unfold"]), a.id + animScope);
+  const soak = num(a.soak), max = chk.soakMax;
+  const wear = html`<button class=${"btn small" + (a.worn ? " primary" : "")} onClick=${() => update(x => { x.armor.forEach((y, j) => (y.worn = j === i ? !y.worn : false)); })}>${a.worn ? "Worn" : "Wear"}</button>`;
+  if (isFinal) return html`<div ref=${card} class=${"wcard final kind-armor" + (a.worn ? " worn" : "") + (away ? " away" : "")}>
+    <fieldset class="wlock" disabled=${away}>
+    <div class="title"><b class="wname">${a.name || "Unnamed armor"}</b>${wear}
+      <button class="iconbtn" aria-label=${`Edit ${a.name || "armor"}`} title="Edit" onClick=${() => ar("final")(false)}>${PENCIL}</button></div>
+    <div class="wsub">${t.label} armor · ${ARMOR_PENALTY[a.type] || ""}</div>
+    <div class="wstats"><div><span>AV</span><b>${num(a.av)}</b></div><div><span>Soak max</span><b>${max}</b></div><div><span>Repair</span><b>${chk.repairCost} g</b></div><div><span>Repair die</span><b>${chk.repairDie}</b></div></div>
+    <div class="wdur"><span class="lbl">Soak Pool</span>
+      <div class="track"><i style=${`width:${max ? R.clamp((soak / max) * 100, 0, 100) : 0}%;background:${soak <= 0 && max ? "var(--bad)" : "var(--ink-2)"}`}></i></div>
+      <div class="row"><button class="iconbtn" aria-label="Lose 1 soak" onClick=${() => ar("soak")(Math.max(0, soak - 1))}>−</button>
+        <input class="inp durin" type="number" min="0" aria-label="Soak Pool" value=${a.soak} onInput=${ev => ar("soak")(ev.target.value === "" ? "" : Math.max(0, +ev.target.value))} />
+        <span class="muted">/ ${max}${chk.soakBonus ? ` (incl. +${chk.soakBonus} Armor Mastery)` : ""}</span>
+        <button class="iconbtn" aria-label="Restore 1 soak" onClick=${() => ar("soak")(Math.min(max || Infinity, soak + 1))}>+</button></div>
+      ${max > 0 && soak <= 0 && html`<span class="flag bad">Broken: only a craftsman can repair it</span>`}</div>
+    ${!chk.ok && html`<div class="chips">${chk.problems.map(p => html`<span class="flag bad">${p}</span>`)}</div>`}
+    </fieldset>
+    <${ShopGear} c=${c} kind="armor" item=${a} update=${update} />
+  </div>`;
+  return html`<div ref=${card} class=${"wcard editing" + (a.worn ? " worn" : "") + (away ? " away" : "")}>
+    <fieldset class="wlock" disabled=${away}>
+    <div class="title"><input aria-label="Armor name" placeholder="Armor name" value=${a.name} onInput=${ev => ar("name")(ev.target.value)} />${wear}<span class="flag">Editing</span></div>
+    <div class="grid2">
+      <div class="mini"><label for=${"at-" + a.id}>Type</label><select id=${"at-" + a.id} value=${a.type} onChange=${ev => ar("type")(ev.target.value)}>${Object.entries(R.ARMOR).map(([k, x]) => html`<option value=${k}>${x.label}</option>`)}</select></div>
+      <${Mini} id=${"av-" + a.id} label=${`AV ${t.av[0]}–${t.av[1]}`} value=${a.av} onInput=${ar("av")} />
+      <${Mini} id=${"sk-" + a.id} label="Soak" value=${a.soak} onInput=${ar("soak")} />
+      <${Mini} id=${"sm-" + a.id} label="Soak max" value=${a.soakMax} onInput=${ar("soakMax")} />
+    </div>
+    <div class="calc">Soak ${soak}/${max}${chk.soakBonus ? ` (incl. +${chk.soakBonus} Armor Mastery)` : ""} · repair ${chk.repairCost} g, ${chk.repairDie} · ${ARMOR_PENALTY[a.type] || ""}</div>
+    ${!chk.ok && html`<div class="chips">${chk.problems.map(p => html`<span class="flag bad">${p}</span>`)}</div>`}
+    <div class="row" style="justify-content:space-between"><button class="btn small danger" onClick=${() => update(x => { x.armor.splice(i, 1); })}>Remove</button>
+      <button class="btn small primary" onClick=${() => ar("final")(true)}>Done</button></div>
+    </fieldset>
+  </div>`;
+}
 // A weapon is set up in edit mode, then finalised into a compact card for play where only durability changes.
 // The fields follow the weapon: melee weapons reach 2 m and have no clip; ranged weapons have a clip, ranges and
 // a reload cost (rulebook, Weapon Combat); a shield blocks with Shield Mastery and always counts as large.
