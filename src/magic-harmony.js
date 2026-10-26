@@ -12,15 +12,17 @@ const HARM_GLYPH = {
   spirit: "M0 -7L1.9 -2.2L7 -2.2L2.9 1L4.4 6L0 3L-4.4 6L-2.9 1L-7 -2.2L-1.9 -2.2Z",
 };
 const HarmGlyph = ({ el, cls = "" }) => html`<svg class=${"harmglyph " + cls} viewBox="-9 -9 18 18" aria-hidden="true"><path d=${HARM_GLYPH[el]} /></svg>`;
-// Where each chakra sits on the figure (viewBox 0 0 300 400), from the base of the spine up past the crown.
-const CHAKRA_Y = { opening: 292, life: 258, pain: 224, healing: 184, limit: 120, wonder: 84, view: 50, death: 16 };
+// Where each chakra sits on the figure (viewBox 0 0 300 400): root, sacrum, navel, solar plexus, heart, throat, brow, crown.
+// All inside the body; the figure is drawn 1.25× from the bottom of the frame (HARM_FIT) so they fit.
+const CHAKRA_Y = { opening: 326, life: 289, pain: 250, healing: 207, limit: 162, wonder: 108, view: 66, death: 45 };
+const HARM_FIT = "translate(150 390) scale(1.25) translate(-150 -340)";
 // The figure, seated in the lotus position: legs crossed with the feet up, hands resting on the knees in a mudra,
 // shoulders soft, eyes closed. The upper body breathes (a slow rise and fall, with a glow at the heart in time); the head
 // drifts very slightly; motes of energy rise around it in the colour of the strongest element.
 function HarmFigure({ mote }) {
   const arm = "M101 144C90 150 84 172 82 196C80 214 80 228 78 240C76 256 70 274 65 290L80 297C84 281 90 265 94 249C97 236 100 220 103 200C105 184 108 162 112 152Z";
   const mirror = "matrix(-1 0 0 1 300 0)";
-  return html`<g class="harmfig">
+  return html`<g transform=${HARM_FIT}><g class="harmfig">
     <g class="hlegs">
       <path class="harmsil" d="M106 286C84 288 58 295 44 307C33 317 39 332 60 334C96 340 204 340 240 334C261 332 267 317 256 307C242 295 216 288 194 286Z" />
       <path class="harmsil shin" d="M242 321C208 309 150 308 102 313C92 315 90 323 100 326C150 323 200 325 236 333Z" />
@@ -47,7 +49,7 @@ function HarmFigure({ mote }) {
       <ellipse class="harmsil" cx="230" cy="298" rx="10" ry="6.5" transform="rotate(18 230 298)" /><circle class="hmudra" cx="237" cy="296" r="2.6" />
     </g>
     <g class="hmotes" style=${`--mote:${mote || "var(--brass)"}`}>${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(i => html`<circle style=${`--i:${i}`} cx=${(70 + (i * 37) % 160).toFixed(0)} cy=${(300 - (i % 3) * 12).toFixed(0)} r=${(1.2 + (i % 3) * .5).toFixed(1)} />`)}</g>
-  </g>`;
+  </g></g>`;
 }
 
 function Harmony({ c, update }) {
@@ -197,7 +199,7 @@ function Harmony({ c, update }) {
             const open = st.open.includes(x.k), el = shown(x.k), wait = x.k in pending && (pending[x.k] || "") !== (st.held[x.k] || "");
             const rel = h.rel.includes(x.k), y = CHAKRA_Y[x.k];
             return html`<g class=${"chakra" + (open ? " open" : " shut") + (el ? " held" : "") + (wait ? " wait" : "") + (rel ? " rel" : "") + (sel === x.k ? " sel" : "") + (lit[x.k] ? " " + lit[x.k] : "")}
-              data-chakra=${x.k} transform=${`translate(150 ${y})`} style=${el ? `--ec:${HARM_COLOR[el]}` : ""}
+              data-chakra=${x.k} transform=${`translate(150 ${y}) scale(.85)`} style=${el ? `--ec:${HARM_COLOR[el]}` : ""}
               role="button" tabindex=${open ? 0 : -1} aria-label=${`${x.n} chakra${open ? (el ? `, ${HARM_NAME[el]}` : ", empty") : `, opens at Harmony ${x.lvl}`}${rel ? ", released" : ""}`}
               onClick=${() => chakraClick(x.k)} onContextMenu=${e => { e.preventDefault(); if (open && el && !releasing) place(x.k, ""); }}
               onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); chakraClick(x.k); } }}>
@@ -206,7 +208,7 @@ function Harmony({ c, update }) {
               <circle class="ccore" r="8.5" />
               ${el && html`<path class="cglyph" d=${HARM_GLYPH[el]} transform="scale(.62)" />`}
               ${!open && html`<text class="clock" y="3.5">${x.lvl}</text>`}
-              <text class="cname" x=${x.k === "death" || x.k === "view" || x.k === "wonder" ? 32 : 70} y="4">${x.n}</text>
+              <text class="cname" x=${x.k === "death" || x.k === "view" ? 40 : x.k === "wonder" ? 30 : 84} y="4">${x.n}</text>
             </g>`;
           })}
         </svg>

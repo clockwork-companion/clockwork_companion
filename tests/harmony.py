@@ -58,6 +58,10 @@ with sync_playwright() as p:
         check(tag + "Affinity: Fire 2, Water 1, Spirit 0", orb("Fire").get_attribute("aria-label") == "Fire, Affinity 2" and orb("Water").get_attribute("aria-label") == "Water, Affinity 1"
               and orb("Spirit").get_attribute("aria-label") == "Spirit, Affinity 0")
         check(tag + "the figure breathes: body, head, hands and rising motes", all(pg.locator(f".harmfig {k}").count() >= 1 for k in (".hupper", ".hhead", ".hhands", ".hmotes circle")))
+        out = pg.evaluate("""(() => { const f = document.querySelector('.harmfig').getBoundingClientRect();
+          return [...document.querySelectorAll('.chakra .cring')].map(c => [c.closest('.chakra').dataset.chakra, c.getBoundingClientRect()])
+            .filter(([k, r]) => r.top < f.top || r.bottom > f.bottom || r.left < f.left || r.right > f.right).map(([k]) => k); })()""")
+        check(tag + "every chakra sits inside the figure", not out, out)
         # the At a glance panel follows the chakras (Fire in Opening: Reflex saves; nothing on Movement yet)
         glance = lambda: " ".join(pg.locator(".glanceharm").all_inner_texts()).lower()
         check(tag + "At a glance lists what the chakras give", "from your chakras" in glance() and pg.locator(".glanceharm .harmfact").count() >= 2, glance())
