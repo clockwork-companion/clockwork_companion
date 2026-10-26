@@ -33,9 +33,10 @@ your feature branch ──PR──▶ Dev ──(tested on the Dev page)──PR
   or force-pushed, and they change only through a pull request whose **check** job (`.github/workflows/checks.yml`)
   has passed. The Merge button stays grey until it's green. Org owners may bypass it for pull requests only, in an
   emergency. If a push to Dev or main is refused, that's the ruleset working: open a pull request instead.
-- **Work on a branch of your own**, made from the latest main: a personal branch (`SinanDev`, `BedoDev`) or,
+- **Work on a branch of your own**, made from the latest Dev: a personal branch (`SinanDev`, `BedoDev`) or,
   better, one branch per feature (`sinan/initiative-dock`, `bedo/crafting`). Small branches are easy to review and to drop.
-- **Pull main into your branch before each work session** and before opening a PR. Resolve conflicts on your branch, not on Dev.
+- **Pull Dev into your branch before each work session** and before opening a PR. Resolve conflicts on your branch, not on Dev.
+  (Branch from Dev, not main: Dev runs ahead of main between releases, so a branch from main can lack the very code it changes.)
 - **Never push to someone else's branch** unless they asked you to.
 - **One PR per feature.** The PR description says, in plain words, what changed for the user and how to test it.
 - When main changes and Dev is behind, bring Dev up to main (a pull request from main into Dev) so the Dev page
@@ -144,7 +145,7 @@ version must keep working in a newer one, and the live site must survive data wr
 
 ## 6. Before you open a pull request
 
-1. Pull the latest main into your branch.
+1. Pull the latest Dev into your branch.
 2. Rebuild: `python3 src/build.py --web .` (and `python3 src/build.py` if the artifact should match).
 3. Test in a browser, at both a desktop width and 390 px:
    - the screens you changed, in at least the default theme and one dark theme;
@@ -190,4 +191,5 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-24:** The repo moved to the free `clockwork-companion` organization, with Sinan, Bedo and Utku as owners. The site moved to clockwork-companion.github.io/clockwork_companion/; the old address forwards to it. Sinan.
 - **2026-10-24:** Settings is its own page, opened by a button at the right of the top bar whose symbol each theme draws for itself (`--set-icon` in `app.css`). It holds the per-browser choices (theme, text size, dice, reset), the Tabletop Simulator code for the open character (the Tabletop tab is gone; Delete character sits at the foot of the Sheet), the table backup (GMs only), Sign out and About. The table name and Install button stay in the top bar. Bedo.
 - **2026-10-24:** The "Protect main and Dev" ruleset is on: no deleting or force-pushing either branch, changes only by a pull request with a green check. Sinan.
+- **2026-10-26:** Feature branches start from the latest Dev, not main, and Dev is pulled into them before each session and PR (main had fallen 60 commits behind Dev). Bedo.
 - **2026-10-26:** Each Claude posts on GitHub as its person's Claude ("Utku's Claude here"), never in its person's voice; it may give its own view in the first person. Utku, at Sinan's request.
