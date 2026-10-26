@@ -303,6 +303,7 @@ function GMView({ chars, updateChar, openChar }) {
       <span class="lbl">Campaign</span>
       ${[["all", "All"], ...CAMPAIGNS.map(x => [x, x]), ["none", "No campaign"]].map(([k, n]) => html`<button class=${"btn small" + (camp === k ? " primary" : "")} aria-pressed=${camp === k} onClick=${() => setCamp(k)}>${n}</button>`)}
     </div>
+    <${TownSmith} />
     ${Store.table && html`<${MembersPanel} chars=${chars} updateChar=${updateChar} />`}
     <div class="gmgrid">
       <section class="frame"><${Sigils} seed="initiative deck" n=${1} lead="skill" side="r" />
@@ -358,7 +359,6 @@ function GMView({ chars, updateChar, openChar }) {
           ${!party.length && html`<p class="muted">No characters here yet. Set a character's campaign on their sheet.</p>`}</div>
       </section>
     </div>
-    <${BackupPanel} chars=${chars} />
   </div>`;
 }
 

@@ -13,7 +13,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25   # installing the test browser alone can take 10 minutes on GitHub
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -54,6 +54,30 @@ jobs:
 
       - name: Workshop jobs between players (Firebase stand-in)
         run: python3 tests/workshop.py "$RUNNER_TEMP/site" smoke-shots
+
+      - name: Crafting appears only with crafting skills
+        run: python3 tests/craft_unlock.py "$RUNNER_TEMP/site"
+
+      - name: Custom Powdertinkering parts
+        run: python3 tests/powder_custom.py "$RUNNER_TEMP/site" smoke-shots
+
+      - name: Saved Powdertinkering recipes
+        run: python3 tests/powder_saved.py "$RUNNER_TEMP/site" smoke-shots
+
+      - name: Warding (Magic tab)
+        run: python3 tests/warding.py "$RUNNER_TEMP/site" smoke-shots
+
+      - name: Occult Harmony (Magic tab)
+        run: python3 tests/harmony.py "$RUNNER_TEMP/site" smoke-shots
+
+      - name: Daemonology (Magic tab)
+        run: python3 tests/demonology.py "$RUNNER_TEMP/site" smoke-shots
+
+      - name: Dreamwalking (Magic tab)
+        run: python3 tests/dreamwalking.py "$RUNNER_TEMP/site" smoke-shots
+
+      - name: Alchemy (Magic tab)
+        run: python3 tests/alchemy.py "$RUNNER_TEMP/site" smoke-shots
 
       - name: Keep the screenshots
         if: always()

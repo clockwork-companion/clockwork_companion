@@ -126,15 +126,18 @@ function WeaponUpkeep({ c, update }) {
   const stop = () => { timers.current.forEach(clearTimeout); timers.current = []; };
   useEffect(() => () => stop(), []);
   useEffect(() => { stop(); setRun(null); setSel(""); }, [c.id]);
+  // The "new job" notice asked to open a job on this bench.
+  const shop = useShop();
+  useEffect(() => { const f = shop.focus; if (f && f.kind === "weapon" && f.char === c.id && !runRef.current) { shop.focus = null; setMode("repair"); setSel(f.sel); } }, [shop.focusSeq, c.id]);
   const busy = !!run && !run.done;
   useShop();
   const ws = c.weapons.filter(w => num(w.durMax) > 0 || w.name);
   const byNeed = [...ws].sort((a, b) => R.wRepairPlan(c, b).missing - R.wRepairPlan(c, a).missing);
   // Another player's weapon on this bench (a workshop job), else one of this character's own.
   const job = run && run.kind === "repair" ? run.job : selId.startsWith("job:") ? Shop.incoming(c, "weapon").find(j => "job:" + j.id === selId) || null : null;
-  const weapon = job ? job.item : ws.find(w => w.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
+  const weapon = job ? Shop.view(job) : ws.find(w => w.id === (run && run.kind === "repair" ? run.id : selId)) || byNeed[0] || null;
   const away = !job && weapon ? Shop.outgoing(c, "weapon", weapon.id) : null;   // sent to a smith: they repair it, not us
-  const rp = weapon ? Object.assign(R.wRepairPlan(c, weapon), away ? { block: `It's at ${away.to.name}'s bench. Take it back to repair it yourself.` } : {}) : null;
+  const rp = weapon ? Object.assign(R.wRepairPlan(c, weapon), away ? { block: `It's with ${away.to.name}. Take it back on the Gear tab to repair it yourself.` } : {}) : null;
   const rc = cw.recipe, cp = R.wCraftPlan(c, rc);
   const setRc = fn => update(x => fn(x.craft.weapon.recipe));
   const addLedger = (x, e) => { x.craft.weapon.ledger = [Object.assign({ id: rid(), t: Date.now(), note: "" }, e), ...x.craft.weapon.ledger].slice(0, 20); };
@@ -170,9 +173,9 @@ function WeaponUpkeep({ c, update }) {
     const f = runRef.current; if (!f) return;
     const total = f.dice.reduce((s, x) => s + x, 0), gained = Math.min(f.plan.missing, total);
     if (f.job) {
-      // Another player's weapon: the result goes back to them; this smith pays the materials.
+      // Another player's weapon: the repair adds to the job (the smith can repair again, then send it back); this smith pays the materials.
       const roll = `check ${f.r}−${f.mod}=${f.check} → ${f.count} × d10${f.count ? ": " + total : ""}`;
-      if (!Shop.answer(f.job, "done", { gained, roll, by: c.name || "" })) { toast(`${f.job.from.name} took it back before you finished.`); patch({ done: true, phase: "done", total, gainedFinal: 0, gone: true }); return; }
+      if (!Shop.progress(f.job, gained, roll, c.name || "")) { toast(`${f.job.from.name} took it back before you finished.`); patch({ done: true, phase: "done", total, gainedFinal: 0, gone: true }); return; }
       update(x => {
         x.craft.supplies.weapon = Math.max(0, num(x.craft.supplies.weapon) - f.plan.cost);
         const txt = `${f.job.from.name}'s ${f.job.item.name || "weapon"}: Durability ${f.plan.dur} → ${f.plan.dur + gained}`;
@@ -240,6 +243,13 @@ function WeaponUpkeep({ c, update }) {
     patch({ done: true, phase: ok ? "made" : "lost", gotProps: ok ? [...chosen, ...extra, ...exotic] : [], extra, forName: forWho ? forWho.name : "" });
   };
   const close = () => { stop(); setRun(null); };
+  // On another player's item: repair it again straight away, or send it back with every repair made.
+  const [again, setAgain] = useState(false);
+  const liveJob = run && run.job ? Shop.jobs.find(j => j.id === run.job.id && j.status === "open") || null : null;
+  const left = liveJob ? (v => num(v.durMax) - num(v.dur))(Shop.view(liveJob)) : 0;   // still to repair
+  const repairAgain = () => { const j = run.job; close(); setSel("job:" + j.id); setAgain(true); };
+  const sendBack = () => { const j = run.job; if (Shop.finish(j, update, c.name || "")) toast(`Sent back to ${j.from.name}.`); close(); setSel(""); };
+  useEffect(() => { if (again && !run && job) { setAgain(false); startRepair(); } }, [again, !!run, job && job.id]);
 
   const shape = mode === "repair" ? (weapon ? wShape(weapon.shield ? "Shield" : weapon.skill, weapon.name) : "sword") : wShape(rc.skill, rc.name);
   const shownDur = run && run.kind === "repair" ? run.plan.dur + run.gained : rp ? rp.dur : 0;
@@ -267,10 +277,10 @@ function WeaponUpkeep({ c, update }) {
               ${rp.block && html`<p class="muted ptwhy">${rp.block}</p>`}`}
             ${!run && mode === "craft" && html`<button class="btn primary big forgebtn" disabled=${!!cp.block} onClick=${startCraft}>${HAMMER}Forge it · ${cp.cost} g</button>
               ${cp.block && html`<p class="muted ptwhy">${cp.block}</p>`}`}
-            ${run && html`<${WmReadout} run=${run} onClose=${close} />`}
+            ${run && html`<${WmReadout} run=${run} onClose=${close} job=${liveJob} left=${left} onAgain=${repairAgain} onSendBack=${sendBack} />`}
           </div>
         </div>
-        <div class="ptside">${mode === "repair" ? html`<${WRepairSide} c=${c} ws=${ws} weapon=${weapon} job=${job} selId=${selId} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
+        <div class="ptside">${mode === "repair" ? html`<${WRepairSide} c=${c} update=${update} ws=${ws} weapon=${weapon} job=${job} selId=${selId} rp=${rp} st=${st} busy=${busy} pick=${id => { close(); setSel(id); }} />`
           : html`<${WCraftSide} c=${c} rc=${rc} cp=${cp} st=${st} focus=${focus} setRc=${setRc} busy=${busy} />`}</div>
       </div>
     </section>
@@ -293,7 +303,7 @@ function WeaponUpkeep({ c, update }) {
     </section>`;
 }
 
-function WmReadout({ run, onClose }) {
+function WmReadout({ run, onClose, job, left, onAgain, onSendBack }) {
   const [spin, setSpin] = useState(0);
   useEffect(() => {
     if (run.phase !== "rolling" || reduceMotion()) return;
@@ -305,8 +315,11 @@ function WmReadout({ run, onClose }) {
     if (run.done) return html`<div class=${"ptread end " + (run.gainedFinal ? "done" : "nothing")} role="status">
       <p class="ptbig">${run.gainedFinal ? `+${run.gainedFinal} Durability` : "No durability recovered"}</p>
       <p>${run.count ? `${run.count} × d10: ${run.dice.length > 1 ? run.dice.join(" + ") + " = " : ""}${run.total}${run.total > run.gainedFinal ? ` (it was full at ${p.max})` : ""}` : "The check was too high for even one die."}</p>
-      <p class="muted">${run.gone ? "Nothing was spent." : `${p.cost} g of weapon materials used · an hour's work.`}${run.job && !run.gone ? ` It goes back to ${run.job.from.name}'s Gear.` : ""}${p.broken ? " The flaw it gained for breaking stays until a weaponsmith removes it." : ""}</p>
-      <button class="btn primary" onClick=${onClose}>Back to the bench</button></div>`;
+      <p class="muted">${run.gone ? "Nothing was spent." : `${p.cost} g of weapon materials used · an hour's work.`}${job ? ` ${num((job.result || {}).times) > 1 ? `Repaired ${num(job.result.times)} times: +${num(job.result.gained)} ${"Durability"} in all. ` : ""}${left > 0 ? `${left} still to go. Repair again, or send it back to ${job.from.name} when you're done.` : `It's fully repaired. Send it back to ${job.from.name}.`}` : ""}${p.broken ? " The flaw it gained for breaking stays until a weaponsmith removes it." : ""}</p>
+      ${job ? html`<div class="row shopnext">${left > 0 && html`<button class="btn primary" onClick=${onAgain}>Repair again</button>`}
+          <button class=${"btn" + (left > 0 ? "" : " primary")} onClick=${onSendBack}>Send it back to ${job.from.name}</button>
+          <button class="btn" onClick=${onClose}>Back to the bench</button></div>`
+        : html`<button class="btn primary" onClick=${onClose}>Back to the bench</button>`}</div>`;
     return html`<div class="ptread" role="status" aria-live="polite">
       <div class="ptstep"><span class="lbl">${run.phase === "rolling" ? "Weapon Maintenance check" : "Repair dice"}</span><b>${run.phase === "rolling" ? "Looking it over…" : `${run.count} × d10`}</b></div>
       ${run.phase === "rolling" ? html`<div class="ptdice rolling"><span class="d100">${spin || "··"}</span><span class="ptmath">d100 − ${run.mod} · lower is better</span></div>`
@@ -330,10 +343,10 @@ function WmReadout({ run, onClose }) {
   </div>`;
 }
 
-function WRepairSide({ c, ws, weapon, job, selId, rp, st, busy, pick }) {
+function WRepairSide({ c, update, ws, weapon, job, selId, rp, st, busy, pick }) {
   return html`<div class="ptpick">
     <h3 class="ptpickh"><span>Weapons</span></h3>
-    <${ShopJobs} c=${c} kind="weapon" selId=${selId} pick=${pick} busy=${busy} />
+    <${ShopJobs} c=${c} kind="weapon" selId=${selId} pick=${pick} busy=${busy} update=${update} />
     ${ws.length === 0 ? html`<p class="muted ptrule">Nothing to repair yet.</p>` : html`<div class="ptopts amsuits">${ws.map(w => { const p = R.wRepairPlan(c, w);
       return html`<button type="button" class="ptopt amsuit" aria-pressed=${!job && weapon && weapon.id === w.id} disabled=${busy} onClick=${() => pick(w.id)}>
         <b>${w.name || "Unnamed weapon"}${p.broken ? html` <span class="flag bad">Broken</span>` : ""}${Shop.outgoing(c, "weapon", w.id) ? html` <span class="flag brass">At ${Shop.outgoing(c, "weapon", w.id).to.name}'s</span>` : ""}</b>
@@ -344,7 +357,6 @@ function WRepairSide({ c, ws, weapon, job, selId, rp, st, busy, pick }) {
       <li><span>Check: d100 − ${st.mod}</span><span class="muted">Repair Count = 10 − check ÷ 10, rounded down, at most 10</span></li>
       <li><span>Roll d10 that many times</span><span class="muted">The total goes back into Durability (up to ${rp.max}). An hour per attempt.</span></li></ol>
       <p class="ptdc">Check 0 or less: 10 × d10 · check 40: 6 × d10 · check 90: 1 × d10</p></div>`}
-    ${weapon && !job && html`<${ShopSend} c=${c} kind="weapon" item=${weapon} busy=${busy} />`}
   </div>`;
 }
 

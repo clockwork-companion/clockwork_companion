@@ -127,14 +127,22 @@ const CW = (() => {
       vitals: { hp: null, bp: null, dp: null, tox: 0, exhaustion: 0, staminaLost: 0,
                 wounds: { light: 0, moderate: 0, mortal: 0 }, conditions: [] },
       prosthetics: [], coins: 0,
+      // Warding: the Words of Power the warder knows, extra grammar words, saved and formulaic wards, Fatigue.
+      ward: { bonus: 0, fatigue: 0, words: [], extra: { subject: [], adverb: [], conj: [] }, wards: [], board: [], ledger: [] },
+      harmony: { els: [], ch: {}, rel: [], turns: 0, kept: 0, ledger: [] },
+      demon: { daemons: [], out: [], guardian: "", today: 0, army: false, ledger: [] },
+      dream: { inRealm: false, mundane: false, travelers: 0, tolls: [], vault: [], sphere: null, seeds: [], ledger: [] },
+      alch: { circles: [], arrays: {}, ledger: [] },   // Alchemy: saved circles (one may be a Signature Circle), arrays on the body   // Dreamwalking: what the dreamwalker sustains   // Demonology: contracts, who is summoned, summons used today   // Occult: Harmony: known elements, chakra → element, released chakras
       items: [], weapons: [], armor: [], log: [],
-      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [],
+      craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
                brew: { bonus: 0, known: [], recipes: [], catalysts: [], order: { k: "health", inc: 0, catalyst: "", potent: null }, ledger: [] },
                rune: { bonus: 0, effects: [], order: { gem: "amethyst", gemName: "", precious: false, kind: "enhance", effect: "", dc: 50, cost: 100, extra: 0,
                        second: null, hoax: false, pay: "hp", hours: 1 }, ledger: [] },
                weapon: { bonus: 0, recipe: { name: "", skill: "Slashing", hands: 1, unwieldy: false, damage: 6, crit: 5, accuracy: 0, dur: 100, durDie: "d10", plus: {}, props: [], exotic: { name: "", dc: 0, note: "" }, for: "" }, ledger: [] }, jobsDone: [] },
       talents: [], uses: {},
+      // Crafting and Magic are modules the player turns on (null: not asked yet; asked once the character has points in one).
+      modules: { craft: null, magic: null },
     };
   }
 
@@ -151,6 +159,8 @@ const CW = (() => {
     out.vitals.wounds = Object.assign({}, b.vitals.wounds, c && c.vitals && c.vitals.wounds);
     ["items", "weapons", "armor", "log", "talents"].forEach(k => (out[k] = Array.isArray(out[k]) ? out[k] : []));
     out.uses = out.uses && typeof out.uses === "object" ? out.uses : {};
+    const mods = out.modules && typeof out.modules === "object" ? out.modules : {};
+    out.modules = { craft: typeof mods.craft === "boolean" ? mods.craft : null, magic: typeof mods.magic === "boolean" ? mods.magic : null };
     // Stamina lost and Exhaustion are one track: each Stamina stack lost is a level of Exhaustion.
     // Older sheets kept them apart, so take the higher of the two. staminaLost stays as a mirror for the Tabletop sheet.
     out.vitals.exhaustion = clamp(Math.max(num(out.vitals.exhaustion), num(out.vitals.staminaLost)), 0, 10);
@@ -160,6 +170,34 @@ const CW = (() => {
     ["supplies", "batch"].forEach(k => (out.craft[k] = Object.assign({}, b.craft[k], out.craft[k])));
     out.craft.recipe = Object.assign({ type: "rifle" }, out.craft.recipe);
     if (!Array.isArray(out.craft.ledger)) out.craft.ledger = [];
+    if (!Array.isArray(out.craft.parts)) out.craft.parts = [];   // custom Powdertinkering parts (coats, tips, areas, cores, statuses)
+    if (!Array.isArray(out.craft.saved)) out.craft.saved = [];   // saved Powdertinkering recipes: { k, n, recipe }
+    out.ward = Object.assign({}, b.ward, out.ward);
+    out.ward.extra = Object.assign({ subject: [], adverb: [], conj: [] }, out.ward.extra);
+    ["subject", "adverb", "conj"].forEach(k => { if (!Array.isArray(out.ward.extra[k])) out.ward.extra[k] = []; });
+    ["words", "wards", "board", "ledger"].forEach(k => { if (!Array.isArray(out.ward[k])) out.ward[k] = []; });
+    out.ward.fatigue = Math.max(0, num(out.ward.fatigue));
+    out.harmony = Object.assign({}, b.harmony, out.harmony);
+    if (!Array.isArray(out.harmony.els)) out.harmony.els = [];
+    if (!out.harmony.ch || typeof out.harmony.ch !== "object" || Array.isArray(out.harmony.ch)) out.harmony.ch = {};
+    ["rel", "ledger"].forEach(k => { if (!Array.isArray(out.harmony[k])) out.harmony[k] = []; });
+    out.harmony.turns = Math.max(0, num(out.harmony.turns)); out.harmony.kept = Math.max(0, num(out.harmony.kept));
+    out.demon = Object.assign({}, b.demon, out.demon);
+    ["daemons", "out", "ledger"].forEach(k => { if (!Array.isArray(out.demon[k])) out.demon[k] = []; });
+    out.demon.daemons = out.demon.daemons.filter(x => x && typeof x === "object").map(x => Object.assign({ id: "", n: "", realm: "", wp: "", terms: "", note: "", img: "", imgData: "", abilities: [] }, x));
+    out.demon.daemons.forEach(x => { if (!Array.isArray(x.abilities)) x.abilities = []; });
+    out.demon.out = out.demon.out.filter(id => out.demon.daemons.some(x => x.id === id));
+    out.demon.today = Math.max(0, num(out.demon.today)); if (typeof out.demon.guardian !== "string") out.demon.guardian = ""; out.demon.army = !!out.demon.army && out.demon.out.length > 0;
+    out.dream = Object.assign({}, b.dream, out.dream);
+    ["tolls", "vault", "seeds", "ledger"].forEach(k => { if (!Array.isArray(out.dream[k])) out.dream[k] = []; });
+    out.dream.inRealm = !!out.dream.inRealm; out.dream.mundane = !!out.dream.mundane; out.dream.travelers = Math.max(0, num(out.dream.travelers));
+    if (out.dream.sphere && typeof out.dream.sphere !== "object") out.dream.sphere = null;
+    if (out.dream.sphere) ["x", "y"].forEach(k => { if (out.dream.sphere[k] != null && !Number.isFinite(+out.dream.sphere[k])) delete out.dream.sphere[k]; });
+    out.dream.vault.forEach(v => { if ((v.kind === "weapon" || v.kind === "armor") && !(v.obj && typeof v.obj === "object")) delete v.kind; });
+    out.alch = Object.assign({}, b.alch, out.alch);
+    ["circles", "ledger"].forEach(k => { if (!Array.isArray(out.alch[k])) out.alch[k] = []; });
+    out.alch.circles.forEach(x => { if (!Array.isArray(x.layers)) x.layers = []; if (!(x.size in ALCH_SIZE_I)) x.size = "small"; });
+    if (!out.alch.arrays || typeof out.alch.arrays !== "object" || Array.isArray(out.alch.arrays)) out.alch.arrays = {};
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
@@ -320,7 +358,8 @@ const CW = (() => {
     const bleed = Object.entries(WOUNDS).reduce((s, [k, w]) => s + w.bleed * num(v.wounds[k]), 0);
     const enc = encumbrance(c);
     const baseMove = 10 + sk(c, "Tumble");
-    const move = enc.tier.move == null ? 0 : Math.max(0, baseMove + enc.effectiveMove);
+    const harmony = harmonyGlance(c);   // reinforced chakras: Wind in the Opening chakra adds to Movement, the rest are listed
+    const move = enc.tier.move == null ? 0 : Math.max(0, baseMove + enc.effectiveMove + harmony.move);
     let rationsPerMeal = 2;
     if (belly >= 3) rationsPerMeal = end <= 5 ? 5 : end <= 8 ? 6 : 7;
     return {
@@ -335,7 +374,7 @@ const CW = (() => {
       exhaustionFromBlood: bloodExhaustion(cur.bp),
       exhaustionFromHunger: hungerExhaustion(cur.dp),
       overToxic: cur.tox > max.tox,
-      move, baseMove, climb: Math.floor(move / 2),
+      move, baseMove, climb: Math.floor(move / 2), harmony,
       mealsPerDay: sk(c, "Deprivation") >= 3 ? 2 : 3,
       rationsPerDay: (sk(c, "Deprivation") >= 3 ? 2 : 3) + c.prosthetics.length,
       rationsPerMeal,
@@ -425,6 +464,16 @@ const CW = (() => {
     const st = Math.max(0, num(v.exhaustion) - 2 - (sk(c, "Conditioning") >= 7 ? 2 : 0));
     if (st !== num(v.exhaustion)) parts.push(`Stamina ${num(v.exhaustion)} → ${st} lost`); setStamina(c, st);
     if (refreshUses(c, false)) parts.push("abilities recharged");
+    if (c.ward && num(c.ward.fatigue)) { parts.push(`Warding Fatigue ${num(c.ward.fatigue)} → 0`); c.ward.fatigue = 0; }   // all Fatigue clears after a long rest
+    if (c.demon && num(c.demon.today)) { parts.push("daemon summons renewed"); c.demon.today = 0; }   // the app counts a day of summons from long rest to long rest
+    if (c.dream) {   // Dreamwalking tolls disperse; items lost to a failed sending come back; dreamseeds stay
+      const d = c.dream, back = d.vault.filter(v => v.lost);
+      if (d.tolls.length || d.vault.some(v => num(v.pct))) parts.push("dreamwalking Toll cleared");
+      d.tolls = []; d.vault.forEach(v => { v.pct = 0; });
+      back.forEach(v => dreamReturn(c, v));
+      if (back.length) parts.push(`${back.length} lost item${back.length === 1 ? "" : "s"} back from the dream realm`);
+      d.vault = d.vault.filter(v => !v.lost); d.sphere = null;
+    }
     return "Long rest: " + parts.join(" · ");
   }
 
@@ -497,6 +546,28 @@ const CW = (() => {
     ["Hypothermia", "Cold", "Counts as having 1 stack of Exhaustion until resisted."],
   ];
   const PT_GRAMS = 200;
+  // The book's difficulty for each part, before Rating increments (custom parts may set their own).
+  const PT_BASE_DC = { coat: 60, tip: 40, area: 30, core: 40, status: 40 };
+  // The book's parts plus this character's custom ones (c.craft.parts: { k, part, n, what, dc, rated, el }), in the
+  // same shapes as COATS, TIPS, AREAS, ELEMENTS and STATUSES. dcs: the custom parts' own base difficulties.
+  function ptLists(c) {
+    const own = ((c.craft && c.craft.parts) || []).filter(x => x && x.n && PT_PARTS.includes(x.part));
+    const by = part => own.filter(x => x.part === part);
+    const book = new Set([...COATS.map(x => x[0]), ...TIPS.map(x => x[0]), ...AREAS.map(x => x[0]), ...ELEMENTS, ...STATUSES.map(x => x[0])]);
+    const fresh = x => !book.has(x.n);   // a custom part can't shadow one of the book's
+    const dcs = {}; own.forEach(x => (dcs[x.part + ":" + x.n] = num(x.dc) || PT_BASE_DC[x.part]));
+    const elements = [...ELEMENTS, ...by("core").filter(fresh).map(x => x.n)];
+    return {
+      coats: [...COATS, ...by("coat").filter(fresh).map(x => [x.n, x.what || "", true])],
+      tips: [...TIPS, ...by("tip").filter(fresh).map(x => [x.n, !!x.rated, x.what || "", true])],
+      areas: [...AREAS, ...by("area").filter(fresh).map(x => [x.n, x.what || "", true])],
+      elements,
+      cores: Object.fromEntries(by("core").filter(fresh).map(x => [x.n, x.what || ""])),
+      statuses: [...STATUSES, ...by("status").filter(x => fresh(x) && elements.includes(x.el)).map(x => [x.n, x.el, x.what || "", true])],
+      dcs, own,
+    };
+  }
+  const ptDc = (L, part, name) => L.dcs[part + ":" + name] || PT_BASE_DC[part];
 
   // What this character's Powdertinker level allows (perks Tinkerling → Master o' Munitions).
   function ptState(c) {
@@ -519,37 +590,38 @@ const CW = (() => {
     };
   }
   // Difficulty (in %) of a step. Tips: 40 − 5 per Rating increment above the base; Cores: 40 − 10 per increment.
-  function ptDifficulty(part, inc = 0) {
-    if (part === "coat") return 60;
-    if (part === "tip") return 40 - 5 * inc;
-    if (part === "area") return 30;
-    if (part === "core") return 40 - 10 * inc;
-    return 40;
+  // base: a custom part's own difficulty, which the increments then lower the same way.
+  function ptDifficulty(part, inc = 0, base) {
+    const b = base == null ? PT_BASE_DC[part] || 40 : num(base);
+    if (part === "tip") return b - 5 * inc;
+    if (part === "core") return b - 10 * inc;
+    return b;
   }
   // Chance that d100 (1–100) − mod lands below dc.
   const ptChance = (dc, mod) => clamp(dc + mod - 1, 0, 100);
   // The steps a recipe needs, in crafting order. A recipe: { type, coat, tips: {Precise: inc, …}, area: {k, cone}, core: {el, inc}, status: [names] }.
   function ptSteps(c, rc) {
-    const st = ptState(c), type = rc.type, steps = [];
+    const st = ptState(c), type = rc.type, steps = [], L = ptLists(c);
     const can = p => ptAccess(type, p) && st.unlock[p];
     const m = MUNITION[type] || MUNITIONS[0];
-    const coat = can("coat") ? rc.coat || "Piercing" : "Piercing";
-    steps.push({ part: "coat", key: "coat", label: m.shape === "grenade" ? "Casing" : m.shape === "flask" ? "Base oil" : `${coat} coat`, dc: 60, mat: "container" });
-    if (can("tip")) TIPS.forEach(([k, rated]) => {
+    const coat = can("coat") && L.coats.some(x => x[0] === rc.coat) ? rc.coat : "Piercing";
+    const plain = m.shape === "grenade" || m.shape === "flask";
+    steps.push({ part: "coat", key: "coat", label: m.shape === "grenade" ? "Casing" : m.shape === "flask" ? "Base oil" : `${coat} coat`, dc: plain ? 60 : ptDc(L, "coat", coat), mat: "container" });
+    if (can("tip")) L.tips.forEach(([k, rated]) => {
       const inc = rc.tips && rc.tips[k];
       if (inc == null || inc === false) return;
       const i = rated ? num(inc) : 0;
-      steps.push({ part: "tip", key: "tip:" + k, label: rated ? `${k} (${st.base.tip + i})` : k, dc: ptDifficulty("tip", i), mat: "container", name: k, rating: rated ? st.base.tip + i : null });
+      steps.push({ part: "tip", key: "tip:" + k, label: rated ? `${k} (${st.base.tip + i})` : k, dc: ptDifficulty("tip", i, ptDc(L, "tip", k)), mat: "container", name: k, rating: rated ? st.base.tip + i : null });
     });
     const area = rc.area && rc.area.k;
-    if (area && can("area") && !(m.shape === "grenade" && area === "Sphere"))
-      steps.push({ part: "area", key: "area", label: `${area === "Cone" ? `Cone ${rc.area.cone || 60}°` : area} (${st.base.area})`, dc: 30, mat: "container", name: area, rating: st.base.area });
+    if (area && can("area") && L.areas.some(x => x[0] === area) && !(m.shape === "grenade" && area === "Sphere"))
+      steps.push({ part: "area", key: "area", label: `${area === "Cone" ? `Cone ${rc.area.cone || 60}°` : area} (${st.base.area})`, dc: ptDc(L, "area", area), mat: "container", name: area, rating: st.base.area });
     const core = rc.core && rc.core.el;
-    if (core && can("core")) {
+    if (core && can("core") && L.elements.includes(core)) {
       const i = num(rc.core.inc);
-      steps.push({ part: "core", key: "core", label: `${core} core (${st.base.core + i})`, dc: ptDifficulty("core", i), mat: core, name: core, rating: st.base.core + i });
-      if (can("status")) (rc.status || []).forEach(s => { const S = STATUSES.find(x => x[0] === s); if (S && S[1] === core)
-        steps.push({ part: "status", key: "status:" + s, label: `${s} (${st.base.status})`, dc: 40, mat: core, name: s, rating: st.base.status }); });
+      steps.push({ part: "core", key: "core", label: `${core} core (${st.base.core + i})`, dc: ptDifficulty("core", i, ptDc(L, "core", core)), mat: core, name: core, rating: st.base.core + i });
+      if (can("status")) (rc.status || []).forEach(s => { const S = L.statuses.find(x => x[0] === s); if (S && S[1] === core)
+        steps.push({ part: "status", key: "status:" + s, label: `${s} (${st.base.status})`, dc: ptDc(L, "status", s), mat: core, name: s, rating: st.base.status }); });
     }
     steps.forEach(s => (s.chance = ptChance(s.dc, st.mod)));
     return steps;
@@ -574,6 +646,326 @@ const CW = (() => {
     });
     if (m.shape === "grenade" && !done.some(s => s.part === "area")) bits.unshift("Sphere");
     return [m.n, ...bits].join(" · ");
+  }
+
+
+  // ---------- Warding (rulebook 2020.1, Willpower skills: Warding Magic) ----------
+  // A Ward is an English sentence. Subjects cost 5 Sigils, adverbs (a, an, for, the) 1, conjunctions 10 (Warding 7);
+  // adjectives, verbs and nouns are Words of Power, each with the cost in the warder's own dictionary.
+  // Available Sigils = AP used × Sigils per AP − Fatigue. Sigils per AP: 3 per point of Warding.
+  const WORD_KINDS = ["noun", "verb", "adjective"];
+  const WARD_GRAMMAR = {
+    subject: { n: "Subject", cost: 5, words: ["I", "The Ward", "myself", "there"] },
+    adverb: { n: "Adverb", cost: 1, words: ["a", "an", "the", "for"] },
+    conj: { n: "Conjunction", cost: 10, words: ["and", "but", "when", "while"] },
+  };
+  const WARD_KIND_NAME = { subject: "Subject", adverb: "Adverb", conj: "Conjunction", noun: "Noun", verb: "Verb", adjective: "Adjective" };
+  function wardState(c) {
+    const lvl = sk(c, "Warding"), w = c.ward || {}, u = c.uses || {};
+    const left = (lv, n) => Math.max(0, n - num(u["p:Warding:" + lv]));
+    return {
+      lvl, mod: skillModifier(c, "Warding") + num(w.bonus), bonus: num(w.bonus),
+      spa: 3 * lvl,                                   // Sigils per AP
+      fatigue: Math.max(0, num(w.fatigue)),
+      formulaic: lvl >= 3, ritual: lvl >= 4, spontaneous: lvl >= 5, repeatAdj: lvl >= 6, conj: lvl >= 7, reaction: lvl >= 8,
+      subjectCost: WARD_GRAMMAR.subject.cost - (lvl >= 9 ? 3 : 0), adverbCost: Math.max(0, WARD_GRAMMAR.adverb.cost - (lvl >= 9 ? 1 : 0)),
+      // The Active perks (uses kept in c.uses with every other Active ability).
+      active: { double: lvl >= 5 ? left(5, 3) : 0, calm: lvl >= 6 ? left(6, 2) : 0, epic: lvl >= 7 ? left(7, 3) : 0 },
+    };
+  }
+  // Which kinds of word may come next in a Ward sentence (a light grammar: Subject first; verbs, objects and
+  // compound nouns after; adjectives lead into a noun; a conjunction starts a new clause).
+  function wardNext(tokens) {
+    const last = tokens.length ? tokens[tokens.length - 1].k : null;
+    if (!last) return ["subject"];
+    return ({
+      subject: ["verb", "adverb", "conj"],
+      verb: ["adverb", "adjective", "noun", "subject", "conj"],
+      adverb: ["adverb", "adjective", "noun", "subject", "verb"],
+      adjective: ["adjective", "noun"],
+      noun: ["noun", "adverb", "verb", "conj"],
+      conj: ["subject", "verb", "adverb"],
+    })[last] || [];
+  }
+  // The cost and the problems of a Ward sentence. tokens: [{ k, text, id }] (id: a Word of Power in c.ward.words).
+  // epic: The First Epic (Warding 7) is on: up to 3 Words of Power cost 1 Sigil (the dearest ones, to save the most).
+  function wardCost(c, tokens, epic) {
+    const st = wardState(c), words = ((c.ward || {}).words || []), problems = [];
+    const lines = tokens.map((t, i) => {
+      if (t.k === "subject") return { i, t, base: WARD_GRAMMAR.subject.cost, cost: st.subjectCost };
+      if (t.k === "adverb") return { i, t, base: WARD_GRAMMAR.adverb.cost, cost: st.adverbCost };
+      if (t.k === "conj") return { i, t, base: WARD_GRAMMAR.conj.cost, cost: WARD_GRAMMAR.conj.cost };
+      const w = words.find(x => x.id === t.id);
+      if (!w) problems.push(`"${t.text}" isn't in the dictionary any more.`);
+      const cost = w ? Math.max(0, num(w.cost)) : 0;
+      return { i, t, base: cost, cost, wop: true };
+    });
+    let epicUsed = 0;
+    if (epic) lines.filter(l => l.wop).sort((a, b) => b.cost - a.cost).slice(0, 3).forEach(l => { if (l.cost > 1) { l.cost = 1; l.epic = true; epicUsed++; } });
+    const total = lines.reduce((s, l) => s + l.cost, 0);
+    if (!tokens.length) problems.push("Start with a Subject, such as I or The Ward.");
+    else {
+      if (tokens[0].k !== "subject") problems.push("A Ward starts with its Subject.");
+      tokens.forEach((t, i) => { if (i && !wardNext(tokens.slice(0, i)).includes(t.k)) problems.push(`A ${WARD_KIND_NAME[t.k].toLowerCase()} can't follow a ${WARD_KIND_NAME[tokens[i - 1].k].toLowerCase()} there.`); });
+      if (!tokens.some(t => t.k === "verb")) problems.push("A Ward needs a verb: what it does.");
+      if (["adverb", "adjective", "conj"].includes(tokens[tokens.length - 1].k)) problems.push("The sentence isn't finished.");
+      if (tokens.some(t => WORD_KINDS.includes(t.k)) && !st.spontaneous) problems.push("Words of Power need Warding 5 (Works of a Writer).");
+      if (tokens.some(t => t.k === "conj") && !st.conj) problems.push("Conjunctions need Warding 7 (The First Epic).");
+      if (!st.repeatAdj) { const seen = {}; tokens.forEach(t => { if (t.k === "adjective") { if (seen[t.id]) problems.push(`Repeating "${t.text}" needs Warding 6.`); seen[t.id] = 1; } }); }
+    }
+    return { lines, total, epicUsed, problems: [...new Set(problems)], ok: !!tokens.length && !problems.length };
+  }
+  // What inscribing a Ward of this cost takes. double: Works of a Writer (2× Sigils per AP); ritual: inscribed as a
+  // Ritual Ward (5 AP's worth of Sigils an hour). Fatigue comes off the Sigils the AP buy.
+  function wardPlan(c, cost, o = {}) {
+    const st = wardState(c), spa = st.spa * (o.double && !o.ritual ? 2 : 1);
+    const ap = spa > 0 ? Math.max(1, Math.ceil((num(cost) + st.fatigue) / spa)) : Infinity;
+    return { spa, ap, fatigue: st.fatigue, hours: Math.ceil(ap / 5), available: a => Math.max(0, num(a) * spa - st.fatigue) };
+  }
+  // Fatigue gained from one inscription (the GM decides the amount). calm: no Fatigue (Warding 6 Active);
+  // double: 2× Fatigue (Warding 5 Active); ritual: under 10 becomes 1, 10 or more is halved (rounded up).
+  function wardFatigue(gained, o = {}) {
+    let f = Math.max(0, Math.round(num(gained)));
+    if (o.calm && !o.ritual) return 0;
+    if (o.double && !o.ritual) f *= 2;
+    if (o.ritual && f > 0) f = f < 10 ? 1 : Math.ceil(f / 2);
+    return f;
+  }
+
+  // ---------- Occult: Harmony (rulebook 2020.1, 12.4) ----------
+  // Chakras unlock one per level from 3 to 10. Each holds one harmonic element the practitioner knows; known elements
+  // come at levels 3, 5, 7 and 10 and are permanent. Affinity for an element = chakras holding it + Aether Affinity,
+  // and Aether is 1 per Released chakra while they are released (from level 7). The book leaves the Harmonic Elements
+  // table blank ("TBD"); the five elements are the ones its chakra tables use. Effect texts are the book's own.
+  const HARMONY_ELEMENTS = [["fire", "Fire"], ["earth", "Earth"], ["wind", "Wind"], ["water", "Water"], ["spirit", "Spirit"]];
+  const HARMONY_LEARN = [3, 5, 7, 10];
+  const CHAKRAS = [
+    { k: "opening", n: "Opening", lvl: 3, fx: {
+      fire: ["Whenever you roll a Reflex saving throw, you can add your Fire Affinity as a bonus to the roll."],
+      earth: ["Whenever you roll a Fortitude saving throw, you can add your Earth Affinity as a bonus to the roll."],
+      wind: ["Your movement score increases by 1 meters per Wind Affinity you have, up to a maximum of 5."],
+      water: ["Whenever you take a Defend action, you can add your Water Affinity as a bonus to the roll."],
+      spirit: ["Whenever you roll a Willpower saving throw, you can add your Spirit Affinity as a bonus to the roll."] } },
+    { k: "life", n: "Life", lvl: 4, fx: {
+      fire: ["Any secondary skill check you roll that is governed by Presence, you can add your Fire Affinity as a bonus to the roll.",
+        "With a Fire Affinity of 6 or higher, any primary skill check you roll that is governed by Presence, you can add your Fire Affinity as a bonus to the roll."],
+      earth: ["Any secondary skill check you roll that is governed by Strength or Endurance, you can add your Earth Affinity as a bonus to the roll.",
+        "With a Earth Affinity of 6 or higher, any primary skill check you roll that is governed by Strength or Endurance, you can add your Earth Affinity as a bonus to the roll.",
+        "Melee Attacks are considered Strength checks."],
+      wind: ["Any secondary skill check you roll that is governed by Dexterity, you can add your Wind Affinity as a bonus to the roll.",
+        "With a Wind Affinity of 6 or higher, any primary skill check you roll that is governed by Dexterity, you can add your Wind Affinity as a bonus to the roll.",
+        "Ranged Attacks are considered Dexterity checks."],
+      water: ["Any secondary skill check you roll that is governed by Mind, you can add your Water Affinity as a bonus to the roll.",
+        "With a Water Affinity of 6 or higher, any primary skill check you roll that is governed by Mind, you can add your Water Affinity as a bonus to the roll."],
+      spirit: ["Any secondary skill check you roll that is governed by Wisdom or Willpower, you can add your Spirit Affinity as a bonus to the roll.",
+        "With a Spirit Affinity of 6 or higher, any primary skill check you roll that is governed by Wisdom or Willpower, you can add your Spirit Affinity as a bonus to the roll."] } },
+    { k: "pain", n: "Pain", lvl: 5, fx: {
+      fire: ["Whenever you lose Hit Points, as a result of a Failed Saving Throw, you lose Fire Affinity/2, up to a maximum of 5 and a minimum of 1."],
+      earth: ["Whenever you take the Brace Action, you can add your Earth Affinity/2 to your Damage Mitigation value."],
+      wind: ["Whenever you gain Toxicity, you can reduce that number by Wind Affinity/2, up to a maximum of 5 and a minimum of 1."],
+      water: ["Whenever you bleed from a Wound, you can reduce the bleeding by Water Affinity/2 down to a minimum of 1."],
+      spirit: ["Whenever you lose Deprivation to some effect other than natural hunger, you can reduce the amount lost by Spirit Affinity/2 down to a minimum of 1."] } },
+    { k: "healing", n: "Healing", lvl: 6, fx: {
+      fire: ["You recover toxicity points equal to your Fire Affinity during a short rest. This effect can only occur once every long rest."],
+      earth: ["You recover blood points equal to 10xEarth Affinity during a short rest. This effect can only occur once every long rest."],
+      wind: ["You recover hit points equal to your 2xWind Affinity during a short rest. This effect can only occur once every long rest."],
+      water: ["For every 5 hit points you receive as healing, you receive additional hit points equal to half your Water Affinity."],
+      spirit: ["If you have recovered any sanity points since your last long rest, you recover sanity points equal to the amount you have recovered again or your Spirit Affinity, whichever is lower.",
+        "Recovery takes place during your next short rest. This effect can only occur once every long rest."] } },
+    { k: "limit", n: "Limit", lvl: 7, release: "", fx: {
+      fire: ["Whenever you roll a disadvantaged roll caused by an ailment, you can add 2xFire Affinity to your roll."],
+      earth: ["For each 2 points of Earth Affinity you have, you negate the effects of 1 stack of Exhaustion."],
+      wind: ["Whenever you roll to resist an effect that would deafen, paralyze or poison you, you can add 2xWind Affinity to your roll."],
+      water: ["Whenever you roll to resist an effect that would blind, petrify or stun you, you can add 2xWater Affinity to your roll."],
+      spirit: ["Whenever you roll to resist an effect that would charm or frighten you, you can add 2xSpirit Affinity to your roll."] } },
+    { k: "wonder", n: "Wonder", lvl: 8, release: "", fx: { fire: [], earth: [], wind: [], water: [], spirit: [] } },
+    { k: "view", n: "View", lvl: 9, release: "You gain temporary hit points equal to your maximum hit points. These hit points can only be used to defend against the damage types this chakra provide resistance against.", fx: {
+      fire: ["Whenever you take fire damage, neglect 2 points of it.", "With a Fire Affinity of 4 or higher you gain resistance to fire damage.",
+        "With a Fire Affinity of 6 or higher, your next attack gains bonus damage equal to your Fire Affinity. This effect can only occur once a round."],
+      earth: ["Whenever you take bludgeoning or poison damage, neglect 2 points of it.", "With a Earth Affinity of 4 or higher you gain resistance to bludgeoning damage.",
+        "With a Earth Affinity of 6 or higher you gain resistance to poison damage."],
+      wind: ["Whenever you take slashing or cold damage, neglect 2 points of it.", "With a Wind Affinity of 4 or higher you gain resistance to slashing damage.",
+        "With a Wind Affinity of 6 or higher you gain resistance to cold damage."],
+      water: ["Whenever you take piercing or lightning damage, neglect 2 points of it.", "With a Water Affinity of 4 or higher you gain resistance to piercing damage.",
+        "With a Water Affinity of 6 or higher you gain resistance to lightning damage."],
+      spirit: ["Whenever you take psychic damage, neglect 2 points of it.", "With a Spirit Affinity of 4 or higher, whenever you roll a Sanity check, you can add 2xSpirit Affinity to your roll.",
+        "With a Spirit Affinity of 6 or higher you gain resistance to psychic damage."] } },
+    { k: "death", n: "Death", lvl: 10, release: "You gain all reinforcement effects for the next 2 turns.", fx: {
+      fire: ["When your health drops below your 2xFire Affinity, any bonus damage you deal is now considered weapon damage.", "If an attack made by you misses, you can reroll that attack once per round."],
+      earth: ["Instead of death saving throws, you roll Occult:Harmony checks to stabilize.", "When you stabilize, you regain hit points equal to your Earth Affinity and regain consciousness. This can only occur once per long rest."],
+      wind: ["When your health drops below your 2xWind Affinity, you gain Action Points equal to your Wind Affinity."],
+      water: ["When your health drops below your 2xWater Affinity, you gain hit point regeneration equal to your Water Affinity for 3 turns."],
+      spirit: ["When your health drops to 0, instead of going unconscious, you continue fighting for a number of turns equal to your Spirit Affinity. You still roll death saving throws."] } },
+  ];
+  const CHAKRA_BY = Object.fromEntries(CHAKRAS.map(x => [x.k, x]));
+  function harmonyState(c) {
+    const lvl = sk(c, "Occult: Harmony"), h = c.harmony || {}, u = c.uses || {};
+    const learnMax = HARMONY_LEARN.filter(l => lvl >= l).length;
+    const known = (h.els || []).filter(e => HARMONY_ELEMENTS.some(x => x[0] === e)).slice(0, Math.max(learnMax, (h.els || []).length));
+    const open = CHAKRAS.filter(x => lvl >= x.lvl).map(x => x.k);
+    const held = {}; open.forEach(k => { const e = (h.ch || {})[k]; if (e && known.includes(e)) held[k] = e; });
+    const released = (h.rel || []).filter(k => open.includes(k));
+    const aether = released.length;
+    const aff = {}; known.forEach(e => { aff[e] = Object.values(held).filter(x => x === e).length + aether; });
+    return {
+      lvl, mod: skillModifier(c, "Occult: Harmony"), learnMax, known, canLearn: Math.max(0, learnMax - known.length),
+      open, held, aff, aether, released, turnsLeft: Math.max(0, num(h.turns)), kept: Math.max(0, num(h.kept)),
+      shift: lvl >= 5 ? Math.max(0, 3 - num(u["p:Occult: Harmony:5"])) : 0,   // level 5 Active: change one chakra (2 AP), 3 uses a long rest
+      canRelease: lvl >= 7, canAll: lvl >= 10, releaseTurns: lvl,              // released for SP turns from the first release
+      next: CHAKRAS.find(x => lvl < x.lvl) || null,
+    };
+  }
+  // What the reinforced chakras do right now, for the sheet's "At a glance" panel: Wind in the Opening chakra adds to
+  // Movement itself; every other power becomes a short line with the practitioner's numbers ({ k: label, v: value, el }).
+  function harmonyGlance(c) {
+    const st = harmonyState(c), out = { move: 0, facts: [] };
+    if (!st.lvl || !Object.keys(st.held).length) return out;
+    const add = (k, v, el, ch) => out.facts.push({ k, v, el, ch });
+    Object.entries(st.held).forEach(([ch, el]) => {
+      const a = num(st.aff[el]), half = Math.floor(a / 2), h15 = clamp(half, 1, 5), h1 = Math.max(1, half);
+      const t = ch + ":" + el, rel = st.released.includes(ch);
+      switch (t) {
+        case "opening:fire": add("Reflex saves", `+${a}`, el, ch); break;
+        case "opening:earth": add("Fortitude saves", `+${a}`, el, ch); break;
+        case "opening:wind": out.move = Math.min(5, a); break;
+        case "opening:water": add("Defend", `+${a}`, el, ch); break;
+        case "opening:spirit": add("Willpower saves", `+${a}`, el, ch); break;
+        case "life:fire": add(a >= 6 ? "Presence checks" : "Presence checks (secondary)", `+${a}`, el, ch); break;
+        case "life:earth": add(a >= 6 ? "Strength, Endurance checks and melee" : "Strength, Endurance (secondary) and melee", `+${a}`, el, ch); break;
+        case "life:wind": add(a >= 6 ? "Dexterity checks and ranged" : "Dexterity (secondary) and ranged", `+${a}`, el, ch); break;
+        case "life:water": add(a >= 6 ? "Mind checks" : "Mind checks (secondary)", `+${a}`, el, ch); break;
+        case "life:spirit": add(a >= 6 ? "Wisdom, Willpower checks" : "Wisdom, Willpower (secondary)", `+${a}`, el, ch); break;
+        case "pain:fire": add("HP lost on a failed save", `−${h15}`, el, ch); break;
+        case "pain:earth": add("Brace: mitigation", `+${half}`, el, ch); break;
+        case "pain:wind": add("Toxicity gained", `−${h15}`, el, ch); break;
+        case "pain:water": add("Bleeding from wounds", `−${h1}`, el, ch); break;
+        case "pain:spirit": add("Deprivation lost (not hunger)", `−${h1}`, el, ch); break;
+        case "healing:fire": add("Short rest, once: Toxicity", `−${a}`, el, ch); break;
+        case "healing:earth": add("Short rest, once: Blood", `+${10 * a}`, el, ch); break;
+        case "healing:wind": add("Short rest, once: HP", `+${2 * a}`, el, ch); break;
+        case "healing:water": add("Healing: per 5 HP", `+${half}`, el, ch); break;
+        case "healing:spirit": add("Sanity recovered again", `up to ${a}`, el, ch); break;
+        case "limit:fire": add("Rolls hindered by ailments", `+${2 * a}`, el, ch); break;
+        case "limit:earth": add("Exhaustion stacks ignored", `${half}`, el, ch); break;
+        case "limit:wind": add("Resist deafen, paralyse, poison", `+${2 * a}`, el, ch); break;
+        case "limit:water": add("Resist blind, petrify, stun", `+${2 * a}`, el, ch); break;
+        case "limit:spirit": add("Resist charm, fright", `+${2 * a}`, el, ch); break;
+        case "view:fire": add("Fire damage", a >= 4 ? "−2, resisted" : "−2", el, ch); if (a >= 6) add("Next attack, once a round", `+${a} fire`, el, ch); break;
+        case "view:earth": add("Bludgeoning, poison damage", `−2${a >= 4 ? ", bludgeoning resisted" : ""}${a >= 6 ? ", poison resisted" : ""}`, el, ch); break;
+        case "view:wind": add("Slashing, cold damage", `−2${a >= 4 ? ", slashing resisted" : ""}${a >= 6 ? ", cold resisted" : ""}`, el, ch); break;
+        case "view:water": add("Piercing, lightning damage", `−2${a >= 4 ? ", piercing resisted" : ""}${a >= 6 ? ", lightning resisted" : ""}`, el, ch); break;
+        case "view:spirit": add("Psychic damage", `−2${a >= 6 ? ", resisted" : ""}`, el, ch); if (a >= 4) add("Sanity checks", `+${2 * a}`, el, ch); break;
+        case "death:fire": add(`Under ${2 * a} HP`, "bonus damage counts as weapon damage; re-roll a miss once a round", el, ch); break;
+        case "death:earth": add("Stabilising", `Harmony checks; wake with ${a} HP`, el, ch); break;
+        case "death:wind": add(`Under ${2 * a} HP`, `+${a} AP`, el, ch); break;
+        case "death:water": add(`Under ${2 * a} HP`, `regain ${a} HP a turn for 3 turns`, el, ch); break;
+        case "death:spirit": add("At 0 HP", `fight on for ${a} turns`, el, ch); break;
+      }
+      if (rel && ch === "view") add("View released", "temporary HP equal to your maximum, against its damage types", el, ch);
+      if (rel && ch === "death") add("Death released", "every reinforcement effect for 2 turns", el, ch);
+    });
+    return out;
+  }
+  // The book's line with the practitioner's numbers filled in: "your Fire Affinity" → its value, "2xFire Affinity" → twice it,
+  // "Fire Affinity/2" → half (rounded down; the book doesn't say). A line that starts "With a Fire Affinity of 6 or higher"
+  // only applies from that affinity on.
+  function harmonyLine(text, aff) {
+    const need = (text.match(/^With a \w+ Affinity of (\d+) or higher/) || [])[1];
+    const val = (el, k) => k * num(aff[el.toLowerCase()]);
+    const parts = []; let rest = text, m;
+    const re = /(\d+)x\s?(Fire|Earth|Wind|Water|Spirit) Affinity|half your (Fire|Earth|Wind|Water|Spirit) Affinity|(Fire|Earth|Wind|Water|Spirit) Affinity\/2|(Fire|Earth|Wind|Water|Spirit) Affinity(?! of)/;
+    while ((m = rest.match(re))) {
+      const at = m.index + m[0].length;
+      const v = m[1] ? val(m[2], +m[1]) : m[3] ? Math.floor(val(m[3], 1) / 2) : m[4] ? Math.floor(val(m[4], 1) / 2) : val(m[5], 1);
+      parts.push(rest.slice(0, at), { v }); rest = rest.slice(at);
+    }
+    parts.push(rest);
+    return { parts, need: need ? +need : 0 };
+  }
+
+  // ---------- Occult: Daemonology (rulebook 2020.1, 10.1) ----------
+  // Daemons are summoned once a contract is formed: 2 AP to summon, 1 to dismiss (1 and 0 from Demonology 7), one at a
+  // time. Summons a day: 1 per 2 SP; a daemon can stay half an hour per SP. Perks: partial summon (4, 2 uses), boost (5,
+  // 2 uses), unlimited partial summons for materials (6), banish (7, 1 use), +2 AP a turn for daemons' innate abilities (7),
+  // unlimited boosts for materials (8), a Guardian outside the duration (9), up to 5 at once (10: 5 AP, 3 Stamina).
+  function demonState(c) {
+    const lvl = sk(c, "Demonology"), d = c.demon || {}, u = c.uses || {};
+    const left = (lv, n) => Math.max(0, n - num(u["p:Demonology:" + lv]));
+    const perDay = Math.floor(lvl / 2), used = Math.max(0, num(d.today));
+    return {
+      lvl, mod: skillModifier(c, "Demonology"), perDay, used, left: Math.max(0, perDay - used), hours: lvl / 2,
+      summonAP: lvl >= 7 ? 1 : 2, dismissAP: lvl >= 7 ? 0 : 1, extraAP: lvl >= 7 ? 2 : 0,
+      contracts: lvl >= 3, partial: lvl >= 4, partialLeft: lvl >= 4 ? left(4, 2) : 0, partialMat: lvl >= 6,
+      boost: lvl >= 5, boostLeft: lvl >= 5 ? left(5, 2) : 0, boostMat: lvl >= 8,
+      banish: lvl >= 7, banishLeft: lvl >= 7 ? left(7, 1) : 0, guardian: lvl >= 9, army: lvl >= 10,
+    };
+  }
+
+  // ---------- Dreamwalking (rulebook 2020.1, 12.3) ----------
+  // Toll (%) is the pressure of everything the dreamwalker sustains: GM-set tolls on translocations and transfigurations,
+  // items in the dream realm, the Observation Active (+5% until a long rest), dreamwalking during a mundane task (+15%),
+  // travellers (+8% each), a dreamsphere's extra size (+4% per 2 m) and extra turns (+5% each), dreamseeds past two (+15%
+  // each, until destroyed). Bonus = modifier − Toll; Calamity chance = 5% + Toll. Tolls disperse when released or at a
+  // long rest (dreamseeds stay until destroyed).
+  // Put something from the dream realm's vault back where it came from: a weapon or a suit of armor to Gear (a suit
+  // comes back taken off), anything else to the inventory (joining a stack of the same name).
+  function dreamReturn(c, v) {
+    if ((v.kind === "weapon" || v.kind === "armor") && v.obj && typeof v.obj === "object") {
+      const list = v.kind === "weapon" ? (c.weapons = c.weapons || []) : (c.armor = c.armor || []);
+      const o = Object.assign({}, v.obj, { id: v.obj.id || v.id });
+      if (v.kind === "armor") o.worn = false;
+      if (list.some(x => x.id === o.id)) o.id = o.id + "-" + Math.random().toString(36).slice(2, 7);
+      list.push(o); return;
+    }
+    const items = c.items = c.items || [], have = items.find(i => i.name === v.name);
+    if (have) have.qty = num(have.qty) + num(v.qty); else items.push({ id: v.id, name: v.name, qty: num(v.qty), size: v.size || "small" });
+  }
+
+  function dreamState(c) {
+    const lvl = sk(c, "Dreamwalking"), d = c.dream || {}, u = c.uses || {};
+    const parts = [];
+    (d.tolls || []).forEach(t => parts.push([t.n || "Manipulation", Math.max(0, num(t.pct)), t.id]));
+    (d.vault || []).forEach(v => { if (!v.lost && num(v.pct)) parts.push([`${v.name} in the dream realm`, Math.max(0, num(v.pct)), "v:" + v.id]); });
+    if (d.inRealm && d.mundane) parts.push(["Dreaming while awake", 15, "mundane"]);
+    if (d.inRealm && num(d.travelers)) parts.push([`${num(d.travelers)} traveller${num(d.travelers) === 1 ? "" : "s"}`, 8 * num(d.travelers), "travel"]);
+    const sp = d.sphere;
+    if (sp && (num(sp.grow) || num(sp.extra))) parts.push(["The dreamsphere", 4 * num(sp.grow) + 5 * num(sp.extra), "sphere"]);
+    const seeds = (d.seeds || []).length;
+    if (seeds > 2) parts.push([`${seeds - 2} dreamseed${seeds - 2 === 1 ? "" : "s"} past two`, 15 * (seeds - 2), "seeds"]);
+    const toll = parts.reduce((a, p) => a + p[1], 0), mod = skillModifier(c, "Dreamwalking");
+    return {
+      lvl, mod, toll, parts, bonus: mod - toll, calamity: 5 + toll,
+      enter: lvl >= 3, easyEnter: lvl >= 6, transpose: lvl >= 4, vault: lvl >= 5, translocate: lvl >= 5, observe: lvl >= 6,
+      observeLeft: lvl >= 6 ? Math.max(0, 2 - num(u["p:Dreamwalking:6"])) : 0, spheres: lvl >= 7, transfigure: lvl >= 7,
+      travellers: lvl >= 8, sphereAP: lvl >= 9 ? 1 : 2, sphereLeft: lvl >= 7 ? Math.max(0, 3 - num(u["p:Dreamwalking:7"])) : 0,
+      delay: lvl >= 9, seeds: lvl >= 10,
+    };
+  }
+
+  // ---------- Alchemy (rulebook 2020.1, 10.2) ----------
+  // Every transmutation uses an alchemical circle; each circle does one thing. The size table gives the time to draw and
+  // to activate (FA, BA and A as the book writes them). Elements from 3, compounds from 5, organics from 7. Life energy
+  // drawn from the earth from 4: (SP/2)d6, and a Medium or larger circle eats at least 1 ration. Signature Circles: one at
+  // 6 (Medium or below), a second at 9 (Large or below). Arrays at 8: up to 5 (arms, legs, torso), Medium or below, or one
+  // Large over 2 limbs and the torso; 50–100 hours to embed. Re-roll at 9; the maximum energy at 10.
+  const ALCH_SIZES = [
+    ["fine", "Fine", "below 15 cm", "2 FA", "1 FA"], ["diminutive", "Diminutive", "15 to 30 cm", "1 BA", "2 FA"], ["small", "Small", "15 cm to 1 m", "1 BA", "4 FA"],
+    ["medium", "Medium", "1 to 2 m", "1 A", "1 BA"], ["large", "Large", "2 to 5 m", "2 A to 1 minute", "1 A"], ["huge", "Huge", "5 to 10 m", "1 to 5 minutes", "1 A"],
+    ["gigantic", "Gigantic", "10 to 30 m", "5 minutes to 1 hour", "1 minute"], ["gargantuan", "Gargantuan", "30 to 100 m", "1 to 4 hours", "5 minutes"], ["colossal", "Colossal", "above 100 m", "at least 4 hours", "30 minutes"],
+  ];
+  const ALCH_SIZE_I = Object.fromEntries(ALCH_SIZES.map((x, i) => [x[0], i]));
+  const ALCH_LIMBS = [["larm", "Left arm"], ["rarm", "Right arm"], ["torso", "Torso"], ["lleg", "Left leg"], ["rleg", "Right leg"]];
+  function alchState(c) {
+    const lvl = sk(c, "Alchemy"), a = c.alch || {};
+    const sigs = (a.circles || []).filter(x => x.sig);
+    return {
+      lvl, mod: skillModifier(c, "Alchemy"),
+      can: lvl >= 7 ? "Elements, compounds and organic compounds" : lvl >= 5 ? "Elements and compounds (not organic ones)" : lvl >= 3 ? "Pure elements, mixtures and alloys" : "From Alchemy 3",
+      earth: lvl >= 4 ? Math.floor(lvl / 2) : 0,                 // d6 of life energy drawn from the earth
+      sigMax: lvl >= 9 ? 2 : lvl >= 6 ? 1 : 0, sigs: sigs.length,
+      sigBiggest: i => (i === 0 ? ALCH_SIZE_I.medium : ALCH_SIZE_I.large),   // the first Signature Circle Medium or below, the second Large or below
+      arrays: lvl >= 8, reroll: lvl >= 9, maxEnergy: lvl >= 10,
+    };
   }
 
   // ---------- Armor Maintenance (rulebook 16.5 and the Armor chapter) ----------
@@ -849,9 +1241,10 @@ const CW = (() => {
   return { ATTRS, ATTR_NAME, SKILL_GROUPS, SKILLS, CASTING, WEAPON_TYPES, WEAPON_ATTR, RANGED_WEAPONS, weaponKind, SECONDARY, SECONDARY_BY_NAME, SIZES, ITEM_SIZES, ITEM_SIZE, PROSTHETIC_TYPES, ARMOR,
            ENCUMBRANCE, WOUNDS, EXHAUSTION, LEVELS, clamp, num, tri, karmaBetween, levelDelta, blankCharacter, normalize,
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
-           proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
+           proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, dreamReturn, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
+           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, harmonyGlance, demonState, dreamState, ALCH_SIZES, ALCH_SIZE_I, ALCH_LIMBS, alchState,
+           PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,
            BREWS, CATALYSTS, VOLATILE, parseDie, brewState, allCatalysts, allBrews, findBrew, brewOne, brewPlan,
