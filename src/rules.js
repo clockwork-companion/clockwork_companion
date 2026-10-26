@@ -131,7 +131,8 @@ const CW = (() => {
       ward: { bonus: 0, fatigue: 0, words: [], extra: { subject: [], adverb: [], conj: [] }, wards: [], board: [], ledger: [] },
       harmony: { els: [], ch: {}, rel: [], turns: 0, kept: 0, ledger: [] },
       demon: { daemons: [], out: [], guardian: "", today: 0, army: false, ledger: [] },
-      dream: { inRealm: false, mundane: false, travelers: 0, tolls: [], vault: [], sphere: null, seeds: [], ledger: [] },   // Dreamwalking: what the dreamwalker sustains   // Demonology: contracts, who is summoned, summons used today   // Occult: Harmony: known elements, chakra → element, released chakras
+      dream: { inRealm: false, mundane: false, travelers: 0, tolls: [], vault: [], sphere: null, seeds: [], ledger: [] },
+      alch: { circles: [], arrays: {}, ledger: [] },   // Alchemy: saved circles (one may be a Signature Circle), arrays on the body   // Dreamwalking: what the dreamwalker sustains   // Demonology: contracts, who is summoned, summons used today   // Occult: Harmony: known elements, chakra → element, released chakras
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, ledger: [], parts: [], saved: [],
                armor: { forge: false, bonus: 0, recipe: { type: "medium", av: 5, soak: 50, plusAV: 0, plusSoak: 0, name: "", for: "" }, ledger: [] },
@@ -187,6 +188,10 @@ const CW = (() => {
     ["tolls", "vault", "seeds", "ledger"].forEach(k => { if (!Array.isArray(out.dream[k])) out.dream[k] = []; });
     out.dream.inRealm = !!out.dream.inRealm; out.dream.mundane = !!out.dream.mundane; out.dream.travelers = Math.max(0, num(out.dream.travelers));
     if (out.dream.sphere && typeof out.dream.sphere !== "object") out.dream.sphere = null;
+    out.alch = Object.assign({}, b.alch, out.alch);
+    ["circles", "ledger"].forEach(k => { if (!Array.isArray(out.alch[k])) out.alch[k] = []; });
+    out.alch.circles.forEach(x => { if (!Array.isArray(x.layers)) x.layers = []; if (!(x.size in ALCH_SIZE_I)) x.size = "small"; });
+    if (!out.alch.arrays || typeof out.alch.arrays !== "object" || Array.isArray(out.alch.arrays)) out.alch.arrays = {};
     out.craft.armor = Object.assign({}, b.craft.armor, out.craft.armor);
     out.craft.armor.recipe = Object.assign({}, b.craft.armor.recipe, out.craft.armor.recipe);
     if (!Array.isArray(out.craft.armor.ledger)) out.craft.armor.ledger = [];
@@ -865,6 +870,32 @@ const CW = (() => {
     };
   }
 
+  // ---------- Alchemy (rulebook 2020.1, 10.2) ----------
+  // Every transmutation uses an alchemical circle; each circle does one thing. The size table gives the time to draw and
+  // to activate (FA, BA and A as the book writes them). Elements from 3, compounds from 5, organics from 7. Life energy
+  // drawn from the earth from 4: (SP/2)d6, and a Medium or larger circle eats at least 1 ration. Signature Circles: one at
+  // 6 (Medium or below), a second at 9 (Large or below). Arrays at 8: up to 5 (arms, legs, torso), Medium or below, or one
+  // Large over 2 limbs and the torso; 50–100 hours to embed. Re-roll at 9; the maximum energy at 10.
+  const ALCH_SIZES = [
+    ["fine", "Fine", "below 15 cm", "2 FA", "1 FA"], ["diminutive", "Diminutive", "15 to 30 cm", "1 BA", "2 FA"], ["small", "Small", "15 cm to 1 m", "1 BA", "4 FA"],
+    ["medium", "Medium", "1 to 2 m", "1 A", "1 BA"], ["large", "Large", "2 to 5 m", "2 A to 1 minute", "1 A"], ["huge", "Huge", "5 to 10 m", "1 to 5 minutes", "1 A"],
+    ["gigantic", "Gigantic", "10 to 30 m", "5 minutes to 1 hour", "1 minute"], ["gargantuan", "Gargantuan", "30 to 100 m", "1 to 4 hours", "5 minutes"], ["colossal", "Colossal", "above 100 m", "at least 4 hours", "30 minutes"],
+  ];
+  const ALCH_SIZE_I = Object.fromEntries(ALCH_SIZES.map((x, i) => [x[0], i]));
+  const ALCH_LIMBS = [["larm", "Left arm"], ["rarm", "Right arm"], ["torso", "Torso"], ["lleg", "Left leg"], ["rleg", "Right leg"]];
+  function alchState(c) {
+    const lvl = sk(c, "Alchemy"), a = c.alch || {};
+    const sigs = (a.circles || []).filter(x => x.sig);
+    return {
+      lvl, mod: skillModifier(c, "Alchemy"),
+      can: lvl >= 7 ? "Elements, compounds and organic compounds" : lvl >= 5 ? "Elements and compounds (not organic ones)" : lvl >= 3 ? "Pure elements, mixtures and alloys" : "From Alchemy 3",
+      earth: lvl >= 4 ? Math.floor(lvl / 2) : 0,                 // d6 of life energy drawn from the earth
+      sigMax: lvl >= 9 ? 2 : lvl >= 6 ? 1 : 0, sigs: sigs.length,
+      sigBiggest: i => (i === 0 ? ALCH_SIZE_I.medium : ALCH_SIZE_I.large),   // the first Signature Circle Medium or below, the second Large or below
+      arrays: lvl >= 8, reroll: lvl >= 9, maxEnergy: lvl >= 10,
+    };
+  }
+
   // ---------- Armor Maintenance (rulebook 16.5 and the Armor chapter) ----------
   // Repair (book): cost = the type's grams × Armor Value; roll an Armor Maintenance check (d100 − modifier);
   // Repair Count = 10 − check ÷ 10, rounded down; roll the type's Repair Die that many times and add it to the Soak Pool.
@@ -1140,7 +1171,7 @@ const CW = (() => {
            attr, attrBase, attrThreshold, attrCap, attrCost, skillCap, weaponCap, pointsAbove10, secondaryCap, secondaryCost,
            proficiency, karmaSpent, armorCheck, armorPenalties, wornArmor, skillModifier, secondaryBonus, vitalsMax, derived,
            encumbrance, itemUnits, weaponLine, shortRest, longRest, setStamina, refreshUses, rollAttribute, rollAttributeDetail, ATTR_BLURB, toTabletop, fromTabletop,
-           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, demonState, dreamState,
+           WORD_KINDS, WARD_GRAMMAR, WARD_KIND_NAME, wardState, wardNext, wardCost, wardPlan, wardFatigue, HARMONY_ELEMENTS, HARMONY_LEARN, CHAKRAS, CHAKRA_BY, harmonyState, harmonyLine, demonState, dreamState, ALCH_SIZES, ALCH_SIZE_I, ALCH_LIMBS, alchState,
            PT_PARTS, MUNITIONS, MUNITION, COATS, TIPS, AREAS, ELEMENTS, STATUSES, PT_GRAMS, PT_BASE_DC, ptLists, ptAccess, ptState, ptDifficulty, ptChance, ptSteps, ptYield, ptName, rollDie,
            AM_CRAFT_DC, AM_FORGE, amState, repairCount, repairPlan, craftPlan,
            WEAPON_PROPS, WEAPON_FLAWS, DUR_DICE, WEAPON_MODS, WM_CRAFT_DC, wmState, weaponRepairCost, wRepairPlan, wCraftPlan, randomTraits,

@@ -76,6 +76,9 @@ jobs:
       - name: Dreamwalking (Magic tab)
         run: python3 tests/dreamwalking.py "$RUNNER_TEMP/site" smoke-shots
 
+      - name: Alchemy (Magic tab)
+        run: python3 tests/alchemy.py "$RUNNER_TEMP/site" smoke-shots
+
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v6

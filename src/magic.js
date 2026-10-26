@@ -8,6 +8,7 @@ const MAGIC = [
   ["harm", "Harmony", "Occult: Harmony", "The body's spiritual energy, guided through its chakras."],
   ["demon", "Daemonology", "Demonology", "Contracts with daemons, summoned to the prime plane."],
   ["dream", "Dreamwalking", "Dreamwalking", "The dream realm, and bending it to your will."],
+  ["alch", "Alchemy", "Alchemy", "Alchemical circles and the life energy that drives them."],
 ];
 const magicOpen = c => MAGIC.filter(([, , skill]) => num((c.skills || {})[skill]) > 0);
 
@@ -23,6 +24,7 @@ function MagicTab({ c, update }) {
     ${sub === "harm" && html`<${Harmony} c=${c} update=${update} />`}
     ${sub === "demon" && html`<${Demonology} c=${c} update=${update} />`}
     ${sub === "dream" && html`<${Dreamwalking} c=${c} update=${update} />`}
+    ${sub === "alch" && html`<${Alchemy} c=${c} update=${update} />`}
   </div>`;
 }
 
