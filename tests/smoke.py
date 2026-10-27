@@ -48,10 +48,16 @@ def run_case(browser, url, width, height, skin, mobile, games):
                 problems.append(f"sideways scroll on tab {tabs.nth(i).inner_text().strip()!r}")
         page.screenshot(path=str(SHOTS / f"{name}.png"), full_page=False)
         page.locator(".setbtn").click(); page.wait_for_timeout(400)
-        if not page.locator(".settings").count(): problems.append("Settings didn't open")
+        if not page.locator(".setdrawer").count(): problems.append("Settings didn't open")
         elif page.evaluate("document.documentElement.scrollWidth > innerWidth + 1"): problems.append("sideways scroll on Settings")
+        else:
+            for tab_name in ["Character", "Table", "About", "This device"]:   # every tab opens, and none scrolls sideways
+                page.get_by_role("tab", name=tab_name).click(); page.wait_for_timeout(150)
+                if page.evaluate("document.querySelector('.setdbody').scrollWidth > document.querySelector('.setdbody').clientWidth + 1"):
+                    problems.append(f"sideways scroll in the Settings tab {tab_name!r}")
         page.screenshot(path=str(SHOTS / f"{name}-settings.png"), full_page=True)
-        page.get_by_role("button", name="← Back").click(); page.wait_for_timeout(250)
+        page.get_by_role("button", name="Close settings").click(); page.wait_for_timeout(250)
+        if page.locator(".setdrawer").count(): problems.append("Settings didn't close")
         if games:   # the hidden games (keyboard triggers), once per run
             page.locator("body").click(position={"x": 5, "y": 5}); page.keyboard.type("steam"); page.wait_for_timeout(400)
             if not page.locator("#cw-egg").count(): problems.append("Skyward Boiler didn't open")
