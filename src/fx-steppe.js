@@ -12,7 +12,7 @@
 (function () {
   let cv = null, ctx = null, bg = null, fg = null, raf = 0, last = 0, W = 0, H = 0, dpr = 1;
   let clouds = [], herd = null, eagle = null, nextHerd = 0, nextEagle = 0, smoke = [];
-  const still = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const still = () => document.documentElement.dataset.anim === "off" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);   // Settings → Animations → Disabled, or the device
   const rnd = (a, b) => a + Math.random() * (b - a);
   // A seeded random generator, so the mountains and grass look the same on every visit.
   const seeded = s => () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
@@ -431,6 +431,7 @@ void main() {
   }
   const sync = () => (document.documentElement.dataset.skin === "talon" && document.body ? start() : stop());
   new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin"] });
+  new MutationObserver(() => { stop(); sync(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-anim"] });   // Animations switched: restart in the new mode
   document.addEventListener("visibilitychange", () => { if (!document.hidden && cv && cv.isConnected && !raf) { last = 0; raf = requestAnimationFrame(frame); } });
   let resizeT = 0;
   addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (cv && cv.isConnected) size(); }, 350); });

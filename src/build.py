@@ -57,8 +57,42 @@ def manifest(dev=False):
     }, indent=2)
 
 
+# Settings → Animations → Disabled does what the device's "reduce motion" setting does. Rather than keeping two copies of every
+# "@media (prefers-reduced-motion: reduce)" block in app.css, the build repeats each block's rules under
+# :root[data-anim="off"] and adds them to the end of the stylesheet. Write reduce-motion rules as usual; Disabled follows.
+ANIM_OFF = ':root[data-anim="off"]'
+def _split_top(s, sep=","):
+    out, depth, cur = [], 0, ""
+    for ch in s:
+        depth += ch in "([" ; depth -= ch in ")]"
+        if ch == sep and depth == 0: out.append(cur); cur = ""
+        else: cur += ch
+    return out + [cur]
+def _anim_off_selector(sel):
+    sel = sel.strip()
+    if sel.startswith(":root"): return ANIM_OFF + sel[5:]
+    if sel.startswith("html"): return ANIM_OFF + sel[4:]
+    if sel.startswith("["): return ANIM_OFF + sel
+    if sel.startswith("*"): return ANIM_OFF + sel[1:] + ", " + ANIM_OFF + " " + sel   # "*" covers <html> itself too
+    return ANIM_OFF + " " + sel
+def anim_off_copies(css):
+    out, key, i = [], "@media (prefers-reduced-motion: reduce)", 0
+    while True:
+        i = css.find(key, i)
+        if i < 0: break
+        j = css.index("{", i) + 1; depth, k = 1, j
+        while depth:
+            depth += {"{": 1, "}": -1}.get(css[k], 0); k += 1
+        body, i = css[j:k - 1], k
+        while "{" in body:
+            sel, rest = body.split("{", 1); decl, body = rest.split("}", 1)
+            sel = " ".join(sel.split())
+            if sel: out.append(", ".join(_anim_off_selector(x) for x in _split_top(sel)) + " { " + decl.strip() + " }")
+    return ("\n/* Animations → Disabled (made by build.py from the reduce-motion rules above) */\n" + "\n".join(out) + "\n") if out else ""
+
 def build(libs, web=False, dev=False):
     head = read("app.css")
+    end = head.rindex("</style>"); head = head[:end] + anim_off_copies(head[:end]) + head[end:]
     if dev:
         head = head.replace("<title>Clockwork Companion</title>", "<title>Clockwork Companion · DEV</title>", 1)
     keys = ["preact", "hooks", "htm"]
@@ -75,7 +109,7 @@ def build(libs, web=False, dev=False):
         if libs[k] not in seen:
             seen.add(libs[k]); tags.append(f'<script src="{libs[k]}"></script>')
     DATA = ["rules.js", "skills-data.js", "skill-tables.js", "rules-info.js"]
-    APP = ["app.js", "fx-blackwall.js", "fx-steppe.js", "fx-moss.js", "craft.js", "craft-shop.js", "craft-armor.js", "craft-weapon.js", "craft-brew.js", "craft-rune.js", "craft-hunt.js", "magic.js", "magic-harmony.js", "magic-demon.js", "magic-dream.js", "magic-alchemy.js", "genesis.js", "table.js", "gm.js"]
+    APP = ["app.js", "fx-blackwall.js", "fx-steppe.js", "fx-moss.js", "craft.js", "craft-shop.js", "craft-armor.js", "craft-weapon.js", "craft-brew.js", "craft-rune.js", "craft-hunt.js", "craft-hunt-art.js", "magic.js", "magic-harmony.js", "magic-demon.js", "magic-dream.js", "magic-alchemy.js", "genesis.js", "table.js", "gm.js"]
     # Every script in src/ must be bundled. A file left out of these lists (for example by a merge that kept only one
     # side of this line) builds a page that crashes when its code is needed, so stop here and say which file is missing.
     missing = sorted(f.name for f in HERE.glob("*.js") if f.name not in DATA + APP + ["web-backend.js"])
