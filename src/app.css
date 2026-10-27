@@ -3599,9 +3599,17 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   color: var(--ink); font: 600 12px/1 var(--f-head); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 .fightbtn svg, .fbmark svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 .fightbtn:hover, .fightbtn:focus-visible { background: var(--blood); border-color: var(--blood); color: #fff; }
-.fightband { --fb: var(--blood); position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0 0 14px; padding: 8px 12px;
+.fightband { --fb: var(--blood); position: sticky; top: 0; z-index: 30; display: grid; gap: 6px; margin: 0 0 14px; padding: 8px 12px;
   background: var(--fb); color: #fff; font: 600 13px/1.2 var(--f-head); letter-spacing: .05em; text-transform: uppercase; box-shadow: 0 6px 18px rgb(0 0 0 / .18); }
 .fightband b { font-weight: 700; }
+.fbrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.fbnote { padding: 2px 6px; border: 1px dashed rgb(255 255 255 / .6); font-size: 11px; }
+.fborder { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 0; padding: 0; list-style: none; text-transform: none; letter-spacing: 0; font: 400 13px/1.3 var(--f-body); }
+.fbo { padding: 2px 8px; border-radius: 2px; background: rgb(0 0 0 / .2); }
+.fbo.done { opacity: .75; }
+.fbo.up { background: #fff; color: var(--fb); font-weight: 700; }
+.fbo.me { box-shadow: inset 0 0 0 1.5px #fff; }
+.fbo.left { background: transparent; opacity: .85; }
 .fightband.myturn { animation: fbPulse 1.6s ease-in-out infinite; }
 @keyframes fbPulse { 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--fb) 40%, transparent), 0 6px 18px rgb(0 0 0 / .18); } }
 .fbmark { display: inline-flex; align-items: center; gap: 6px; letter-spacing: .12em; }
@@ -3623,18 +3631,85 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .cbhead { display: flex; align-items: center; gap: 12px; }
 .cbwho { flex: 1; min-width: 0; display: grid; }
 .cbname { font: 400 26px/1.1 var(--f-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cbturn.on { border-left-color: var(--blood); }
-.cbturn .sub { margin: 6px 0 10px; }
-.cbap { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.cbaplbl { font: 600 13px/1 var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
-.cbaplbl b { font: 600 26px/1 var(--f-mono); color: var(--ink); margin-left: 4px; }
-.cbdots { display: flex; gap: 6px; flex-wrap: wrap; }
-.apdot { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 2px solid var(--rule); background: transparent; cursor: pointer; transition: background .2s, transform .2s; }
-.apdot.on { background: var(--blood); border-color: var(--blood); }
-.apdot.extra { border-style: dashed; }
-.apdot.on.extra { border-style: solid; background: var(--brass); border-color: var(--brass); }
-.apdot:hover { transform: scale(1.1); }
-.cbapbtns { display: inline-flex; gap: 4px; }
+/* The AP dock: sticky under the band, the centre of the battle view. Ledger only for now; each theme gets its own at release. */
+.apdock { position: sticky; top: var(--fbh, 0px); z-index: 28; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px 22px;
+  padding: 14px 18px; background: var(--card); border: 1.5px solid var(--rule); border-left: 6px solid var(--rule); box-shadow: 0 8px 22px rgb(0 0 0 / .12); }
+.apdock.turn { border-left-color: var(--blood); }
+.apcount { display: grid; justify-items: center; line-height: 1; min-width: 64px; }
+.apnum { font: 400 54px/1 var(--f-display); color: var(--ink); transition: color .2s; }
+.apdock.turn .apnum { color: var(--blood); }
+.aplbl { font: 600 12px/1 var(--f-head); letter-spacing: .2em; text-transform: uppercase; color: var(--ink-3); margin-top: 2px; }
+.apmid { min-width: 0; display: grid; gap: 8px; }
+.aptoks { display: flex; flex-wrap: wrap; gap: 8px; }
+.aptok { position: relative; width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 2px solid var(--hair); background: transparent; cursor: pointer;
+  display: grid; place-items: center; transition: transform .15s, background .2s, border-color .2s; }
+.aptok i { width: 60%; height: 60%; border-radius: 50%; border: 1.5px solid transparent; }
+.aptok.on { background: var(--ink); border-color: var(--ink); }
+.aptok.on i { border-color: color-mix(in srgb, var(--paper) 45%, transparent); }
+.apdock.turn .aptok.on { background: var(--blood); border-color: var(--blood); }
+.aptok.extra { border-style: dashed; }
+.aptok.extra.on { background: var(--brass); border-color: var(--brass); border-style: solid; }
+.aptok:hover { transform: translateY(-2px); }
+.aptok.will { background: var(--brass-soft) !important; border-color: var(--brass) !important; animation: apWill .9s ease-in-out infinite alternate; }
+.aptok.will i { border-color: var(--brass); }
+@keyframes apWill { to { box-shadow: 0 0 0 4px color-mix(in srgb, var(--brass) 30%, transparent); } }
+.apdock.short .aptok.on { animation: apShort .5s ease-in-out 2; }
+@keyframes apShort { 50% { transform: translateX(-3px); } }
+.apstate { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.apstate b { font: 600 13px/1 var(--f-head); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); }
+.apdock.short .apstate b { color: var(--bad); }
+.apacts { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+.apacts .btn { white-space: nowrap; }
+.apmini { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 4px 8px; background: rgb(0 0 0 / .18); border-radius: 2px; color: #fff; font: 600 12px/1 var(--f-head); letter-spacing: .1em; }
+.apmini b { font: 400 22px/1 var(--f-display); letter-spacing: 0; }
+.apmini .aptoks { gap: 4px; flex-wrap: nowrap; }
+.apmini .aptok { width: 14px; height: 14px; border-width: 1.5px; border-color: rgb(255 255 255 / .6); pointer-events: none; }
+.apmini .aptok.on { background: #fff; border-color: #fff; }
+.apmini .aptok.will { background: var(--brass) !important; animation: none; }
+.apmini .aptok i { display: none; }
+.cbbrief { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.cbperk.pinned { border-left-style: dashed; }
+.cbunpin { margin-left: auto; width: 24px; height: 24px; }
+.cbtollparts { display: flex; flex-wrap: wrap; gap: 6px; }
+.cbsphere { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding-top: 8px; border-top: 1px dashed var(--hair); }
+.cbsphere > b { flex-basis: 100%; }
+.cbdaemons { display: grid; gap: 10px; margin-bottom: 12px; }
+.cbcircle { max-width: 240px; margin: 0 auto; }
+.cbcircle .demoncircle { width: 100%; height: auto; }
+.cbdemoncards { display: grid; gap: 10px; grid-template-columns: 1fr; }
+.dmgsteps { display: flex; gap: 0; margin: 0; padding: 0 12px; list-style: none; border-bottom: 1px solid var(--hair); background: var(--card); overflow-x: auto; }
+.dmgsteps button { border: 0; background: none; padding: 10px 10px 8px; font: 600 12px/1 var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; }
+.dmgsteps .done button { color: var(--ink-2); }
+.dmgsteps .on button { color: var(--ink); border-bottom-color: var(--blood); }
+.dmgsteps button:disabled { cursor: default; }
+.cbpop-damage { width: min(620px, 100%); }
+.cbpop { min-width: 0; } .cbpop > * { min-width: 0; } .cbpophead h2 { min-width: 0; }
+.dmgbody { display: grid; gap: 14px; align-content: start; }
+.dmgstep { display: grid; gap: 12px; }
+.dmgbig { display: grid; gap: 4px; }
+.dmgbig input { font: 400 44px/1.1 var(--f-display); width: 100%; max-width: 220px; padding: 4px 10px; }
+.seg.seg3 { grid-template-columns: repeat(3, 1fr); }
+.dmgfield { display: grid; gap: 4px; max-width: 320px; }
+.dmgopts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.dmgopt { display: grid; gap: 3px; text-align: left; padding: 10px 12px; border: 1.5px solid var(--hair); border-radius: 2px; background: var(--card); cursor: pointer; }
+.dmgopt b { font: 600 16px/1.1 var(--f-head); letter-spacing: .04em; }
+.dmgopt small { font: 600 11px/1.2 var(--f-head); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.dmgopt span { font-size: 13px; color: var(--ink-2); }
+.dmgopt.on { border-color: var(--blood); box-shadow: inset 0 0 0 1.5px var(--blood); }
+.dmgopt:disabled { opacity: .5; cursor: not-allowed; }
+.dmgroll { display: grid; gap: 8px; padding: 10px 12px; background: var(--sunk); }
+.dmgroll p { margin: 0; }
+.dmgok { color: var(--good); } .dmgbad { color: var(--bad); }
+.dmgcards { display: grid; gap: 6px; }
+.dmgcard { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--hair); cursor: pointer; }
+.dmgcard.on { border-color: var(--brass); background: var(--brass-soft); }
+.dmgresult { display: grid; gap: 6px; padding-top: 10px; border-top: 1.5px solid var(--rule); }
+.dmgresult p { margin: 0; }
+.dmgfinal { font-size: 17px; }
+.dmgsum { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 8px 10px; background: var(--sunk); font-size: 12.5px; color: var(--ink-2); }
+.dmgsum span + span::before { content: "→ "; color: var(--ink-3); }
+.dmgsum .hp { color: var(--blood); font-weight: 600; }
+.dmgfoot { flex: 0 0 auto; display: flex; justify-content: space-between; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--hair); background: var(--card); }
 .cbgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 18px 28px; align-items: start; }
 .cbgrid > .frame { margin: 0; min-width: 0; }
 .cbvitals .meter { margin-bottom: 10px; }
@@ -3721,9 +3796,15 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   .fightband { gap: 6px 10px; padding: 8px 10px; font-size: 12px; }
   .cbname { font-size: 22px; }
   .cbslims { grid-template-columns: 1fr 1fr; }
+  .apdock { grid-template-columns: auto minmax(0, 1fr); padding: 10px 12px; gap: 8px 12px; }
+  .apnum { font-size: 40px; } .apcount { min-width: 44px; }
+  .aptok { width: 32px; height: 32px; } .aptoks { gap: 6px; }
+  .apacts { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+  .apacts .btn { flex: 1 1 auto; }
+  .apmini .aptoks { display: none; }
   .cbveil { padding: 0; place-items: end stretch; }
   .cbpop { width: 100%; max-height: 92vh; }
   .cbpopbody { padding: 14px 12px; }
 }
-@media (prefers-reduced-motion: reduce) { .fightband.myturn { animation: none; } .apdot { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .fightband.myturn, .aptok.will, .apdock.short .aptok.on { animation: none; } .aptok { transition: none; } }
 </style>

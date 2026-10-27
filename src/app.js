@@ -525,7 +525,7 @@ function App() {
   useEffect(() => {
     if (!gm || !fight.on) return;
     const s = fightFromDeck(Store.encounter, all); if (!s) return;
-    if (s.round !== num(fight.round) || s.up !== fight.up || s.upId !== fight.upId || s.next !== fight.next) Fight.set(s);
+    if (s.round !== num(fight.round) || s.up !== fight.up || s.upId !== fight.upId || s.next !== fight.next || JSON.stringify(s.order) !== JSON.stringify(fight.order || [])) Fight.set(s);
   });
   const fighting = !!(current && view === "chars" && Fight.has(current.id));
 
@@ -571,7 +571,7 @@ function App() {
     <div class="viewswap" key=${page} data-dir=${pageNav.current.dir}>
     ${view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />`
       : view === "table" ? html`<${TableView} chars=${list} current=${current} />` : html`
-    ${current && fighting && !away ? html`<${CombatView} c=${current} update=${update} />`
+    ${current && fighting && !away ? html`<${CombatView} c=${current} update=${update} fight=${fight} />`
       : current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
       : Store.mode === "loading" ? html`<div class="empty"><p class="muted">Opening the character ledger…</p></div>`
       : html`<div class="empty">
