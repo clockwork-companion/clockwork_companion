@@ -978,7 +978,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .drawn li.dealt { animation: dealt .34s cubic-bezier(.2, .7, .3, 1) both; }
 @keyframes dealt { from { transform: translate(-14px, -6px) rotate(-6deg); opacity: 0; } }
 
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+/* Reduce motion stops every animation, on pseudo-elements too (theme backdrops like Mossheart's spores and the Zhoung live there). */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 @media (prefers-reduced-motion: reduce) { .track::after { animation: none !important; display: none; } }
 /* ----- Fantasy (candlelit): the parchment theme by night: dark leather, gold-leaf rules, red rubrics ----- */
 :root[data-skin="fantasy-dark"] {
