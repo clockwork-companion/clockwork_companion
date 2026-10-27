@@ -456,8 +456,8 @@ function App() {
   const [tab, setTab] = useState(() => { const t = CHAR_TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : lsGet("cw-tab", "sheet"); return CHAR_TABS.includes(t) ? t : "sheet"; });
   const [settings, setSettings] = useState(() => location.hash === "#settings");
   const openSettings = on => { setSettings(on); window.scrollTo(0, 0); };
-  const news = useNews(), [newsSeen, setNewsSeen] = useState(() => lsGet("cw-news-seen", ""));
-  const fresh = !!(news && news.length && news[0].date > (newsSeen || ""));
+  const news = useNews(), [newsSeen, setNewsSeen] = useState(newsSeenList);
+  const fresh = newsFresh(news, newsSeen);
   const lastEdit = useRef({});
   const [view, setView] = useState(() => (location.hash === "#gm" ? "gm" : lsGet("cw-view", "chars")));
   useEffect(() => lsSet("cw-view", view), [view]);
@@ -541,7 +541,7 @@ function App() {
     ${Store.readOnly && html`<div class="banner">You're viewing these characters read-only. To edit, ask the owner to invite you as an Editor.</div>`}
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
     <div class="viewswap" key=${page} data-dir=${pageNav.current.dir}>
-    ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} news=${news} onSeen=${d => { lsSet("cw-news-seen", d); setNewsSeen(d); }} onBack=${() => openSettings(false)} />`
+    ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} news=${news} seen=${newsSeen} onSeen=${() => { const ids = [...new Set([...news.items.map(i => i.id), ...newsSeen])].slice(0, 300); lsSet("cw-news-seen", ids); setNewsSeen(ids); }} onBack=${() => openSettings(false)} />`
       : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />`
       : view === "table" ? html`<${TableView} chars=${list} current=${current} />` : html`
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
@@ -1687,47 +1687,64 @@ function TabletopPanel({ c, update }) {
 // the display choices below, never characters, the sign-in or an encounter in progress.
 const RESET_KEYS = ["cw-skin", "cw-text", "cw-anim", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp"];
 const REPO = "https://github.com/clockwork-companion/clockwork_companion";
-/* ================= what's new: the changelog ================= */
-// The publish workflow writes changelog.json next to the page (tools/changelog.py): a daily summary of the pull requests
-// merged into this branch. Settings opens with it; the Settings button carries a dot until the newest day has been seen.
-// Builds without the file (a local build, the claude.ai artifact) simply don't show it.
+/* ================= what's new ================= */
+// The publish workflow writes changelog.json next to the page (tools/whatsnew.py) from the short notes in changes/, one
+// per change, written by whoever made it: on the Dev page, everything not on the live site yet; on the live site, what
+// the latest release brought. Settings has a "What's new" button that opens them in a pop-up; it and the Settings
+// button carry a dot until every note has been seen. Builds without the file (a local build, the artifact) show neither.
 let newsLoad = null;
 const loadNews = () => newsLoad || (newsLoad = fetch("changelog.json", { cache: "no-cache" })
-  .then(r => (r.ok ? r.json() : null)).then(j => (j && Array.isArray(j.days) ? j.days.filter(d => d && d.date && Array.isArray(d.items)) : []))
-  .catch(() => []));
+  .then(r => (r.ok ? r.json() : null))
+  .then(j => (j && Array.isArray(j.items) ? { since: j.since || "", items: j.items.filter(i => i && i.id && i.t) } : null))
+  .catch(() => null));
 function useNews() {
-  const [days, setDays] = useState(null);
-  useEffect(() => { let on = true; loadNews().then(d => { if (on) setDays(d); }); return () => { on = false; }; }, []);
-  return days;
+  const [news, setNews] = useState(null);
+  useEffect(() => { let on = true; loadNews().then(d => { if (on) setNews(d); }); return () => { on = false; }; }, []);
+  return news;
 }
+const newsSeenList = () => { const v = lsGet("cw-news-seen", []); return Array.isArray(v) ? v : []; };
+const newsFresh = (news, seen) => !!(news && news.items.some(i => !seen.includes(i.id)));
+const newsDate = iso => new Date(iso + "T12:00:00").toLocaleDateString([], { day: "numeric", month: "long" });
 const newsDay = iso => {
   const d = new Date(iso + "T12:00:00"), today = new Date(); today.setHours(12, 0, 0, 0);
   const ago = Math.round((today - d) / 864e5);
   return ago === 0 ? "Today" : ago === 1 ? "Yesterday" : d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" });
 };
-function WhatsNew({ days, onSeen }) {
-  const [more, setMore] = useState(false);
-  useEffect(() => { if (days && days.length && onSeen) onSeen(days[0].date); }, [days && days.length ? days[0].date : ""]);
-  if (!days || !days.length) return null;
-  const shown = more ? days : days.slice(0, 3);
-  return html`<section class="frame whatsnew"><h2 class="h"><span>What's new</span><i class="orn" aria-hidden="true"></i></h2>
-    <p class="sub">${document.querySelector(".devflag") ? "Changes on the Dev page, a day at a time." : "Changes to the Companion, a day at a time."}</p>
-    ${shown.map(d => html`<div class="newsday"><h3>${newsDay(d.date)}</h3>
-      <ul>${d.items.map(i => html`<li><span>${i.t}</span>${i.by && html` <small class="muted">· ${i.by}</small>`}
-        <a class="newspr" href=${`${REPO}/pull/${i.pr}`} target="_blank" rel="noopener" aria-label=${`Pull request ${i.pr}`}>#${i.pr}</a></li>`)}</ul></div>`)}
-    ${days.length > 3 && html`<button type="button" class="linkbtn" onClick=${() => setMore(!more)}>${more ? "Show fewer days" : `Earlier (${days.length - 3} more days)`}</button>`}
-  </section>`;
+function WhatsNewPop({ news, seen, onClose }) {
+  const dev = !!document.querySelector(".devflag"), ok = useRef(null);
+  useEffect(() => {
+    ok.current && ok.current.focus();
+    const key = e => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", key); return () => document.removeEventListener("keydown", key);
+  }, []);
+  const days = [];
+  news.items.forEach(i => { const d = days[days.length - 1]; if (d && d.date === i.date) d.items.push(i); else days.push({ date: i.date, items: [i] }); });
+  const sub = dev ? (news.since ? `On the Dev page, not on the live site yet. Since the release of ${newsDate(news.since)}.` : "On the Dev page, not on the live site yet.")
+                  : (news.since ? `What the release of ${newsDate(news.since)} brought.` : "What the latest release brought.");
+  return html`<div class="gx-veil newsveil" onClick=${e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div class="gx-choose newspop" role="dialog" aria-modal="true" aria-labelledby="news-title">
+      <button type="button" class="btn small gx-x" onClick=${onClose} aria-label="Close">✕</button>
+      <h2 class="ornate" id="news-title">What's new</h2>
+      <p class="sub">${sub}</p>
+      ${days.length ? html`<div class="newslist">${days.map(d => html`<div class="newsday"><h3>${newsDay(d.date)}</h3>
+        <ul>${d.items.map(i => html`<li>${!seen.includes(i.id) && html`<b class="newtag">New</b> `}${i.t}</li>`)}</ul></div>`)}</div>`
+        : html`<p class="muted">Nothing new since the last release.</p>`}
+      <div class="row newsbtns"><button type="button" class="btn primary" ref=${ok} onClick=${onClose}>Got it</button></div>
+    </div></div>`;
 }
 
-function SettingsView({ c, update, chars, gm, news, onSeen, onBack }) {
+function SettingsView({ c, update, chars, gm, news, seen = [], onSeen, onBack }) {
   const [reset, setReset] = useState(false);
+  const [newsOpen, setNewsOpen] = useState(null);   // the seen list as it was when the pop-up opened, so its "New" marks stay put
+  const fresh = newsFresh(news, seen);
+  const openNews = () => { setNewsOpen(seen.slice()); onSeen && onSeen(); };
   const dev = !!document.querySelector(".devflag");
   const live = Store.mode === "live" && Store.table && window.CW_WEB;
   const doReset = () => { RESET_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch {} }); location.reload(); };
   return html`<div class="tabpane settings">
-    <div class="sethead"><button type="button" class="btn small" onClick=${onBack}>← Back</button><h1 class="ornate">Settings</h1></div>
-
-    <${WhatsNew} days=${news} onSeen=${onSeen} />
+    <div class="sethead"><button type="button" class="btn small" onClick=${onBack}>← Back</button><h1 class="ornate">Settings</h1>
+      ${news && html`<button type="button" class=${"btn small newsbtn" + (fresh ? " hasnews" : "")} onClick=${openNews} title=${fresh ? "Something has changed since you last looked" : "What's changed since the last version"}>What's new</button>`}</div>
+    ${newsOpen && html`<${WhatsNewPop} news=${news} seen=${newsOpen} onClose=${() => setNewsOpen(null)} />`}
 
     <section class="frame"><h2 class="h"><span>This browser</span><i class="orn" aria-hidden="true"></i></h2>
       <p class="sub">These choices are saved on this device only, so each player can set their own.</p>
@@ -1752,7 +1769,7 @@ function SettingsView({ c, update, chars, gm, news, onSeen, onBack }) {
     <section class="frame"><h2 class="h"><span>About</span><i class="orn" aria-hidden="true"></i></h2>
       <p class="sub">${dev ? "This is the Dev test page. Use a test table password so real characters stay untouched." : "This is the live Companion your table plays with."}</p>
       <div class="row">
-        ${!(news && news.length) && html`<a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>`}
+        ${!news && html`<a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>`}
         <a class="btn small" href=${`${REPO}/issues/new`} target="_blank" rel="noopener">Report a problem</a></div>
       <p class="muted">Reporting a problem needs a free GitHub account.</p>
     </section>
