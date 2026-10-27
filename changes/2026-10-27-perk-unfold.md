@@ -1,0 +1,1 @@
+Skills & Talents: click a folded perk to deal out just its cards (both levels, for a perk like Wreck 3–4), and click it again to fold them back. The skill's own button still opens or folds every perk at once.

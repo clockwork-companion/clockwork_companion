@@ -30,6 +30,13 @@
       return name === "characters" && me.role !== "gm" ? ref.where("players", "array-contains", me.uid) : ref;
     },
     doc: path => fs.doc(`${root}/${path}`),
+    // Workshop jobs: a GM sees them all; a player sees the ones they sent or that wait on their bench.
+    jobs: (cb, err) => {
+      const docs = s => s.docs.map(d => Object.assign({}, d.data(), { id: d.id })), ref = fs.collection(`${root}/jobs`);
+      if (me.role === "gm") return ref.onSnapshot(s => cb(docs(s)), err);
+      const part = { from: [], to: [] }, out = () => { const m = new Map(); [...part.from, ...part.to].forEach(j => m.set(j.id, j)); cb([...m.values()]); };
+      ["from", "to"].forEach(k => ref.where(`${k}.uids`, "array-contains", me.uid).onSnapshot(s => { part[k] = docs(s); out(); }, err));
+    },
   };
   const assets = {
     async upload(file, previousId) {
@@ -119,6 +126,7 @@
       <linearGradient id="gate-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbe7b0"/><stop offset=".5" stop-color="#d49a45"/><stop offset="1" stop-color="#8a5a22"/></linearGradient>
       <radialGradient id="gate-gem" cx=".45" cy=".35" r=".7"><stop offset="0" stop-color="#fff4d2"/><stop offset=".35" stop-color="#ffb04a"/><stop offset="1" stop-color="#8f2a0c"/></radialGradient>
     </defs></svg>
+    <button type="button" class="installbtn gate-install" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v10.5m0 0-4.2-4.2M12 14l4.2-4.2M4.5 14.5v3.2A2.3 2.3 0 0 0 6.8 20h10.4a2.3 2.3 0 0 0 2.3-2.3v-3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <main class="gate-wrap">
       <header class="gate-crest">
         <svg class="crest" viewBox="0 0 200 200" aria-hidden="true">
@@ -232,6 +240,9 @@
   document.head.appendChild(gateFonts);
   firebase.initializeApp(cfg);
   fs = firebase.firestore();
+  // Keep a copy of this table's data on the device, so sheets open and edits queue up when the connection drops.
+  // (Fails quietly in private windows or when another tab already owns the copy.)
+  try { fs.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch {}
   auth = firebase.auth();
   window.claude = {
     use(name) {

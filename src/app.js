@@ -1,5 +1,5 @@
 const { h, render } = preact;
-const { useState, useEffect, useMemo, useRef } = preactHooks;
+const { useState, useEffect, useLayoutEffect, useMemo, useRef } = preactHooks;
 const html = htm.bind(h);
 const R = CW;
 const num = R.num;
@@ -59,12 +59,15 @@ const Store = {
       toast(err && err.code === "invalid_argument" ? "You can watch the initiative deck but not change it." : "Couldn't save the initiative deck just now. Try that again.");
     });
   },
-  queues: {}, timers: {},
+  queues: {}, timers: {}, pending: {},
   save(c, delay = 650) {
-    clearTimeout(this.timers[c.id]);
+    clearTimeout(this.timers[c.id]); this.pending[c.id] = c;
     this.timers[c.id] = setTimeout(() => this.flush(c), delay);
   },
+  // Save a character's waiting change now (the workshop clears a job only once the result is safely stored).
+  flushNow(id) { const c = this.pending[id]; if (!c) return Promise.resolve(); clearTimeout(this.timers[id]); return this.flush(c); },
   flush(c) {
+    if (this.pending[c.id] === c) delete this.pending[c.id];
     const body = clean(c); delete body.id;
     if (this.mode !== "live") { this.chars = Object.assign({}, this.chars, { [c.id]: Object.assign(body, { id: c.id }) }); lsSet(LS_KEY, this.chars); this.emit(); return Promise.resolve(); }
     const prev = this.queues[c.id] || Promise.resolve();
@@ -77,6 +80,7 @@ const Store = {
     this.queues[c.id] = p; return p;
   },
   async remove(id) {
+    Shop.forget(id);
     if (this.mode !== "live") { const n = Object.assign({}, this.chars); delete n[id]; this.chars = n; lsSet(LS_KEY, n); this.emit(); return; }
     await this.db.doc("characters/" + id).delete();
   },
@@ -130,9 +134,21 @@ function UsageLine({ u }) {
   if (!keys.length) return null;
   return html`<span class="uline">${keys.map(k => html`<span title=${`${UNAME[k]}: ${k === "recharge" ? u.recharge : k === "ap" && u.ap.includes("*") ? val.ap.replace(" ⟲", "") + " (can be a reaction)" : val[k]}`}><${Uicon} k=${k} />${val[k]}</span>`)}</span>`;
 }
+// Side panels (rules and skills) take the Duality Companion's look: sections open with a banner (a small medal with an
+// icon, the title, a rule fading out) rather than boxed headings, and lists are light rows with a small mark.
+const PANEL_ICON = {
+  book: html`<path d="M3 5.5C6 4.3 9 4.4 12 6c3-1.6 6-1.7 9-.5v13c-3-1.2-6-1.1-9 .5-3-1.6-6-1.7-9-.5z M12 6v13.5" />`,
+  table: html`<path d="M3.5 5h17v14h-17z M3.5 10h17 M3.5 14.5h17 M9.5 10v9" />`,
+  info: html`<circle cx="12" cy="12" r="8.5" /><path d="M12 11v5.5 M12 7.6v.2" />`,
+  tip: html`<path d="M9 17.5h6 M10 20.5h4 M12 3.5a6 6 0 0 0-3.6 10.8c.5.4.8 1 .8 1.7v1.5h5.6V16c0-.7.3-1.3.8-1.7A6 6 0 0 0 12 3.5z" />`,
+  shield: html`<path d="M12 2.8l7.5 3v6c0 4.7-3.2 7.9-7.5 9.4-4.3-1.5-7.5-4.7-7.5-9.4v-6z" />`,
+  star: html`<path d="M12 3l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.3l6-.8z" />`,
+};
+const PanelIcon = ({ i, a }) => (a && ATTR_GLYPH[a] ? html`<${AttrGlyph} a=${a} cls="pnicon" />` : html`<svg class="pnicon" viewBox="0 0 24 24" aria-hidden="true">${PANEL_ICON[i] || PANEL_ICON.book}</svg>`);
+const Banner = ({ title, i, a, tag = "h3" }) => html`<${tag} class="spban"><span class="spmedal"><${PanelIcon} i=${i} a=${a} /></span><span class="spbt">${title}</span><i class="spbr" aria-hidden="true"></i></${tag}>`;
 function RuleBlock({ b }) {
   if (typeof b === "string") return html`<p>${b}</p>`;
-  if (b.h) return html`<h3>${b.h}</h3>`;
+  if (b.h) return html`<${Banner} title=${b.h} i=${b.i || "book"} />`;
   if (b.ul) return html`<ul class="sprules">${b.ul.map(x => html`<li>${x}</li>`)}</ul>`;
   if (b.note) return html`<p class="muted rnote">${b.note}</p>`;
   if (b.icons) return html`<div class="ulegend">${Object.keys(UICON).map(k => html`<span><${Uicon} k=${k} /><b>${UNAME[k]}</b>${k === "recharge" ? " · L long rest, S short rest" : k === "ap" ? " · ⟲ can be a reaction" : ""}</span>`)}</div>`;
@@ -145,7 +161,7 @@ function RulePanel({ topic, onClose }) {
   useEffect(() => { const k = e => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", k); ref.current && ref.current.focus(); return () => window.removeEventListener("keydown", k); }, [topic]);
   if (!r) return null;
   return html`<aside class="spanel rpanel-rules" role="dialog" aria-label=${`${r.title} rules`} tabindex="-1" ref=${ref}>
-    <header class="sphead"><div><span class="lbl">Rules · ${r.kicker}</span><h2>${r.title}</h2></div>
+    <header class="sphead"><span class="sp-medal"><${PanelIcon} i="book" /></span><div class="sptt"><span class="lbl">Rules · ${r.kicker}</span><h2>${r.title}</h2></div>
       <button class="iconbtn" aria-label="Close" onClick=${onClose}>×</button></header>
     <div class="spbody rulebody">${r.body.map(b => html`<${RuleBlock} b=${b} />`)}</div></aside>`;
 }
@@ -207,8 +223,60 @@ function levelTip(c, mode, kind, name, to, raiseBtn = "L", lowerBtn = "R") {
     lines: [html`<em>${raise ? delta : "+" + -delta} Karma</em> · ${have} → ${have - delta}`] };
 }
 
+/* ================= motion helpers ================= */
+// Small, one-off animations that show what just changed (a bar losing HP, a pip being bought). They play only when a
+// value changes while the same character stays open: never on first draw, and not when another character is opened.
+// The "reduce motion" setting switches every animation off in app.css.
+let animScope = "";          // the open character's id, set by Character; hooks compare against it
+const calm = () => { if (document.documentElement.dataset.anim === "off") return true; try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
+// Replays a CSS animation class on an element, even if it's already there, and clears it once the animation ends.
+function replay(el, cls, delayMs = 0, also = []) {
+  if (!el) return;
+  el.classList.remove(cls, ...also);
+  // The delay goes on the element and, as --lag, to its ::after (a pseudo-element doesn't inherit animation-delay).
+  el.style.animationDelay = delayMs ? delayMs + "ms" : ""; el.style.setProperty("--lag", (delayMs || 0) + "ms");
+  void el.offsetWidth; el.classList.add(cls);
+  // Tidy up when its own animation ends, or after a while if only its children animate (their end events bubble up).
+  const token = (el._fx = (el._fx || 0) + 1);
+  const clear = () => { if (el._fx !== token) return; el.classList.remove(cls); el.style.animationDelay = ""; el.removeEventListener("animationend", done); };
+  const done = e => { if (e.target === el) clear(); };
+  el.addEventListener("animationend", done);
+  setTimeout(clear, 1600 + (delayMs || 0));
+}
+// Calls onChange(from, to) after a redraw in which `value` changed for the same `scope`.
+function useChange(value, onChange, scope = animScope) {
+  const last = useRef({ value, scope });
+  useEffect(() => {
+    const l = last.current; last.current = { value, scope };
+    if (l.scope === scope && l.value !== value) onChange(l.value, value);
+  }, [value, scope]);
+}
+// A number that counts to its new value instead of jumping (Unspent Karma, rounds in a clip).
+function useTween(value, ms = 380, scope = animScope) {
+  const [shown, setShown] = useState(value);
+  const st = useRef({ shown: value, scope, raf: 0 });
+  useEffect(() => {
+    const s = st.current; cancelAnimationFrame(s.raf);
+    const to = +value, from = +s.shown;
+    if (s.scope !== scope || calm() || !isFinite(to) || !isFinite(from) || from === to) { s.scope = scope; s.shown = value; setShown(value); return; }
+    const t0 = performance.now();
+    const step = t => { const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3), n = k < 1 ? Math.round(from + (to - from) * e) : to;
+      s.shown = n; setShown(n); if (k < 1) s.raf = requestAnimationFrame(step); };
+    s.raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(s.raf);
+  }, [value, scope]);
+  return shown;
+}
+// While a rest is being applied, the bars it refills light up one after another instead of all at once.
+let restUntil = 0;
+const resting = () => performance.now() < restUntil;
+const markRest = () => { restUntil = performance.now() + 1200; };
+
 /* ================= small parts ================= */
 function Pips({ value, max = 10, cap = max, onSet, label, big, tipFor }) {
+  const group = useRef();
+  // A newly bought pip gets a brass stamp.
+  useChange(value, (from, to) => { if (to > from) for (let i = from + 1; i <= to; i++) replay(group.current && group.current.children[i - 1], "stamp", (i - from - 1) * 60); });
   const out = [];
   for (let i = 1; i <= max; i++) {
     const on = i <= value, capped = i > cap && !on, over = on && i > cap;
@@ -222,7 +290,7 @@ function Pips({ value, max = 10, cap = max, onSet, label, big, tipFor }) {
       onClick=${e => { if (!on) go(); else if (e.detail) toast("Right-click (long-press on a phone) to lower."); else go(); }}
       onContextMenu=${e => { e.preventDefault(); if (on) go(); }}></button>`);
   }
-  return html`<span class=${"pips" + (big ? " big" : "")} role="group" aria-label=${label}>${out}</span>`;
+  return html`<span ref=${group} class=${"pips" + (big ? " big" : "")} role="group" aria-label=${label}>${out}</span>`;
 }
 // A text box that grows with what's typed, instead of a single line that scrolls sideways.
 function AutoText({ id, value, onInput, placeholder, label, cls = "" }) {
@@ -280,7 +348,12 @@ const SKINS = [
   ["armour", "Power armour", GF + "Orbitron:wght@600;700;800&family=Chakra+Petch:wght@500;600;700&family=Exo+2:wght@400;500;600&family=Nixie+One"],
   // Extended themes: heavier artwork and their own furniture.
   ["cairn", "Cairn-style gothic", GF + "UnifrakturCook:wght@700&family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Grenze:wght@500;600;700", "extended"],
+  ["cyber", "Cyberpunk", GF + "Tomorrow:wght@500;600;700&family=Oxanium:wght@400;500;600;700;800", "extended"],
+  ["talon", "Talon Saga (steppe)", GF + "Marcellus&family=Marcellus+SC&family=Alegreya+Sans:wght@400;500;700&family=Noto+Sans+Old+Turkic", "extended"],
+  ["moss", "Mossheart (forest)", GF + "Marcellus+SC&family=Cormorant+Garamond:wght@500;600;700&family=Crimson+Pro:wght@400;600;700", "extended"],
 ];
+// The install-app icon (shown only when the browser can install the site; see web/pwa.js).
+const INSTALL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v10.5m0 0-4.2-4.2M12 14l4.2-4.2M4.5 14.5v3.2A2.3 2.3 0 0 0 6.8 20h10.4a2.3 2.3 0 0 0 2.3-2.3v-3.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function applySkin(key) {
   const skin = SKINS.find(x => x[0] === key) || SKINS[0], root = document.documentElement;
   if (skin[0] === "ledger") delete root.dataset.skin; else root.dataset.skin = skin[0];
@@ -292,11 +365,87 @@ applySkin(lsGet("cw-skin", "ledger"));   // before the first paint, so the page 
 function SkinPicker() {
   const [skin, setSkin] = useState(() => lsGet("cw-skin", "ledger"));
   useEffect(() => { applySkin(skin); lsSet("cw-skin", skin); }, [skin]);
-  return html`<label class="skinpick"><span class="lbl">Theme</span>
-    <select value=${skin} onChange=${e => setSkin(e.target.value)}>
+  return html`<label class="skinpick">
+    <select id="set-theme" value=${skin} onChange=${e => setSkin(e.target.value)}>
       <optgroup label="Themes">${SKINS.filter(x => !x[3]).map(([k, n]) => html`<option value=${k}>${n}</option>`)}</optgroup>
       <optgroup label="Extended">${SKINS.filter(x => x[3] === "extended").map(([k, n]) => html`<option value=${k}>${n}</option>`)}</optgroup>
     </select></label>`;
+}
+
+/* ================= text size: per browser, like the theme ================= */
+/* ================= animations: per browser. Disabled does what the device's "reduce motion" setting does ================= */
+// Backgrounds (Blackwall, steppe, ivy) hold one still frame and the app's animations stop. app.css needs nothing extra:
+// build.py repeats every reduce-motion rule under :root[data-anim="off"].
+function applyAnim(key) { if (key === "off") document.documentElement.dataset.anim = "off"; else delete document.documentElement.dataset.anim; }
+applyAnim(lsGet("cw-anim", "on"));
+function AnimPicker() {
+  const [m, setM] = useState(() => lsGet("cw-anim", "on"));
+  useEffect(() => { applyAnim(m); lsSet("cw-anim", m); }, [m]);
+  return html`<div class="seg" role="group" aria-labelledby="set-anim">${[["on", "Enabled"], ["off", "Disabled"]].map(([k, n]) => html`<button type="button" aria-pressed=${m === k} onClick=${() => setM(k)}>${n}</button>`)}</div>`;
+}
+
+const TEXT_SIZES = [["normal", "Normal"], ["large", "Larger"]];
+function applyText(key) { if (key === "large") document.documentElement.dataset.text = "large"; else delete document.documentElement.dataset.text; }
+applyText(lsGet("cw-text", "normal"));
+function TextSizePicker() {
+  const [size, setSize] = useState(() => lsGet("cw-text", "normal"));
+  useEffect(() => { applyText(size); lsSet("cw-text", size); }, [size]);
+  return html`<div class="seg" role="group" aria-labelledby="set-text">${TEXT_SIZES.map(([k, n]) => html`<button type="button" aria-pressed=${size === k} onClick=${() => setSize(k)}>${n}</button>`)}</div>`;
+}
+
+/* ================= dice: the app rolls, or the player types a roll made at the table ================= */
+// Per browser, like the theme: "app" (default) or "own" (rolled elsewhere, e.g. in Tabletop Simulator, and typed in).
+// askRoll(spec) resolves to the dice results, or to null when the player cancels.
+//   spec: { title, dice: [{ n, sides }], each (type every die; otherwise one total), note, cancel (offer Cancel) }
+// With own rolls and no "each", it resolves to a one-item array holding the total.
+const Dice = { mode: lsGet("cw-dice", "app"), open: null };
+const diceLabel = dice => dice.filter(d => d.n > 0).map(d => `${d.n}d${d.sides}`).join(" + ");
+const autoRoll = spec => spec.dice.flatMap(d => Array.from({ length: d.n }, () => R.rollDie(d.sides)));
+function askRoll(spec) {
+  if (Dice.mode !== "own" || !Dice.open || !spec.dice.some(d => d.n > 0)) return Promise.resolve(autoRoll(spec));
+  return new Promise(res => Dice.open({ spec, res }));
+}
+function DicePicker() {
+  const [mode, setMode] = useState(Dice.mode);
+  const pick = m => { Dice.mode = m; lsSet("cw-dice", m); setMode(m); };
+  return html`<div class="seg" role="group" aria-labelledby="set-dice">
+    <button type="button" aria-pressed=${mode !== "own"} onClick=${() => pick("app")}>App rolls</button>
+    <button type="button" aria-pressed=${mode === "own"} onClick=${() => pick("own")}>My own rolls</button></div>`;
+}
+// The box that asks for a roll. Mounted once in App; askRoll() opens it.
+function DiceAsk() {
+  const [ask, setAsk] = useState(null), [vals, setVals] = useState([]), [err, setErr] = useState("");
+  const first = useRef(null);
+  useEffect(() => { Dice.open = a => { setAsk(a); setVals([]); setErr(""); }; return () => { Dice.open = null; }; }, []);
+  useEffect(() => { if (ask && first.current) first.current.focus(); }, [ask]);
+  if (!ask) return null;
+  const { spec } = ask, each = !!spec.each;
+  const dice = spec.dice.filter(d => d.n > 0);
+  const slots = each ? dice.flatMap(d => Array.from({ length: d.n }, () => ({ lo: 1, hi: d.sides, ph: `d${d.sides}` })))
+    : [{ lo: dice.reduce((s, d) => s + d.n, 0), hi: dice.reduce((s, d) => s + d.n * d.sides, 0), ph: dice.length === 1 && dice[0].n === 1 ? `d${dice[0].sides}` : "total" }];
+  const single = !each && dice.length === 1 && dice[0].n === 1;
+  const done = r => { setAsk(null); ask.res(r); };
+  const submit = e => {
+    e.preventDefault();
+    const nums = slots.map((s, i) => Number(vals[i]));
+    const bad = slots.findIndex((s, i) => !Number.isInteger(nums[i]) || nums[i] < s.lo || nums[i] > s.hi);
+    if (bad >= 0) { setErr(`Type a whole number from ${slots[bad].lo} to ${slots[bad].hi}.`); return; }
+    done(nums);
+  };
+  const cancel = () => { if (spec.cancel) done(null); };
+  return html`<div class="gx-veil dice-veil" onClick=${e => { if (e.target === e.currentTarget) cancel(); }} onKeyDown=${e => { if (e.key === "Escape") cancel(); }}>
+    <form class="gx-choose dice-ask" role="dialog" aria-modal="true" aria-label=${spec.title} onSubmit=${submit} novalidate>
+      <h2 class="ornate">${spec.title}</h2>
+      <p>Roll <b>${diceLabel(dice)}</b> at your table and type ${each ? (slots.length > 1 ? "each die" : "the die") : single ? "the result" : "the total"}.</p>
+      ${spec.note && html`<p class="muted">${spec.note}</p>`}
+      <div class="dice-in">${slots.map((s, i) => html`<input class="inp" type="number" inputmode="numeric" min=${s.lo} max=${s.hi} placeholder=${s.ph}
+        aria-label=${each ? `Die ${i + 1} (${s.ph})` : `Result (${s.lo} to ${s.hi})`} ref=${i === 0 ? first : null} value=${vals[i] == null ? "" : vals[i]}
+        onInput=${e => { const v = vals.slice(); v[i] = e.target.value; setVals(v); setErr(""); }} />`)}</div>
+      ${err && html`<p class="flag bad" role="alert">${err}</p>`}
+      <div class="row dice-btns"><button class="btn primary" type="submit">Use this roll</button>
+        <button class="btn" type="button" onClick=${() => { const r = autoRoll(spec); done(each ? r : [r.reduce((a, b) => a + b, 0)]); }}>Let the app roll</button>
+        ${spec.cancel && html`<button class="btn" type="button" onClick=${cancel}>Cancel</button>`}</div>
+    </form></div>`;
 }
 
 /* ================= app ================= */
@@ -304,7 +453,11 @@ function App() {
   const [, force] = useState(0);
   const [drafts, setDrafts] = useState({});
   const [sel, setSel] = useState(() => lsGet("cw-sel", null));
-  const [tab, setTab] = useState(() => (["sheet", "vitals", "gear", "table"].includes(location.hash.slice(1)) ? location.hash.slice(1) : lsGet("cw-tab", "sheet")));
+  const [tab, setTab] = useState(() => { const t = CHAR_TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : lsGet("cw-tab", "sheet"); return CHAR_TABS.includes(t) ? t : "sheet"; });
+  const [settings, setSettings] = useState(() => location.hash === "#settings");
+  const openSettings = on => setSettings(on);   // a drawer over the page: nothing underneath moves
+  const news = useNews(), [newsSeen, setNewsSeen] = useState(newsSeenList);
+  const fresh = newsFresh(news, newsSeen);
   const lastEdit = useRef({});
   const [view, setView] = useState(() => (location.hash === "#gm" ? "gm" : lsGet("cw-view", "chars")));
   useEffect(() => lsSet("cw-view", view), [view]);
@@ -326,6 +479,14 @@ function App() {
   const list = rosterOrder(Object.values(all));
   const gm = isGM();
   if (!gm && view === "gm") setView("chars");
+  // Which page is showing (characters, Table, GM table) and which way we moved, for themes that animate the
+  // change (Mossheart blows a gust of leaves across). Order matches the top bar. Settings is a drawer over the page, not a page.
+  const page = view === "gm" && gm ? "gm" : view === "table" ? "table" : "chars";
+  const pageNav = useRef({ page, dir: "" });
+  if (pageNav.current.page !== page) {
+    const order = ["chars", "table", "gm"];
+    pageNav.current = { page, dir: order.indexOf(page) > order.indexOf(pageNav.current.page) ? "r" : "l" };
+  }
   const current = sel && all[sel] ? norm(all[sel]) : null;
   useEffect(() => { if (!current && list.length) setSel(list[0].id); }, [list.length, !!current]);
   useEffect(() => lsSet("cw-sel", sel), [sel]);
@@ -340,7 +501,8 @@ function App() {
     Store.save(next);
   };
   const update = fn => { if (current) updateChar(current.id, fn); };
-  const openChar = id => { setSel(id); setView("chars"); setTab("sheet"); window.scrollTo(0, 0); };
+  Shop.updater = updateChar; Shop.start();   // the workshop writes finished jobs onto this app's characters
+  const openChar = id => { setSel(id); setView("chars"); setSettings(false); setTab("sheet"); window.scrollTo(0, 0); };
 
   // A new character belongs to the player who made it. A companion belongs to whoever plays its master.
   // fill(c): the creation guide's choices, applied to the new character before it's saved.
@@ -365,12 +527,12 @@ function App() {
   return html`<div class="wrap">
     <header class="top">
       <div class="brand">Clockwork<small>Companion</small></div>
-      ${gm && html`<div class="seg viewseg" role="group" aria-label="View">
-        <button aria-pressed=${view === "chars"} onClick=${() => setView("chars")}>Characters</button>
-        <button aria-pressed=${view === "gm"} onClick=${() => setView("gm")}>GM table</button></div>`}
-      <${SkinPicker} />
-      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button class="linkbtn" onClick=${() => window.CW_WEB.leave()}>Sign out</button>`
+      <${CharMenu} list=${list} all=${all} sel=${sel} current=${current} gm=${gm} on=${view === "chars"} gmOn=${view === "gm"} tableOn=${view === "table"}
+        goChars=${() => { setView("chars"); setSettings(false); }} goGm=${() => { setView("gm"); setSettings(false); }} goTable=${() => { setView("table"); setSettings(false); }}
+        pick=${id => { setSel(id); setView("chars"); setSettings(false); window.scrollTo(0, 0); }} create=${create} startNew=${startNew} />
+      <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
+      <button type="button" class=${"setbtn" + (fresh ? " hasnews" : "")} aria-pressed=${settings} aria-label=${fresh ? "Settings (something new)" : "Settings"} data-tip=${fresh ? "Settings · something new" : "Settings"} onClick=${() => openSettings(!settings)}><i class="seticon" aria-hidden="true"></i></button>
     </header>
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
       ? (window.CW_WEB.reason === "offline" ? "Couldn't reach the shared save, so for now characters are kept in this browser only. Check your connection and reload."
@@ -378,8 +540,9 @@ function App() {
       : "Shared saving isn't available in this view, so characters are kept in this browser only. Open the published page while signed in to share them with your table."}</div>`}
     ${Store.readOnly && html`<div class="banner">You're viewing these characters read-only. To edit, ask the owner to invite you as an Editor.</div>`}
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
-    ${view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />` : html`
-    <${Roster} list=${list} all=${all} sel=${sel} setSel=${setSel} current=${current} create=${create} startNew=${startNew} />
+    <div class="viewswap" key=${page} data-dir=${pageNav.current.dir}>
+    ${view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />`
+      : view === "table" ? html`<${TableView} chars=${list} current=${current} />` : html`
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
       : Store.mode === "loading" ? html`<div class="empty"><p class="muted">Opening the character ledger…</p></div>`
       : html`<div class="empty">
@@ -388,27 +551,32 @@ function App() {
             : "You don't have a character here yet. Roll one up below, or ask your GM to hand you an existing one."}</p>
           <div class="row"><button class="btn primary" onClick=${startNew}>Create a character</button></div>
           <p class="muted">Walk through creation step by step, or start from a blank sheet.</p></div>`}`}
+    </div>
+    ${settings && html`<${SettingsDrawer} c=${current} update=${update} chars=${list} gm=${gm} news=${news} seen=${newsSeen} onSeen=${() => { const ids = [...new Set([...news.items.map(i => i.id), ...newsSeen])].slice(0, 300); lsSet("cw-news-seen", ids); setNewsSeen(ids); }} onClose=${() => openSettings(false)} />`}
     ${making === "choose" && html`<${NewChoice} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")} onBlank=${() => { setMaking(null); create(false); }} />`}
     ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
-    <${Toaster} /><${HoverCard} />
+    <${Toaster} /><${HoverCard} /><${DiceAsk} />
+    <${ShopNotice} current=${!settings && view === "chars" && current ? current.id : ""} onGm=${!settings && view === "gm" && gm} goGm=${() => { setView("gm"); setSettings(false); window.scrollTo(0, 0); }} go=${id => { setSel(id); setView("chars"); setSettings(false); setTab("craft"); window.scrollTo(0, 0); }} />
   </div>`;
 }
 
-/* ================= character switcher ================= */
-// The current character up front; everyone else in a panel that opens below it, grouped by campaign,
-// with each character's companions tucked under them and a search box when the list grows long.
-function Roster({ list, all, sel, setSel, current, create, startNew }) {
+/* ================= character menu (top bar) ================= */
+// "Characters" in the top bar opens the last character you had open. Hovering it (or the arrow beside it, on phones and
+// keyboards) drops down every character you can open, grouped by campaign, companions under their master, with a search
+// box when the list grows long, and the buttons for a new character or a companion.
+function CharMenu({ list, all, sel, current, gm, on, gmOn, tableOn, goChars, goGm, goTable, pick, create, startNew }) {
   const [open, setOpen] = useState(false); const [q, setQ] = useState("");
-  const ref = useRef(), searchRef = useRef();
+  const ref = useRef(), searchRef = useRef(), timer = useRef();
+  const later = (v, ms) => { clearTimeout(timer.current); timer.current = setTimeout(() => setOpen(v), ms); };
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setQ(""); return; }
     const key = e => { if (e.key === "Escape") setOpen(false); };
     const out = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     window.addEventListener("keydown", key); document.addEventListener("pointerdown", out);
-    if (searchRef.current) searchRef.current.focus();
     return () => { window.removeEventListener("keydown", key); document.removeEventListener("pointerdown", out); };
   }, [open]);
-  const pick = id => { setSel(id); setOpen(false); setQ(""); };
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const choose = id => { setOpen(false); pick(id); };
   const master = c => (c && c.companionOf && all[c.companionOf]) || null;
   const comps = id => list.filter(c => c.companionOf === id);
   const needle = q.trim().toLowerCase();
@@ -418,43 +586,105 @@ function Roster({ list, all, sel, setSel, current, create, startNew }) {
   const groups = order.map(k => ({ k, rows: tops.filter(c => (c.campaign || "") === k) })).filter(g => g.rows.length);
   const hp = c => { const d = derive(c); return d.max.hp ? R.clamp((d.cur.hp / d.max.hp) * 100, 0, 100) : 0; };
   const cur = current, m = master(cur);
-  return html`<div class="roster" ref=${ref}>
-    <div class="rbar">
-      ${cur ? html`<button type="button" class="rnow" aria-expanded=${open} aria-haspopup="true" onClick=${() => setOpen(!open)}>
-          <${Thumb} c=${cur} lg />
-          <span class="who"><b>${cur.name || "Unnamed"}</b><span>${m ? `Companion of ${m.name || "Unnamed"}` : subtitle(cur)}</span></span>
-          <span class="rswitch">${list.length > 1 ? `Switch · ${list.length}` : "Characters"}<svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></span></button>`
-        : html`<span class="muted">No character selected</span>`}
-      <span class="radd">
-        <button class="btn small" onClick=${startNew}>+ New character</button>
-        ${cur && !m && html`<button class="btn small" onClick=${() => create(false, cur)}>+ Companion</button>`}
-      </span>
+  const hover = matchMedia && matchMedia("(hover: hover)").matches;
+  return html`<nav class="charnav" ref=${ref} aria-label="Pages" onMouseLeave=${() => hover && later(false, 260)}>
+    <div class="seg viewseg">
+      <span class="cnwrap" onMouseEnter=${() => hover && later(true, 120)}><button type="button" class="cnbtn" aria-pressed=${on} onClick=${() => { goChars(); setOpen(false); }}
+          title=${cur ? `Open ${cur.name || "your character"}` : "Characters"}>Characters${cur && on ? "" : cur ? html`<small> · ${cur.name || "Unnamed"}</small>` : ""}</button>
+        <button type="button" class="cnchev" aria-expanded=${open} aria-haspopup="true" aria-label="Choose a character" onClick=${() => setOpen(!open)}>
+          <svg viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></span>
+      <button aria-pressed=${tableOn} onClick=${() => { later(false, 0); goTable(); }}>Table</button>
+      ${gm && html`<button aria-pressed=${gmOn} onClick=${() => { later(false, 0); goGm(); }}>GM table</button>`}
     </div>
-    ${open && html`<div class="rpanel" role="dialog" aria-label="Choose a character">
-      <div class="rhead"><b>Characters</b><button type="button" class="iconbtn" aria-label="Close" onClick=${() => setOpen(false)}>×</button></div>
+    ${open && html`<div class="rpanel cnmenu" role="dialog" aria-label="Choose a character" onMouseEnter=${() => hover && later(true, 0)}>
       ${list.length > 6 && html`<input ref=${searchRef} class="rsearch" type="search" placeholder="Find a character, profession or player…" value=${q} onInput=${e => setQ(e.target.value)} />`}
       ${groups.map(g => html`<div class="rgroup"><h4>${g.k || "No campaign"}</h4><div class="rgrid">
         ${g.rows.map(c => html`<div class=${"rcard" + (c.id === sel ? " on" : "")}>
-          <button type="button" class="rmain" onClick=${() => pick(c.id)}>
+          <button type="button" class="rmain" onClick=${() => choose(c.id)}>
             <${Thumb} c=${c} />
             <span class="who"><b>${c.name || "Unnamed"}</b><span>${[c.profession, c.player].filter(Boolean).join(" · ") || "No profession yet"}</span>
               <span class="bar"><i style=${`width:${hp(c)}%`}></i></span></span></button>
-          ${comps(c.id).length > 0 && html`<div class="rcomps">${comps(c.id).map(k => html`<button type="button" class=${"rcomp" + (k.id === sel ? " on" : "")} onClick=${() => pick(k.id)}><${Thumb} c=${k} />${k.name || "Unnamed"}</button>`)}</div>`}
+          ${comps(c.id).length > 0 && html`<div class="rcomps">${comps(c.id).map(k => html`<button type="button" class=${"rcomp" + (k.id === sel ? " on" : "")} onClick=${() => choose(k.id)}><${Thumb} c=${k} />${k.name || "Unnamed"}</button>`)}</div>`}
         </div>`)}</div></div>`)}
-      ${!groups.length && html`<p class="muted">Nobody matches “${q}”.</p>`}
+      ${!groups.length && list.length > 0 && html`<p class="muted">Nobody matches “${q}”.</p>`}
+      ${!list.length && html`<p class="muted">No characters yet.</p>`}
+      <div class="row cnadd"><button class="btn small" onClick=${() => { setOpen(false); startNew(); }}>+ New character</button>
+        ${cur && !m && html`<button class="btn small" onClick=${() => { setOpen(false); create(false, cur); }}>+ Companion for ${cur.name || "this character"}</button>`}</div>
     </div>`}
-  </div>`;
+  </nav>`;
+}
+
+/* ================= modules: Crafting and Magic ================= */
+const MODULES = {
+  craft: { n: "Crafting", list: c => craftsOpen(c).map(x => x[2]), what: "a tab of workbenches for your crafting skills: forging, brewing, runestones, munitions and repairs",
+    icon: html`<path d="M3 10.5h12.5l-1.2 3h-2.8l1 3.5h2.5v2H6v-2h2.5l1-3.5H7c-2.2 0-4-1.2-4-3z M15 3.5l4.5 4.5-2 2L13 5.5z M14 7l-3.5 3.5" />` },
+  magic: { n: "Magic", list: c => magicOpen(c).map(x => x[2]), what: "a tab for your schools of magic: wards, chakras, daemons, dreams and alchemical circles",
+    icon: html`<circle cx="12" cy="12" r="8.6" /><path d="M12 3.4l2.4 13.9L5 8.3h14l-9.4 9z" />` },
+};
+// The pop-up that appears when a character first puts points into a crafting or magic skill: a short celebration (the
+// forge flares with sparks, or ink blooms round a rune circle) and the choice to turn the module on. Settings can change it later.
+function ModulePrompt({ c, k, update }) {
+  const m = MODULES[k]; const skills = m.list(c);
+  const choose = on => update(x => { x.modules = Object.assign({ craft: null, magic: null }, x.modules, { [k]: on }); addLog(x, `${m.n} ${on ? "turned on" : "left off"}`); });
+  return html`<div class="gx-veil modveil" onKeyDown=${e => { if (e.key === "Escape") choose(false); }}>
+    <div class=${"gx-choose modprompt mp-" + k} role="dialog" aria-modal="true" aria-labelledby="mp-title">
+      <div class="mpemblem" aria-hidden="true"><i class="mpglow"></i>${Array.from({ length: 10 }, (_, i) => html`<i class="mpfx" style=${`--i:${i}`}></i>`)}
+        <svg viewBox="0 0 24 24">${m.icon}</svg></div>
+      <h2 class="ornate" id="mp-title">${k === "craft" ? "The forge is lit" : "The ink takes"}</h2>
+      <p>You've put points into <b>${skills.join(", ")}</b>. ${m.n} is ${m.what}.</p>
+      <p>Would you like to turn ${m.n} on for ${c.name || "this character"}?</p>
+      <div class="row mpbtns"><button class="btn primary" onClick=${() => choose(true)} autofocus>Turn on ${m.n}</button><button class="btn" onClick=${() => choose(false)}>Not now</button></div>
+      <p class="muted">You can change this at any time in Settings.</p>
+    </div></div>`;
+}
+// Settings: switch the modules on or off for the open character.
+function ModulesPanel({ c, update }) {
+  return html`<section class="setsec"><h3 class="setsub">Modules</h3>
+    <p class="sub">Extra tabs for ${c.name || "this character"}. They're off until you turn them on.</p>
+    <div class="setrows">${Object.entries(MODULES).map(([k, m]) => { const on = (c.modules || {})[k] === true; const sk = m.list(c);
+      return html`<div class="setrow"><div><span class="setname">${m.n}</span><span class="muted">${sk.length ? `Skills with points: ${sk.join(", ")}.` : "Shows once the character has points in one of its skills."}</span></div>
+        <button type="button" class=${"btn small modtog" + (on ? " primary" : "")} aria-pressed=${on} onClick=${() => update(x => { x.modules = Object.assign({ craft: null, magic: null }, x.modules, { [k]: !on }); addLog(x, `${m.n} turned ${on ? "off" : "on"}`); })}>${on ? "On" : "Off"}</button></div>`; })}</div>
+  </section>`;
 }
 
 /* ================= character ================= */
+const CHAR_TABS = ["sheet", "vitals", "talents", "gear", "craft", "magic"];
 function Character({ c, update, tab, setTab, onDelete }) {
+  animScope = c.id;   // animations only play for changes on this character, not when another one is opened
   const d = derive(c);
   const [chosenMode, setMode] = useState(() => lsGet("cw-mode", "karma"));
   useEffect(() => lsSet("cw-mode", chosenMode), [chosenMode]);
   // Free edit is always there for a GM; a player gets it only when the GM switches it on for this sheet.
   const canFree = isGM() || !!c.freeEdit;
   const mode = canFree ? chosenMode : "karma";
-  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ["craft", "Crafting"], ["table", "Tabletop"]];
+  // Crafting and Magic are modules: each shows only once the player has turned it on (Settings, or the pop-up that asks
+  // when the character first puts points into one of its skills), and then only the benches or schools with points.
+  const mods = c.modules || {};
+  const crafts = mods.craft === true ? craftsOpen(c).map(x => x[0]) : [];
+  const magics = mods.magic === true ? magicOpen(c).map(x => x[0]) : [];
+  const asking = ["craft", "magic"].find(k => mods[k] == null && (k === "craft" ? craftsOpen(c) : magicOpen(c)).length);
+  const tabs = [["sheet", "Sheet"], ["vitals", "Vitals"], ["talents", "Skills & Talents"], ["gear", "Gear"], ...(crafts.length ? [["craft", "Crafting"]] : []), ...(magics.length ? [["magic", "Magic"]] : [])];
+  useEffect(() => { if ((tab === "craft" && !crafts.length) || (tab === "magic" && !magics.length)) setTab("sheet"); }, [tab, crafts.length, magics.length]);
+  // The Magic tab arriving: it's inked in, rather than forged.
+  const knownMagic = useRef({ id: c.id, n: magics.length });
+  useEffect(() => {
+    const k = knownMagic.current; knownMagic.current = { id: c.id, n: magics.length };
+    if (k.id !== c.id || k.n || !magics.length) return;
+    toast(`The ink takes: Magic unlocked (${magicOpen(c).map(x => x[1]).join(", ")}).`); forgeIn(document.querySelector(".tabs .tab-magic"), "ink");
+  }, [c.id, magics.join()]);
+  // Spot crafts unlocking on this character (not when another character is opened) and celebrate them.
+  const known = useRef({ id: c.id, keys: crafts });
+  useEffect(() => {
+    const k = known.current;
+    if (k.id !== c.id) { known.current = { id: c.id, keys: crafts }; return; }
+    const fresh = crafts.filter(x => !k.keys.includes(x));
+    known.current = { id: c.id, keys: crafts };
+    if (!fresh.length) return;
+    const names = fresh.map(x => CRAFTS.find(y => y[0] === x)[1]);
+    if (k.keys.length) { CraftFresh.keys = (CraftFresh.char === c.id ? CraftFresh.keys : []).concat(fresh); CraftFresh.char = c.id; }   // new benches: forged in when Crafting opens
+    if (!k.keys.length) { toast(`The forge is lit: Crafting unlocked (${names.join(", ")}).`); forgeIn(document.querySelector(".tabs .tab-craft")); }
+    else toast(`New bench in Crafting: ${names.join(", ")}.`);
+  }, [c.id, crafts.join()]);
   const [panel, setPanel] = useState(null);
   const [invested, setInvested] = useState(() => { const v = lsGet("cw-invested2", null); return v && typeof v === "object" ? v : { skills: false, weapons: false, sec: false }; });
   useEffect(() => lsSet("cw-invested2", invested), [invested]);
@@ -464,18 +694,28 @@ function Character({ c, update, tab, setTab, onDelete }) {
   const openPanel = (kind, name) => setPanel(p => (p && p.kind === kind && p.name === name ? null : { kind, name }));
   openRuleFn = name => openPanel("rule", name);
   const skillTabs = tab === "sheet" || tab === "talents";
+  // Which way the page slides when the tab changes: in from the right when moving to a tab further along, from the
+  // left when going back. Worked out once per change (not on every redraw), so the slide never replays mid-edit.
+  const nav = useRef({ tab, dir: "" });
+  if (nav.current.tab !== tab) {
+    const order = tabs.map(t => t[0]);
+    nav.current = { tab, dir: order.indexOf(tab) > order.indexOf(nav.current.tab) ? "r" : "l" };
+  }
   return html`
     <${Header} c=${c} d=${d} update=${update} mode=${mode} setMode=${setMode} canFree=${canFree} />
+    ${asking && html`<${ModulePrompt} key=${c.id + asking} c=${c} k=${asking} update=${update} />`}
     <div class="tabs" role="tablist">${tabs.map(([k, n]) => html`<button role="tab" class=${"tab-" + k} aria-selected=${tab === k} onClick=${() => setTab(k)}>
       <svg class="tabicon" viewBox="0 0 20 20" aria-hidden="true">${TAB_ICONS[k]}</svg>${n}</button>`)}</div>
-    ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} />`}
     ${panel && panel.kind === "rule" && html`<${RulePanel} topic=${panel.name} onClose=${() => setPanel(null)} />`}
     ${panel && panel.kind !== "rule" && skillTabs && html`<${SkillPanel} c=${c} kind=${panel.kind} name=${panel.name} mode=${mode} update=${update} onClose=${() => setPanel(null)} />`}
-    ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
-    ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
-    ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
-    ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
-    ${tab === "table" && html`<${TableTab} c=${c} update=${update} onDelete=${onDelete} />`}`;
+    <div class="tabswap" key=${tab} data-dir=${nav.current.dir}>
+      ${tab === "sheet" && html`<${SheetTab} c=${c} d=${d} update=${update} mode=${mode} invested=${invested} toggleInv=${toggleInv} openSkill=${openPanel} onDelete=${onDelete} />`}
+      ${tab === "vitals" && html`<${VitalsTab} c=${c} d=${d} update=${update} />`}
+      ${tab === "talents" && html`<${TalentsTab} c=${c} update=${update} openSkill=${openPanel} />`}
+      ${tab === "gear" && html`<${GearTab} c=${c} d=${d} update=${update} />`}
+      ${tab === "craft" && html`<${CraftTab} c=${c} update=${update} />`}
+      ${tab === "magic" && html`<${MagicTab} c=${c} update=${update} />`}
+    </div>`;
 }
 
 // Small line icons that tell the tabs apart at a glance.
@@ -485,6 +725,7 @@ const TAB_ICONS = {
   talents: html`<path d="M10 2.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 7.8l5-.7z" />`,
   gear: html`<path d="M4 7.5h12v9.5H4z M7 7.5V5a3 3 0 0 1 6 0v2.5 M4 11h12" />`,
   craft: html`<path d="M3 11.5h10.5l3-3H5.5z M5.5 11.5v2.5h8v-2.5 M7.5 14v3 M11.5 14v3 M9 6.5l1-4 1.2 3.2" />`,
+  magic: html`<path d="M10 2.5a7.5 7.5 0 1 0 .01 0z M10 4.5L15 13H5z M10 15.5L5 7h10z" />`,
   table: html`<path d="M10 2.5l6.5 3.75v7.5L10 17.5l-6.5-3.75v-7.5z M10 10l6.5-3.75 M10 10L3.5 6.25 M10 10v7.5" />`,
 };
 // A number that can be typed over in Free edit. It saves when you leave the box or press Enter, not on every keystroke.
@@ -507,6 +748,7 @@ function Header({ c, d, update, mode, setMode, canFree }) {
   };
   const id = s => `${s}-${c.id}`;
   const off = num(c.pool) - num(c.karma) - d.karma.total;   // pool should equal unspent + spent
+  const shown = { karma: useTween(num(c.karma)), pool: useTween(num(c.pool)) };   // the numbers count to their new value
   const masters = Object.values(Store.chars).filter(x => x.id !== c.id && !x.companionOf).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   return html`<section class="head" style="position:relative;isolation:isolate"><${Sigils} seed="header" n=${1} lead="gears" side="l" />
     <div class="portrait"><${Face} c=${c} />
@@ -533,7 +775,7 @@ function Header({ c, d, update, mode, setMode, canFree }) {
     <div class="karmawrap"><div class="panel karma">
       <div class="h" style="margin:0">Karma</div>
       <div class="big">${[["karma", "Unspent"], ["pool", "Pool · earned"]].map(([k, label]) => html`<div class=${"stat" + (mode === "build" ? " editing" : "")}>
-        ${mode === "build" ? html`<${StatEdit} id=${id(k)} value=${num(c[k])} label=${label} onCommit=${v => update(x => { addLog(x, `Free edit: ${label.split(" ")[0]} ${num(x[k])} → ${v}`); x[k] = v; })} />` : html`<b>${num(c[k])}</b>`}
+        ${mode === "build" ? html`<${StatEdit} id=${id(k)} value=${num(c[k])} label=${label} onCommit=${v => update(x => { addLog(x, `Free edit: ${label.split(" ")[0]} ${num(x[k])} → ${v}`); x[k] = v; })} />` : html`<b>${shown[k]}</b>`}
         <span>${label}</span></div>`)}</div>
       <div class="row"><input class="inp" style="width:70px" type="number" min="1" aria-label="Karma to award" placeholder="+0" value=${award} onInput=${e => setAward(e.target.value)} />
         <button class="btn small" disabled=${!(+award > 0)} onClick=${() => { const n = Math.floor(+award); update(x => { x.karma = num(x.karma) + n; x.pool = num(x.pool) + n; addLog(x, `Awarded ${n} Karma`); }); setAward(""); }}>Award</button>
@@ -543,9 +785,10 @@ function Header({ c, d, update, mode, setMode, canFree }) {
       ${canFree && html`<div class="seg" role="group" aria-label="Editing mode">
         <button aria-pressed=${mode === "karma"} onClick=${() => setMode("karma")}>Spend Karma</button>
         <button aria-pressed=${mode === "build"} onClick=${() => setMode("build")}>Free edit</button></div>`}
-      <div class="muted">${mode === "karma" ? html`<${Mouse} side="L" /> Left-click raises and spends Karma. <${Mouse} side="R" /> Right-click lowers and refunds it.` : "Changes cost no Karma. The pool grows or shrinks to match, so it always equals unspent + spent. You can also type over Unspent and the pool."}</div>
+      <div class="muted karmahint">${mode === "karma" ? html`<${Mouse} side="L" /> Left-click raises and spends Karma. <${Mouse} side="R" /> Right-click lowers and refunds it.` : "Changes cost no Karma. The pool grows or shrinks to match, so it always equals unspent + spent. You can also type over Unspent and the pool."}</div>
       ${Store.table && isGM() && html`<label class="row freeallow"><input type="checkbox" checked=${!!c.freeEdit} onChange=${e => update(x => { x.freeEdit = e.target.checked; addLog(x, e.target.checked ? "GM allowed Free edit" : "GM turned off Free edit"); })} />Player may use Free edit</label>`}
     </div></div>
+    <${GlanceCard} d=${d} />
   </section>`;
 }
 
@@ -607,15 +850,19 @@ function AttrRow({ c, a, mode, set }) {
   // Left-click a cell to raise the attribute to it; right-click a filled cell to lower it.
   const v = R.attr(c, a.k), base = R.attrBase(c, a.k), ceiling = R.attrCap(c, a.k), cap = mode === "build" ? 20 : ceiling;
   const diff = v - 10, broken = v < 10;
+  const scale = useRef();
+  // Newly raised cells get a stamp; trying to buy past a sealed ceiling makes the lock clunk.
+  useChange(v, (from, to) => { if (to > from && scale.current) scale.current.querySelectorAll(".cell[data-v]").forEach(el => { const n = +el.dataset.v; if (n > from && n <= to) replay(el, "stamp", (n - from - 1) * 50); }); });
+  const clunk = () => scale.current && replay(scale.current.querySelector(".cell.wall"), "clunk");
   const showTip = (e, to) => tip.show(e.currentTarget, to === null ? { title: `${a.n} ${v}`, lines: [html`<${Mouse} side="L" /> raise · <${Mouse} side="R" /> lower`] } : levelTip(c, mode, "attr", a.k, to, "L", "R"));
   const cellFor = (val, cls, extra) => {
     const filled = val <= v;
     const raiseTo = val, lowerTo = val - 1;
-    return html`<button type="button" class=${"cell " + cls} aria-label=${filled ? `Lower ${a.n} to ${lowerTo}` : `Raise ${a.n} to ${raiseTo}`}
+    return html`<button type="button" class=${"cell " + cls} data-v=${val} aria-label=${filled ? `Lower ${a.n} to ${lowerTo}` : `Raise ${a.n} to ${raiseTo}`}
       onMouseEnter=${e => showTip(e, cls.includes("sealed") ? raiseTo : filled ? lowerTo : raiseTo)} onMouseLeave=${() => tip.hide()}
-      onClick=${() => { if (!filled) { set(raiseTo); tip.hide(); } else toast("Right-click (long-press on a phone) to lower."); }}
+      onClick=${() => { if (!filled) { if (cls.includes("sealed")) clunk(); set(raiseTo); tip.hide(); } else toast("Right-click (long-press on a phone) to lower."); }}
       onContextMenu=${e => { e.preventDefault(); if (filled) { set(lowerTo); tip.hide(); } }}
-      onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set(filled ? lowerTo : raiseTo); } }}>${extra || ""}</button>`;
+      onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!filled && cls.includes("sealed")) clunk(); set(filled ? lowerTo : raiseTo); } }}>${extra || ""}</button>`;
   };
   const cells = [];
   if (broken) {
@@ -638,7 +885,7 @@ function AttrRow({ c, a, mode, set }) {
   return html`<div class=${"attr" + (broken ? " is-broken" : "")}>
     <span class="nm">${a.n}</span>
     <span class="valblock"><span class="val">${v}</span>${state}</span>
-    <span class=${"scale " + (broken ? "low" : "high")} role="group" aria-label=${`${a.n} scale`}>
+    <span ref=${scale} class=${"scale " + (broken ? "low" : "high")} role="group" aria-label=${`${a.n} scale`}>
       ${broken ? html`<span class="end">0</span><span class="half">${cells}</span>${mid}` : html`${mid}<span class="half">${cells}</span><span class="end">20</span>`}
     </span>
     <span class="base">${base < 10 ? html`<span>started ${base}</span>` : ""}<span>${ceiling < 20 ? html`<b class="sealtext">sealed at ${ceiling}</b>` : "limit 20"}</span>
@@ -647,7 +894,7 @@ function AttrRow({ c, a, mode, set }) {
 }
 
 /* ================= sheet tab ================= */
-function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill }) {
+function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill, onDelete }) {
   // The brass diamond on a section heading: filled shows only invested skills, hollow shows them all.
   const diamond = (k, what) => html`<span class="orn has-btn"><button type="button" class=${"diamond" + (invested[k] ? " on" : "")} aria-pressed=${invested[k]}
     aria-label=${invested[k] ? `Show all ${what}` : `Show only invested ${what}`} onClick=${() => toggleInv(k)}
@@ -656,29 +903,24 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill }) {
   const tipFn = (kind, name) => to => levelTip(c, mode, kind, name, to, "L", "R");
   const p = d.armor;
   const nameBtn = (kind, n, extra) => html`<button type="button" class="n sname" onClick=${() => openSkill(kind, n)} title=${`What ${n} grants at each level`}>${n}${extra || ""}</button>`;
-  const groups = R.SKILL_GROUPS.map(g => ({ g, rows: g.skills.filter(([n]) => !invested.skills || num(c.skills[n]) > 0) })).filter(x => x.rows.length);
   const weap = ["STR", "DEX"].map(at => ({ at, rows: R.WEAPON_TYPES.filter(w => w[1] === at && (!invested.weapons || num(c.weaponSkills[w[0]]) > 0)) })).filter(x => x.rows.length);
   const secs = R.SECONDARY.map(sk => ({ sk, b: R.secondaryBonus(c, sk.name, p) })).filter(x => !invested.sec || x.b.trained);
   const none = what => html`<p class="muted emptyline">No ${what} invested yet. Click the diamond to show them all.</p>`;
   // How many points an attribute allows in its skills, shown beside each group's heading.
   const allowance = at => { const av = R.attr(c, at); return html`<small>${av < 10 ? "broken · no points" : `up to ${R.pointsAbove10(av)}`}</small>`; };
   return html`<div class="tabpane">
-    <section class="frame"><${Sigils} seed="attributes" n=${2} lead="attr" side="r" /><${Head} title="Attributes" topic="attributes" /><p class="sub">Ten is the measure of common folk. Fall below it and the attribute is broken.</p>
-      <div class="legend">
-        <span class="item"><i class="cell miss"></i><b>Broken</b><small>Points below 10 the character is missing</small></span>
-        <span class="item"><i class="cell up"></i><b>Natural</b><small>Points above 10 from character creation</small></span>
-        <span class="item"><i class="cell bought"></i><b>Bought</b><small>Points raised with Karma</small></span>
-        <span class="item"><i class="cell sealed"></i><b>Sealed</b><small>Karma can never raise a broken attribute past here</small></span>
-      </div>
-      <p class="hint"><${Mouse} side="L" /> Left-click to raise · <${Mouse} side="R" /> right-click to lower (long-press on a phone) · hover for the Karma cost. Skill pips work the same way.${mode === "build" ? " In Free edit, Break turns an attribute into a broken one." : ""}</p>
-      <div class="attrs">${R.ATTRS.map(a => html`<${AttrRow} key=${a.k} c=${c} a=${a} mode=${mode} set=${set("attr", a.k)} />`)}</div>
-    </section>
-
-    <section class="frame"><${Sigils} seed="skills" n=${1} lead="skill" side="l" /><${Head} title="Skills" topic="skills" tail=${diamond("skills", "skills")} /><p class="sub">Modifier shown after armor penalties. Click a skill's name to see what each level grants. ${p.armor ? `Wearing ${p.armor.name || "armor"}: casting −${p.casting}%${p.dexSkills ? `, Dexterity skills −${p.dexSkills}%` : ""}.` : ""}</p>
-      ${groups.length ? html`<div class="skillcols">${groups.map(({ g, rows }) => html`<div class="sgroup"><h3>${R.ATTR_NAME[g.attr]}${allowance(g.attr)}</h3>
-          ${rows.map(([n]) => { const lv = num(c.skills[n]); const cap = R.skillCap(c, n); const mod = R.skillModifier(c, n, p);
-            return html`<div class=${"srow" + (lv ? "" : " dim")}>${nameBtn("skill", n, html`${lv > cap ? html` <span class="flag bad">over cap</span>` : ""}${R.CASTING.includes(n) && lv && p.casting ? html` <span class="flag warn">armor</span>` : ""}`)}
-              <${Pips} value=${lv} cap=${cap} label=${n} onSet=${set("skill", n)} tipFor=${tipFn("skill", n)} /><span class="m">${lv ? pct(mod) : "—"}</span></div>`; })}</div>`)}</div>` : none("skills")}
+    <section class="frame attrsk"><${Sigils} seed="attributes" n=${2} lead="attr" side="r" /><${Head} title="Attributes & Skills" topic="attributes" tail=${diamond("skills", "skills")} />
+      <p class="sub">Ten is the measure of common folk; below it an attribute is broken. Each attribute's skills sit under it, and a skill holds one point per point its attribute has above 10. Click a skill's name to see what each level grants.${p.armor ? ` Wearing ${p.armor.name || "armor"}: casting −${p.casting}%${p.dexSkills ? `, Dexterity skills −${p.dexSkills}%` : ""}.` : ""}</p>
+      <div class="ablocks">${R.ATTRS.map(a => { const g = R.SKILL_GROUPS.find(x => x.attr === a.k); const rows = g ? g.skills.filter(([n]) => !invested.skills || num(c.skills[n]) > 0) : [];
+        return html`<div class="ablock" key=${a.k} style=${attStyle(a.k)}>
+          <div class="abspine" title=${a.n}><${AttrGlyph} a=${a.k} /><small>${a.k}</small></div>
+          <div class="abmain"><${AttrRow} c=${c} a=${a} mode=${mode} set=${set("attr", a.k)} />
+            ${rows.length ? html`<div class="abskills"><div class="abhead"><span>${a.n} skills</span>${allowance(a.k)}</div>
+              <div class="abgrid">${rows.map(([n]) => { const lv = num(c.skills[n]); const cap = R.skillCap(c, n); const mod = R.skillModifier(c, n, p);
+                return html`<div class=${"srow" + (lv ? "" : " dim")}>${nameBtn("skill", n, html`${lv > cap ? html` <span class="flag bad">over cap</span>` : ""}${R.CASTING.includes(n) && lv && p.casting ? html` <span class="flag warn">armor</span>` : ""}`)}
+                  <${Pips} value=${lv} cap=${cap} label=${n} onSet=${set("skill", n)} tipFor=${tipFn("skill", n)} /><span class="m">${lv ? pct(mod) : "—"}</span></div>`; })}</div></div>`
+            : invested.skills ? html`<p class="abnone">No ${a.n} skills invested yet.</p>` : ""}</div></div>`; })}</div>
+      <${LegendBox} mode=${mode} />
     </section>
 
     <section class="frame"><${Sigils} seed="weaponry" n=${1} lead="weap" side="r" /><${Head} title="Weaponry" topic="weaponry" tail=${diamond("weapons", "weapon skills")} /><p class="sub">Proficiency at 3, 5, 7 and 10. Accuracy needs Competent (3) and adds Precision.</p>
@@ -696,11 +938,64 @@ function SheetTab({ c, d, update, mode, invested, toggleInv, openSkill }) {
 
     <section class="frame"><${Sigils} seed="notes" n=${1} lead="note" side="r" /><h2 class="h"><span>Notes</span><i class="orn" aria-hidden="true"></i></h2>
       <div class="field"><label for=${"notes-" + c.id}>Backstory, anything else</label>
-      <textarea id=${"notes-" + c.id} rows="5" value=${c.notes} onInput=${e => update(x => { x.notes = e.target.value; })}></textarea></div></section>
+      <textarea id=${"notes-" + c.id} rows="5" value=${c.notes} onInput=${e => update(x => { x.notes = e.target.value; })}></textarea></div>
+      <div class="field"><label for=${"bio-" + c.id}>Short bio (the whole table sees this on the Table page)</label>
+      <textarea id=${"bio-" + c.id} rows="3" maxlength="1200" placeholder="Who they are, in a few lines." value=${c.bio || ""} onInput=${e => update(x => { x.bio = e.target.value; })}></textarea></div></section>
+    <${DeleteCharacter} c=${c} onDelete=${onDelete} />
   </div>`;
+}
+// The key to the attribute bars and the mouse controls, folded under the table; open or shut is kept per browser.
+function LegendBox({ mode }) {
+  const [open, setOpen] = useState(() => lsGet("cw-legend", false));
+  return html`<details class="legendbox" open=${open} onToggle=${e => { const o = e.currentTarget.open; if (o !== open) { setOpen(o); lsSet("cw-legend", o); } }}>
+    <summary>Key to the bars</summary>
+    <div class="legend">
+      <span class="item"><i class="cell miss"></i><b>Broken</b><small>Points below 10 the character is missing</small></span>
+      <span class="item"><i class="cell up"></i><b>Natural</b><small>Points above 10 from character creation</small></span>
+      <span class="item"><i class="cell bought"></i><b>Bought</b><small>Points raised with Karma</small></span>
+      <span class="item"><i class="cell sealed"></i><b>Sealed</b><small>Karma can never raise a broken attribute past here</small></span>
+    </div>
+    <p class="hint"><${Mouse} side="L" /> Left-click to raise · <${Mouse} side="R" /> right-click to lower (long-press on a phone) · hover for the Karma cost. Skill pips work the same way.${mode === "build" ? " In Free edit, Break turns an attribute into a broken one." : ""}</p>
+  </details>`;
+}
+function DeleteCharacter({ c, onDelete }) {
+  const [del, setDel] = useState(false);
+  useEffect(() => setDel(false), [c.id]);
+  return html`<div class="delchar">${del ? html`<div class="confirm"><span>Delete <b>${c.name || "this character"}</b> for everyone? This can't be undone.</span>
+      <button class="btn small danger" onClick=${() => onDelete(c.id)}>Delete</button><button class="btn small" onClick=${() => setDel(false)}>Keep</button></div>`
+    : html`<button class="btn small danger" onClick=${() => setDel(true)}>Delete character</button>`}</div>`;
 }
 
 /* ================= skill side panel ================= */
+// A line of flavour for each secondary skill, shown in italics under its name in the side panel, written the way a rules
+// compendium would introduce it. Entrada has none yet: the book never says what it covers.
+const SEC_FLAVOR = {
+  "Athletics": "Climbing sheer walls, swimming against the current, hauling a comrade over the gunwale: the body put to honest work.",
+  "Acrobatics": "Rolling under a closing portcullis, keeping your feet on a pitching deck, landing a leap that should have broken you.",
+  "Machine Operation": "Working the levers, valves and gauges of engines built by other hands, without losing a finger to them.",
+  "First Aid": "Pressure, bandage and a steady hand: keeping the wounded alive until someone better can see to them.",
+  "Riding": "Staying in the saddle at a gallop, through gunfire, over broken ground, on a beast that would rather be elsewhere.",
+  "Forgery": "Seals, signatures and papers that pass a clerk's eye. The ink is the easy part; the confidence is not.",
+  "Stealth": "Moving unseen and unheard, a shadow among shadows, until the moment you choose to be noticed.",
+  "Sleight of Hand": "Lifting a purse, palming a card, slipping a vial into a cup while every eye is on the speaker.",
+  "Land Navigation": "Reading stars, rivers and the lie of the land to find a way where no road has been laid.",
+  "Naval Navigation": "Charts, currents and the angle of the sun: plotting a ship's course across open water.",
+  "Sky Navigation": "Holding a heading through cloud and gale, where the winds are the only roads and the ground is a rumour.",
+  "Appraisal": "A trained eye for worth and wonder: what an item is, what it's worth, and what power sleeps inside it.",
+  "Investigation": "Piecing together the scene: the scuffed boot print, the missing page, the lie in the ledger.",
+  "Mechanical Insight": "Looking at a mechanism and understanding it: how it works, what it's for, and where it will fail.",
+  "Prosthetic Operation": "Moving a limb of brass and wire as if it had always been yours.",
+  "Sailing": "Rigging, tacking and trimming the sails: the craft of making a ship go where you want it to.",
+  "Sky-Sailing": "Crewing an airship: ballast, envelope and rudder, with nothing but air beneath the keel.",
+  "Cooking": "Turning hard rations into a meal worth sitting down for, and making the stores last longer.",
+  "Insight": "Reading the face behind the words: the flicker of fear, the rehearsed answer, the friend who isn't one.",
+  "Perception": "Noticing what others miss: a glint in the treeline, footsteps overhead, the smell of powder on the wind.",
+  "Foraging": "Living off the land: food, herbs and useful scraps gathered where others see only wilderness.",
+  "Persuasion": "Winning people over with reason, charm or a well-timed favour, so they choose to help you.",
+  "Deception": "A convincing lie, a false face, a story told so well that even you half believe it.",
+  "Intimidate": "Making the threat plain, in word or bearing, until they decide it isn't worth the trouble.",
+  "Animal Handling": "Calming the spooked horse, earning the trust of the hound, knowing when a beast is about to bolt.",
+};
 const TYPE_NAME = { P: "Passive", A: "Active", E: "Empowerment", M: "Active + passive" };
 const PROFICIENCY_ROWS = [[3, "Competent", "Weapon skill is added to accuracy."], [5, "Proficient", "Durability damage to the weapon is reduced."], [7, "Adept", "The weapon's Adept property unlocks."], [10, "Master", "The weapon's Mastery property unlocks."]];
 function SkillPanel({ c, kind, name, mode, update, onClose }) {
@@ -712,9 +1007,10 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
   const set = to => setLevel(c, update, mode, kind, name, to);
   const sec = kind === "sec" ? R.SECONDARY_BY_NAME[name] : null;
   const secB = sec ? R.secondaryBonus(c, name) : null;
-  return html`<aside class="spanel" role="dialog" aria-label=${`${name} levels`} tabindex="-1" ref=${ref}>
+  return html`<aside class="spanel" role="dialog" aria-label=${`${name} levels`} tabindex="-1" ref=${ref} style=${attStyle(at)}>
     <header class="sphead">
-      <div><span class="lbl">${kind === "weapon" ? "Weapon skill" : kind === "sec" ? "Secondary skill" : "Skill"} · ${an}</span><h2>${name}</h2></div>
+      <span class="sp-medal att"><${PanelIcon} a=${at} /></span><div class="sptt"><span class="lbl">${kind === "weapon" ? "Weapon skill" : kind === "sec" ? "Secondary skill" : "Skill"} · ${an}</span><h2>${name}</h2>
+        ${kind === "sec" && SEC_FLAVOR[name] && html`<p class="spflavor">${SEC_FLAVOR[name]}</p>`}</div>
       <button class="iconbtn" aria-label="Close" onClick=${onClose}>×</button>
     </header>
     <div class="spnow">
@@ -722,18 +1018,18 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
       <span class="muted">Level ${lv} of ${max}${cap < max ? ` · ${an} ${R.attr(c, at)} allows ${cap}` : ""}</span>
     </div>
     <div class="spbody">
-      ${(SKILL_TABLES[name] || []).map(t => html`<div class="sptable"><h4>${t.title}</h4>${t.note && html`<p class="muted">${t.note}</p>`}
+      ${(SKILL_TABLES[name] || []).map(t => html`<div class="sptable"><${Banner} title=${t.title} i="table" tag="h4" />${t.note && html`<p class="muted">${t.note}</p>`}
         <div class="tbl-wrap"><table><thead><tr>${t.cols.map(x => html`<th>${x}</th>`)}</tr></thead>
           <tbody>${t.rows.map(r => html`<tr>${r.map((x, i) => html`<td class=${i === 0 ? "k" : ""}>${x}</td>`)}</tr>`)}</tbody></table></div></div>`)}
       ${data && data.d && html`<p class="spdesc">${data.d}</p>`}
       ${data && data.r && html`<ul class="sprules">${data.r.map(x => html`<li>${x}</li>`)}</ul>`}
-      ${data && data.b && data.b.map(b => html`<details class="spbox"><summary>${b.title}</summary><ul>${b.lines.map(x => html`<li>${x}</li>`)}</ul></details>`)}
+      ${data && data.b && data.b.map(b => html`<details class="spbox"><summary><${Banner} title=${b.title} i="info" tag="span" /></summary><ul class="sprules">${b.lines.map(x => html`<li>${x}</li>`)}</ul></details>`)}
 
-      ${kind === "weapon" && html`<div class="spgroup"><h3>Proficiency</h3>
+      ${kind === "weapon" && html`<div class="spgroup"><${Banner} title="Proficiency" i="shield" />
         ${PROFICIENCY_ROWS.map(([l, n, t]) => html`<div class=${"perk" + (lv >= l ? " got" : l > cap ? " locked" : "")}><span class="plv">${l}</span><div><b class="pname">${n}</b><p>${t}</p></div></div>`)}</div>`}
 
       ${data && data.gs.map(g => html`<div class="spgroup">
-        ${g.n && g.n !== "Perks" && html`<h3>${g.n}</h3>`}${g.f && html`<p class="flavor">${g.f}</p>`}
+        ${g.n && g.n !== "Perks" && html`<${Banner} title=${g.n} a=${at} />`}${g.f && html`<p class="flavor">${g.f}</p>`}
         ${g.p.map(pk => html`<div class=${"perk" + (lv >= pk.l ? " got" : pk.l > cap ? " locked" : "")}>
           <span class="plv" title=${lv >= pk.l ? "Unlocked" : pk.l > cap ? `Needs ${an} ${10 + pk.l}` : `Unlocks at level ${pk.l}`}>${pk.l}</span>
           <div><span class=${"ptype t-" + pk.t}>${TYPE_NAME[pk.t]}</span><${UsageLine} u=${pk.u} />
@@ -746,27 +1042,43 @@ function SkillPanel({ c, kind, name, mode, update, onClose }) {
           <p>Costs ${sec.cost[l - 1]} Karma.${l > 1 ? ` Needs ${an} ${l === 2 ? 10 : 14} or more.` : ""}</p></div></div>`)}
         ${sec.primary && html`<p class="muted">Also granted by ${sec.primary} ${sec.at}. With both, the bonus is 7% per level plus 2 × ${sec.primary} level.</p>`}</div>`}
 
-      ${data && data.tips && html`<details class="spbox"><summary>Tips</summary><ul>${data.tips.map(x => html`<li>${x}</li>`)}</ul></details>`}
+      ${data && data.tips && html`<details class="spbox"><summary><${Banner} title="Tips" i="tip" tag="span" /></summary><ul class="sprules">${data.tips.map(x => html`<li>${x}</li>`)}</ul></details>`}
       ${kind === "weapon" && !data && html`<p class="muted">No perks have been written for ${name} yet.</p>`}
     </div>
   </aside>`;
 }
 
 /* ================= vitals tab ================= */
-function Meter({ id, label, cur, max, color, soft, onSet, note, marks = [], invert, topic }) {
-  const [amt, setAmt] = useState("");
+// A number that rises off a bar and fades ("+12"), shown while a rest refills it.
+function floatGain(host, text, delayMs, color) {
+  if (!host || calm()) return;
+  const el = document.createElement("span"); el.className = "gainfloat"; el.textContent = text;
+  el.style.animationDelay = delayMs + "ms"; if (color) el.style.color = color;
+  host.appendChild(el); setTimeout(() => el.remove(), 1700 + delayMs);
+}
+function Meter({ id, label, cur, max, color, soft, onSet, note, marks = [], invert, topic, order = 0 }) {
+  const [amt, setAmt] = useState(""); const box = useRef();
+  // The bar eases to its new length. Losing (or, for Toxicity, gaining) flashes red; recovering glows. During a rest the
+  // bars light up one after another, in the order they sit on the page.
+  const track = useRef(), val = useRef(), lag = resting() ? order * 160 : 0;
+  useChange(cur, (from, to) => {
+    const good = invert ? to < from : to > from;
+    replay(track.current, good ? "fx-good" : "fx-bad", lag, ["fx-good", "fx-bad"]);
+    replay(val.current, "bump", lag);
+    if (resting()) floatGain(box.current, (to > from ? "+" : "−") + Math.abs(to - from), lag + 120, color);
+  }, id);
   const pctW = max ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0;
   // The bar itself is the control: left-click adds the amount (1 if blank), right-click removes it.
   const step = () => Math.max(1, Math.floor(+amt || 1));
   const apply = sign => { onSet(cur + sign * step()); setAmt(""); tip.hide(); };
   const stepTip = () => ({ title: `${label} ${cur} / ${max}`, lines: [html`<${Mouse} side="L" /> add ${step()} · <${Mouse} side="R" /> remove ${step()}`] });
-  return html`<div class="meter">
-    <div class="top2">${topic ? html`<button type="button" class="t hlink" style=${`color:${color}`} onClick=${() => openRuleFn(topic)} aria-label=${`${label}: show the rules`}>${label}${BOOK}</button>` : html`<span class="t" style=${`color:${color}`}>${label}</span>`}<span class="v">${cur}<small> / ${max}</small></span></div>
-    <button type="button" class="track step" style=${`background:${soft}`} aria-label=${`${label}: left-click adds, right-click removes`}
+  return html`<div class="meter" ref=${box}>
+    <div class="top2">${topic ? html`<button type="button" class="t hlink" style=${`color:${color}`} onClick=${() => openRuleFn(topic)} aria-label=${`${label}: show the rules`}>${label}${BOOK}</button>` : html`<span class="t" style=${`color:${color}`}>${label}</span>`}<span class="v" ref=${val}>${cur}<small> / ${max}</small></span></div>
+    <button type="button" ref=${track} class="track step" style=${`background:${soft}`} aria-label=${`${label}: left-click adds, right-click removes`}
       onMouseEnter=${e => tip.show(e.currentTarget, stepTip())} onMouseLeave=${() => tip.hide()}
       onClick=${() => apply(1)} onContextMenu=${e => { e.preventDefault(); apply(-1); }}
       onKeyDown=${e => { if (["ArrowRight", "ArrowUp", "+", "="].includes(e.key)) { e.preventDefault(); apply(1); } else if (["ArrowLeft", "ArrowDown", "-", "Delete", "Backspace"].includes(e.key)) { e.preventDefault(); apply(-1); } }}>
-      <i style=${`width:${pctW}%;background:${color}`}></i>${marks.map(m => html`<b style=${`left:${(m / max) * 100}%`} title=${`${m}`}></b>`)}</button>
+      <i style=${`width:${pctW}%;background:${color}${lag ? `;transition-delay:${lag}ms` : ""}`}></i>${marks.map(m => html`<b style=${`left:${(m / max) * 100}%`} title=${`${m}`}></b>`)}</button>
     <div class="ctl">
       <input id=${id} type="number" min="1" placeholder="1" aria-label=${`${label} amount`} value=${amt} onInput=${e => setAmt(e.target.value)} onKeyDown=${e => { if (e.key === "Enter") apply(e.shiftKey ? 1 : -1); }} />
       <span class="muted steptip"><${Mouse} side="L" /> add · <${Mouse} side="R" /> remove</span>
@@ -780,6 +1092,13 @@ const conditioningIgnores = c => (num(c.skills.Conditioning) >= 5 ? 2 : 0);
 function StaminaBar({ c, update }) {
   const n = num(c.vitals.exhaustion), ign = conditioningIgnores(c), immortal = num(c.skills.Conditioning) >= 9;
   const set = to => { to = R.clamp(to, 0, 10); if (to === n) return; update(x => { R.setStamina(x, to); addLog(x, `Stamina lost ${n} → ${to}`); }); tip.hide(); };
+  // A stack lost stamps its cell red and jolts the bar; stacks recovered glow (after the other bars, during a rest).
+  const bar = useRef(), half = useRef();
+  useChange(n, (from, to) => {
+    const cells = half.current ? half.current.children : [];
+    if (to > from) { replay(bar.current, "jolt"); for (let i = from + 1; i <= to; i++) replay(cells[i - 1], "stamp", (i - from - 1) * 60); }
+    else { const lag = resting() ? 4 * 160 : 0; for (let i = to + 1; i <= from; i++) replay(cells[i - 1], "fx-good", lag + (from - i) * 60); }
+  });
   const tipFor = (i, filled) => ({ tone: filled ? "refund" : "short", title: html`<${Mouse} side=${filled ? "R" : "L"} /> ${filled ? `recover to ${i - 1}` : `lose ${i === n + 1 ? "a stack" : "stacks"} to ${i}`}`,
     lines: [i === 10 && immortal ? "Conditioning 9: no death; each stack past 10 costs 5 HP" : `Exhaustion ${i}: ${R.EXHAUSTION[i]}`, i <= ign ? "Conditioning 5: no effect" : ""] });
   const cells = [];
@@ -792,10 +1111,10 @@ function StaminaBar({ c, update }) {
       onContextMenu=${e => { e.preventDefault(); if (filled) set(i - 1); }}
       onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); set(filled ? i - 1 : i); } }}>${i === 10 ? SKULL : ""}</button>`);
   }
-  return html`<section class=${"meter stambar" + (n ? " lost" : "") + (n >= 10 ? " dead" : "")}>
+  return html`<section ref=${bar} class=${"meter stambar" + (n ? " lost" : "") + (n >= 8 && n < 10 && !immortal ? " danger" : "") + (n >= 10 ? " dead" : "")}>
     <div class="top2"><button type="button" class="t hlink" onClick=${() => openRuleFn("stamina")} aria-label="Stamina: show the rules">Stamina lost${BOOK}</button>
       <span class="v">${n}<small> / 10</small></span></div>
-    <span class="scale stam" role="group" aria-label="Stamina lost"><span class="end">0</span><span class="half">${cells}</span></span>
+    <span class="scale stam" role="group" aria-label="Stamina lost"><span class="end">0</span><span class="half" ref=${half}>${cells}</span></span>
     <div class="ctl"><span class="note"><${Mouse} side="L" /> lose a stack · <${Mouse} side="R" /> recover one. Each stack lost is a level of Exhaustion.</span></div>
   </section>`;
 }
@@ -813,21 +1132,22 @@ function ExhaustionList({ c, d, update }) {
 }
 
 function VitalsTab({ c, d, update }) {
-  const v = c.vitals; const [cond, setCond] = useState(""); const [confirmLong, setConfirmLong] = useState(false);
+  const v = c.vitals; const [cond, setCond] = useState("");
   const setV = (k, val, lo, hi) => update(x => { x.vitals[k] = R.clamp(Math.round(val), lo, hi); });
   return html`<div class="tabpane">
     <section class="meters">
-      <${Meter} id=${"hp-" + c.id} label="Hit points" topic="hp" cur=${d.cur.hp} max=${d.max.hp} color="var(--blood)" soft="var(--blood-soft)"
+      <${Meter} id=${"hp-" + c.id} label="Hit points" order=${0} topic="hp" cur=${d.cur.hp} max=${d.max.hp} color="var(--blood)" soft="var(--blood-soft)"
         onSet=${n => setV("hp", n, 0, d.max.hp)} note=${d.cur.hp === 0 ? "Unconscious: roll death saves (d100, 50 or lower succeeds)." : `${num(v.exhaustion) >= 7 ? "Maximum halved by Exhaustion. " : ""}Long rest restores ${d.hpRegen}.`} />
-      <${Meter} id=${"bp-" + c.id} label="Blood points" topic="bp" cur=${d.cur.bp} max=${d.max.bp} color="var(--life)" soft="var(--life-soft)" marks=${[100, 80, 60, 40, 20].filter(m => m < d.max.bp)}
+      <${Meter} id=${"bp-" + c.id} label="Blood points" order=${1} topic="bp" cur=${d.cur.bp} max=${d.max.bp} color="var(--life)" soft="var(--life-soft)" marks=${[100, 80, 60, 40, 20].filter(m => m < d.max.bp)}
         onSet=${n => setV("bp", n, 0, d.max.bp)} note=${d.exhaustionFromBlood ? `Blood loss: ${d.exhaustionFromBlood} Exhaustion at this level.` : `Exhaustion starts at 100. Long rest restores ${d.bpRegen}.`} />
-      <${Meter} id=${"dp-" + c.id} label="Deprivation" topic="dp" cur=${d.cur.dp} max=${d.max.dp} color="var(--hunger)" soft="var(--hunger-soft)" marks=${[25, 20, 15, 10, 5].filter(m => m < d.max.dp)}
+      <${Meter} id=${"dp-" + c.id} label="Deprivation" order=${2} topic="dp" cur=${d.cur.dp} max=${d.max.dp} color="var(--hunger)" soft="var(--hunger-soft)" marks=${[25, 20, 15, 10, 5].filter(m => m < d.max.dp)}
         onSet=${n => setV("dp", n, 0, d.max.dp)} note=${d.exhaustionFromHunger ? `Hunger: ${d.exhaustionFromHunger} Exhaustion at this level.` : `${d.mealsPerDay} meals and ${d.rationsPerDay} rations a day keep this full.`} />
-      <${Meter} id=${"tox-" + c.id} label="Toxicity" topic="tox" cur=${d.cur.tox} max=${d.max.tox} color="var(--tox)" soft="var(--tox-soft)" invert
+      <${Meter} id=${"tox-" + c.id} label="Toxicity" order=${3} topic="tox" cur=${d.cur.tox} max=${d.max.tox} color="var(--tox)" soft="var(--tox-soft)" invert
         onSet=${n => setV("tox", n, 0, d.max.tox * 3)} note=${d.overToxic ? html`<b style="color:var(--bad)">Over the threshold: puking, potion effects lost, no AP.</b>` : `Threshold ${d.max.tox}. Cleanses ${d.cleanse} per long rest.`} />
     </section>
 
     <${StaminaBar} c=${c} update=${update} />
+    <${RestBay} c=${c} d=${d} update=${update} />
 
     <section class="frame"><${Sigils} seed="exhaustion" n=${1} side="r" /><${Head} title="Exhaustion" topic="stamina" />
       <${ExhaustionList} c=${c} d=${d} update=${update} />
@@ -847,27 +1167,89 @@ function VitalsTab({ c, d, update }) {
         <span class="muted">Damage is counted after armor. ${num(c.skills.Durability) >= 7 ? "Durability 7 adds 2 to every wound threshold." : ""}</span></div>
     </section>
 
-    <section class="two">
-      <div class="frame"><h2 class="h"><span>Conditions</span><i class="orn" aria-hidden="true"></i></h2>
+    <section class="frame"><h2 class="h"><span>Conditions</span><i class="orn" aria-hidden="true"></i></h2>
         <div class="chips">${v.conditions.map((t, i) => html`<span class="cond">${t}<button aria-label=${`Remove ${t}`} onClick=${() => update(x => { x.vitals.conditions.splice(i, 1); })}>×</button></span>`)}
           ${!v.conditions.length && html`<span class="muted">None</span>`}</div>
         <form class="row" style="margin-top:10px" onSubmit=${e => { e.preventDefault(); const t = cond.trim(); if (t) { update(x => { x.vitals.conditions.push(t); }); setCond(""); } }}>
           <input class="inp" style="flex:1;min-width:140px" list="cw-conds" placeholder="Stunned, Entangled, Frightened…" aria-label="New condition" value=${cond} onInput=${e => setCond(e.target.value)} />
           <datalist id="cw-conds">${["Stunned", "Entangled", "Frightened", "Blinded", "Prone", "Poisoned", "Charmed", "Paralyzed", "Deafened", "Unconscious", "On Death's Door"].map(o => html`<option value=${o}></option>`)}</datalist>
-          <button class="btn small" type="submit">Add</button></form></div>
-      <div class="frame"><${Sigils} seed="rest" n=${1} side="l" /><${Head} title="Rest" topic="rest" />
-        <div class="row"><button class="btn" onClick=${() => update(x => addLog(x, R.shortRest(x)))}>Short rest</button>
-          ${confirmLong ? html`<span class="confirm" style="padding:6px 10px">Roll ${d.cleanse} and apply? <button class="btn small primary" onClick=${() => { update(x => { const m = R.longRest(x); addLog(x, m); toast(m); }); setConfirmLong(false); }}>Long rest</button><button class="btn small" onClick=${() => setConfirmLong(false)}>Cancel</button></span>`
-            : html`<button class="btn primary" onClick=${() => setConfirmLong(true)}>Long rest</button>`}</div>
-        <p class="muted">Long rest: +${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${num(c.skills.Conditioning) >= 7 ? 4 : 2} Stamina, recharge every ability. Short rest: recover ${num(c.skills.Conditioning) >= 6 ? 2 : 1} Stamina, recharge short-rest abilities.</p>
-        <div class="log">${(c.log || []).slice(0, 12).map(l => html`<div><time>${new Date(l.t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>${l.m}</div>`)}</div></div>
+          <button class="btn small" type="submit">Add</button></form>
     </section>
+  </div>`;
+}
 
-    <section class="frame"><h2 class="h"><span>At a glance</span><i class="orn" aria-hidden="true"></i></h2>
-      <div class="facts">
-        ${[["Movement", `${d.move} m`], ["Climb · swim", `${d.climb} m`], ["Wound at", `${d.woundAt.light} / ${d.woundAt.moderate} / ${d.woundAt.mortal}`], ["Blood potency", d.potency],
-           ["Rations per meal", d.rationsPerMeal], ["Rations per day", d.rationsPerDay], ["Cleanse die", d.cleanse], ["HP per long rest", d.hpRegen]].map(([k, val]) => html`<div class="fact"><span>${k}</span><b>${val}</b></div>`)}</div>
-    </section>
+// Rest: two plates in the sheet's own card style, each marked with the rulebook's rest tent (L or S). Press and hold:
+// a fill sweeps across the plate, and when it's full the plate stamps down and the rest is taken. Letting go early
+// drains it back, so nobody rests by accident. With "My own rolls", the long rest then asks for the cleansing dice.
+function RestPlate({ kind, ms, title, when, lines, onDone }) {
+  const el = useRef(), st = useRef({ raf: 0, t0: 0, v: 0, on: false });
+  const paint = v => { st.current.v = v; if (el.current) el.current.style.setProperty("--hold", v.toFixed(3)); };
+  const stop = () => { cancelAnimationFrame(st.current.raf); st.current.on = false; };
+  const drain = () => { const s = st.current; stop(); if (!el.current) return; el.current.classList.remove("holding");
+    const v0 = s.v, t0 = performance.now(); const step = t => { const v = Math.max(0, v0 - (t - t0) / 250); paint(v); if (v > 0) s.raf = requestAnimationFrame(step); }; s.raf = requestAnimationFrame(step); };
+  const start = () => {
+    const s = st.current; if (s.on) return; stop(); s.on = true; el.current.classList.add("holding");
+    const quick = calm(), v0 = s.v, t0 = performance.now();
+    const step = t => { const v = quick ? 1 : Math.min(1, v0 + (t - t0) / ms); paint(v);
+      if (v < 1) { s.raf = requestAnimationFrame(step); return; }
+      s.on = false; el.current.classList.remove("holding"); replay(el.current, "stamped"); onDone(); setTimeout(() => paint(0), 450); };
+    s.raf = requestAnimationFrame(step);
+  };
+  useEffect(() => stop, []);
+  return html`<button type="button" ref=${el} class=${"restplate " + kind} aria-label=${`${title}: press and hold to rest. ${lines}`}
+    onPointerDown=${e => { if (e.button === 0) { e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId); start(); } }}
+    onPointerUp=${() => st.current.on && drain()} onPointerCancel=${() => st.current.on && drain()} onLostPointerCapture=${() => st.current.on && drain()}
+    onKeyDown=${e => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); start(); } }}
+    onKeyUp=${e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (st.current.on) drain(); } }}
+    onContextMenu=${e => e.preventDefault()} onClick=${e => e.preventDefault()}>
+    <span class="rpfill" aria-hidden="true"></span>
+    <span class="rpicon" aria-hidden="true"><svg viewBox="0 0 16 16">${UICON.recharge}</svg><b>${kind === "long" ? "L" : "S"}</b></span>
+    <span class="rptext"><b>${title}</b><small>${when}</small><span>${lines}</span></span>
+    <span class="rphold" aria-hidden="true">Hold</span>
+  </button>`;
+}
+function RestBay({ c, d, update }) {
+  const bay = useRef();
+  const st = { short: num(c.skills.Conditioning) >= 6 ? 2 : 1, long: num(c.skills.Conditioning) >= 7 ? 4 : 2 };
+  const shortRest = () => { markRest(); update(x => { const m = R.shortRest(x); addLog(x, m); toast(m); }); };
+  const longRest = () => askRoll({ title: "Long rest", dice: [{ n: 1, sides: 6 }, { n: d.cleanseDice.d4, sides: 4 }], note: "The cleansing dice: Toxicity goes down by the total.", cancel: true })
+    .then(r => { if (!r) return; markRest(); update(x => { const m = R.longRest(x, r.reduce((a, b) => a + b, 0)); addLog(x, m); toast(m); }); });
+  return html`<section class="restbay" ref=${bay} aria-label="Rest"><div class="resthead"><button type="button" class="hlink" onClick=${() => openRuleFn("rest")} aria-label="Rest: show the rules">Rest${BOOK}</button><span class="muted">Press and hold to take a rest.</span></div>
+    <div class="restrow">
+      <${RestPlate} kind="long" ms=${1100} title="Long rest" when="About 8 hours" onDone=${longRest}
+        lines=${`+${d.hpRegen} HP, +${d.bpRegen} Blood, cleanse ${d.cleanse} Toxicity, recover ${st.long} Stamina, recharge every ability.`} />
+      <${RestPlate} kind="short" ms=${650} title="Short rest" when="About an hour" onDone=${shortRest}
+        lines=${`Recover ${st.short} Stamina, recharge short-rest abilities.`} />
+    </div>
+    <details class="restlog"><summary>Log</summary>
+      <div class="log">${(c.log || []).slice(0, 12).map(l => html`<div><time>${new Date(l.t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>${l.m}</div>`)}</div></details>
+  </section>`;
+}
+
+const GLANCE_ICON = {
+  move: html`<path d="M3 12h13 M12 7l5 5-5 5 M3 7h5 M3 17h5" />`,
+  blood: html`<path d="M12 3s6 7 6 11.5a6 6 0 0 1-12 0C6 10 12 3 12 3z M9.5 15a2.5 2.5 0 0 0 2.5 2.5" />`,
+  food: html`<path d="M3 11.5h18a9 9 0 0 1-18 0z M8.5 8c0-2 2-2 2-4.5 M13.5 8c0-2 2-2 2-4.5" />`,
+  chakra: html`<path d="M12 12c0-1 1-1.6 1.8-1.2 1.3.6 1.2 2.6 0 3.4-1.8 1.2-4.2.2-4.8-1.8-.8-2.6 1-5.2 3.6-5.6 3.4-.5 6.2 2 6.4 5.2.2 4-3 7.2-6.8 7.4-4.6.2-8.4-3.4-8.4-8.2" />`,
+};
+// At a glance: the handy numbers under the header, grouped (on the move · wounds and blood · food and recovery, plus what
+// the chakras give). It can be folded away; the choice is kept per browser.
+function GlanceCard({ d }) {
+  const [open, setOpen] = useState(() => lsGet("cw-glance", true));
+  const flip = () => { lsSet("cw-glance", !open); setOpen(!open); };
+  const hm = d.harmony || { move: 0, facts: [] };
+  const groups = [
+    ["move", "On the move", [["Movement", hm.move && d.move ? html`${d.move} m <small class="glancefrom" title="From your Opening chakra's Wind">+${hm.move} Harmony</small>` : `${d.move} m`], ["Climb · swim", `${d.climb} m`]]],
+    ["blood", "Wounds & blood", [["Wound at", html`${d.woundAt.light} / ${d.woundAt.moderate} / ${d.woundAt.mortal} <small>light · mod. · mortal</small>`], ["Blood potency", d.potency]]],
+    ["food", "Food & recovery", [["Rations", html`${d.rationsPerMeal} a meal · ${d.rationsPerDay} a day`], ["Cleanse die", d.cleanse], ["HP per long rest", d.hpRegen]]],
+  ];
+  const harm = hm.facts.length > 0 && hm.facts.map(f => [f.k, f.v, f]);
+  return html`<div class=${"glance" + (open ? " open" : "")}>
+    <button type="button" class="glancetog" aria-expanded=${open} onClick=${flip}>At a glance<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button>
+    ${open && html`<div class="glancegroups">${groups.concat(harm ? [["chakra", "From your chakras", harm]] : []).map(([ic, title, rows]) => html`<div class=${"glancegrp g-" + ic + (ic === "chakra" ? " glanceharm" : "")}>
+      <div class="ghead"><span class="gmedal"><svg viewBox="0 0 24 24" aria-hidden="true">${GLANCE_ICON[ic]}</svg></span><b>${title}</b></div>
+      ${rows.map(([k, val, f]) => html`<div class=${"grow" + (f ? " harmfact" : "")} style=${f ? `--ec:${(typeof HARM_COLOR !== "undefined" && HARM_COLOR[f.el]) || "var(--brass)"}` : ""}
+        title=${f ? `${R.CHAKRA_BY[f.ch].n} chakra, ${R.HARMONY_ELEMENTS.find(x => x[0] === f.el)[1]}` : ""}><span>${k}</span><b>${val}</b></div>`)}</div>`)}</div>`}
   </div>`;
 }
 
@@ -875,12 +1257,57 @@ function VitalsTab({ c, d, update }) {
 // Every perk the character's skills have unlocked, as cards modelled on the rulebook's perk boxes (level and kind on the left,
 // the usage icons above the text), plus talents of the player's own for whatever the rules don't cover.
 const TYPE_SHORT = { P: "Passive", A: "Active", E: "Empow.", M: "Active" };
+// Each attribute has its own colour (--a-STR … in app.css); skills, perks and filter chips take their attribute's.
+const attStyle = a => (a ? `--att:var(--a-${a})` : "");
+// Each attribute's emblem: a war hammer for Strength, a feather for Dexterity, a shield for Endurance, a cog for Mind,
+// a spiral for Willpower, an eye for Wisdom, a crown for Presence. Perks wear their attribute's on the card's spine.
+const ATTR_GLYPH = {
+  STR: html`<path d="M11 6l4-4 7 7-4 4z M3 21l10.5-10.5" />`,
+  DEX: html`<path d="M20 3.5C11.5 4 6 9.5 6 18l-2.5 2.5 M6 18c7 0 12.5-5 14-14.5 M8.5 15.5l5.5-.8 M10.8 12.2l5.6-.9 M13.6 8.8l4.6-.8" />`,
+  END: html`<path d="M12 2.8l7.5 3v6c0 4.7-3.2 7.9-7.5 9.4-4.3-1.5-7.5-4.7-7.5-9.4v-6z M12 7.5v9 M8 11.5h8" />`,
+  MND: html`<circle cx="12" cy="12" r="5.5" /><circle cx="12" cy="12" r="2" /><path d="M12 2.5v3 M12 18.5v3 M2.5 12h3 M18.5 12h3 M5.3 5.3l2.1 2.1 M16.6 16.6l2.1 2.1 M5.3 18.7l2.1-2.1 M16.6 7.4l2.1-2.1" />`,
+  WIL: html`<path d="M12 12c0-1 1-1.6 1.8-1.2 1.3.6 1.2 2.6 0 3.4-1.8 1.2-4.2.2-4.8-1.8-.8-2.6 1-5.2 3.6-5.6 3.4-.5 6.2 2 6.4 5.2.2 4-3 7.2-6.8 7.4-4.6.2-8.4-3.4-8.4-8.2" />`,
+  WIS: html`<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" />`,
+  PRS: html`<path d="M3.5 18.5h17 M4.2 18.5L3 7.5l5 4 4-6.5 4 6.5 5-4-1.2 11" />`,
+};
+const AttrGlyph = ({ a, cls = "aglyph" }) => (ATTR_GLYPH[a] ? html`<svg class=${cls} viewBox="0 0 24 24" aria-hidden="true">${ATTR_GLYPH[a]}</svg>` : null);
+// The kind of a perk, as a tag in the card's top-right corner: a bolt for Active, a flame for Empowerment,
+// an endless loop for Passive (always on). The card's shape changes with it too (app.css).
+const PERK_ICON = {
+  A: html`<path d="M9.6 1.4L3.4 9.1h4.1l-1 5.5 6.2-7.8H8.6z" fill="currentColor" />`,
+  E: html`<path d="M8 1.3c.6 2.6 3.7 4 3.7 7.4a3.7 3.7 0 0 1-7.4 0c0-1.7.9-2.8 1.7-3.6.1 1.4.7 2.1 1.5 2.4C7.3 5.7 7.4 3.4 8 1.3z" fill="currentColor" />`,
+  P: html`<path d="M4.6 5.4C3 5.4 1.9 6.6 1.9 8s1.1 2.6 2.7 2.6C7 10.6 9 5.4 11.4 5.4c1.6 0 2.7 1.2 2.7 2.6s-1.1 2.6-2.7 2.6C9 10.6 7 5.4 4.6 5.4z" fill="none" stroke="currentColor" stroke-width="1.6" />`,
+};
+// The 2021 rulebook's paintings (a window around each skill's subject, cut from its pages by tools/rulebook_art_focal.py), faded behind each skill's perk
+// cards. A skill with several pages takes turns by perk group. Website only: the files live in art/.
+const SKILL_ART = {
+  Maim: ["str_maim", "str_maim2"], Bash: ["str_bash"], Parry: ["str_parry"], "Armor Mastery": ["str_armorm"], "Strong Back": ["str_strongb"],
+  Tumble: ["dex_tumble"], Pierce: ["dex_pierce"], Precision: ["dex_precision"], Alacrity: ["dex_alacrity"], Evasion: ["dex_evasion"],
+  "Bleed Resistance": ["end_bleedr"], Durability: ["end_durability"], "Shield Mastery": ["end_shieldm"], Conditioning: ["end_conditioning"], Versatility: ["end_versatility"], Metabolism: ["end_metabolism"],
+  Demonology: ["mnd_daemonology", "mnd_daemonology2"], Alchemy: ["mnd_alchemy", "mnd_alchemy2"], Engineering: ["mnd_engineering"], Robotics: ["mnd_robotics"], Lore: ["mnd_lore"],
+  "Armor Maintenance": ["wis_armormn", "wis_armormn2"], "Weapon Maintenance": ["wis_weaponmn", "wis_weaponmn2"], Brewing: ["wis_brewing"], Powdertinker: ["wis_powdertinker"], Awareness: ["wis_awareness"], Medicine: ["wis_medicine", "wis_medicine2"],
+  Dreamwalking: ["wil_dreamwalking", "wil_dreamwalking2"], "Occult: Harmony": ["wil_harmony", "wil_harmony2", "wil_harmony3", "wil_harmony4"],
+  Leadership: ["prs_leadership"], Runecrafting: ["prs_runecrafting", "prs_runecrafting2"], Hunting: ["prs_hunter", "prs_hunter2", "prs_hunter3", "prs_hunter4"], Perform: ["prs_perform"],
+};
+const WEAPON_ART = ["rulebook_weapons1"];
+function skillArt(skill, kind, n) {
+  if (!window.CW_WEB) return "";
+  const list = kind === "weapon" ? WEAPON_ART : SKILL_ART[skill]; if (!list) return "";
+  return `art/${list[n % list.length]}.webp`;
+}
+// Folded perks: one slim card per perk name. A perk the book gives at two levels (Wreck at 3 and 4) shares one card:
+// the levels on the left, the name once, then each level's kind and uses, each marked with its level.
+const perkRows = perks => perks.reduce((out, p) => { const n = p.group || ""; const at = out.find(x => x.n === n); if (at) at.ps.push(p); else out.push({ n, ps: [p] }); return out; }, [])
+  .map(r => Object.assign(r, { ps: r.ps.slice().sort((a, b) => num(a.l) - num(b.l)) })).sort((a, b) => num(a.ps[0].l) - num(b.ps[0].l));
+const lvSpan = ls => ls.length === 1 ? String(ls[0]) : ls.every((l, i) => !i || num(l) === num(ls[i - 1]) + 1) ? `${ls[0]}–${ls[ls.length - 1]}` : ls.join("·");
+const typeKey = t => (t === "M" || t === "A" ? "A" : t === "E" ? "E" : "P");
+const TypeTag = ({ t }) => { const k = typeKey(t); return html`<span class=${"ttag tt-" + k} title=${TYPE_NAME[t] || TYPE_NAME[k]}><svg viewBox="0 0 16 16" aria-hidden="true">${PERK_ICON[k]}</svg>${k === "E" ? "Empower" : TYPE_NAME[k]}</span>`; };
 function unlockedPerks(c) {
   const out = [];
   const add = (name, lv, kind) => {
     const sd = SKILL_DATA.skills[name]; if (!sd || !lv) return;
     const got = [];
-    sd.gs.forEach(g => g.p.forEach(p => { if (lv >= p.l) got.push(Object.assign({ key: `p:${name}:${p.l}`, group: g.n && g.n !== "Perks" ? g.n : "", flavor: g.f || "" }, p)); }));
+    sd.gs.forEach((g, gi) => g.p.forEach(p => { if (lv >= p.l) got.push(Object.assign({ key: `p:${name}:${p.l}`, gi, group: g.n && g.n !== "Perks" ? g.n : "", flavor: g.f || "" }, p)); }));
     if (got.length) out.push({ name, lv, kind, attr: R.LEVELS[kind].attrOf(name), perks: got });
   };
   R.SKILL_GROUPS.forEach(g => g.skills.forEach(([n]) => add(n, num(c.skills[n]), "skill")));
@@ -897,11 +1324,13 @@ function UseBoxes({ c, ukey, uses, recharge, update, label }) {
       aria-label=${i < spent ? `Give back use ${i + 1} of ${label}` : `Spend use ${i + 1} of ${label}`} onClick=${() => set(i < spent ? i : i + 1)}></button>`)}
     <small class="muted">${spent >= max ? "All used · " : `${max - spent} left · `}${recharge ? `back on a ${recharge.toLowerCase()}` : "recharge not set"}</small></div>`;
 }
-function PerkCard({ c, p, update, skill }) {
+function PerkCard({ c, p, update, skill, attr, art }) {
   const t = p.t || "P";
-  return html`<article class=${"perkcard t-" + t}>
-    <div class="pbox"><b>${p.l}</b><small>${TYPE_SHORT[t]}</small></div>
-    <div class="pmain"><div class="phead"><b class="pname">${p.group || skill}</b><${UsageLine} u=${p.u} /></div>
+  return html`<article class=${"perkcard t-" + t + " k-" + typeKey(t) + (attr ? " hasatt" : "") + (art ? " hasart" : "")} style=${attStyle(attr)}>
+    ${art && html`<i class="partbg" aria-hidden="true" style=${`background-image:url(${art})`}></i>`}
+    ${attr ? html`<div class="pbox spine" title=${`${R.ATTR_NAME[attr]} · level ${p.l}`}><${AttrGlyph} a=${attr} /><b>${p.l}</b><small>${attr}</small></div>`
+      : html`<div class="pbox"><b>${p.l}</b><small>Level</small></div>`}
+    <div class="pmain"><div class="phead"><b class="pname">${p.group || skill}</b><${UsageLine} u=${p.u} /><${TypeTag} t=${t} /></div>
       <p>${p.x || "Not written yet."}</p>
       ${p.u && p.u.uses && html`<${UseBoxes} c=${c} ukey=${p.key} uses=${p.u.uses} recharge=${p.u.recharge} update=${update} label=${`${skill} ${p.l}`} />`}</div>
   </article>`;
@@ -910,9 +1339,9 @@ const TALENT_TYPES = [["P", "Passive"], ["A", "Active"], ["E", "Empowerment"]];
 function TalentCard({ c, t, i, update }) {
   const set = k => v => update(x => { x.talents[i][k] = v; });
   const u = { recharge: t.recharge || "", ap: t.ap === "" || t.ap == null ? "" : String(t.ap), uses: t.uses ? String(t.uses) : "", stamina: t.stamina ? String(t.stamina) : "", turns: t.turns ? String(t.turns) : "" };
-  if (t.final) return html`<article class=${"perkcard talent t-" + (t.type || "P")}>
-    <div class="pbox"><svg class="tstar" viewBox="0 0 20 20" aria-hidden="true">${TAB_ICONS.talents}</svg><small>${TYPE_SHORT[t.type || "P"]}</small></div>
-    <div class="pmain"><div class="phead"><b class="pname">${t.name || "Unnamed talent"}</b><${UsageLine} u=${u} />
+  if (t.final) return html`<article class=${"perkcard talent t-" + (t.type || "P") + " k-" + typeKey(t.type || "P")}>
+    <div class="pbox"><svg class="tstar" viewBox="0 0 20 20" aria-hidden="true">${TAB_ICONS.talents}</svg><small>Talent</small></div>
+    <div class="pmain"><div class="phead"><b class="pname">${t.name || "Unnamed talent"}</b><${UsageLine} u=${u} /><${TypeTag} t=${t.type || "P"} />
         <button type="button" class="iconbtn editbtn" aria-label=${`Edit ${t.name || "talent"}`} onClick=${() => update(x => { x.talents[i].final = false; })}>${PENCIL}</button></div>
       ${t.source && html`<i class="psource">${t.source}</i>`}
       <p>${t.text || "No description yet."}</p>
@@ -936,24 +1365,118 @@ function TalentCard({ c, t, i, update }) {
       <button class="btn small primary" onClick=${() => update(x => { x.talents[i].final = true; })}>Done</button></div>
   </div>`;
 }
+// The skills a character has put points into, for the attributes picked in the filter (weapon skills included).
+function investedSkills(c, attrs) {
+  const out = [];
+  R.SKILL_GROUPS.forEach(g => attrs.includes(g.attr) && g.skills.forEach(([n]) => num(c.skills[n]) > 0 && out.push({ name: n, lv: num(c.skills[n]), attr: g.attr, kind: "skill" })));
+  R.WEAPON_TYPES.forEach(([w]) => { const a = R.LEVELS.weapon.attrOf(w); if (attrs.includes(a) && num(c.weaponSkills[w]) > 0) out.push({ name: w, lv: num(c.weaponSkills[w]), attr: a, kind: "weapon" }); });
+  return out.sort((a, b) => R.ATTRS.findIndex(x => x.k === a.attr) - R.ATTRS.findIndex(x => x.k === b.attr) || b.lv - a.lv || a.name.localeCompare(b.name));
+}
+// A skill's perks: folded like a rolodex (one slim row per perk name), or opened into full cards. Clicking a row deals
+// out just that perk's cards under it (both levels of a perk like Wreck 3–4) and clicking it again gathers them back;
+// the heading's button opens or folds the whole skill. Cards deal out one after another while the section grows to fit,
+// and fold back up into their row. Only a click animates (not the first draw or a filter change); reduced motion skips it.
+function PerkGroup({ g, open, flip, rowOpen, flipRow, c, update, openSkill }) {
+  const box = useRef(null), fx = useRef(null), busy = useRef(false);
+  const rows = perkRows(g.perks), rk = r => r.n || g.name;
+  // the cards a click opens or folds: one row's (key), or every card in the skill (key null)
+  const cards = key => {
+    const el = box.current; if (!el) return [];
+    if (key == null) return [...el.querySelectorAll(".perkcards > .perkcard")];
+    const d = [...el.querySelectorAll(".rdxcards")].find(x => x.dataset.row === key);
+    return d ? [...d.children].filter(x => x.classList.contains("perkcard")) : [];
+  };
+  const run = (key, isOpen, doFlip) => {
+    if (busy.current) return;
+    const el = box.current;
+    if (calm() || !el || !el.animate) { doFlip(); return; }
+    if (!isOpen) { fx.current = { from: el.offsetHeight, opening: true, key }; doFlip(); return; }
+    // Folding: the cards slide back up (last card first), then their row or the stack takes their place.
+    busy.current = true;
+    const list = cards(key), n = list.length;
+    let longest = 0;
+    list.forEach((card, i) => {
+      const delay = Math.min(n - 1 - i, 6) * 28; longest = Math.max(longest, delay + 200);
+      card.animate([{ transform: "none", opacity: 1 }, { transform: `translateY(${-Math.min(i, 8) * 14 - 10}px) scale(.96)`, opacity: 0 }],
+        { duration: 200, delay, easing: "cubic-bezier(.4, 0, .7, .2)", fill: "forwards" });
+    });
+    setTimeout(() => { fx.current = { from: el.offsetHeight, opening: false, key }; busy.current = false; doFlip(); }, longest);
+  };
+  const toggle = () => run(null, open, () => flip(g.name));
+  const toggleRow = r => run(rk(r), rowOpen(rk(r)), () => flipRow(g.name, rk(r)));
+  useLayoutEffect(() => {
+    const f = fx.current, el = box.current; fx.current = null;
+    if (!f || !el || !el.animate) return;
+    const to = el.offsetHeight;
+    if (Math.abs(to - f.from) > 2) el.animate([{ height: f.from + "px", overflow: "hidden" }, { height: to + "px", overflow: "hidden" }],
+      { duration: f.opening ? 300 : 240, easing: "cubic-bezier(.2, .7, .3, 1)" });
+    if (f.opening) cards(f.key).forEach((card, i) => card.animate(
+      [{ transformOrigin: "50% 0", transform: `perspective(700px) translateY(${-Math.min(i, 8) * 14 - 16}px) rotateX(-58deg) scale(.97)`, opacity: 0 },
+       { transformOrigin: "50% 0", transform: "perspective(700px) translateY(0) rotateX(0) scale(1)", opacity: 1 }],
+      { duration: 360, delay: Math.min(i, 8) * 55, easing: "cubic-bezier(.2, .75, .3, 1.08)", fill: "backwards" }));
+    else if (f.key == null) el.querySelectorAll(".rolodex > .rdx").forEach((r, k) => r.animate(
+      [{ transform: `translateY(${-6 - Math.min(k, 8) * 2}px)`, opacity: 0 }, { transform: "none", opacity: 1 }],
+      { duration: 220, delay: Math.min(k, 8) * 22, easing: "cubic-bezier(.2, .7, .3, 1)", fill: "backwards" }));
+  });
+  const card = p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`;
+  return html`<div ref=${box} class=${"perkgroup" + (open ? " open" : " folded")} style=${attStyle(g.attr)}>
+        <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small>
+          <button type="button" class="foldbtn" aria-expanded=${open} onClick=${toggle}>${open ? "Fold" : `Open ${g.perks.length > 1 ? "all " : ""}${g.perks.length} perk${g.perks.length > 1 ? "s" : ""}`}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button></h3>
+        ${open ? html`<div class="perkcards">${g.perks.map(card)}</div>`
+          : html`<div class="rolodex">${rows.map((r, k) => { const key = rk(r), on = rowOpen(key);
+              return [html`<button type="button" key=${"r:" + key} class=${"rdx" + (on ? " on" : "")} style=${`--k:${k}`} aria-expanded=${on} onClick=${() => toggleRow(r)}
+                  aria-label=${`${on ? "Fold" : "Open"} ${key}${r.ps.length > 1 ? ` (levels ${lvSpan(r.ps.map(p => p.l))})` : ""}`}><b class=${"rdxlv" + (r.ps.length > 1 ? " span" : "")}>${lvSpan(r.ps.map(p => p.l))}</b><span class="rdxn">${key}</span>
+                <span class="rdxps">${r.ps.map(p => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
+                  return html`<span class=${"rdxp k-" + typeKey(t)}>${r.ps.length > 1 && html`<i class="rdxat">${p.l}</i>`}${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max}</small>`}<${TypeTag} t=${t} /></span>`; })}</span></button>`,
+                on && html`<div key=${"c:" + key} class="perkcards rdxcards" data-row=${key}>${r.ps.map(card)}</div>`]; })}</div>`}</div>`;
+}
+
 function TalentsTab({ c, update, openSkill }) {
   const [filter, setFilter] = useState(() => lsGet("cw-perkfilter", "all"));
+  const [attrs, setAttrs] = useState(() => { const v = lsGet("cw-perkattrs", []); return Array.isArray(v) ? v.filter(a => R.ATTR_NAME[a]) : []; });
+  const [focus, setFocus] = useState("");
   useEffect(() => lsSet("cw-perkfilter", filter), [filter]);
+  useEffect(() => lsSet("cw-perkattrs", attrs), [attrs]);
   const all = unlockedPerks(c);
-  const match = p => filter === "all" || (filter === "A" ? p.t === "A" || p.t === "M" : p.t === filter);
-  const count = f => all.reduce((s, g) => s + g.perks.filter(p => f === "all" || (f === "A" ? p.t === "A" || p.t === "M" : p.t === f)).length, 0);
-  const shown = all.map(g => Object.assign({}, g, { perks: g.perks.filter(match) })).filter(g => g.perks.length);
+  const typeOk = (p, f = filter) => f === "all" || (f === "A" ? p.t === "A" || p.t === "M" : p.t === f);
+  const attrOk = g => !attrs.length || attrs.includes(g.attr);
+  // The skills invested in under the picked attributes: listed once there are 3 or more of them, and one can be picked.
+  const invested = attrs.length ? investedSkills(c, attrs) : [];
+  const listed = invested.length >= 3;
+  const focusOn = listed && invested.some(x => x.name === focus) ? focus : "";
+  const groupOk = g => attrOk(g) && (!focusOn || g.name === focusOn);
+  const count = f => all.reduce((s, g) => s + (groupOk(g) ? g.perks.filter(p => typeOk(p, f)).length : 0), 0);
+  const attrCount = a => all.reduce((s, g) => s + (g.attr === a ? g.perks.filter(p => typeOk(p)).length : 0), 0);
+  const shown = all.filter(groupOk).map(g => Object.assign({}, g, { perks: g.perks.filter(p => typeOk(p)) })).filter(g => g.perks.length);
+  const toggleAttr = a => { setAttrs(xs => (xs.includes(a) ? xs.filter(x => x !== a) : R.ATTRS.map(x => x.k).filter(k => k === a || xs.includes(k)))); };
   const spentAny = Object.values(c.uses || {}).some(v => num(v));
+  // Each skill's perks sit folded like a rolodex (a slim card per perk name, overlapping); clicking one opens its full cards.
+  // Which skills are open is kept per browser. A skill picked in the attribute panel opens by itself.
+  const [openSk, setOpenSk] = useState(() => { const v = lsGet("cw-perkopen", []); return Array.isArray(v) ? v : []; });
+  // One perk name opened on its own is kept as "skill\nperk name"; opening or folding the whole skill clears those.
+  const [openRows, setOpenRows] = useState(() => { const v = lsGet("cw-perkrows", []); return Array.isArray(v) ? v : []; });
+  const saveRows = f => setOpenRows(xs => { const v = f(xs); lsSet("cw-perkrows", v); return v; });
+  const flip = n => { setOpenSk(xs => { const v = xs.includes(n) ? xs.filter(x => x !== n) : xs.concat(n); lsSet("cw-perkopen", v); return v; });
+    saveRows(xs => xs.filter(x => !x.startsWith(n + "\n"))); };
+  const flipRow = (n, r) => saveRows(xs => { const k = n + "\n" + r; return xs.includes(k) ? xs.filter(x => x !== k) : xs.concat(k); });
+  const isOpen = n => openSk.includes(n) || focusOn === n;
   const addTalent = () => update(x => { x.talents.push({ id: rid(), name: "", source: "", type: "A", uses: 1, recharge: "Long rest", ap: "", stamina: "", turns: "", text: "", final: false }); });
+  const empty = !all.length ? "No perks unlocked yet. A skill's first perk comes at level 3."
+    : focusOn ? `${focusOn} has no ${filter === "all" ? "" : TYPE_NAME[filter].toLowerCase() + " "}perks yet. Its first perk comes at level 3.`
+    : attrs.length ? `No ${filter === "all" ? "" : TYPE_NAME[filter].toLowerCase() + " "}perks from ${attrs.map(a => R.ATTR_NAME[a]).join(" or ")} yet.` : "No perks of that kind yet.";
   return html`<div class="tabpane">
     <section class="frame"><${Sigils} seed="perks" n=${1} lead="skill" side="r" /><${Head} title="Skills" topic="talents" />
       <p class="sub">Every perk unlocked so far. Tick a use when you spend one; rests recharge them. Click a skill's name for everything it grants.</p>
-      <div class="row perkbar"><div class="seg" role="group" aria-label="Show perks">${[["all", "All"], ["A", "Active"], ["E", "Empowerment"], ["P", "Passive"]].map(([k, n]) => html`<button aria-pressed=${filter === k} onClick=${() => setFilter(k)}>${n} <small>${count(k)}</small></button>`)}</div>
+      <div class="row perkbar"><div class="seg" role="group" aria-label="Show perks">${[["all", "All"], ["A", "Active"], ["E", "Empowerment"], ["P", "Passive"]].map(([k, n]) => html`<button aria-pressed=${filter === k} onClick=${() => setFilter(k)}>${k !== "all" && html`<svg class="segicon" viewBox="0 0 16 16" aria-hidden="true">${PERK_ICON[k]}</svg>`}${n} <small>${count(k)}</small></button>`)}</div>
         ${spentAny && html`<button class="btn small" onClick=${() => update(x => { x.uses = {}; addLog(x, "Recharged every ability by hand"); })}>Recharge all</button>`}</div>
-      ${shown.length ? shown.map(g => html`<div class="perkgroup">
-        <h3><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small></h3>
-        <div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} />`)}</div></div>`)
-      : html`<p class="muted emptyline">${all.length ? "No perks of that kind yet." : "No perks unlocked yet. A skill's first perk comes at level 3."}</p>`}
+      <div class="attfilter" role="group" aria-label="Show perks from these attributes (pick any number)">
+        ${R.ATTRS.map(a => html`<button type="button" class="attchip" style=${attStyle(a.k)} aria-pressed=${attrs.includes(a.k)} title=${a.n} onClick=${() => toggleAttr(a.k)}><${AttrGlyph} a=${a.k} />${a.k} <small>${attrCount(a.k)}</small></button>`)}
+        ${attrs.length > 0 && html`<button type="button" class="linkbtn" onClick=${() => { setAttrs([]); setFocus(""); }}>Show all</button>`}</div>
+      ${listed && html`<div class="attskills" role="group" aria-label=${`Skills invested in under ${attrs.map(a => R.ATTR_NAME[a]).join(", ")}`}>
+        <span class="lbl">Your ${attrs.map(a => R.ATTR_NAME[a]).join(" · ")} skills</span>
+        ${invested.map(x => html`<button type="button" class="skchip" style=${attStyle(x.attr)} aria-pressed=${focusOn === x.name} onClick=${() => setFocus(focusOn === x.name ? "" : x.name)}>${x.name} <small>${x.lv}</small></button>`)}</div>`}
+      ${shown.length ? shown.map(g => html`<${PerkGroup} key=${g.name} g=${g} open=${isOpen(g.name)} flip=${flip} rowOpen=${r => openRows.includes(g.name + "\n" + r)} flipRow=${flipRow} c=${c} update=${update} openSkill=${openSkill} />`)
+      : html`<p class="muted emptyline">${empty}</p>`}
     </section>
 
     <section class="frame"><${Sigils} seed="talents" n=${1} lead="glyphs" side="l" /><${Head} title="Talents" />
@@ -966,12 +1489,13 @@ function TalentsTab({ c, update, openSkill }) {
 
 /* ================= gear tab ================= */
 function GearTab({ c, d, update }) {
+  useShop();   // armor cards lock while a suit is at a smith's bench
   const e = d.enc;
   // needle position: 3 fifths of the bar cover 0→3×unit, then one fifth per tier
   const pos = (() => { const L = e.load, u = e.unit || 1; if (L <= 3 * u) return (L / (3 * u)) * 60; const extra = Math.min(4, (L - 3 * u) / u); return 60 + extra * 10; })();
   const addItem = () => update(x => { x.items.push({ id: rid(), name: "", qty: 1, size: "small" }); });
   const addWeapon = () => update(x => { x.weapons.push({ id: rid(), name: "", skill: "Slashing", hands: 1, size: "medium", damage: 6, crit: 5, accuracy: 0, dur: 100, durMax: 100, durDie: "d10", clip: 0, clipMax: 0, rangeOpt: 0, rangeMax: 0, reload: 0, props: "", where: "set", final: false }); });
-  const addArmor = () => update(x => { x.armor.push({ id: rid(), name: "", type: "light", av: 2, soak: 30, soakMax: 30, worn: !x.armor.some(a => a.worn), where: "set" }); });
+  const addArmor = () => update(x => { x.armor.push({ id: rid(), name: "", type: "light", av: 2, soak: 30, soakMax: 30, worn: !x.armor.some(a => a.worn), where: "set", final: false }); });
   const addProsthetic = () => update(x => { x.prosthetics.push({ id: rid(), name: "", type: R.PROSTHETIC_TYPES[0], props: "" }); });
   const it = (i, k) => v => update(x => { x.items[i][k] = v; });
   const ar = (i, k) => v => update(x => { x.armor[i][k] = v; });
@@ -989,22 +1513,14 @@ function GearTab({ c, d, update }) {
     </section>
 
     <section class="frame"><${Head} title="Armor" topic="armor" /><p class="sub">Only one suit is worn at a time. Heavy armor counts as a large item, plate as huge.</p>
-      <div class="cards">${c.armor.map((a, i) => { const chk = R.armorCheck(c, a); const t = R.ARMOR[a.type] || R.ARMOR.light;
-        return html`<div class=${"wcard" + (a.worn ? " worn" : "")}>
-          <div class="title"><input aria-label="Armor name" placeholder="Armor name" value=${a.name} onInput=${ev => ar(i, "name")(ev.target.value)} />
-            <button class=${"btn small" + (a.worn ? " primary" : "")} onClick=${() => update(x => { x.armor.forEach((y, j) => (y.worn = j === i ? !y.worn : false)); })}>${a.worn ? "Worn" : "Wear"}</button></div>
-          <div class="grid2">
-            <div class="mini"><label for=${"at-" + a.id}>Type</label><select id=${"at-" + a.id} value=${a.type} onChange=${ev => ar(i, "type")(ev.target.value)}>${Object.entries(R.ARMOR).map(([k, x]) => html`<option value=${k}>${x.label}</option>`)}</select></div>
-            <${Mini} id=${"av-" + a.id} label=${`AV ${t.av[0]}–${t.av[1]}`} value=${a.av} onInput=${ar(i, "av")} />
-            <${Mini} id=${"sk-" + a.id} label="Soak" value=${a.soak} onInput=${ar(i, "soak")} />
-            <${Mini} id=${"sm-" + a.id} label="Soak max" value=${a.soakMax} onInput=${ar(i, "soakMax")} />
-          </div>
-          <div class="track" style="background:var(--sunk)"><i style=${`width:${chk.soakMax ? Math.min(100, (num(a.soak) / chk.soakMax) * 100) : 0}%;background:var(--ink-2)`}></i></div>
-          <div class="calc">Soak ${num(a.soak)}/${chk.soakMax}${chk.soakBonus ? ` (incl. +${chk.soakBonus} Armor Mastery)` : ""} · repair ${chk.repairCost} g, ${chk.repairDie}</div>
-          ${!chk.ok && html`<div class="chips">${chk.problems.map(p => html`<span class="flag bad">${p}</span>`)}</div>`}
-          <div class="row" style="justify-content:space-between"><span class="muted">${a.type === "light" ? "Casting −2×AV" : a.type === "medium" ? "Stealth −AV, casting −2×AV" : a.type === "heavy" ? "Dex skills −AV, Stealth disadv., Entrada −2×AV" : "Dex skills and saves −AV, Stealth disadv."}</span>
-            <button class="btn small danger" onClick=${() => update(x => { x.armor.splice(i, 1); })}>Remove</button></div></div>`; })}
+      <div class="cards">${c.armor.map((a, i) => html`<${ArmorCard} key=${a.id} c=${c} a=${a} i=${i} update=${update} />`)}
         <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addArmor}>+ Add armor</button></div></div>
+    </section>
+
+
+    <section class="frame"><${Sigils} seed="weapons" n=${1} side="l" /><${Head} title="Weapons" topic="weapons" /><p class="sub">Two one-handed or one two-handed set ride free${e.freeSets > 2 ? ", plus a third from Strong Back" : ""}. Shields always count as large.</p>
+      <div class="cards">${c.weapons.map((w, i) => html`<${WeaponCard} key=${w.id} c=${c} w=${w} i=${i} update=${update} />`)}
+        <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addWeapon}>+ Add weapon</button></div></div>
     </section>
 
     <section class="frame"><${Head} title="Prosthetics" topic="prosthetics" />
@@ -1017,11 +1533,6 @@ function GearTab({ c, d, update }) {
           <td class="wide"><${AutoText} cls="inp" label="Unique properties" placeholder="Hidden blade; grip strength +2" value=${x.props} onInput=${pr(i, "props")} /></td>
           <td><button class="iconbtn" aria-label=${`Remove ${x.name || "prosthetic"}`} onClick=${() => update(y => { y.prosthetics.splice(i, 1); })}>×</button></td></tr>`)}</tbody></table></div>`}
       <div class="row" style="margin-top:10px"><button class="btn" onClick=${addProsthetic}>+ Add prosthetic</button></div>
-    </section>
-
-    <section class="frame"><${Sigils} seed="weapons" n=${1} side="l" /><${Head} title="Weapons" topic="weapons" /><p class="sub">Two one-handed or one two-handed set ride free${e.freeSets > 2 ? ", plus a third from Strong Back" : ""}. Shields always count as large.</p>
-      <div class="cards">${c.weapons.map((w, i) => html`<${WeaponCard} key=${w.id} c=${c} w=${w} i=${i} update=${update} />`)}
-        <div class="wcard" style="place-content:center;border-style:dashed"><button class="btn" onClick=${addWeapon}>+ Add weapon</button></div></div>
     </section>
 
     <section class="frame"><${Head} title="Inventory" topic="load" />
@@ -1042,6 +1553,51 @@ function GearTab({ c, d, update }) {
 }
 
 /* ================= weapon cards ================= */
+// A suit of armor, like a weapon: set up in edit mode, then Done folds it into a flush card for play where only the
+// Soak Pool (its durability) changes, and Wear/Worn. Suits saved before this count as finished once they have a name.
+const ARMOR_PENALTY = { light: "Casting −2×AV", medium: "Stealth −AV, casting −2×AV", heavy: "Dex skills −AV, Stealth disadv., Entrada −2×AV", plate: "Dex skills and saves −AV, Stealth disadv." };
+function ArmorCard({ c, a, i, update }) {
+  const ar = k => v => update(x => { x.armor[i][k] = v; });
+  const chk = R.armorCheck(c, a); const t = R.ARMOR[a.type] || R.ARMOR.light;
+  useShop(); const away = !!Shop.outgoing(c, "armor", a.id);
+  const isFinal = a.final === true || (a.final === undefined && !!a.name);
+  const card = useRef();
+  useChange(isFinal, () => replay(card.current, isFinal ? "settle" : "unfold", 0, ["settle", "unfold"]), a.id + animScope);
+  const soak = num(a.soak), max = chk.soakMax;
+  const wear = html`<button class=${"btn small" + (a.worn ? " primary" : "")} onClick=${() => update(x => { x.armor.forEach((y, j) => (y.worn = j === i ? !y.worn : false)); })}>${a.worn ? "Worn" : "Wear"}</button>`;
+  if (isFinal) return html`<div ref=${card} class=${"wcard final kind-armor" + (a.worn ? " worn" : "") + (away ? " away" : "")}>
+    <fieldset class="wlock" disabled=${away}>
+    <div class="title"><b class="wname">${a.name || "Unnamed armor"}</b>${wear}
+      <button class="iconbtn" aria-label=${`Edit ${a.name || "armor"}`} title="Edit" onClick=${() => ar("final")(false)}>${PENCIL}</button></div>
+    <div class="wsub">${t.label} armor · ${ARMOR_PENALTY[a.type] || ""}</div>
+    <div class="wstats"><div><span>AV</span><b>${num(a.av)}</b></div><div><span>Soak max</span><b>${max}</b></div><div><span>Repair</span><b>${chk.repairCost} g</b></div><div><span>Repair die</span><b>${chk.repairDie}</b></div></div>
+    <div class="wdur"><span class="lbl">Soak Pool</span>
+      <div class="track"><i style=${`width:${max ? R.clamp((soak / max) * 100, 0, 100) : 0}%;background:${soak <= 0 && max ? "var(--bad)" : "var(--ink-2)"}`}></i></div>
+      <div class="row"><button class="iconbtn" aria-label="Lose 1 soak" onClick=${() => ar("soak")(Math.max(0, soak - 1))}>−</button>
+        <input class="inp durin" type="number" min="0" aria-label="Soak Pool" value=${a.soak} onInput=${ev => ar("soak")(ev.target.value === "" ? "" : Math.max(0, +ev.target.value))} />
+        <span class="muted">/ ${max}${chk.soakBonus ? ` (incl. +${chk.soakBonus} Armor Mastery)` : ""}</span>
+        <button class="iconbtn" aria-label="Restore 1 soak" onClick=${() => ar("soak")(Math.min(max || Infinity, soak + 1))}>+</button></div>
+      ${max > 0 && soak <= 0 && html`<span class="flag bad">Broken: only a craftsman can repair it</span>`}</div>
+    ${!chk.ok && html`<div class="chips">${chk.problems.map(p => html`<span class="flag bad">${p}</span>`)}</div>`}
+    </fieldset>
+    <${ShopGear} c=${c} kind="armor" item=${a} update=${update} />
+  </div>`;
+  return html`<div ref=${card} class=${"wcard editing" + (a.worn ? " worn" : "") + (away ? " away" : "")}>
+    <fieldset class="wlock" disabled=${away}>
+    <div class="title"><input aria-label="Armor name" placeholder="Armor name" value=${a.name} onInput=${ev => ar("name")(ev.target.value)} />${wear}<span class="flag">Editing</span></div>
+    <div class="grid2">
+      <div class="mini"><label for=${"at-" + a.id}>Type</label><select id=${"at-" + a.id} value=${a.type} onChange=${ev => ar("type")(ev.target.value)}>${Object.entries(R.ARMOR).map(([k, x]) => html`<option value=${k}>${x.label}</option>`)}</select></div>
+      <${Mini} id=${"av-" + a.id} label=${`AV ${t.av[0]}–${t.av[1]}`} value=${a.av} onInput=${ar("av")} />
+      <${Mini} id=${"sk-" + a.id} label="Soak" value=${a.soak} onInput=${ar("soak")} />
+      <${Mini} id=${"sm-" + a.id} label="Soak max" value=${a.soakMax} onInput=${ar("soakMax")} />
+    </div>
+    <div class="calc">Soak ${soak}/${max}${chk.soakBonus ? ` (incl. +${chk.soakBonus} Armor Mastery)` : ""} · repair ${chk.repairCost} g, ${chk.repairDie} · ${ARMOR_PENALTY[a.type] || ""}</div>
+    ${!chk.ok && html`<div class="chips">${chk.problems.map(p => html`<span class="flag bad">${p}</span>`)}</div>`}
+    <div class="row" style="justify-content:space-between"><button class="btn small danger" onClick=${() => update(x => { x.armor.splice(i, 1); })}>Remove</button>
+      <button class="btn small primary" onClick=${() => ar("final")(true)}>Done</button></div>
+    </fieldset>
+  </div>`;
+}
 // A weapon is set up in edit mode, then finalised into a compact card for play where only durability changes.
 // The fields follow the weapon: melee weapons reach 2 m and have no clip; ranged weapons have a clip, ranges and
 // a reload cost (rulebook, Weapon Combat); a shield blocks with Shield Mastery and always counts as large.
@@ -1060,7 +1616,14 @@ function WeaponCard({ c, w, i, update }) {
   const dur = num(w.dur), durMax = num(w.durMax);
   const reach = kind === "ranged" ? (num(w.rangeOpt) || num(w.rangeMax) ? `${num(w.rangeOpt)} / ${num(w.rangeMax)} m` : w.range || "—") : kind === "melee" ? "2 m" : "—";
   // Weapons saved before this existed count as finished once they have a name.
-  if (w.final === true || (w.final === undefined && w.name)) return html`<div class=${"wcard final kind-" + kind}>
+  const isFinal = w.final === true || (w.final === undefined && !!w.name);
+  // Done settles the card into its finished form and the pencil unfolds it; firing recoils the clip, Reload sweeps it full.
+  const card = useRef(), clipBox = useRef(), scope = w.id + animScope;
+  useChange(isFinal, () => replay(card.current, isFinal ? "settle" : "unfold", 0, ["settle", "unfold"]), scope);
+  useChange(inClip, (from, to) => replay(clipBox.current, to < from ? "recoil" : to === clipSize && to - from > 1 ? "reload" : "bump", 0, ["recoil", "reload", "bump"]), scope);
+  useShop(); const away = !!Shop.outgoing(c, "weapon", w.id);   // at a smith's bench: locked until it's back
+  if (isFinal) return html`<div ref=${card} class=${"wcard final kind-" + kind + (away ? " away" : "")}>
+    <fieldset class="wlock" disabled=${away}>
     <div class="title"><b class="wname">${w.name || "Unnamed weapon"}</b>
       <span class="flag brass">${kind === "shield" ? "Shield" : wl.proficiency}</span>
       <button class="iconbtn" aria-label=${`Edit ${w.name || "weapon"}`} title="Edit" onClick=${() => set("final", false)}>${PENCIL}</button></div>
@@ -1072,7 +1635,7 @@ function WeaponCard({ c, w, i, update }) {
       ${kind === "ranged" && num(w.reload) ? html`<div><span>Reload</span><b>${num(w.reload)} AP</b></div>` : ""}
     </div>
     ${kind === "ranged" && html`<div class="wdur"><span class="lbl">Clip</span>
-      <div class="row"><button class="iconbtn" aria-label="Fire one" onClick=${() => set("clip", Math.max(0, inClip - 1))}>−</button>
+      <div class="row clipbox" ref=${clipBox}><button class="iconbtn" aria-label="Fire one" onClick=${() => set("clip", Math.max(0, inClip - 1))}>−</button>
         <input class="inp durin" type="number" min="0" max=${clipSize || undefined} aria-label="Rounds in the clip" value=${w.clip} onInput=${ev => set("clip", ev.target.value === "" ? "" : R.clamp(+ev.target.value, 0, clipSize || 999))} />
         <span class="muted">/ ${clipSize}</span>
         <button class="iconbtn" aria-label="Add one" onClick=${() => set("clip", Math.min(clipSize || 999, inClip + 1))}>+</button>
@@ -1087,8 +1650,10 @@ function WeaponCard({ c, w, i, update }) {
       ${durMax > 0 && dur <= 0 && html`<span class="flag bad">Broken: gains a flaw</span>`}
     </div>
     ${w.props && html`<p class="wprops">${w.props}</p>`}
+    </fieldset>
+    <${ShopGear} c=${c} kind="weapon" item=${w} update=${update} />
   </div>`;
-  return html`<div class="wcard editing">
+  return html`<div ref=${card} class="wcard editing">
     <div class="title"><input aria-label="Weapon name" placeholder=${kind === "shield" ? "Shield name" : "Weapon name"} value=${w.name} onInput=${ev => set("name", ev.target.value)} />
       <span class="flag">Editing</span></div>
     <div class="grid2">
@@ -1125,11 +1690,12 @@ function WeaponCard({ c, w, i, update }) {
   </div>`;
 }
 
-/* ================= tabletop tab ================= */
-function TableTab({ c, update, onDelete }) {
+/* ================= Tabletop Simulator: send a character to the table and bring changes back (in Settings) ================= */
+function TabletopPanel({ c, update }) {
   const data = useMemo(() => R.toTabletop(c), [c]);
   const code = useMemo(() => JSON.stringify(data), [data]);
-  const ta = useRef(); const [paste, setPaste] = useState(""); const [preview, setPreview] = useState(null); const [err, setErr] = useState(""); const [del, setDel] = useState(false);
+  const ta = useRef(); const [paste, setPaste] = useState(""); const [preview, setPreview] = useState(null); const [err, setErr] = useState("");
+  useEffect(() => { setPaste(""); setPreview(null); setErr(""); }, [c.id]);
   const copy = async () => {
     try { await navigator.clipboard.writeText(code); toast("Code copied. Paste it into the sheet's code box in Tabletop Simulator."); }
     catch { ta.current.focus(); ta.current.select(); toast("Selected the code. Press Ctrl+C (or Cmd+C) to copy it."); }
@@ -1151,16 +1717,14 @@ function TableTab({ c, update, onDelete }) {
       setPreview({ n, changes });
     } catch (e) { setErr(e instanceof SyntaxError ? "That doesn't look like a complete code. Copy the whole text from the sheet's Export box." : e.message); }
   };
-  return html`<div class="tabpane">
-    <section class="two">
-      <div class="frame"><${Sigils} seed="send to the table" n=${1} side="r" /><h2 class="h"><span>Send to the table</span><i class="orn" aria-hidden="true"></i></h2>
-        <ol class="steps"><li>Copy this character's code.</li><li>In Tabletop Simulator, click <b>Load code</b> under your Clockwork sheet and paste it into the box.</li><li>Click <b>Apply</b>. Pips, vitals and your portrait fill in.</li></ol>
+  return html`
+      <section class="setsec"><h3 class="setsub">Send to Tabletop Simulator</h3>
+        <p class="sub">Copy the code. In Tabletop Simulator, click <b>Load code</b> under your Clockwork sheet, paste it and click <b>Apply</b>.${!c.portraitUrl ? " Add a portrait link on the Sheet so TTS shows your art." : ""}</p>
         <textarea ref=${ta} class="codebox" readonly aria-label="Tabletop code" value=${code} onFocus=${e => e.target.select()}></textarea>
         <div class="row"><button class="btn primary" onClick=${copy}>Copy code</button><button class="btn" onClick=${save}>Save as file</button>
-          <span class="muted">${code.length.toLocaleString()} characters</span></div>
-        ${!c.portraitUrl && html`<p class="muted">Tip: add a public image link under "Portrait link for Tabletop" so the sheet in TTS shows your art.</p>`}</div>
-      <div class="frame"><h2 class="h"><span>Bring changes back</span><i class="orn" aria-hidden="true"></i></h2>
-        <p class="muted" style="margin-top:0">After a session, click <b>Export</b> on the TTS sheet, copy its code and paste it here to update vitals, pips and Karma.</p>
+          <span class="muted">${code.length.toLocaleString()} characters</span></div></section>
+      <section class="setsec"><h3 class="setsub">Bring changes back</h3>
+        <p class="sub">After a session, paste the code from the TTS sheet's <b>Export</b> box to update vitals, pips and Karma.</p>
         <textarea class="codebox" aria-label="Code from Tabletop Simulator" placeholder='{"cw":1, …}' value=${paste} onInput=${e => { setPaste(e.target.value); setPreview(null); setErr(""); }}></textarea>
         <div class="row"><button class="btn" disabled=${!paste.trim()} onClick=${check}>Check changes</button></div>
         ${err && html`<p style="color:var(--bad)">${err}</p>`}
@@ -1168,11 +1732,128 @@ function TableTab({ c, update, onDelete }) {
           <ul style="margin:6px 0 10px;padding-left:18px">${preview.changes.slice(0, 30).map(x => html`<li>${x}</li>`)}</ul>
           <div class="row"><button class="btn primary" onClick=${() => { update(x => { Object.assign(x, preview.n, { id: x.id }); addLog(x, "Updated from Tabletop Simulator"); }); setPaste(""); setPreview(null); toast("Updated from the table."); }}>Apply changes</button>
             <button class="btn" onClick=${() => setPreview(null)}>Cancel</button></div>` : html`<p style="margin:0">Nothing differs from this character.</p>`}</div>`}
-      </div>
-    </section>
-    <section class="frame"><h2 class="h"><span>Character</span><i class="orn" aria-hidden="true"></i></h2>
-      ${del ? html`<div class="confirm"><span>Delete <b>${c.name || "this character"}</b> for everyone? This can't be undone.</span>
-          <button class="btn small danger" onClick=${() => onDelete(c.id)}>Delete</button><button class="btn small" onClick=${() => setDel(false)}>Keep</button></div>`
-        : html`<button class="btn danger" onClick=${() => setDel(true)}>Delete character</button>`}</section>
-  </div>`;
+      </section>`;
+}
+
+/* ================= settings: a drawer over the current page ================= */
+// Four tabs, so everything fits without a long scroll: This device (per-browser choices), Character (its modules and
+// Tabletop Simulator code), Table (sign out, the GM's backup) and About. It slides in from the right like the rules
+// panel but is set apart from it: a dark title bar with the theme's own settings icon, folder tabs in that bar, and
+// the page dimmed behind it. On phones it's a bottom sheet. Escape, × or a click on the dimmed page closes it.
+// Everything stored per browser starts with "cw-"; Reset clears only the display choices, never characters,
+// the sign-in or an encounter in progress.
+const RESET_KEYS = ["cw-skin", "cw-text", "cw-anim", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp", "cw-set-tab"];
+const REPO = "https://github.com/clockwork-companion/clockwork_companion";
+/* ================= what's new ================= */
+// The publish workflow writes changelog.json next to the page (tools/whatsnew.py) from the short notes in changes/, one
+// per change, written by whoever made it: on the Dev page, everything not on the live site yet; on the live site, what
+// the latest release brought. Settings has a "What's new" button that opens them in a pop-up; it and the Settings
+// button carry a dot until every note has been seen. Builds without the file (a local build, the artifact) show neither.
+let newsLoad = null;
+const loadNews = () => newsLoad || (newsLoad = fetch("changelog.json", { cache: "no-cache" })
+  .then(r => (r.ok ? r.json() : null))
+  .then(j => (j && Array.isArray(j.items) ? { since: j.since || "", items: j.items.filter(i => i && i.id && i.t) } : null))
+  .catch(() => null));
+function useNews() {
+  const [news, setNews] = useState(null);
+  useEffect(() => { let on = true; loadNews().then(d => { if (on) setNews(d); }); return () => { on = false; }; }, []);
+  return news;
+}
+const newsSeenList = () => { const v = lsGet("cw-news-seen", []); return Array.isArray(v) ? v : []; };
+const newsFresh = (news, seen) => !!(news && news.items.some(i => !seen.includes(i.id)));
+const newsDate = iso => new Date(iso + "T12:00:00").toLocaleDateString([], { day: "numeric", month: "long" });
+const newsDay = iso => {
+  const d = new Date(iso + "T12:00:00"), today = new Date(); today.setHours(12, 0, 0, 0);
+  const ago = Math.round((today - d) / 864e5);
+  return ago === 0 ? "Today" : ago === 1 ? "Yesterday" : d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" });
+};
+function WhatsNewPop({ news, seen, onClose }) {
+  const dev = !!document.querySelector(".devflag"), ok = useRef(null);
+  useEffect(() => {
+    ok.current && ok.current.focus();
+    // Escape closes only this pop-up, not the Settings drawer it was opened from.
+    const key = e => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } };
+    document.addEventListener("keydown", key); return () => document.removeEventListener("keydown", key);
+  }, []);
+  const days = [];
+  news.items.forEach(i => { const d = days[days.length - 1]; if (d && d.date === i.date) d.items.push(i); else days.push({ date: i.date, items: [i] }); });
+  const sub = dev ? (news.since ? `On the Dev page, not on the live site yet. Since the release of ${newsDate(news.since)}.` : "On the Dev page, not on the live site yet.")
+                  : (news.since ? `What the release of ${newsDate(news.since)} brought.` : "What the latest release brought.");
+  return html`<div class="gx-veil newsveil" onClick=${e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div class="gx-choose newspop" role="dialog" aria-modal="true" aria-labelledby="news-title">
+      <button type="button" class="btn small gx-x" onClick=${onClose} aria-label="Close">✕</button>
+      <h2 class="ornate" id="news-title">What's new</h2>
+      <p class="sub">${sub}</p>
+      ${days.length ? html`<div class="newslist">${days.map(d => html`<div class="newsday"><h3>${newsDay(d.date)}</h3>
+        <ul>${d.items.map(i => html`<li>${!seen.includes(i.id) && html`<b class="newtag">New</b> `}${i.t}</li>`)}</ul></div>`)}</div>`
+        : html`<p class="muted">Nothing new since the last release.</p>`}
+      <div class="row newsbtns"><button type="button" class="btn primary" ref=${ok} onClick=${onClose}>Got it</button></div>
+    </div></div>`;
+}
+
+const SET_TABS = [["device", "This device"], ["char", "Character"], ["table", "Table"], ["about", "About"]];
+function SettingsDrawer({ c, update, chars, gm, news, seen = [], onSeen, onClose }) {
+  const [newsOpen, setNewsOpen] = useState(null);   // the seen list as it was when the pop-up opened, so its "New" marks stay put
+  const fresh = newsFresh(news, seen);
+  const openNews = () => { setNewsOpen(seen.slice()); onSeen && onSeen(); };
+  const newsUp = useRef(false); newsUp.current = !!newsOpen;   // read by the Escape handler, which is set up once
+  const [tab, setTab] = useState(() => { const t = lsGet("cw-set-tab", "device"); return SET_TABS.some(x => x[0] === t) ? t : "device"; });
+  useEffect(() => lsSet("cw-set-tab", tab), [tab]);
+  const [reset, setReset] = useState(false);
+  const ref = useRef();
+  useEffect(() => {
+    const back = document.activeElement;
+    if (ref.current) ref.current.focus();
+    // Escape closes the drawer, unless a pop-up opened from it (a dice roll, a module prompt, What's new) is the one on top.
+    const key = e => { if (e.key === "Escape" && !newsUp.current && !document.querySelector(".dice-veil, .modveil")) { e.preventDefault(); onClose(); } };
+    window.addEventListener("keydown", key);
+    return () => { window.removeEventListener("keydown", key); if (back && back.focus) back.focus(); };
+  }, []);
+  const dev = !!document.querySelector(".devflag");
+  const live = Store.mode === "live" && Store.table && window.CW_WEB;
+  const doReset = () => { RESET_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch {} }); location.reload(); };
+  const onTabKey = e => {   // arrow keys move between the tabs, as in any tab list
+    const i = SET_TABS.findIndex(x => x[0] === tab), step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!step) return;
+    e.preventDefault(); const k = SET_TABS[(i + step + SET_TABS.length) % SET_TABS.length][0]; setTab(k);
+    const b = document.getElementById("settab-" + k); if (b) b.focus();
+  };
+  return html`<div class="setveil" aria-hidden="true" onClick=${onClose}></div>
+  <aside class="setdrawer" role="dialog" aria-modal="true" aria-labelledby="setdr-title" tabindex="-1" ref=${ref}>
+    <header class="setdhead">
+      <div class="setdtitle"><i class="seticon" aria-hidden="true"></i><h2 id="setdr-title">Settings</h2>
+        ${news && html`<button type="button" class=${"setdnews newsbtn" + (fresh ? " hasnews" : "")} onClick=${openNews} title=${fresh ? "Something has changed since you last looked" : "What's changed since the last version"}>What's new</button>`}
+        <button type="button" class="setdclose" aria-label="Close settings" onClick=${onClose}>×</button></div>
+      <div class="settabs" role="tablist" aria-label="Settings sections" onKeyDown=${onTabKey}>${SET_TABS.map(([k, n]) => html`<button type="button" role="tab"
+        id=${"settab-" + k} aria-selected=${tab === k} aria-controls="setdr-body" tabindex=${tab === k ? 0 : -1} onClick=${() => setTab(k)}>${n}</button>`)}</div>
+    </header>
+    <div class="setdbody" id="setdr-body" role="tabpanel" aria-labelledby=${"settab-" + tab} key=${tab}>
+      ${tab === "device" && html`<section class="setsec">
+        <p class="sub">Saved on this device only, so each player can set their own.</p>
+        <div class="setrows">
+          <div class="setrow"><div><label class="setname" for="set-theme">Theme</label><span class="muted">Colours, type and artwork for the whole app.</span></div><${SkinPicker} /></div>
+          <div class="setrow"><div><span class="setname" id="set-text">Text size</span><span class="muted">Larger is easier to read across the table.</span></div><${TextSizePicker} /></div>
+          <div class="setrow"><div><span class="setname" id="set-anim">Animations</span><span class="muted">Disabled keeps each theme's artwork but holds it still. Easier on older phones and batteries.</span></div><${AnimPicker} /></div>
+          <div class="setrow"><div><span class="setname" id="set-dice">Dice</span><span class="muted">Roll in the app, or roll at your table (say, in Tabletop Simulator) and type the result.</span></div><${DicePicker} /></div>
+          <div class="setrow"><div><span class="setname">Reset</span><span class="muted">Puts these choices and the remembered tabs back to how they start. Characters aren't touched.</span></div>
+            ${reset ? html`<div class="row"><button class="btn small danger" onClick=${doReset}>Reset and reload</button><button class="btn small" onClick=${() => setReset(false)}>Keep</button></div>`
+              : html`<button class="btn small" onClick=${() => setReset(true)}>Reset…</button>`}</div>
+        </div></section>`}
+      ${tab === "char" && (c ? html`<p class="sub setfor">For <b>${c.name || "this character"}</b>, the character that's open.</p>
+          <${ModulesPanel} c=${c} update=${update} /><${TabletopPanel} c=${c} update=${update} />`
+        : html`<p class="sub">Open a character first. Its modules and Tabletop Simulator code show here.</p>`)}
+      ${tab === "table" && html`${live && html`<section class="setsec"><h3 class="setsub">${Store.table.name}</h3>
+          <div class="setrow"><div><span class="muted">You're signed in here${gm ? " as the GM" : ""}. Signing out leaves this table on this device; your characters stay saved.</span></div>
+            <button class="btn small" onClick=${() => window.CW_WEB.leave()}>Sign out</button></div></section>`}
+        ${gm && html`<${BackupPanel} chars=${chars} />`}
+        ${!live && !gm && html`<p class="sub">You're not signed in to a shared table, so there's nothing to manage here.</p>`}`}
+      ${tab === "about" && html`<section class="setsec">
+        <p class="sub">${dev ? "This is the Dev test page. Use a test table password so real characters stay untouched." : "This is the live Companion your table plays with."}</p>
+        <div class="row">
+          ${!news && html`<a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>`}
+          <a class="btn small" href=${`${REPO}/issues/new`} target="_blank" rel="noopener">Report a problem</a></div>
+        <p class="muted">Reporting a problem needs a free GitHub account.</p></section>`}
+    </div>
+  </aside>
+  ${newsOpen && html`<${WhatsNewPop} news=${news} seen=${newsOpen} onClose=${() => setNewsOpen(null)} />`}`;
 }

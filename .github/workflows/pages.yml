@@ -14,14 +14,21 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with: { ref: main, path: site-main }
-      - uses: actions/checkout@v4
-        with: { ref: Dev, path: site-dev }
-      - name: Assemble main at / and Dev at /dev/
+      - uses: actions/checkout@v5
+        with: { ref: main, path: site-main, fetch-depth: 0 }   # full history: What's new reads it
+      - uses: actions/checkout@v5
+        with: { ref: Dev, path: site-dev, fetch-depth: 0 }
+      - name: Build main at / and Dev at /dev/ from src
         run: |
           mkdir -p out/dev
-          rsync -a --exclude .git --exclude .github --exclude src site-main/ out/
+          # main is built from src/ (like Dev), so the published page always matches the source,
+          # even if someone forgot to rebuild index.html before committing.
+          if [ -f site-main/src/build.py ]; then
+            cp site-main/firebase-config.js out/   # the real Firebase settings; build.py keeps an existing one
+            python3 site-main/src/build.py --web out
+          else
+            rsync -a --exclude .git --exclude .github --exclude src site-main/ out/
+          fi
           if [ -f site-dev/src/build.py ]; then
             cp site-dev/firebase-config.js out/dev/ 2>/dev/null || cp out/firebase-config.js out/dev/
             python3 site-dev/src/build.py --web out/dev --dev
@@ -30,6 +37,14 @@ jobs:
             sed -i 's#<div id="app"></div>#<div style="position:fixed;z-index:999;top:10px;left:-34px;transform:rotate(-45deg);width:130px;padding:3px 0;background:\#c0392b;color:\#fff;font:700 11px system-ui;letter-spacing:.2em;text-align:center;pointer-events:none">DEV</div><div id="app"></div>#' out/dev/index.html
           fi
           [ -f out/dev/firebase-config.js ] || cp out/firebase-config.js out/dev/
+      - name: Write each page's What's new list (Settings -> What's new)
+        run: |
+          # The short notes in changes/ (tools/whatsnew.py): on the Dev page, every one not on the live site yet;
+          # on the live site, what the latest release brought. A branch without the script yet simply gets no list.
+          for b in main:out:main Dev:out/dev:dev; do
+            IFS=: read -r branch dir mode <<< "$b"; src=site-$(echo "$branch" | tr '[:upper:]' '[:lower:]')
+            if [ -f "$src/tools/whatsnew.py" ]; then python3 "$src/tools/whatsnew.py" "$src" "$mode" "$dir/changelog.json"; fi
+          done
           touch out/.nojekyll
       - name: Push to gh-pages
         run: |

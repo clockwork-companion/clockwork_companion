@@ -168,15 +168,28 @@ function AddPanel({ e, party, charMap, act }) {
 /* ---------- who is at the table (website only): roles and which characters each player sees ---------- */
 function MembersPanel({ chars, updateChar }) {
   const [confirm, setConfirm] = useState(null);
+  const [move, setMove] = useState(null);   // { from, to }: moving every character from one account to another
   const me = Store.table.uid;
   const members = Store.members.slice().sort((a, b) => (a.role === b.role ? (a.name || "").localeCompare(b.name || "") : a.role === "gm" ? -1 : 1));
   const give = (cid, uid) => updateChar(cid, x => { x.players = [...new Set([...playersOf(x), uid])]; });
   const take = (cid, uid) => updateChar(cid, x => { x.players = playersOf(x).filter(u => u !== uid); });
   const act = p => p.catch(() => toast("Couldn't change that just now. Try again."));
   const nobody = chars.filter(c => !playersOf(c).length);
+  const nameOf = uid => (Store.members.find(m => m.uid === uid) || {}).name || "that account";
+  // A forgotten password can't be reset (accounts have no real email), so the player makes a new account and the
+  // GM moves everything across: every character and companion that lists the old account now lists the new one.
+  const moveAll = async ({ from, to }) => {
+    const list = chars.filter(c => playersOf(c).includes(from));
+    try {
+      for (const c of list) await updateChar(c.id, x => { x.players = [...new Set(playersOf(x).map(u => (u === from ? to : u)))]; });
+      toast(`Moved ${list.length} ${list.length === 1 ? "character" : "characters"} to ${nameOf(to)}. You can remove ${nameOf(from)} from the table now.`);
+    } catch { toast("Couldn't move them just now. Try again."); }
+    setMove(null);
+  };
   return html`<section class="frame"><${Sigils} seed="players" n=${1} lead="note" side="r" />
     <h2 class="h"><span>Players at the table</span><i class="orn" aria-hidden="true"></i></h2>
-    <p class="sub">Players see only the characters you give them. GMs see everyone and run the deck.</p>
+    <p class="sub">Players see only the characters you give them. GMs see everyone and run the deck.
+      Forgot a password? The player makes a new account and joins with the table password, then you move their characters to it.</p>
     <div class="members">${members.map(m => { const mine = chars.filter(c => playersOf(c).includes(m.uid));
       return html`<div class="member">
         <div class="mhead"><b>${m.name}</b><span class=${"flag" + (m.role === "gm" ? " brass" : "")}>${m.role === "gm" ? "GM" : "Player"}</span>${m.uid === me && html`<span class="muted">you</span>`}
@@ -186,7 +199,13 @@ function MembersPanel({ chars, updateChar }) {
               <button class="btn small danger" onClick=${() => setConfirm(m.uid)}>Remove</button>`}</span>`}</div>
         <div class="chips">${mine.map(c => html`<span class="cond">${c.name || "Unnamed"}<button aria-label=${`Take ${c.name || "this character"} from ${m.name}`} onClick=${() => take(c.id, m.uid)}>×</button></span>`)}
           <select class="inp give" aria-label=${`Give ${m.name} a character`} value="" onChange=${e => { const v = e.target.value; e.target.value = ""; if (v) give(v, m.uid); }}>
-            <option value="">+ Give a character…</option>${chars.filter(c => !playersOf(c).includes(m.uid)).map(c => html`<option value=${c.id}>${c.name || "Unnamed"}${c.companionOf ? " (companion)" : ""}</option>`)}</select></div>
+            <option value="">+ Give a character…</option>${chars.filter(c => !playersOf(c).includes(m.uid)).map(c => html`<option value=${c.id}>${c.name || "Unnamed"}${c.companionOf ? " (companion)" : ""}</option>`)}</select>
+          ${mine.length > 0 && members.length > 1 && (!move || move.from !== m.uid) && html`<select class="inp give" aria-label=${`Move all of ${m.name}'s characters to another account`} value=""
+            onChange=${e => { const v = e.target.value; e.target.value = ""; if (v) setMove({ from: m.uid, to: v }); }}>
+            <option value="">Move all to…</option>${members.filter(o => o.uid !== m.uid).map(o => html`<option value=${o.uid}>${o.name}</option>`)}</select>`}</div>
+        ${move && move.from === m.uid && html`<div class="mact">
+          <span class="muted">Move ${mine.length} ${mine.length === 1 ? "character" : "characters"} from ${m.name} to ${nameOf(move.to)}?</span>
+          <button class="btn small primary" onClick=${() => moveAll(move)}>Move</button><button class="btn small" onClick=${() => setMove(null)}>Cancel</button></div>`}
       </div>`; })}</div>
     ${nobody.length > 0 && html`<p class="muted">Not given to anyone yet: ${nobody.map(c => c.name || "Unnamed").join(", ")}.</p>`}
   </section>`;
@@ -232,7 +251,7 @@ function BackupPanel({ chars }) {
     catch { toast("Couldn't finish restoring. Try again."); }
     setBusy("");
   };
-  return html`<section class="frame"><h2 class="h"><span>Table backup</span><i class="orn" aria-hidden="true"></i></h2>
+  return html`<section class="setsec"><h3 class="setsub">Table backup</h3>
     <p class="sub">Every character and portrait in one file. Use it to keep a copy, or to move your table to another site.</p>
     ${pending ? html`<div class="confirm"><span>Restore ${Object.keys(pending.characters).length} characters? Any already here with the same ID are replaced.</span>
         <button class="btn small primary" onClick=${restore}>Restore</button><button class="btn small" onClick=${() => setPending(null)}>Cancel</button></div>`
@@ -257,34 +276,49 @@ function GMView({ chars, updateChar, openChar }) {
     fn(x); x.hist = [snap, ...(e.hist || [])].slice(0, 10);
     Store.saveEncounter(x);
   };
-  const undo = () => { if (!e.hist || !e.hist.length) return; const [prev, ...rest] = e.hist; Store.saveEncounter(Object.assign({}, prev, { hist: rest })); };
+  const undo = () => { if (!e.hist || !e.hist.length) return; quietUntil.current = performance.now() + 400; const [prev, ...rest] = e.hist; Store.saveEncounter(Object.assign({}, prev, { hist: rest })); };
   const comb = cid => e.combatants.find(c => c.id === cid);
   const nameOf = c => (c ? (c.kind === "pc" ? (charMap[c.charId] ? charMap[c.charId].name : c.name) : c.name + (c.kind === "enemy" && num(c.count) > 1 ? ` ×${c.count}` : "")) : "Removed");
   const current = e.current ? comb(cardOwner(e.current)) : null;
   const roundDone = num(e.round) > 0 && e.deck.every(card => { const o = cardOwner(card), cb = comb(o); return e.acted.includes(o) || !cb || cb.out; });
   const drawLabel = !num(e.round) ? "Shuffle and draw" : roundDone ? `Shuffle for round ${num(e.round) + 1}` : "Draw next card";
   const activeCount = e.combatants.filter(c => !c.out).length;
+  // Motion (only for changes while the table is open, never on opening it): a drawn card flips over, a new round
+  // riffles the deck, and each card drawn is dealt into "This round".
+  // Undo steps back quietly.
+  const cardRef = useRef(), roundRef = useRef(), leftRef = useRef(), drawnRef = useRef(), quietUntil = useRef(0);
+  const moving = () => performance.now() > quietUntil.current;
+  useChange(`${num(e.round)}:${e.current || ""}`, () => moving() && replay(cardRef.current, "flip"), "gm");   // same card opening a new round still flips
+  useChange(num(e.round), (from, to) => { if (to > from && moving()) { replay(roundRef.current, "bump"); replay(leftRef.current, "riffle"); } }, "gm");
+  // A new round empties "This round" before its first card goes in, so a shorter list means deal from the start.
+  useChange(`${num(e.round)}:${e.drawn.length}`, (was, now) => {
+    const ol = drawnRef.current; if (!ol || !moving()) return;
+    const [r0, n0] = was.split(":").map(Number), [r1, n1] = now.split(":").map(Number);
+    const start = r1 === r0 ? n0 : 0;
+    for (let i = start; i < n1; i++) replay(ol.children[i], "dealt", (i - start) * 70);
+  }, "gm");
 
   return html`<div class="tabpane gm">
     <div class="row campbar" role="group" aria-label="Campaign">
       <span class="lbl">Campaign</span>
       ${[["all", "All"], ...CAMPAIGNS.map(x => [x, x]), ["none", "No campaign"]].map(([k, n]) => html`<button class=${"btn small" + (camp === k ? " primary" : "")} aria-pressed=${camp === k} onClick=${() => setCamp(k)}>${n}</button>`)}
     </div>
+    <${TownSmith} />
     ${Store.table && html`<${MembersPanel} chars=${chars} updateChar=${updateChar} />`}
     <div class="gmgrid">
       <section class="frame"><${Sigils} seed="initiative deck" n=${1} lead="skill" side="r" />
         <h2 class="h"><span>Initiative deck</span><i class="orn" aria-hidden="true"></i></h2>
         <p class="sub">One card each, two for Dexterity above 15. Shuffled every round.</p>
         <div class="deckbar">
-          <div class="stat"><b>${num(e.round) || "—"}</b><span>Round</span></div>
+          <div class="stat"><b ref=${roundRef}>${num(e.round) || "—"}</b><span>Round</span></div>
           <div class="stat"><b>${num(e.round) ? e.combatants.filter(c => !c.out && !e.acted.includes(c.id)).length : activeCount}</b><span>Still to act</span></div>
-          <div class="stat"><b>${e.deck.length}</b><span>Cards left</span></div>
+          <div class="stat" ref=${leftRef}><b>${e.deck.length}</b><span>Cards left</span></div>
           <div class="deckbtns"><button class="btn primary big" disabled=${!activeCount} onClick=${() => act(x => drawNext(x, charMap))}>${drawLabel}</button>
             <button class="btn" disabled=${!(e.hist && e.hist.length)} onClick=${undo}>Undo</button></div>
         </div>
-        <${CurrentCard} e=${e} comb=${current} charMap=${charMap} updateChar=${updateChar} act=${act} openChar=${openChar} />
+        <div class="icardwrap" ref=${cardRef}><${CurrentCard} e=${e} comb=${current} charMap=${charMap} updateChar=${updateChar} act=${act} openChar=${openChar} /></div>
 
-        ${e.drawn.length > 0 && html`<div class="drawn"><span class="lbl">This round</span><ol>
+        ${e.drawn.length > 0 && html`<div class="drawn"><span class="lbl">This round</span><ol ref=${drawnRef}>
           ${e.drawn.map(dd => { const c = comb(cardOwner(dd.card)); return html`<li class=${(dd.skip ? "skip " : "") + (dd.card === e.current ? "now " : "") + (c ? "k-" + c.kind : "")} title=${dd.skip ? "Extra card. They already acted this round." : ""}>${nameOf(c)}${dd.skip ? " · extra" : ""}</li>`; })}</ol></div>`}
 
         <div class="row" style="margin-top:14px;justify-content:space-between">
@@ -325,7 +359,6 @@ function GMView({ chars, updateChar, openChar }) {
           ${!party.length && html`<p class="muted">No characters here yet. Set a character's campaign on their sheet.</p>`}</div>
       </section>
     </div>
-    <${BackupPanel} chars=${chars} />
   </div>`;
 }
 

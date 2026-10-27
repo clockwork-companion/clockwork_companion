@@ -1,0 +1,198 @@
+{
+"str_armorm": [
+0.5,
+0.32
+],
+"str_bash": [
+0.5,
+0.3
+],
+"dex_alacrity": [
+0.5,
+0.28
+],
+"dex_evasion": [
+0.45,
+0.35
+],
+"dex_pierce": [
+0.5,
+0.5
+],
+"dex_precision": [
+0.5,
+0.3
+],
+"dex_tumble": [
+0.45,
+0.4
+],
+"end_bleedr": [
+0.5,
+0.45
+],
+"end_conditioning": [
+0.5,
+0.38
+],
+"end_durability": [
+0.5,
+0.35
+],
+"end_metabolism": [
+0.5,
+0.38
+],
+"end_shieldm": [
+0.35,
+0.45
+],
+"end_versatility": [
+0.5,
+0.45
+],
+"mnd_alchemy": [
+0.5,
+0.78
+],
+"mnd_alchemy2": [
+0.6,
+0.5
+],
+"mnd_daemonology": [
+0.5,
+0.38
+],
+"mnd_daemonology2": [
+0.5,
+0.45
+],
+"mnd_engineering": [
+0.6,
+0.7
+],
+"mnd_lore": [
+0.5,
+0.7
+],
+"mnd_robotics": [
+0.42,
+0.5
+],
+"prs_hunter": [
+0.5,
+0.38
+],
+"prs_hunter2": [
+0.5,
+0.38
+],
+"prs_hunter3": [
+0.55,
+0.45
+],
+"prs_hunter4": [
+0.6,
+0.25
+],
+"prs_leadership": [
+0.45,
+0.32
+],
+"prs_perform": [
+0.5,
+0.5
+],
+"prs_runecrafting": [
+0.75,
+0.45
+],
+"prs_runecrafting2": [
+0.82,
+0.38
+],
+"rulebook_weapons1": [
+0.4,
+0.5
+],
+"str_maim": [
+0.5,
+0.4
+],
+"str_maim2": [
+0.45,
+0.4
+],
+"str_parry": [
+0.5,
+0.45
+],
+"str_strongb": [
+0.5,
+0.32
+],
+"wil_dreamwalking": [
+0.5,
+0.5
+],
+"wil_dreamwalking2": [
+0.5,
+0.5
+],
+"wil_harmony": [
+0.4,
+0.5
+],
+"wil_harmony2": [
+0.5,
+0.6
+],
+"wil_harmony3": [
+0.5,
+0.5
+],
+"wil_harmony4": [
+820,
+800,
+1260,
+1048
+],
+"wis_armormn": [
+0.4,
+0.5
+],
+"wis_armormn2": [
+0.5,
+0.5
+],
+"wis_awareness": [
+0.5,
+0.32
+],
+"wis_brewing": [
+0.6,
+0.6
+],
+"wis_medicine": [
+0.5,
+0.65
+],
+"wis_medicine2": [
+0.5,
+0.5
+],
+"wis_powdertinker": [
+745,
+895,
+1275,
+1193
+],
+"wis_weaponmn": [
+0.5,
+0.6
+],
+"wis_weaponmn2": [
+0.5,
+0.6
+]
+}

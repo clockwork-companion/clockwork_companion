@@ -1,16 +1,32 @@
 # Clockwork Companion — website
 
-**Live site: [vansinan101.github.io/clockwork_companion](https://vansinan101.github.io/clockwork_companion/)**  
-**Dev page: [vansinan101.github.io/clockwork_companion/dev](https://vansinan101.github.io/clockwork_companion/dev/)** (test build from the Dev branch)
+**Live site: [clockwork-companion.github.io/clockwork_companion](https://clockwork-companion.github.io/clockwork_companion/)**  
+**Dev page: [clockwork-companion.github.io/clockwork_companion/dev](https://clockwork-companion.github.io/clockwork_companion/dev/)** (test build from the Dev branch)
 
 Character sheets, Karma, vitals, gear and the GM initiative deck for *Clockwork: Tales of Steam and Magick*.
 Players sign in with a username and password. The GM sees every character and runs the initiative deck;
 players see only the characters (and companions) the GM gives them, plus any they create themselves.
 
+## Install it as an app
+The site can be installed like an app, and it opens even with a weak or no connection (sheets you've opened
+before are kept on the device, and changes made offline are sent when you're back online).
+- **Easiest:** the install icon (an arrow into a tray) at the top right of the sign-in screen, or next to **Sign out**.
+  It only shows when your browser can install the site.
+- **Android (Chrome):** menu ⋮ → **Install app** (or **Add to Home screen**).
+- **iPhone / iPad (Safari):** Share → **Add to Home Screen**.
+- **Firefox on Windows (143 or newer):** the **web apps** button at the right end of the address bar.
+  Firefox on Android: menu ⋮ → **Add app to Home screen**. Firefox on Mac or Linux can't install sites.
+- **Safari on a Mac:** File → **Add to Dock**.
+- **Computer (Chrome or Edge):** the install icon at the right end of the address bar.
+
+When a new version is published, the app shows "A new version of the app is ready" with a **Reload** button.
+
 ## Files
 - `index.html` — the whole app.
 - `firebase-config.js` — your Firebase settings (fill this in once).
 - `firestore.rules` — the database rules to paste into Firebase.
+- `manifest.webmanifest`, `sw.js`, `icons/` — what makes it installable and work offline.
+- `egg/` — art and sound for a hidden game (free CC0 assets; sources in `egg/furnace/CREDITS.md`).
 
 ## One-time setup
 
@@ -57,8 +73,8 @@ players see only the characters (and companions) the GM gives them, plus any the
 - **SinanDev**, **BedoDev**, … are personal branches. Start them from main, and pull main into them regularly.
 
 **Pages:**
-- Live site: `https://vansinan101.github.io/clockwork_companion/`
-- Dev page: `https://vansinan101.github.io/clockwork_companion/dev/` (red **DEV** ribbon in the corner).
+- Live site: `https://clockwork-companion.github.io/clockwork_companion/`
+- Dev page: `https://clockwork-companion.github.io/clockwork_companion/dev/` (red **DEV** ribbon in the corner).
 
 The Dev page uses the same database as the live site. Join it with a **test table password**, so real characters are never touched while testing.
 

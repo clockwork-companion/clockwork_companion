@@ -6,7 +6,7 @@
     python3 build.py --local DIR     -> DIR/test.html, loading Preact/htm from DIR/node_modules (offline testing)
     python3 build.py --local-web DIR -> DIR/test-web.html, the website build with local libraries (offline testing)
 """
-import sys, pathlib, shutil
+import sys, pathlib, shutil, json, hashlib
 
 HERE = pathlib.Path(__file__).parent
 CDN = {
@@ -38,25 +38,85 @@ DEV_MARK = ('<style>.devflag{position:fixed;z-index:999;top:10px;left:-34px;tran
             '<div class="devflag" title="Dev test page. Use a test table password so real characters stay untouched.">DEV</div>\n')
 
 
+# Installable app (website only): manifest, icons and the offline worker.
+APP_HEAD = ('<link rel="manifest" href="manifest.webmanifest">\n<meta name="theme-color" content="#1b130b">\n'
+            '<link rel="icon" type="image/png" href="icons/favicon-48.png">\n<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">\n'
+            '<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n'
+            '<meta name="apple-mobile-web-app-title" content="Clockwork">\n')
+
+
+def manifest(dev=False):
+    return json.dumps({
+        "name": "Clockwork Companion" + (" (Dev)" if dev else ""), "short_name": "Clockwork" + (" Dev" if dev else ""),
+        "id": "./" , "start_url": "./", "scope": "./", "display": "standalone", "orientation": "any",
+        "background_color": "#140d08", "theme_color": "#1b130b",
+        "description": "Character sheets, Karma, vitals, gear and the GM table for Clockwork: Tales of Steam and Magick.",
+        "icons": [{"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+                  {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+                  {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}],
+    }, indent=2)
+
+
+# Settings → Animations → Disabled does what the device's "reduce motion" setting does. Rather than keeping two copies of every
+# "@media (prefers-reduced-motion: reduce)" block in app.css, the build repeats each block's rules under
+# :root[data-anim="off"] and adds them to the end of the stylesheet. Write reduce-motion rules as usual; Disabled follows.
+ANIM_OFF = ':root[data-anim="off"]'
+def _split_top(s, sep=","):
+    out, depth, cur = [], 0, ""
+    for ch in s:
+        depth += ch in "([" ; depth -= ch in ")]"
+        if ch == sep and depth == 0: out.append(cur); cur = ""
+        else: cur += ch
+    return out + [cur]
+def _anim_off_selector(sel):
+    sel = sel.strip()
+    if sel.startswith(":root"): return ANIM_OFF + sel[5:]
+    if sel.startswith("html"): return ANIM_OFF + sel[4:]
+    if sel.startswith("["): return ANIM_OFF + sel
+    if sel.startswith("*"): return ANIM_OFF + sel[1:] + ", " + ANIM_OFF + " " + sel   # "*" covers <html> itself too
+    return ANIM_OFF + " " + sel
+def anim_off_copies(css):
+    out, key, i = [], "@media (prefers-reduced-motion: reduce)", 0
+    while True:
+        i = css.find(key, i)
+        if i < 0: break
+        j = css.index("{", i) + 1; depth, k = 1, j
+        while depth:
+            depth += {"{": 1, "}": -1}.get(css[k], 0); k += 1
+        body, i = css[j:k - 1], k
+        while "{" in body:
+            sel, rest = body.split("{", 1); decl, body = rest.split("}", 1)
+            sel = " ".join(sel.split())
+            if sel: out.append(", ".join(_anim_off_selector(x) for x in _split_top(sel)) + " { " + decl.strip() + " }")
+    return ("\n/* Animations → Disabled (made by build.py from the reduce-motion rules above) */\n" + "\n".join(out) + "\n") if out else ""
+
 def build(libs, web=False, dev=False):
     head = read("app.css")
+    end = head.rindex("</style>"); head = head[:end] + anim_off_copies(head[:end]) + head[end:]
     if dev:
         head = head.replace("<title>Clockwork Companion</title>", "<title>Clockwork Companion · DEV</title>", 1)
     keys = ["preact", "hooks", "htm"]
     backend = ""
     if web:
         head = head.replace('<meta name="claude:viewport-fit-sides" content="cover">\n', "")
-        head = '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n' + head
+        head = '<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n' + APP_HEAD + head
         keys = ["fb-app", "fb-store", "fb-auth"] + keys
-        backend = '<script src="firebase-config.js"></script>\n<script>\n' + read("web-backend.js") + "\n</script>\n"
+        backend = '<script src="firebase-config.js"></script>\n<script>\n' + read("web-backend.js") + "\n</script>\n<script>\n" + read("web/pwa.js") + "\n</script>\n"
     seen, tags = set(), []
     for k in keys:
         if web and libs is CDN and k in VENDOR:   # the website carries its own copy of Preact and htm (no outside download)
             tags.append("<script>\n" + read(VENDOR[k]) + "\n</script>"); continue
         if libs[k] not in seen:
             seen.add(libs[k]); tags.append(f'<script src="{libs[k]}"></script>')
-    data = "\n".join(read(f) for f in ["rules.js", "skills-data.js", "skill-tables.js", "rules-info.js"])
-    app = "\n".join(read(f) for f in ["app.js", "craft.js", "genesis.js", "gm.js"])
+    DATA = ["rules.js", "skills-data.js", "skill-tables.js", "rules-info.js"]
+    APP = ["app.js", "fx-blackwall.js", "fx-steppe.js", "fx-moss.js", "craft.js", "craft-shop.js", "craft-armor.js", "craft-weapon.js", "craft-brew.js", "craft-rune.js", "craft-hunt.js", "craft-hunt-art.js", "magic.js", "magic-harmony.js", "magic-demon.js", "magic-dream.js", "magic-alchemy.js", "genesis.js", "table.js", "gm.js"]
+    # Every script in src/ must be bundled. A file left out of these lists (for example by a merge that kept only one
+    # side of this line) builds a page that crashes when its code is needed, so stop here and say which file is missing.
+    missing = sorted(f.name for f in HERE.glob("*.js") if f.name not in DATA + APP + ["web-backend.js"])
+    if missing:
+        sys.exit("build.py: these files in src/ aren't in the build lists (DATA or APP): " + ", ".join(missing))
+    data = "\n".join(read(f) for f in DATA)
+    app = "\n".join(read(f) for f in APP)
     if dev:
         head += "\n" + DEV_MARK
     egg = ("\n" + read("egg.html") + "\n" + read("egg-furnace.html") + "\n") if web else ""   # hidden mini-games (Skyward Boiler, Furnace Below), website only
@@ -74,6 +134,14 @@ if __name__ == "__main__":
         (d / "index.html").write_text(build(CDN, web=True, dev="--dev" in a))
         for f in ["firestore.rules", "README.md"]:
             shutil.copy(HERE / "web" / f, d / f)
+        if (HERE / "web" / "egg").is_dir():   # art and sound for the hidden games
+            shutil.copytree(HERE / "web" / "egg", d / "egg", dirs_exist_ok=True)
+        if (HERE / "web" / "art").is_dir():   # the 2021 rulebook's paintings, behind the perk cards
+            shutil.copytree(HERE / "web" / "art", d / "art", dirs_exist_ok=True)
+        (d / "manifest.webmanifest").write_text(manifest("--dev" in a))
+        version = hashlib.sha256((d / "index.html").read_bytes()).hexdigest()[:12]
+        (d / "sw.js").write_text(read("web/sw.js").replace("__BUILD_VERSION__", version))
+        shutil.copytree(HERE / "web" / "icons", d / "icons", dirs_exist_ok=True)
         if not (d / "firebase-config.js").exists():
             shutil.copy(HERE / "web" / "firebase-config.js", d / "firebase-config.js")
         out = d / "index.html"
