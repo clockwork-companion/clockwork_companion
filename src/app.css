@@ -79,10 +79,9 @@ html[data-install] .installbtn { display: inline-grid; place-items: center; }
   background: var(--brass); box-shadow: 0 0 0 2px var(--paper); animation: newsPing 2.4s ease-out 3; }
 @keyframes newsPing { 0% { box-shadow: 0 0 0 2px var(--paper), 0 0 0 2px color-mix(in srgb, var(--brass) 60%, transparent); }
   70%, 100% { box-shadow: 0 0 0 2px var(--paper), 0 0 0 9px transparent; } }
-.sethead .newsbtn { margin-left: auto; position: relative; }
 .newsbtn.hasnews::before { content: ""; position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border-radius: 50%;
   background: var(--brass); box-shadow: 0 0 0 2px var(--paper); animation: newsPing 2.4s ease-out 3; }
-.newsveil { z-index: 58; }
+.gx-veil.newsveil { z-index: 58; }   /* above the Settings drawer it opens from */
 .newspop { max-width: 520px; gap: 10px; max-height: calc(100dvh - 32px); grid-template-rows: auto auto minmax(0, 1fr) auto; }
 .newspop .sub { margin: 0; text-align: center; }
 .newspop .newslist { overflow-y: auto; padding-right: 4px; }
@@ -97,9 +96,55 @@ html[data-install] .installbtn { display: inline-grid; place-items: center; }
 @media (hover: hover) { .setbtn[data-tip]:hover::after, .setbtn[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
   white-space: nowrap; padding: 5px 9px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 600 12px/1.3 system-ui, sans-serif; pointer-events: none; } }
 @media (max-width: 560px) { .top .setbtn { margin-left: auto; } }
-/* Settings page */
-.sethead { display: flex; align-items: center; gap: 14px; margin: 18px 0 2px; }
-.sethead h1 { margin: 0; font-size: 28px; }
+/* Settings: a drawer over the page (SettingsDrawer in app.js). It slides in from the right like the rules panel
+   (.spanel) but is set apart from it: a dark title bar with the theme's own settings icon, folder tabs in that bar
+   (the open one takes the panel's colour and opens into it), and the page dimmed behind. Phones: a bottom sheet. */
+.setveil { position: fixed; inset: 0; z-index: 49; background: rgb(0 0 0 / .3); animation: rIn .15s ease-out; }
+.setdrawer { position: fixed; z-index: 50; top: 0; right: 0; bottom: 0; width: min(460px, 100vw); display: flex; flex-direction: column;
+  background: var(--card); color: var(--ink); box-shadow: -18px 0 48px rgb(0 0 0 / .32); outline: none; animation: setIn .22s ease-out;
+  padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); }
+@keyframes setIn { from { transform: translateX(48px); opacity: 0; } }
+@keyframes setUp { from { transform: translateY(48px); opacity: 0; } }
+.setdhead { flex: 0 0 auto; background: var(--rule); color: var(--paper); padding: calc(14px + env(safe-area-inset-top, 0px)) 14px 0 22px; }
+.setdtitle { display: flex; align-items: center; gap: 12px; }
+.setdtitle .seticon { width: 22px; height: 22px; flex: 0 0 auto; }
+.setdtitle h2 { flex: 1; margin: 0; font: 400 28px/1 var(--f-display); letter-spacing: .01em; color: var(--paper); }
+.setdclose { width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 1.5px solid color-mix(in srgb, var(--paper) 35%, transparent);
+  border-radius: 2px; background: transparent; color: var(--paper); font-size: 24px; line-height: 1; cursor: pointer; }
+.setdclose:hover, .setdclose:focus-visible { border-color: var(--paper); }
+.setdnews { position: relative; min-height: 36px; padding: 6px 12px; border: 1.5px solid color-mix(in srgb, var(--paper) 35%, transparent); border-radius: 2px;
+  background: transparent; color: var(--paper); font: 600 12px/1 var(--f-head); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+.setdnews:hover, .setdnews:focus-visible { border-color: var(--paper); }
+.settabs { display: flex; gap: 4px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; }
+.settabs::-webkit-scrollbar { display: none; }
+.settabs button { flex: 0 0 auto; min-height: 44px; padding: 12px 14px 10px; border: 0; background: transparent; cursor: pointer; white-space: nowrap;
+  color: color-mix(in srgb, var(--paper) 74%, transparent); font: 600 13px/1 var(--f-head); letter-spacing: .08em; text-transform: uppercase; }
+.settabs button:hover { color: var(--paper); }
+.settabs button[aria-selected="true"] { background: var(--card); color: var(--ink); }
+.settabs button:focus-visible { outline: 2px solid var(--brass); outline-offset: -2px; }
+.setdbody { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 22px 26px; display: grid; gap: 18px; align-content: start; animation: rIn .15s ease-out; }
+.setsec { display: grid; gap: 10px; min-width: 0; }
+.setsec + .setsec { padding-top: 18px; border-top: 1px solid var(--hair); }
+.setsub { margin: 0; font: 600 15px/1.2 var(--f-head); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); }
+.setdbody .sub { margin: 0; }
+.setdbody .setfor { margin-bottom: -6px; }
+.setdbody .setrow { flex-wrap: wrap; gap: 8px 16px; }
+.setdbody .setrow > div:first-child { flex: 1 1 160px; }
+.setdbody .setrow .seg, .setdbody .setrow .skinpick select { min-width: 196px; }
+.setdbody .codebox { height: 58px; min-height: 0; }
+.setdrawer a.btn { color: inherit; text-decoration: none; display: inline-block; }
+@media (max-width: 560px) {
+  .setdrawer { top: auto; left: 0; width: 100%; height: min(92vh, calc(100% - 24px)); height: min(92dvh, calc(100% - 24px)); animation-name: setUp;
+    box-shadow: 0 -16px 40px rgb(0 0 0 / .3); }
+  .setdhead { padding: 8px 10px 0 16px; }
+  .setdhead::before { content: ""; display: block; width: 44px; height: 5px; margin: 0 auto 6px; border-radius: 3px; background: color-mix(in srgb, var(--paper) 40%, transparent); }
+  .setdtitle h2 { font-size: 26px; }
+  .settabs { margin-top: 8px; gap: 2px; }
+  .settabs button { padding: 12px 10px 10px; }
+  .setdbody { padding: 16px 16px 24px; }
+  .setdbody .setrow .seg, .setdbody .setrow .skinpick select { min-width: 0; }
+  .setdbody .setrow > div:first-child { flex: 0 0 auto; }   /* stacked rows: the label takes only its own height */
+}
 .setrow { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 0; border-top: 1px solid var(--hair); }
 .setrows .setrow:first-child, .frame > .setrow:first-of-type { border-top: 0; padding-top: 0; }
 .setrow > div:first-child { display: grid; gap: 3px; min-width: 0; }
@@ -111,7 +156,6 @@ html[data-install] .installbtn { display: inline-grid; place-items: center; }
   .setrow .seg, .setrow .skinpick select { min-width: 0; width: 100%; }
   .setrow > .btn { align-self: flex-start; }
 }
-.settings a.btn { color: inherit; text-decoration: none; display: inline-block; }
 .delchar { display: flex; justify-content: flex-end; margin-top: 6px; }
 /* Text size "Larger" (Settings): the whole page scales up a step. */
 html[data-text="large"] .wrap { zoom: 1.15; }
@@ -597,7 +641,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 /* empty + toast + confirm */
 .empty { padding: 48px 0; display: grid; gap: 14px; justify-items: start; max-width: 60ch; }
 .empty .ornate { font-size: 34px; }
-.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--rule); color: var(--paper);
+.toast { z-index: 65; position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--rule); color: var(--paper);
   padding: 9px 16px; font-size: 14px; z-index: 20; max-width: min(90vw, 520px); box-shadow: 0 6px 20px rgb(0 0 0 / .25); }
 .confirm { background: var(--blood-soft); border: 1.5px solid var(--bad); padding: 10px 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .banner { background: var(--hunger-soft); color: var(--ink); border-left: 4px solid var(--warn); padding: 8px 12px; font-size: 13.5px; margin-top: 10px; }

@@ -251,7 +251,7 @@ function BackupPanel({ chars }) {
     catch { toast("Couldn't finish restoring. Try again."); }
     setBusy("");
   };
-  return html`<section class="frame"><h2 class="h"><span>Table backup</span><i class="orn" aria-hidden="true"></i></h2>
+  return html`<section class="setsec"><h3 class="setsub">Table backup</h3>
     <p class="sub">Every character and portrait in one file. Use it to keep a copy, or to move your table to another site.</p>
     ${pending ? html`<div class="confirm"><span>Restore ${Object.keys(pending.characters).length} characters? Any already here with the same ID are replaced.</span>
         <button class="btn small primary" onClick=${restore}>Restore</button><button class="btn small" onClick=${() => setPending(null)}>Cancel</button></div>`
