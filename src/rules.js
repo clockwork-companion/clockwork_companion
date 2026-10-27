@@ -223,7 +223,7 @@ const CW = (() => {
     ["myths", "trophies", "ledger"].forEach(k => { if (!Array.isArray(out.craft.hunt[k])) out.craft.hunt[k] = []; });
     out.craft.hunt.slots = clamp(Math.round(num(out.craft.hunt.slots) || 4), 1, 12);
     out.craft.hunt.trophies = out.craft.hunt.trophies.filter(t => t && typeof t === "object").map(t => Object.assign({ n: "", monster: "", part: "", lvl: 1, note: "", img: "", imgData: "", belted: false, attuned: false }, t,
-      { lvl: clamp(Math.round(num(t.lvl) || 1), 1, 5), attached: (Array.isArray(t.attached) ? t.attached : []).filter(k => typeof k === "string" && k).slice(0, 3), props: (Array.isArray(t.props) ? t.props : []).filter(p => p && ["pos", "neg", "void"].includes(p.kind)).map(p => Object.assign({ t: "" }, p)) }));
+      { lvl: clamp(Math.round(num(t.lvl) || 1), 1, 5), attached: (Array.isArray(t.attached) ? t.attached : []).filter(k => typeof k === "string" && k).slice(0, 12), props: (Array.isArray(t.props) ? t.props : []).filter(p => p && ["pos", "neg", "void"].includes(p.kind)).map(p => Object.assign({ t: "" }, p)) }));
     // a belt holds only as many as it has loops, and only belted trophies can be attuned
     let onBelt = 0; out.craft.hunt.trophies.forEach(t => { if (t.belted && ++onBelt > out.craft.hunt.slots) t.belted = false; if (!t.belted) t.attuned = false; });
     ["release", "second"].forEach(k => { const e = out.craft.hunt[k]; if (!e || typeof e !== "object" || !out.craft.hunt.trophies.some(t => t.id === e.id)) out.craft.hunt[k] = null; });

@@ -487,12 +487,12 @@ function HuntMerge({ c, st, update, log, bars, onBusy, toCase }) {
     if (block || busy) return;
     const first = await roll(false); if (!first) return;
     setRun({ phase: "fuse", recv: R1, give: G1, rolls: [first], rerolled: false });
-    await wait(1800);
+    await wait(3000);
     patch({ phase: "read" });
   };
   const again = async () => {
     const r = await roll(true); if (!r) return;
-    patch(g => ({ phase: "fuse", rolls: [...g.rolls, r], rerolled: true })); await wait(1400); patch({ phase: "read" });
+    patch(g => ({ phase: "fuse", rolls: [...g.rolls, r], rerolled: true })); await wait(3000); patch({ phase: "read" });
   };
   const last = run && run.rolls[run.rolls.length - 1];
   const nMove = last && !last.res.fail ? Math.min(last.res.n, run.give.props.filter(p => p.kind === "pos").length) : 0;
@@ -526,7 +526,7 @@ function HuntMerge({ c, st, update, log, bars, onBusy, toCase }) {
   return html`<section class="frame huntone huntmergef">
     <h2 class="h"><span>Merging</span><i class="orn" aria-hidden="true"></i></h2>
     <div class="huntstage" key="stage">
-      <${HuntAltar} recv=${run ? run.recv : R1} give=${run ? run.give : G1} run=${run} fresh=${fresh} />
+      <${HuntButcher} recv=${run ? run.recv : R1} give=${run ? run.give : G1} run=${run} fresh=${fresh} />
       ${run && html`<div class="ptforge"><div class="huntread" key="read" aria-live="polite">
         ${run.phase === "fuse" && html`<p><b>The trophies fuse…</b></p>`}
         ${run.phase === "read" && html`<div key="read2"><p><b>${last.r} − ${st.mod} = ${last.total}</b> · ${last.res.fail ? "nothing passes" : `${last.res.n} positive propert${last.res.n === 1 ? "y" : "ies"} can pass`}${!last.res.fail && last.res.n > nMove ? ` (the giver has ${nMove})` : ""}</p>
@@ -553,36 +553,108 @@ function HuntMerge({ c, st, update, log, bars, onBusy, toCase }) {
 const BELT_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M1 7h18v5H1z M7 5.5h5v8H7z M9.5 13.5v2.5 M8 17.5a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" /></svg>`;
 const MERGE_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="10" r="4.5" /><circle cx="13" cy="10" r="4.5" /></svg>`;
 
-// A stone altar with a ring of carved notches: the receiver on the left, the giver on the right. Merging spins them
-// together; the giver breaks into motes that pour into the receiver, which flares.
-function HuntAltar({ recv, give, run, fresh }) {
-  const phase = run ? run.phase : "", R0 = fresh || recv;
-  const medal = (t, x, cls) => html`<g class=${"hamedal " + cls} style=${`--x:${x}px`}>${t ? html`<g transform=${`translate(${x} 130)`}>
-      ${huntSrc(t) ? html`<g key="pic"><circle r="47" fill="#0d0805" opacity=".45" transform="translate(3 5)" /><circle r="45" class="harim" fill="url(#ha-brass)" /><circle r="41" fill="#2a1608" />
-          <image href=${huntSrc(t)} x="-40" y="-40" width="80" height="80" preserveAspectRatio="xMidYMid slice" clip-path="url(#ha-disc)" /><circle r="40" fill="url(#ha-shine)" /></g>`
-        : html`<g key="art"><ellipse cy="50" rx="38" ry="9" fill="#0d0805" opacity=".4" /><g transform=${`scale(${(t.attached || []).length ? 1.15 : 1.4})`}><${HuntTrophyArt} part=${t.part} attached=${t.attached} /></g></g>`}
-      <text y="74" class="hbname">${(t.n || "Trophy").slice(0, 20)}</text></g>`
-    : html`<g transform=${`translate(${x} 130)`}><circle r="44" class="haempty" /><text y="5" class="haq">${cls === "recv" ? "Receiver" : "Giver"}</text></g>`}</g>`;
-  return html`<div class=${"huntaltar huntframe ph-" + (phase || "idle")} style=${huntTex("stone") ? `background-image: radial-gradient(ellipse 55% 110% at 50% 55%, rgb(107 102 94 / .45), rgb(43 41 37 / .9) 80%), url(${huntTex("stone")})` : ""}>
-    <svg viewBox="0 15 600 250" role="img" aria-label="The merging altar">
-      <defs><clipPath id="ha-disc"><circle r="40" /></clipPath>
-        
-        <linearGradient id="ha-brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe7a6" /><stop offset=".3" stop-color="#d1a24a" /><stop offset=".6" stop-color="#8f6522" /><stop offset=".8" stop-color="#d8ad58" /><stop offset="1" stop-color="#5e4012" /></linearGradient>
-        <radialGradient id="ha-bone" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#f1e6cc" /><stop offset=".6" stop-color="#cdbb94" /><stop offset="1" stop-color="#8f7b58" /></radialGradient>
-        <linearGradient id="ha-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".3" /><stop offset=".5" stop-color="#fff" stop-opacity="0" /></linearGradient>
-        <radialGradient id="ha-floor" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#6b665e" /><stop offset="1" stop-color="#2b2925" /></radialGradient>
-        <${HuntPattern} id="ha-stone" k="stone" />
-        <radialGradient id="ha-flare"><stop offset="0" stop-color="#fff6d8" /><stop offset=".4" stop-color="#e8b04a" stop-opacity=".6" /><stop offset="1" stop-color="#e8b04a" stop-opacity="0" /></radialGradient></defs>
-      <rect width="600" height="280" fill="url(#ha-floor)" /><rect width="600" height="280" fill="url(#ha-stone)" />
-      <ellipse cx="300" cy="150" rx="236" ry="112" fill="#141210" opacity=".35" />
-      <ellipse cx="300" cy="140" rx="228" ry="106" fill="#8d877d" /><ellipse cx="300" cy="140" rx="228" ry="106" fill="url(#ha-stone)" />
-      <ellipse cx="300" cy="140" rx="228" ry="106" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="2" />
-      <ellipse cx="300" cy="140" rx="210" ry="100" class="haring" />
-      <ellipse cx="300" cy="140" rx="190" ry="88" class="haring thin" />
-      ${Array.from({ length: 24 }, (_, i) => { const a = i / 24 * Math.PI * 2; return html`<path class="hanotch" d=${`M${300 + Math.cos(a) * 196} ${140 + Math.sin(a) * 92}l${Math.cos(a) * 10} ${Math.sin(a) * 5}`} />`; })}
-      <path class="hastream" d="M420 130 C380 90 340 92 300 110 C260 128 220 132 180 130" />
-      ${medal(R0, 180, "recv")}${phase !== "made" && medal(give, 420, "give")}
-      ${(phase === "fuse" || phase === "made") && html`<g class="hamotes" key=${"m" + (run ? run.rolls.length : 0)}>${Array.from({ length: 16 }, (_, i) => html`<circle r=${1.6 + (i % 3)} style=${`--i:${i}`} />`)}</g>`}
-      ${phase === "made" && html`<circle class="haflare" cx="180" cy="130" r="80" fill="url(#ha-flare)" />`}
+// The hunter's table: a scarred butcher's block against a plank wall, lit by a lantern. On the wall an iron rail with
+// hooks (a drying pelt, a bundle of herbs, an empty hook for the finished trophy), a rack of knives and a mounted skull;
+// on the block a sinew spool and needle, a salt bowl, a whetstone, bone scraps and a cleaver bitten into the wood.
+// The two trophies lie root to root; merging slides the giver up against the receiver and a needle sews them together
+// (the seam drawn stitch by stitch); the finished trophy is hung on the empty hook.
+function HuntButcher({ recv, give, run, fresh }) {
+  const phase = run ? run.phase : "", wood = huntTex("wood");
+  // how big each lies on the block; the giver slides until its root meets the receiver's, and the seam runs there
+  const sc = t => !t ? 1 : huntSrc(t) ? 1 : (t.attached || []).length ? .9 : 1.22, half = t => huntSrc(t) ? 30 : 38 * sc(t);
+  const RX = 222, GX = 380, rootR = RX + half(recv), slide = Math.round(rootR + half(give) - GX);
+  const seam = `M${rootR - 7} 166` + [172, 178, 184, 190, 196].map((y, k) => ` L${rootR + (k % 2 ? -7 : 7)} ${y}`).join("") + ` L${rootR + 7} 202`;
+  const tag = t => { const n = (t && t.n) || "Trophy"; return n.length > 18 ? n.slice(0, 17) + "…" : n; };
+  const piece = (t, rot) => huntSrc(t) ? html`<g key="pic"><circle r="30" fill="#2a1608" /><image href=${huntSrc(t)} x="-28" y="-28" width="56" height="56" preserveAspectRatio="xMidYMid slice" clip-path="url(#hbt-disc)" />
+      <circle r="29" fill="none" stroke="url(#hta-brass)" stroke-width="2.4" /></g>`
+    : html`<g key="art" transform=${`rotate(${rot}) scale(${sc(t)})`}><${HuntTrophyArt} part=${t.part} attached=${t.attached} /></g>`;
+  const lay = (t, x, rot, cls, label) => html`<g class=${"hbtitem " + cls} key=${cls}>
+    ${t ? html`<g class="hbtmove" style=${`--slide:${slide}px`}><g transform=${`translate(${x} 184)`}><ellipse cx="0" cy="22" rx=${half(t) + 6} ry="8" fill="#140904" opacity=".5" />${piece(t, rot)}</g></g>
+        <text x=${x} y="241" class="hbtname">${tag(t)}</text>`
+      : html`<g transform=${`translate(${x} 182)`}><ellipse rx="44" ry="22" class="hbtempty" /><text y="4" class="hbtq">${label}</text></g>`}</g>`;
+  const hook = x => html`<path d=${`M${x} 21 V33 C${x} 41 ${x + 8} 41 ${x + 8} 35`} fill="none" stroke="url(#hbt-iron)" stroke-width="2.4" stroke-linecap="round" />`;
+  const plank = [64, 131, 190, 262, 330, 389, 455, 528];
+  return html`<div class=${"huntaltar huntframe hbt ph-" + (phase || "idle")} style=${wood ? `background-image: linear-gradient(rgb(22 13 7 / .78) 0 48%, rgb(40 22 10 / .3) 48% 88.8%, rgb(18 10 5 / .8) 88.8%), url(${wood}); background-size: auto, 512px 256px` : ""}>
+    <svg viewBox="0 0 600 250" role="img" aria-label="The hunter's table">
+      <defs>
+        ${wood && html`<pattern id="hbt-wall" patternUnits="userSpaceOnUse" width="512" height="256" patternTransform="rotate(90)"><image href=${wood} width="512" height="256" /></pattern>
+          <pattern id="hbt-top" patternUnits="userSpaceOnUse" width="512" height="256"><image href=${wood} width="512" height="256" /></pattern>`}
+        <linearGradient id="hbt-walldark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c0603" stop-opacity=".78" /><stop offset=".7" stop-color="#140a05" stop-opacity=".32" /><stop offset="1" stop-color="#0c0603" stop-opacity=".7" /></linearGradient>
+        <radialGradient id="hbt-glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffcf7a" stop-opacity=".5" /><stop offset=".45" stop-color="#e88a2a" stop-opacity=".16" /><stop offset="1" stop-color="#e88a2a" stop-opacity="0" /></radialGradient>
+        <radialGradient id="hbt-light" cx=".35" cy=".15" r=".95"><stop offset="0" stop-color="#ffd590" stop-opacity=".38" /><stop offset=".6" stop-color="#000" stop-opacity="0" /><stop offset="1" stop-color="#000" stop-opacity=".32" /></radialGradient>
+        <linearGradient id="hbt-iron" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a8580" /><stop offset=".5" stop-color="#3a3632" /><stop offset="1" stop-color="#1a1816" /></linearGradient>
+        <linearGradient id="hbt-steel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a5650" /><stop offset=".4" stop-color="#d8d4cc" /><stop offset=".7" stop-color="#8a867e" /><stop offset="1" stop-color="#4a4640" /></linearGradient>
+        <radialGradient id="hbt-blood" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#3a0507" stop-opacity=".75" /><stop offset=".7" stop-color="#4a0a0c" stop-opacity=".4" /><stop offset="1" stop-color="#4a0a0c" stop-opacity="0" /></radialGradient>
+        <linearGradient id="hbt-handle" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2a170a" /><stop offset=".5" stop-color="#6a4426" /><stop offset="1" stop-color="#22130a" /></linearGradient>
+        <clipPath id="hbt-disc"><circle r="28" /></clipPath>
+      </defs>
+      <!-- the wall -->
+      <rect width="600" height="120" fill="#3a2414" />${wood && html`<rect width="600" height="120" fill="url(#hbt-wall)" opacity=".75" />`}
+      <rect width="600" height="120" fill="url(#hbt-walldark)" />
+      ${plank.map(x => html`<path key=${x} d=${`M${x} 0V120`} stroke="#0c0603" stroke-width="2" opacity=".7" />`)}
+      ${plank.map(x => html`<g key=${"n" + x}><circle cx=${x - 6} cy="12" r="1.4" fill="#1a1410" /><circle cx=${x - 6} cy="100" r="1.4" fill="#1a1410" /></g>`)}
+      <circle class="hbtglow" cx="46" cy="64" r="130" fill="url(#hbt-glow)" />
+      <!-- lantern -->
+      <g class="hbtlamp"><path d="M46 0 V26" stroke="url(#hbt-iron)" stroke-width="1.6" stroke-dasharray="3 2" />
+        <path d="M37 30 L55 30 L52 25 L40 25 Z" fill="#2a2420" /><path d="M43 25 C43 20 49 20 49 25" fill="none" stroke="#2a2420" stroke-width="1.6" />
+        <rect x="36" y="31" width="20" height="30" rx="2" fill="#ffcf7a" opacity=".85" /><rect x="36" y="31" width="20" height="30" rx="2" fill="url(#hbt-glow)" />
+        <path class="hbtflame" d="M46 52 C42 47 44 42 46 37 C48 42 50 47 46 52 Z" fill="#fff4cf" />
+        <path d="M36 31 H56 M36 61 H56 M41 31 V61 M51 31 V61" stroke="#1e1a16" stroke-width="1.6" fill="none" /><path d="M34 61 H58 L55 66 H37 Z" fill="#2a2420" /></g>
+      <!-- the rail and its hooks: a drying pelt, herbs, and the empty hook for the finished trophy -->
+      <rect x="108" y="17" width="236" height="4.4" rx="2.2" fill="url(#hbt-iron)" /><path d="M110 15 V25 M342 15 V25" stroke="#1a1816" stroke-width="3" />
+      ${hook(150)}${hook(222)}${hook(300)}
+      <g class="hbtpelt"><path d="M158 36 C150 38 136 40 130 46 C126 60 132 74 128 88 C134 98 150 100 158 96 C168 100 182 96 186 88 C182 74 188 58 184 46 C178 40 166 38 158 36 Z" fill="url(#hta-pelt)" />
+        <path d="M158 36 C150 38 136 40 130 46 C126 60 132 74 128 88 C134 98 150 100 158 96 C168 100 182 96 186 88 C182 74 188 58 184 46 C178 40 166 38 158 36 Z" fill="url(#hta-fur)" />
+        <path d="M186 88 C184 80 186 72 184 64 C180 72 176 80 172 92 Z" fill="url(#hta-skin)" opacity=".85" /></g>
+      <g class="hbtherbs">${[-12, -7, -2, 3, 8, 12].map((dx, k) => html`<path key=${k} d=${`M230 38 C${230 + dx * .4} 52 ${230 + dx} 64 ${230 + dx * 1.3} 80`} stroke=${k % 2 ? "#5a6a32" : "#6e5a2e"} stroke-width="1.6" fill="none" />`)}
+        ${[[222, 58], [236, 60], [226, 70], [240, 72], [218, 74], [232, 80]].map(([x, y], k) => html`<ellipse key=${"l" + k} cx=${x} cy=${y} rx="3.4" ry="1.6" fill=${k % 2 ? "#4e5e2a" : "#7a6a3a"} transform=${`rotate(${k * 30 - 60} ${x} ${y})`} />`)}
+        <path d="M225 40 H235 M225 43 H235" stroke="#c9a46a" stroke-width="1.6" /></g>
+      <!-- knife rack -->
+      <rect x="366" y="26" width="92" height="9" rx="2" fill="url(#hbt-handle)" /><circle cx="372" cy="30.5" r="1.6" fill="#1a1410" /><circle cx="452" cy="30.5" r="1.6" fill="#1a1410" />
+      <g><rect x="378" y="35" width="7" height="18" rx="2" fill="url(#hbt-handle)" /><path d="M374 53 H398 V78 C390 80 382 80 374 78 Z" fill="url(#hbt-steel)" /><circle cx="392" cy="60" r="2.4" fill="#1a1410" /></g>
+      <g><rect x="408" y="35" width="6" height="20" rx="2" fill="url(#hbt-handle)" /><path d="M408 55 H414 C416 66 418 78 412 92 C410 80 408 68 408 55 Z" fill="url(#hbt-steel)" /></g>
+      <g><path d="M434 35 H442 V48 H434 Z" fill="url(#hbt-handle)" /><path d="M436 48 H446 V96 H436 Z" fill="url(#hbt-steel)" /><path d=${"M436 52" + Array.from({ length: 11 }, (_, k) => ` l-2.4 2 l2.4 2`).join("")} fill="none" stroke="#8a867e" stroke-width="1.2" /></g>
+      <!-- mounted skull -->
+      <path d="M496 30 C496 24 528 24 528 30 L532 74 C524 88 500 88 492 74 Z" fill="url(#hbt-handle)" /><path d="M496 30 C496 24 528 24 528 30 L532 74 C524 88 500 88 492 74 Z" fill="none" stroke="#120a05" stroke-width="1.4" />
+      <g transform="translate(512 58) scale(.78)">${HUNT_ART.head.draw()}</g>
+      <g class="hbtbow"><path d="M584 18 C566 40 566 84 584 106" fill="none" stroke="url(#hbt-handle)" stroke-width="4" stroke-linecap="round" />
+        <path d="M584 18 L584 106" stroke="#e3cf9f" stroke-width=".8" /><path d="M570 56 H574 M570 66 H574" stroke="#c9a46a" stroke-width="2.4" /></g>
+      <g transform="translate(552 36) rotate(10)"><rect x="-7" y="0" width="14" height="52" rx="5" fill="#4a2e18" /><rect x="-7" y="0" width="14" height="52" rx="5" fill="url(#hta-fur)" opacity=".4" />
+        <path d="M-7 10 H7 M-7 42 H7" stroke="#2a1608" stroke-width="2" />${[-4, 0, 4].map(x => html`<g key=${x}><path d=${`M${x} 0 V-14`} stroke="#8a6a3a" stroke-width="1.2" /><path d=${`M${x} -14 l-2.4 -6 M${x} -14 l2.4 -6 M${x} -12 l-2.4 -6 M${x} -12 l2.4 -6`} stroke="#b8402a" stroke-width="1" /></g>`)}</g>
+      <rect y="108" width="600" height="12" fill="#0c0603" opacity=".55" />
+      <!-- the butcher's block -->
+      <rect y="118" width="600" height="104" fill="#5a3a22" />${wood && html`<rect y="118" width="600" height="104" fill="url(#hbt-top)" opacity=".9" />`}
+      <rect y="118" width="600" height="104" fill="url(#hbt-light)" />
+      <path d="M0 150 H600 M0 186 H600" stroke="#1a0d05" stroke-width="1.8" opacity=".6" /><path d="M0 151.5 H600 M0 187.5 H600" stroke="#c89a6a" stroke-width=".7" opacity=".25" />
+      <path d="M118 138 l22 -5 M410 202 l18 7 M472 148 l-14 8 M176 212 l26 -3 M330 132 l-10 9 M548 196 l16 -6" stroke="#e8c8a0" stroke-width="1" opacity=".3" />
+      <ellipse cx="300" cy="196" rx="70" ry="12" fill="url(#hbt-blood)" /><ellipse cx="452" cy="168" rx="20" ry="6" fill="url(#hbt-blood)" /><ellipse cx="150" cy="160" rx="14" ry="4" fill="url(#hbt-blood)" />
+      <rect y="118" width="600" height="2" fill="#0c0603" opacity=".6" />
+      <rect y="222" width="600" height="28" fill="#2e1b0e" />${wood && html`<rect y="222" width="600" height="28" fill="url(#hbt-top)" opacity=".35" />`}
+      <path d="M0 222.6 H600" stroke="#d8a874" stroke-width="1.2" opacity=".35" /><rect y="224" width="600" height="26" fill="#0c0603" opacity=".35" />
+      <!-- on the block: sinew spool and needle, salt, whetstone, scraps, a cleaver bitten into the wood -->
+      <g transform="translate(78 196)"><ellipse cx="0" cy="10" rx="20" ry="5" fill="#140904" opacity=".5" /><rect x="-13" y="-12" width="26" height="20" rx="3" fill="#c9b48a" />
+        ${[-8, -4, 0, 4].map(y => html`<path key=${y} d=${`M-12 ${y} C-4 ${y - 2} 4 ${y + 2} 12 ${y}`} stroke="#8a6a3a" stroke-width=".8" fill="none" />`)}
+        <ellipse cx="0" cy="-12" rx="15" ry="4" fill="#6a4426" /><ellipse cx="0" cy="8" rx="15" ry="4" fill="#4a2e18" /><ellipse cx="0" cy="-12" rx="3" ry="1" fill="#1a0d05" />
+        <path d="M12 -2 C24 2 30 10 40 12" stroke="#e3cf9f" stroke-width="1" fill="none" /></g>
+      <g transform="translate(36 150)"><ellipse cx="0" cy="8" rx="24" ry="7" fill="#140904" opacity=".45" />${[18, 14, 10, 6].map(r => html`<ellipse key=${r} cx="0" cy="0" rx=${r + 4} ry=${r * .38 + 2} fill="none" stroke="#a88a5a" stroke-width="3.2" />`)}
+        ${[18, 14, 10, 6].map(r => html`<ellipse key=${"d" + r} cx="0" cy="0" rx=${r + 4} ry=${r * .38 + 2} fill="none" stroke="#5a4428" stroke-width="3.2" stroke-dasharray="2 3" opacity=".55" />`)}</g>
+      <g class="hbtrest"><path d="M108 212 L138 207 L141 206.5 L138 209 Z" fill="url(#hbt-steel)" /><ellipse cx="111" cy="211.4" rx="1.6" ry=".7" fill="#1a1410" /></g>
+      <g transform="translate(506 152)"><ellipse cx="0" cy="8" rx="24" ry="6" fill="#140904" opacity=".5" /><path d="M-20 -2 C-18 10 18 10 20 -2 Z" fill="url(#hbt-handle)" /><ellipse cx="0" cy="-2" rx="20" ry="5" fill="#3a2414" />
+        <path d="M-15 -2 C-8 -8 8 -8 15 -2 C8 1 -8 1 -15 -2 Z" fill="#f0ebe0" /><circle cx="-4" cy="-5" r=".8" fill="#fff" /><circle cx="5" cy="-4" r=".8" fill="#d8d2c4" /></g>
+      <g transform="translate(470 210) rotate(-8)"><rect x="-18" y="-5" width="36" height="10" rx="4" fill="#6b665e" /><rect x="-18" y="-5" width="36" height="4" rx="2" fill="#8d877d" /></g>
+      <g transform="translate(428 206) rotate(24) scale(.22)">${HUNT_ART.bone.draw()}</g><g transform="translate(404 214) rotate(-60) scale(.16)">${HUNT_ART.fang.draw()}</g>
+      <g transform="translate(560 150)"><path d="M-30 -6 L6 -24 L14 -8 L-22 10 Z" fill="url(#hbt-steel)" /><path d="M-22 10 L14 -8" stroke="#1a1410" stroke-width="1.6" opacity=".7" />
+        <circle cx="-16" cy="-1" r="2.6" fill="#2a2420" /><path d="M6 -24 L22 -32 L26 -24 L14 -8" fill="url(#hbt-handle)" /><path d="M-22 11 L14 -7" stroke="#0a0503" stroke-width="2.6" opacity=".55" /></g>
+      <!-- the work: receiver and giver lie root to root; the needle sews the seam; the finished trophy hangs on the hook -->
+      ${phase !== "made" && lay(recv, RX, 90, "recv", "Receiver")}
+      ${phase !== "made" && lay(give, GX, -90, "give", "Giver")}
+      ${(phase === "fuse" || phase === "read") && html`<g key=${"seam" + (run ? run.rolls.length : 0)} class="hbtsew">
+        <path d=${seam} class="hbtthread0" pathLength="100" /><path d=${seam} class="hbtthread" pathLength="100" />
+        <g class="hbtneedle" style=${`offset-path: path("${seam}")`}><path d="M-32 0 C-26 -2 -20 2 -14 0" stroke="#e3cf9f" stroke-width="1" fill="none" />
+          <path d="M-14 0 L10 -1.3 L15 0 L10 1.3 Z" fill="url(#hbt-steel)" /><ellipse cx="-10" cy="0" rx="2" ry=".6" fill="#1a1410" /></g></g>`}
+      ${phase === "made" && fresh && html`<g class="hbtresult" key="made">
+        <path d="M300 35 V48" stroke="#e3cf9f" stroke-width="1.4" />
+        <g transform=${`translate(300 ${huntSrc(fresh) ? 80 : Math.round(48 + 38 * ((fresh.attached || []).length ? 1.15 : 1.4))})`}>${huntSrc(fresh) ? piece(fresh, 0) : html`<g transform=${`scale(${(fresh.attached || []).length ? 1.15 : 1.4})`}><${HuntTrophyArt} part=${fresh.part} attached=${fresh.attached} /></g>`}</g>
+        <text x="300" y="241" class="hbtname">${tag(fresh)}</text></g>`}
     </svg></div>`;
 }

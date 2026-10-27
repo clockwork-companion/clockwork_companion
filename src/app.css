@@ -3484,29 +3484,34 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .hparts { display: flex; flex-wrap: wrap; gap: 6px; } .hparts .dvchip { display: inline-flex; gap: 6px; align-items: center; }
 .huntlvl { max-width: 260px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 /* merging */
-.huntaltar { background-color: #3b3833; background-size: auto, 256px 256px; }
-.haslab { stroke: #3a3936; stroke-width: 1.2; }
-.haring { fill: none; stroke: #2a2724; stroke-width: 1.8; opacity: .8; } .haring.thin { stroke-dasharray: 3 5; stroke-width: 1.2; }
-.hanotch { stroke: #2a2724; stroke-width: 2; opacity: .8; }
-.harim { stroke: #3d2a0c; stroke-width: 1; }
-.haempty { fill: #0004; stroke: #e8e2d6; stroke-width: 1.5; stroke-dasharray: 5 5; opacity: .7; }
-.haq { font: 600 11px var(--f-head); fill: #e8e2d6; text-anchor: middle; letter-spacing: .08em; text-transform: uppercase; }
-.hastream { fill: none; stroke: #e8b04a; stroke-width: 2; stroke-dasharray: 2 8; opacity: 0; }
-.hamedal { transform-box: view-box; transform-origin: 300px 130px; }
-.ph-fuse .hamedal.recv { animation: haOrbitL 1.7s cubic-bezier(.5, 0, .5, 1) both; }
-.ph-fuse .hamedal.give { animation: haOrbitR 1.7s cubic-bezier(.5, 0, .5, 1) both; }
-.ph-fuse .hamedal .hbname { opacity: 0; transition: opacity .2s; }
-@keyframes haOrbitL { 50% { transform: rotate(-160deg) scale(.86); } 100% { transform: rotate(-360deg); } }
-@keyframes haOrbitR { 50% { transform: rotate(-160deg) scale(.86); } 100% { transform: rotate(-360deg) scale(.92); opacity: .75; } }
-.ph-read .hastream, .ph-fuse .hastream { opacity: .9; animation: haStream 1s linear infinite; }
-@keyframes haStream { to { stroke-dashoffset: -20; } }
-.hamotes circle { fill: #ffd97a; offset-path: path("M420 130 C380 90 340 92 300 110 C260 128 220 132 180 130"); offset-distance: 0%; opacity: 0; animation: haMote 1.6s ease-in infinite; animation-delay: calc(var(--i) * .1s); }
-@keyframes haMote { 10% { opacity: 1; } 90% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
-.ph-made .hamotes circle { animation-iteration-count: 1; }
-.haflare { transform-box: fill-box; transform-origin: center; animation: haFlare 1.4s ease-out both; }
-@keyframes haFlare { 0% { transform: scale(.2); opacity: 0; } 30% { opacity: 1; } 100% { transform: scale(1.2); opacity: 0; } }
-.ph-made .hamedal.recv { animation: haBloom 1.2s cubic-bezier(.3, 1.4, .5, 1) both; }
-@keyframes haBloom { from { transform: scale(.8); } }
+.huntaltar { background-color: #3b2414; }
+/* the hunter's table */
+.hbtname { font: 600 12px var(--f-body, system-ui); fill: #f1e2c4; text-anchor: middle; paint-order: stroke; stroke: #0c0603; stroke-width: 3px; letter-spacing: .02em; }
+.hbtempty { fill: rgb(0 0 0 / .18); stroke: #e8d6b4; stroke-width: 1.4; stroke-dasharray: 4 5; opacity: .6; }
+.hbtq { font: 600 10.5px var(--f-head); fill: #e8d6b4; text-anchor: middle; letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
+.hbtglow { animation: hbtFlicker 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.hbtflame { animation: hbtFlame 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes hbtFlicker { 0%, 100% { opacity: .9; } 30% { opacity: 1; } 45% { opacity: .78; } 60% { opacity: .95; } 80% { opacity: .84; } }
+@keyframes hbtFlame { 0%, 100% { transform: scale(1, 1); } 40% { transform: scale(.9, 1.08) skewX(-3deg); } 70% { transform: scale(1.05, .94) skewX(2deg); } }
+.hbtpelt, .hbtherbs { transform-box: fill-box; transform-origin: 50% 0; animation: hbtSway 7s ease-in-out infinite; }
+.hbtherbs { animation-duration: 5.5s; animation-delay: -2s; }
+@keyframes hbtSway { 0%, 100% { transform: rotate(-.8deg); } 50% { transform: rotate(.8deg); } }
+/* the giver slides up against the receiver, root to root, then the needle sews the seam */
+.hbtitem.give .hbtmove { transition: transform .3s; }
+.ph-fuse .hbtitem.give .hbtmove { animation: hbtSlide 3s cubic-bezier(.4, 0, .2, 1) both; }
+.ph-read .hbtitem.give .hbtmove { transform: translateX(var(--slide)); }
+@keyframes hbtSlide { 0% { transform: none; } 24%, 86%, 100% { transform: translateX(var(--slide)); } 92% { transform: translateX(calc(var(--slide) - 2px)); } }
+.hbtthread0, .hbtthread { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.hbtthread0 { stroke: #140b06; stroke-width: 3.6; opacity: .55; stroke-dasharray: 100; stroke-dashoffset: 0; }
+.hbtthread { stroke: #e9d6a8; stroke-width: 1.9; stroke-dasharray: 100; stroke-dashoffset: 0; }
+.ph-fuse .hbtthread, .ph-fuse .hbtthread0 { animation: hbtSew 3s linear both; }
+@keyframes hbtSew { 0%, 30% { stroke-dashoffset: 100; } 88%, 100% { stroke-dashoffset: 0; } }
+.hbtneedle { offset-rotate: auto; offset-distance: 100%; opacity: 0; }
+.ph-fuse .hbtneedle { animation: hbtNeedle 3s linear both; }
+@keyframes hbtNeedle { 0%, 28% { offset-distance: 0%; opacity: 0; } 31% { opacity: 1; } 88% { offset-distance: 100%; opacity: 1; } 96%, 100% { offset-distance: 100%; opacity: 0; } }
+.ph-fuse .hbtrest, .ph-read .hbtrest { opacity: 0; transition: opacity .3s; }
+.hbtresult { transform-box: view-box; transform-origin: 300px 35px; animation: hbtHang 1.4s cubic-bezier(.3, 1.3, .5, 1) both; }
+@keyframes hbtHang { 0% { opacity: 0; transform: translateY(-16px) rotate(4deg); } 40% { opacity: 1; transform: translateY(0) rotate(-3deg); } 70% { transform: rotate(1.5deg); } 100% { transform: none; } }
 .hmergepick { display: flex; flex-wrap: wrap; gap: 6px; }
 .hmchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border: 1px solid var(--rule); border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer; font-size: 13.5px; }
 .hmchip small { color: var(--hpos); font: 700 12px var(--f-mono); }
@@ -3515,5 +3520,6 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @media (prefers-reduced-motion: reduce) {
   .hunting *, .hunting *::before { animation: none !important; transition: none !important; }
   .hcslice { stroke-dashoffset: 0; } .hcknife { display: none; }
+  .ph-fuse .hbtitem.give .hbtmove { transform: translateX(var(--slide)); }
 }
 </style>

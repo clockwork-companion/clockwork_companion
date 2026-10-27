@@ -100,6 +100,14 @@ with sync_playwright() as p:
     check("a property rolled alone: 62 negative, 50 void", r["rest"] == ["neg", "void"], r["rest"])
     check("Combining Roll: 0, 0, 1, 2, 3 … 9", r["comb"] == [0, 0, 1, 2, 3, 9], r["comb"])
     check("trophies you can use: none at 2, level 1 at 3, +1 a point, at most 5", r["lv"] == [0, 1, 2, 5, 5], r["lv"])
+    m = pg.evaluate("""(() => { const st = (b, a) => huntPlace(b, a).map(p => p.st);
+      return { tongue: st("head", ["tongue"]), eyes: st("head", ["eye", "eye", "eye"]), wrap: st("claw", ["hide"]), patch: st("heart", ["hide"]),
+        pierce: st("heart", ["eye", "spike"]), onto: st("hide", ["fang"]), order: huntPlace("horn", ["fang", "claw", "spike", "bone"]).map(p => p.si),
+        five: huntPlace("bone", ["fang", "claw", "spike", "ear", "horn"]).length, hood: st("eye", ["hide", "hide"]) }; })()""")
+    check("merging, where parts go: a tongue in a skull's mouth, eyes in its sockets then the brow", m["tongue"] == ["mouth"] and m["eyes"] == ["socket", "socket", "set"], m)
+    check("hide wraps a claw, patches a heart, hoods an eye (then patches)", m["wrap"] == ["wrap"] and m["patch"] == ["patch"] and m["hood"] == ["hood", "patch"], m)
+    check("a spike pierces a heart; a fang is sewn flat onto a hide", m["pierce"] == ["set", "pierce"] and m["onto"] == ["onto"], m)
+    check("slots fill on top, left, right, then the front; past four the picture stays", m["order"] == [0, 1, 2, 3] and m["five"] == 4, m)
     b.close()
 
 print("PASS" if all(checks) else "FAIL"); sys.exit(0 if all(checks) else 1)
