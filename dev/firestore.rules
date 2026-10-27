@@ -1,0 +1,143 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Each table lives under tables/<key>, where <key> is a 64-character code made from the table password.
+    // The list of tables can't be read, so joining a table needs its password.
+    // Members sign in with a username and password. The table's creator is its GM, and GMs can make others GMs.
+    // GMs see and edit everything; players see and edit only the characters assigned to them.
+    function signedIn() { return request.auth != null; }
+    function memberDoc(t) { return /databases/$(database)/documents/tables/$(t)/members/$(request.auth.uid); }
+    function isMember(t) { return signedIn() && exists(memberDoc(t)); }
+    function isGM(t) { return isMember(t) && get(memberDoc(t)).data.role == "gm"; }
+    function ownerOf(t) { return get(/databases/$(database)/documents/tables/$(t)/meta/table).data.get("owner", ""); }
+    function plays(list) { return signedIn() && request.auth.uid in list; }
+
+    // Which table an account belongs to, so signing in on a new device needs no table password.
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // The marker that says a table exists, and who created it.
+    match /tables/{t}/meta/{doc} {
+      allow get: if signedIn() && t.size() == 64;
+      allow create: if signedIn() && t.size() == 64 && doc == "table" && request.resource.data.owner == request.auth.uid;
+      // A table made before GM roles existed: the first person to claim it becomes its GM.
+      allow update: if signedIn() && doc == "table" && resource.data.get("owner", "") == ""
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["owner"])
+                    && request.resource.data.owner == request.auth.uid;
+    }
+
+    // Who is at the table. You join as a player (or as GM if you created the table); only a GM changes roles.
+    match /tables/{t}/members/{uid} {
+      allow read: if isMember(t) || (signedIn() && request.auth.uid == uid);
+      allow create: if signedIn() && request.auth.uid == uid && t.size() == 64
+                    && exists(/databases/$(database)/documents/tables/$(t)/meta/table)
+                    && (request.resource.data.role == "player" || (request.resource.data.role == "gm" && ownerOf(t) == uid));
+      allow update: if isGM(t) || (signedIn() && request.auth.uid == uid && request.resource.data.role == resource.data.role);
+      allow delete: if isGM(t);
+    }
+
+    // Characters (and companions). Players create their own; only a GM can change who a character belongs to,
+    // or switch Free edit on or off for it.
+    match /tables/{t}/characters/{id} {
+      allow read: if isGM(t) || (isMember(t) && plays(resource.data.get("players", [])));
+      allow create: if isGM(t) || (isMember(t) && request.resource.data.get("players", []) == [request.auth.uid]
+                    && request.resource.data.get("freeEdit", false) == false);
+      allow update: if isGM(t) || (isMember(t) && plays(resource.data.get("players", []))
+                    && request.resource.data.get("players", []) == resource.data.get("players", [])
+                    && request.resource.data.get("freeEdit", false) == resource.data.get("freeEdit", false));
+      allow delete: if isGM(t) || (isMember(t) && plays(resource.data.get("players", [])));
+    }
+
+    // The workshop (Crafting → Weapon and Armor upkeep). A smith repairs another player's weapon or suit without
+    // seeing their sheet: the owner sends a copy of one item as a job, the smith writes the result onto the job, and
+    // the owner's app applies it. Who plays each character is checked against the character itself.
+    function playersOfChar(t, id) { return get(/databases/$(database)/documents/tables/$(t)/characters/$(id)).data.get("players", []); }
+    function charExists(t, id) { return exists(/databases/$(database)/documents/tables/$(t)/characters/$(id)); }
+    function campaignOf(t, id) { return get(/databases/$(database)/documents/tables/$(t)/characters/$(id)).data.get("campaign", ""); }
+
+    // The roster: one card per character (name, who plays it, Weapon/Armor Maintenance), so players can find a smith.
+    match /tables/{t}/roster/{id} {
+      allow read: if isMember(t);
+      allow create, update: if isMember(t) && charExists(t, id)
+                    && request.resource.data.get("uids", []) == playersOfChar(t, id)
+                    && (isGM(t) || plays(playersOfChar(t, id)));
+      allow delete: if isGM(t) || (isMember(t) && (!charExists(t, id) || plays(playersOfChar(t, id))));
+    }
+
+    // Jobs: only between two characters of the same campaign (a campaign must be set).
+    // The sender (the owner, or the smith handing over a new item) creates one; both sides can read it;
+    // either side can update its status and result but not who it's between, the item or the payment; either side can clear it.
+    match /tables/{t}/jobs/{id} {
+      allow read: if isGM(t) || (isMember(t) && (plays(resource.data.from.uids) || plays(resource.data.to.uids)));
+      // A repair can also go to the town smith (an NPC run by the GM): "to" is then { char: "gm", uids: [] },
+      // and only GMs (who see every job) can work on it.
+      allow create: if isMember(t) && request.resource.data.status == "open"
+                    && request.resource.data.from.uids == playersOfChar(t, request.resource.data.from.char)
+                    && (isGM(t) || plays(request.resource.data.from.uids))
+                    && ((request.resource.data.to.char == "gm" && request.resource.data.to.uids == []
+                         && request.resource.data.mode == "repair")
+                     || (request.resource.data.to.char != "gm"
+                         && request.resource.data.to.uids == playersOfChar(t, request.resource.data.to.char)
+                         && campaignOf(t, request.resource.data.from.char) != ""
+                         && campaignOf(t, request.resource.data.from.char) == campaignOf(t, request.resource.data.to.char)));
+      allow update: if isMember(t) && (isGM(t) || plays(resource.data.from.uids) || plays(resource.data.to.uids))
+                    && request.resource.data.from == resource.data.from && request.resource.data.to == resource.data.to
+                    && request.resource.data.item == resource.data.item && request.resource.data.kind == resource.data.kind
+                    && request.resource.data.mode == resource.data.mode
+                    && request.resource.data.get("pay", null) == resource.data.get("pay", null);
+      allow delete: if isGM(t) || (isMember(t) && (plays(resource.data.from.uids) || plays(resource.data.to.uids)));
+    }
+
+    // The Table page. The board (setting, recap, next session) is one doc per campaign, written by GMs and read by all.
+    // The party stash is shared: anyone at the table may change it. Handouts are written by GMs; players read only
+    // the ones the GM has shown (the app asks for them with where("shown", "==", true)).
+    match /tables/{t}/board/{id} {
+      allow read: if isMember(t);
+      allow write: if isGM(t);
+    }
+    match /tables/{t}/stash/{id} {
+      allow read, write: if isMember(t);
+    }
+    match /tables/{t}/handouts/{id} {
+      allow read: if isGM(t) || (isMember(t) && resource.data.shown == true);
+      allow write: if isGM(t);
+    }
+
+    // The initiative deck is the GM's.
+    match /tables/{t}/encounters/{id} {
+      allow read, write: if isGM(t);
+    }
+
+    // Portraits, shared by everyone at the table.
+    match /tables/{t}/portraits/{id} {
+      allow read, write: if isMember(t);
+    }
+
+    // Hidden mini-game (Skyward Boiler): one shared high-score list for every visitor.
+    // Anyone may read it and add a score; nobody can edit or delete entries from the site.
+    match /arcade/{game}/scores/{id} {
+      allow read: if game == "skyward-boiler";
+      allow create: if game == "skyward-boiler"
+                    && request.resource.data.keys().hasOnly(["name", "score", "at"])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 16
+                    && request.resource.data.score is int
+                    && request.resource.data.score > 0 && request.resource.data.score <= 9999
+                    && request.resource.data.at == request.time;
+    }
+
+    // Hidden game (Furnace Below): shared high scores with the floor reached. Read by anyone, add-only.
+    match /arcade/furnace-below/scores/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(["name", "score", "floor", "at"])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 16
+                    && request.resource.data.score is int
+                    && request.resource.data.score > 0 && request.resource.data.score <= 999999
+                    && request.resource.data.floor is int
+                    && request.resource.data.floor >= 1 && request.resource.data.floor <= 999
+                    && request.resource.data.at == request.time;
+    }
+  }
+}
