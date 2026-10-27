@@ -3562,9 +3562,12 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-anim="off"] .drstars circle, :root[data-anim="off"] .drmist, :root[data-anim="off"] .draurora path, :root[data-anim="off"] .drbubble, :root[data-anim="off"] .drsphereb, :root[data-anim="off"] .dvorb, :root[data-anim="off"] .dreamscene *, :root[data-anim="off"] .dreamscene { animation: none !important; transition: none !important; }
 :root[data-anim="off"] .drpop { display: none; }
 :root[data-anim="off"] .alchfig .alayer, :root[data-anim="off"] .alchfig .alayer *, :root[data-anim="off"] .aarcs path, :root[data-anim="off"] .aflash, :root[data-anim="off"] .alchfig .aglow { animation: none !important; }
+:root[data-anim="off"] .huntone .huntstage { animation: none; }
+:root[data-anim="off"] .hchev { transition: none; }
 :root[data-anim="off"] .hunting *, :root[data-anim="off"] .hunting *::before { animation: none !important; transition: none !important; }
 :root[data-anim="off"] .hcslice { stroke-dashoffset: 0; }
 :root[data-anim="off"] .hcknife { display: none; }
+:root[data-anim="off"] .ph-fuse .hbtitem.give .hbtmove { transform: translateX(var(--slide)); }
 </style>
 <div id="app"></div>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
@@ -3637,7 +3640,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
     remove: id => fs.doc(`${root}/portraits/${id}`).delete().catch(() => {}),
   };
   const table = {
-    get uid() { return me.uid; }, get role() { return me.role; }, get name() { return me.name; },
+    get uid() { return me.uid; }, get role() { return me.role; }, get name() { return me.name; }, get owner() { return me.owner || ""; },
     members: (cb, err) => fs.collection(`${root}/members`).onSnapshot(s => cb(s.docs.map(d => Object.assign({ uid: d.id }, d.data()))), err || (() => {})),
     setRole: (uid, role) => fs.doc(`${root}/members/${uid}`).update({ role }),
     remove: uid => fs.doc(`${root}/members/${uid}`).delete(),
@@ -3661,7 +3664,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
     else { role = owner === user.uid || claim ? "gm" : "player"; await meRef.set(Object.assign({ role, joined: Date.now() }, profile(user))); }
     root = `tables/${key}`; lsSet(KEY, key);
     fs.doc(`users/${user.uid}`).set({ table: key }).catch(() => {});   // so signing in on another device finds this table
-    me = { uid: user.uid, role, name: profile(user).name };
+    me = { uid: user.uid, role, name: profile(user).name, owner: owner || (claim ? user.uid : "") };   // owner: who created the table
     // If the GM changes this person's role, reload so they get the right view; if they're removed, send them out.
     meRef.onSnapshot(s => {
       if (!s.exists) { lsSet(KEY, null); alertLeft(); return; }
@@ -13970,7 +13973,7 @@ function AddPanel({ e, party, charMap, act }) {
 function MembersPanel({ chars, updateChar }) {
   const [confirm, setConfirm] = useState(null);
   const [move, setMove] = useState(null);   // { from, to }: moving every character from one account to another
-  const me = Store.table.uid;
+  const me = Store.table.uid, owner = Store.table.owner || "";
   const members = Store.members.slice().sort((a, b) => (a.role === b.role ? (a.name || "").localeCompare(b.name || "") : a.role === "gm" ? -1 : 1));
   const give = (cid, uid) => updateChar(cid, x => { x.players = [...new Set([...playersOf(x), uid])]; });
   const take = (cid, uid) => updateChar(cid, x => { x.players = playersOf(x).filter(u => u !== uid); });
@@ -13989,14 +13992,15 @@ function MembersPanel({ chars, updateChar }) {
   };
   return html`<section class="frame"><${Sigils} seed="players" n=${1} lead="note" side="r" />
     <h2 class="h"><span>Players at the table</span><i class="orn" aria-hidden="true"></i></h2>
-    <p class="sub">Players see only the characters you give them. GMs see everyone and run the deck.
+    <p class="sub">Players see only the characters you give them. GMs see everyone and run the deck: Make GM shares it with a player.
+      The table's creator always stays a GM.
       Forgot a password? The player makes a new account and joins with the table password, then you move their characters to it.</p>
     <div class="members">${members.map(m => { const mine = chars.filter(c => playersOf(c).includes(m.uid));
       return html`<div class="member">
-        <div class="mhead"><b>${m.name}</b><span class=${"flag" + (m.role === "gm" ? " brass" : "")}>${m.role === "gm" ? "GM" : "Player"}</span>${m.uid === me && html`<span class="muted">you</span>`}
-          ${m.uid !== me && html`<span class="mact">${confirm === m.uid
+        <div class="mhead"><b>${m.name}</b><span class=${"flag" + (m.role === "gm" ? " brass" : "")}>${m.role === "gm" ? "GM" : "Player"}</span>${m.uid === me && html`<span class="muted">you</span>`}${m.uid === owner && html`<span class="muted" title="Created the table. Stays a GM and can't be removed.">created the table</span>`}
+          ${m.uid !== me && m.uid !== owner && html`<span class="mact">${confirm === m.uid
             ? html`<span class="muted">Remove ${m.name}?</span><button class="btn small danger" onClick=${() => { act(Store.table.remove(m.uid)); setConfirm(null); }}>Remove</button><button class="btn small" onClick=${() => setConfirm(null)}>Keep</button>`
-            : html`<button class="btn small" onClick=${() => act(Store.table.setRole(m.uid, m.role === "gm" ? "player" : "gm"))}>${m.role === "gm" ? "Make player" : "Make GM"}</button>
+            : html`<button class="btn small" title=${m.role === "gm" ? `${m.name} goes back to seeing only their own characters` : `${m.name} sees every character and can use the GM table`} onClick=${() => act(Store.table.setRole(m.uid, m.role === "gm" ? "player" : "gm"))}>${m.role === "gm" ? "Make player" : "Make GM"}</button>
               <button class="btn small danger" onClick=${() => setConfirm(m.uid)}>Remove</button>`}</span>`}</div>
         <div class="chips">${mine.map(c => html`<span class="cond">${c.name || "Unnamed"}<button aria-label=${`Take ${c.name || "this character"} from ${m.name}`} onClick=${() => take(c.id, m.uid)}>×</button></span>`)}
           <select class="inp give" aria-label=${`Give ${m.name} a character`} value="" onChange=${e => { const v = e.target.value; e.target.value = ""; if (v) give(v, m.uid); }}>

@@ -33,8 +33,10 @@ service cloud.firestore {
       allow create: if signedIn() && request.auth.uid == uid && t.size() == 64
                     && exists(/databases/$(database)/documents/tables/$(t)/meta/table)
                     && (request.resource.data.role == "player" || (request.resource.data.role == "gm" && ownerOf(t) == uid));
-      allow update: if isGM(t) || (signedIn() && request.auth.uid == uid && request.resource.data.role == resource.data.role);
-      allow delete: if isGM(t);
+      // Any GM may change roles or remove someone, except the table's creator, whom only the creator can change.
+      allow update: if (isGM(t) && (uid != ownerOf(t) || request.auth.uid == uid))
+                    || (signedIn() && request.auth.uid == uid && request.resource.data.role == resource.data.role);
+      allow delete: if isGM(t) && uid != ownerOf(t);
     }
 
     // Characters (and companions). Players create their own; only a GM can change who a character belongs to,
