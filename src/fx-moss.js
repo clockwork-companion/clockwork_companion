@@ -19,7 +19,7 @@
   let bucket = null;           // where corner() puts the leaves it grows
   let swapping = 0, follow = 0, followUntil = 0, gust = null;
   let px = -1e5, py = -1e5, vx = 0, vy = 0, lastT = 0;
-  const still = () => document.documentElement.dataset.motion === "calm" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);   // Settings → Motion → Calm, or the device
+  const still = () => document.documentElement.dataset.anim === "off" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);   // Settings → Animations → Disabled, or the device
   const on = () => document.documentElement.dataset.skin === "moss";
   // A small seeded random, so each section grows the same ivy every time it is drawn.
   const rng = seed => { let s = (seed * 2654435761) >>> 0 || 7; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); };
@@ -292,7 +292,7 @@
   }
   const sync = () => (on() && document.body ? start() : stop());
   new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin"] });
-  new MutationObserver(() => { stop(); sync(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-motion"] });   // Motion changed: restart in the new mode
+  new MutationObserver(() => { stop(); sync(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-anim"] });   // Animations switched: restart in the new mode
   document.addEventListener("visibilitychange", () => { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = 0; } });
   if (document.body) sync(); else document.addEventListener("DOMContentLoaded", sync);
 })();

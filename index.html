@@ -3497,34 +3497,34 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
   .hcslice { stroke-dashoffset: 0; } .hcknife { display: none; }
 }
 
-/* Motion → Calm (made by build.py from the reduce-motion rules above) */
-:root[data-motion="calm"] .forging { animation: none; }
-:root[data-motion="calm"] .forgeburst { display: none; }
-:root[data-motion="calm"] .forge-wait { opacity: 1; }
-:root[data-motion="calm"], :root[data-motion="calm"] *, :root[data-motion="calm"]::before, :root[data-motion="calm"] *::before, :root[data-motion="calm"]::after, :root[data-motion="calm"] *::after { transition: none !important; animation: none !important; }
-:root[data-motion="calm"] .track::after { animation: none !important; display: none; }
-:root[data-motion="calm"] .ptsparks { display: none; }
-:root[data-motion="calm"] .rnmun .rn-motes, :root[data-motion="calm"] .rnmun .rn-shards { display: none; }
-:root[data-motion="calm"] .rnmun.bound .rn-carve { stroke-dashoffset: 0; }
-:root[data-motion="calm"] .brmun .br-fill { transition: none; }
-:root[data-motion="calm"] .brmun.pour .br-fill { transform: scaleY(.62); }
-:root[data-motion="calm"] .brmun .br-leaves, :root[data-motion="calm"] .brmun .br-flash { display: none; }
-:root[data-motion="calm"][data-skin="talon"] *::after { animation: none !important; }
-:root[data-motion="calm"] .mh-ivy.mh-leave, :root[data-motion="calm"] .mh-ivy.mh-grow, :root[data-motion="calm"] .mh-ghost.mh-wipe-out, :root[data-motion="calm"] :is(.tabswap, .viewswap).mh-wipe-in { animation: none; }
-:root[data-motion="calm"] .mh-gust { display: none; }
-:root[data-motion="calm"] .mpfx, :root[data-motion="calm"] .mpglow { display: none; }
-:root[data-motion="calm"] .wardword, :root[data-motion="calm"] .wardmotes, :root[data-motion="calm"] .wardsigil *, :root[data-motion="calm"] .wardsigil, :root[data-motion="calm"] .tomeword, :root[data-motion="calm"] .wardtok, :root[data-motion="calm"] .wardcast { animation: none !important; }
-:root[data-motion="calm"] .wardsigil .link, :root[data-motion="calm"] .wardsigil .star, :root[data-motion="calm"] .wardsigil .ray { stroke-dashoffset: 0; }
-:root[data-motion="calm"] .harmorb, :root[data-motion="calm"] .harmaura, :root[data-motion="calm"] .harmfig *, :root[data-motion="calm"] .harmspine, :root[data-motion="calm"] .chakra *, :root[data-motion="calm"] .harmflare { animation: none !important; }
-:root[data-motion="calm"] .dband, :root[data-motion="calm"] .dflame, :root[data-motion="calm"] .dsmoke circle, :root[data-motion="calm"] .dwho, :root[data-motion="calm"] .dstar, :root[data-motion="calm"] .demoncard.calling, :root[data-motion="calm"] .demonchant { animation: none !important; }
-:root[data-motion="calm"] .demoncircf.calling .dflame, :root[data-motion="calm"] .demoncircf.present .dflame { opacity: 1; }
-:root[data-motion="calm"] .demoncircf.calling .dstar { stroke-dashoffset: 0; }
-:root[data-motion="calm"] .drstars circle, :root[data-motion="calm"] .drmist, :root[data-motion="calm"] .draurora path, :root[data-motion="calm"] .drbubble, :root[data-motion="calm"] .drsphereb, :root[data-motion="calm"] .dvorb, :root[data-motion="calm"] .dreamscene *, :root[data-motion="calm"] .dreamscene { animation: none !important; transition: none !important; }
-:root[data-motion="calm"] .drpop { display: none; }
-:root[data-motion="calm"] .alchfig .alayer, :root[data-motion="calm"] .alchfig .alayer *, :root[data-motion="calm"] .aarcs path, :root[data-motion="calm"] .aflash, :root[data-motion="calm"] .alchfig .aglow { animation: none !important; }
-:root[data-motion="calm"] .hunting *, :root[data-motion="calm"] .hunting *::before { animation: none !important; transition: none !important; }
-:root[data-motion="calm"] .hcslice { stroke-dashoffset: 0; }
-:root[data-motion="calm"] .hcknife { display: none; }
+/* Animations → Disabled (made by build.py from the reduce-motion rules above) */
+:root[data-anim="off"] .forging { animation: none; }
+:root[data-anim="off"] .forgeburst { display: none; }
+:root[data-anim="off"] .forge-wait { opacity: 1; }
+:root[data-anim="off"], :root[data-anim="off"] *, :root[data-anim="off"]::before, :root[data-anim="off"] *::before, :root[data-anim="off"]::after, :root[data-anim="off"] *::after { transition: none !important; animation: none !important; }
+:root[data-anim="off"] .track::after { animation: none !important; display: none; }
+:root[data-anim="off"] .ptsparks { display: none; }
+:root[data-anim="off"] .rnmun .rn-motes, :root[data-anim="off"] .rnmun .rn-shards { display: none; }
+:root[data-anim="off"] .rnmun.bound .rn-carve { stroke-dashoffset: 0; }
+:root[data-anim="off"] .brmun .br-fill { transition: none; }
+:root[data-anim="off"] .brmun.pour .br-fill { transform: scaleY(.62); }
+:root[data-anim="off"] .brmun .br-leaves, :root[data-anim="off"] .brmun .br-flash { display: none; }
+:root[data-anim="off"][data-skin="talon"] *::after { animation: none !important; }
+:root[data-anim="off"] .mh-ivy.mh-leave, :root[data-anim="off"] .mh-ivy.mh-grow, :root[data-anim="off"] .mh-ghost.mh-wipe-out, :root[data-anim="off"] :is(.tabswap, .viewswap).mh-wipe-in { animation: none; }
+:root[data-anim="off"] .mh-gust { display: none; }
+:root[data-anim="off"] .mpfx, :root[data-anim="off"] .mpglow { display: none; }
+:root[data-anim="off"] .wardword, :root[data-anim="off"] .wardmotes, :root[data-anim="off"] .wardsigil *, :root[data-anim="off"] .wardsigil, :root[data-anim="off"] .tomeword, :root[data-anim="off"] .wardtok, :root[data-anim="off"] .wardcast { animation: none !important; }
+:root[data-anim="off"] .wardsigil .link, :root[data-anim="off"] .wardsigil .star, :root[data-anim="off"] .wardsigil .ray { stroke-dashoffset: 0; }
+:root[data-anim="off"] .harmorb, :root[data-anim="off"] .harmaura, :root[data-anim="off"] .harmfig *, :root[data-anim="off"] .harmspine, :root[data-anim="off"] .chakra *, :root[data-anim="off"] .harmflare { animation: none !important; }
+:root[data-anim="off"] .dband, :root[data-anim="off"] .dflame, :root[data-anim="off"] .dsmoke circle, :root[data-anim="off"] .dwho, :root[data-anim="off"] .dstar, :root[data-anim="off"] .demoncard.calling, :root[data-anim="off"] .demonchant { animation: none !important; }
+:root[data-anim="off"] .demoncircf.calling .dflame, :root[data-anim="off"] .demoncircf.present .dflame { opacity: 1; }
+:root[data-anim="off"] .demoncircf.calling .dstar { stroke-dashoffset: 0; }
+:root[data-anim="off"] .drstars circle, :root[data-anim="off"] .drmist, :root[data-anim="off"] .draurora path, :root[data-anim="off"] .drbubble, :root[data-anim="off"] .drsphereb, :root[data-anim="off"] .dvorb, :root[data-anim="off"] .dreamscene *, :root[data-anim="off"] .dreamscene { animation: none !important; transition: none !important; }
+:root[data-anim="off"] .drpop { display: none; }
+:root[data-anim="off"] .alchfig .alayer, :root[data-anim="off"] .alchfig .alayer *, :root[data-anim="off"] .aarcs path, :root[data-anim="off"] .aflash, :root[data-anim="off"] .alchfig .aglow { animation: none !important; }
+:root[data-anim="off"] .hunting *, :root[data-anim="off"] .hunting *::before { animation: none !important; transition: none !important; }
+:root[data-anim="off"] .hcslice { stroke-dashoffset: 0; }
+:root[data-anim="off"] .hcknife { display: none; }
 </style>
 <div id="app"></div>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
@@ -5726,7 +5726,7 @@ function levelTip(c, mode, kind, name, to, raiseBtn = "L", lowerBtn = "R") {
 // value changes while the same character stays open: never on first draw, and not when another character is opened.
 // The "reduce motion" setting switches every animation off in app.css.
 let animScope = "";          // the open character's id, set by Character; hooks compare against it
-const calm = () => { if (document.documentElement.dataset.motion === "calm") return true; try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
+const calm = () => { if (document.documentElement.dataset.anim === "off") return true; try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
 // Replays a CSS animation class on an element, even if it's already there, and clears it once the animation ends.
 function replay(el, cls, delayMs = 0, also = []) {
   if (!el) return;
@@ -5871,15 +5871,15 @@ function SkinPicker() {
 }
 
 /* ================= text size: per browser, like the theme ================= */
-/* ================= motion: per browser. Calm does what the device's "reduce motion" setting does ================= */
+/* ================= animations: per browser. Disabled does what the device's "reduce motion" setting does ================= */
 // Backgrounds (Blackwall, steppe, ivy) hold one still frame and the app's animations stop. app.css needs nothing extra:
-// build.py repeats every reduce-motion rule under :root[data-motion="calm"].
-function applyMotion(key) { if (key === "calm") document.documentElement.dataset.motion = "calm"; else delete document.documentElement.dataset.motion; }
-applyMotion(lsGet("cw-motion", "full"));
-function MotionPicker() {
-  const [m, setM] = useState(() => lsGet("cw-motion", "full"));
-  useEffect(() => { applyMotion(m); lsSet("cw-motion", m); }, [m]);
-  return html`<div class="seg" role="group" aria-labelledby="set-motion">${[["full", "Full"], ["calm", "Calm"]].map(([k, n]) => html`<button type="button" aria-pressed=${m === k} onClick=${() => setM(k)}>${n}</button>`)}</div>`;
+// build.py repeats every reduce-motion rule under :root[data-anim="off"].
+function applyAnim(key) { if (key === "off") document.documentElement.dataset.anim = "off"; else delete document.documentElement.dataset.anim; }
+applyAnim(lsGet("cw-anim", "on"));
+function AnimPicker() {
+  const [m, setM] = useState(() => lsGet("cw-anim", "on"));
+  useEffect(() => { applyAnim(m); lsSet("cw-anim", m); }, [m]);
+  return html`<div class="seg" role="group" aria-labelledby="set-anim">${[["on", "Enabled"], ["off", "Disabled"]].map(([k, n]) => html`<button type="button" aria-pressed=${m === k} onClick=${() => setM(k)}>${n}</button>`)}</div>`;
 }
 
 const TEXT_SIZES = [["normal", "Normal"], ["large", "Larger"]];
@@ -7181,7 +7181,7 @@ function TabletopPanel({ c, update }) {
 // Per-browser choices (theme, text size, dice), the Tabletop code for the open character, the table backup (GM),
 // signing out, and a little about the app. Everything stored per browser starts with "cw-"; Reset clears only
 // the display choices below, never characters, the sign-in or an encounter in progress.
-const RESET_KEYS = ["cw-skin", "cw-text", "cw-motion", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp"];
+const RESET_KEYS = ["cw-skin", "cw-text", "cw-anim", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp"];
 const REPO = "https://github.com/clockwork-companion/clockwork_companion";
 function SettingsView({ c, update, chars, gm, onBack }) {
   const [reset, setReset] = useState(false);
@@ -7196,9 +7196,9 @@ function SettingsView({ c, update, chars, gm, onBack }) {
       <div class="setrows">
         <div class="setrow"><div><label class="setname" for="set-theme">Theme</label><span class="muted">Colours, type and artwork for the whole app.</span></div><${SkinPicker} /></div>
         <div class="setrow"><div><span class="setname" id="set-text">Text size</span><span class="muted">Larger is easier to read across the table.</span></div><${TextSizePicker} /></div>
-        <div class="setrow"><div><span class="setname" id="set-motion">Motion</span><span class="muted">Calm keeps each theme's artwork but holds it still and stops the animations. Easier on older phones and batteries.</span></div><${MotionPicker} /></div>
+        <div class="setrow"><div><span class="setname" id="set-anim">Animations</span><span class="muted">Disabled keeps each theme's artwork but holds it still, and nothing moves. Easier on older phones and batteries.</span></div><${AnimPicker} /></div>
         <div class="setrow"><div><span class="setname" id="set-dice">Dice</span><span class="muted">Roll in the app, or roll at your table (for example in Tabletop Simulator) and type the result.</span></div><${DicePicker} /></div>
-        <div class="setrow"><div><span class="setname">Reset</span><span class="muted">Puts the theme, text size, motion, dice and remembered tabs back to how they start. Characters aren't touched.</span></div>
+        <div class="setrow"><div><span class="setname">Reset</span><span class="muted">Puts the theme, text size, animations, dice and remembered tabs back to how they start. Characters aren't touched.</span></div>
           ${reset ? html`<div class="row"><button class="btn small danger" onClick=${doReset}>Reset and reload</button><button class="btn small" onClick=${() => setReset(false)}>Keep</button></div>`
             : html`<button class="btn small" onClick=${() => setReset(true)}>Reset…</button>`}</div>
       </div>
@@ -7307,7 +7307,7 @@ void main() {
 }`;
   const VERT = "attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }";
   let cv = null, gl = null, prog = null, raf = 0, last = 0, t0 = 0, uRes, uT;
-  const still = () => document.documentElement.dataset.motion === "calm" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);   // Settings → Motion → Calm, or the device
+  const still = () => document.documentElement.dataset.anim === "off" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);   // Settings → Animations → Disabled, or the device
 
   function setup() {
     cv = document.createElement("canvas"); cv.className = "blackwall"; cv.setAttribute("aria-hidden", "true");
@@ -7354,7 +7354,7 @@ void main() {
   }
   const sync = () => (document.documentElement.dataset.skin === "cyber" && document.body ? start() : stop());
   new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin"] });
-  new MutationObserver(() => { stop(); sync(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-motion"] });   // Motion changed: restart in the new mode
+  new MutationObserver(() => { stop(); sync(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-anim"] });   // Animations switched: restart in the new mode
   document.addEventListener("visibilitychange", () => { if (!document.hidden && cv && cv.isConnected && !raf) raf = requestAnimationFrame(draw); });
   addEventListener("resize", () => { if (cv && cv.isConnected && !raf) raf = requestAnimationFrame(draw); });
   if (document.body) sync(); else document.addEventListener("DOMContentLoaded", sync);
@@ -7373,7 +7373,7 @@ void main() {
 (function () {
   let cv = null, ctx = null, bg = null, fg = null, raf = 0, last = 0, W = 0, H = 0, dpr = 1;
   let clouds = [], herd = null, eagle = null, nextHerd = 0, nextEagle = 0, smoke = [];
-  const still = () => document.documentElement.dataset.motion === "calm" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);   // Settings → Motion → Calm, or the device
+  const still = () => document.documentElement.dataset.anim === "off" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);   // Settings → Animations → Disabled, or the device
   const rnd = (a, b) => a + Math.random() * (b - a);
   // A seeded random generator, so the mountains and grass look the same on every visit.
   const seeded = s => () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
@@ -7792,7 +7792,7 @@ void main() {
   }
   const sync = () => (document.documentElement.dataset.skin === "talon" && document.body ? start() : stop());
   new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin"] });
-  new MutationObserver(() => { stop(); sync(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-motion"] });   // Motion changed: restart in the new mode
+  new MutationObserver(() => { stop(); sync(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-anim"] });   // Animations switched: restart in the new mode
   document.addEventListener("visibilitychange", () => { if (!document.hidden && cv && cv.isConnected && !raf) { last = 0; raf = requestAnimationFrame(frame); } });
   let resizeT = 0;
   addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (cv && cv.isConnected) size(); }, 350); });
@@ -7819,7 +7819,7 @@ void main() {
   let bucket = null;           // where corner() puts the leaves it grows
   let swapping = 0, follow = 0, followUntil = 0, gust = null;
   let px = -1e5, py = -1e5, vx = 0, vy = 0, lastT = 0;
-  const still = () => document.documentElement.dataset.motion === "calm" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);   // Settings → Motion → Calm, or the device
+  const still = () => document.documentElement.dataset.anim === "off" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);   // Settings → Animations → Disabled, or the device
   const on = () => document.documentElement.dataset.skin === "moss";
   // A small seeded random, so each section grows the same ivy every time it is drawn.
   const rng = seed => { let s = (seed * 2654435761) >>> 0 || 7; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); };
@@ -8092,7 +8092,7 @@ void main() {
   }
   const sync = () => (on() && document.body ? start() : stop());
   new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin"] });
-  new MutationObserver(() => { stop(); sync(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-motion"] });   // Motion changed: restart in the new mode
+  new MutationObserver(() => { stop(); sync(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-anim"] });   // Animations switched: restart in the new mode
   document.addEventListener("visibilitychange", () => { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = 0; } });
   if (document.body) sync(); else document.addEventListener("DOMContentLoaded", sync);
 })();
