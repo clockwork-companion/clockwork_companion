@@ -110,7 +110,7 @@ function Hunting({ c, update }) {
     const el = wrap.current && wrap.current.querySelector(".huntone"); if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: "start", behavior: reduceMotion() ? "auto" : "smooth" }); }, [page]);
   const bars = body => html`<div class="huntdrops">${page !== "case" && html`<div class="huntdrop hback" key="back">
       <button type="button" class="huntdropb" disabled=${busy} title=${busy ? "Finish this first" : ""} onClick=${() => setPage("case")}>
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10H4m5-5-5 5 5 5" /></svg><span>Your trophies</span></button></div>`}${HUNT_DROPS.map(([k, n]) => { const on = page === k;
+        ${TROPHY_ICON}<span>Your trophies</span></button></div>`}${HUNT_DROPS.map(([k, n]) => { const on = page === k;
     return html`<div class=${"huntdrop" + (on ? " open" : "")} key=${k}>
       <button type="button" class="huntdropb" aria-expanded=${on} disabled=${busy} title=${on ? "Close: back to your trophies" : ""} onClick=${() => setPage(on ? "case" : k)}>
         ${k === "carve" ? KNIFE : MERGE_ICON}<span>${n}</span><svg class="hchev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg></button>
@@ -550,6 +550,8 @@ function HuntMerge({ c, st, update, log, bars, onBusy, toCase }) {
       </div>`)}
   </section>`;
 }
+// a fang hung on a cord: the trophies
+const TROPHY_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 2.5 C5.5 6 14.5 6 14.5 2.5 M10 5.1 V6.6 M7 6.6 H13 C13 10.5 11.6 14.5 10 18 C8.4 14.5 7 10.5 7 6.6 Z M8.4 9.2 C9.4 9.8 10.6 9.8 11.6 9.2" /></svg>`;
 const BELT_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M1 7h18v5H1z M7 5.5h5v8H7z M9.5 13.5v2.5 M8 17.5a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" /></svg>`;
 const MERGE_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="10" r="4.5" /><circle cx="13" cy="10" r="4.5" /></svg>`;
 
