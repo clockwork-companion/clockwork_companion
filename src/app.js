@@ -455,7 +455,7 @@ function App() {
   const [sel, setSel] = useState(() => lsGet("cw-sel", null));
   const [tab, setTab] = useState(() => { const t = CHAR_TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : lsGet("cw-tab", "sheet"); return CHAR_TABS.includes(t) ? t : "sheet"; });
   const [settings, setSettings] = useState(() => location.hash === "#settings");
-  const openSettings = on => { setSettings(on); window.scrollTo(0, 0); };
+  const openSettings = on => setSettings(on);   // a drawer over the page: nothing underneath moves
   const news = useNews(), [newsSeen, setNewsSeen] = useState(newsSeenList);
   const fresh = newsFresh(news, newsSeen);
   const lastEdit = useRef({});
@@ -479,12 +479,12 @@ function App() {
   const list = rosterOrder(Object.values(all));
   const gm = isGM();
   if (!gm && view === "gm") setView("chars");
-  // Which page is showing (characters, GM table, settings) and which way we moved, for themes that animate the
-  // change (Mossheart blows a gust of leaves across). Order matches the top bar: Characters, Table, GM table, Settings.
-  const page = settings ? "settings" : view === "gm" && gm ? "gm" : view === "table" ? "table" : "chars";
+  // Which page is showing (characters, Table, GM table) and which way we moved, for themes that animate the
+  // change (Mossheart blows a gust of leaves across). Order matches the top bar. Settings is a drawer over the page, not a page.
+  const page = view === "gm" && gm ? "gm" : view === "table" ? "table" : "chars";
   const pageNav = useRef({ page, dir: "" });
   if (pageNav.current.page !== page) {
-    const order = ["chars", "table", "gm", "settings"];
+    const order = ["chars", "table", "gm"];
     pageNav.current = { page, dir: order.indexOf(page) > order.indexOf(pageNav.current.page) ? "r" : "l" };
   }
   const current = sel && all[sel] ? norm(all[sel]) : null;
@@ -527,7 +527,7 @@ function App() {
   return html`<div class="wrap">
     <header class="top">
       <div class="brand">Clockwork<small>Companion</small></div>
-      <${CharMenu} list=${list} all=${all} sel=${sel} current=${current} gm=${gm} on=${!settings && view === "chars"} gmOn=${!settings && view === "gm"} tableOn=${!settings && view === "table"}
+      <${CharMenu} list=${list} all=${all} sel=${sel} current=${current} gm=${gm} on=${view === "chars"} gmOn=${view === "gm"} tableOn=${view === "table"}
         goChars=${() => { setView("chars"); setSettings(false); }} goGm=${() => { setView("gm"); setSettings(false); }} goTable=${() => { setView("table"); setSettings(false); }}
         pick=${id => { setSel(id); setView("chars"); setSettings(false); window.scrollTo(0, 0); }} create=${create} startNew=${startNew} />
       <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button>`
@@ -541,8 +541,7 @@ function App() {
     ${Store.readOnly && html`<div class="banner">You're viewing these characters read-only. To edit, ask the owner to invite you as an Editor.</div>`}
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
     <div class="viewswap" key=${page} data-dir=${pageNav.current.dir}>
-    ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} news=${news} seen=${newsSeen} onSeen=${() => { const ids = [...new Set([...news.items.map(i => i.id), ...newsSeen])].slice(0, 300); lsSet("cw-news-seen", ids); setNewsSeen(ids); }} onBack=${() => openSettings(false)} />`
-      : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />`
+    ${view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />`
       : view === "table" ? html`<${TableView} chars=${list} current=${current} />` : html`
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
       : Store.mode === "loading" ? html`<div class="empty"><p class="muted">Opening the character ledger…</p></div>`
@@ -553,6 +552,7 @@ function App() {
           <div class="row"><button class="btn primary" onClick=${startNew}>Create a character</button></div>
           <p class="muted">Walk through creation step by step, or start from a blank sheet.</p></div>`}`}
     </div>
+    ${settings && html`<${SettingsDrawer} c=${current} update=${update} chars=${list} gm=${gm} news=${news} seen=${newsSeen} onSeen=${() => { const ids = [...new Set([...news.items.map(i => i.id), ...newsSeen])].slice(0, 300); lsSet("cw-news-seen", ids); setNewsSeen(ids); }} onClose=${() => openSettings(false)} />`}
     ${making === "choose" && html`<${NewChoice} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")} onBlank=${() => { setMaking(null); create(false); }} />`}
     ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
     <${Toaster} /><${HoverCard} /><${DiceAsk} />
@@ -639,10 +639,10 @@ function ModulePrompt({ c, k, update }) {
 }
 // Settings: switch the modules on or off for the open character.
 function ModulesPanel({ c, update }) {
-  return html`<section class="frame"><h2 class="h"><span>Modules</span><i class="orn" aria-hidden="true"></i></h2>
+  return html`<section class="setsec"><h3 class="setsub">Modules</h3>
     <p class="sub">Extra tabs for ${c.name || "this character"}. They're off until you turn them on.</p>
     <div class="setrows">${Object.entries(MODULES).map(([k, m]) => { const on = (c.modules || {})[k] === true; const sk = m.list(c);
-      return html`<div class="setrow"><div><span class="setname">${m.n}</span><span class="muted">${m.what[0].toUpperCase() + m.what.slice(1)}. ${sk.length ? `Skills with points: ${sk.join(", ")}.` : "Shows once the character has points in one of its skills."}</span></div>
+      return html`<div class="setrow"><div><span class="setname">${m.n}</span><span class="muted">${sk.length ? `Skills with points: ${sk.join(", ")}.` : "Shows once the character has points in one of its skills."}</span></div>
         <button type="button" class=${"btn small modtog" + (on ? " primary" : "")} aria-pressed=${on} onClick=${() => update(x => { x.modules = Object.assign({ craft: null, magic: null }, x.modules, { [k]: !on }); addLog(x, `${m.n} turned ${on ? "off" : "on"}`); })}>${on ? "On" : "Off"}</button></div>`; })}</div>
   </section>`;
 }
@@ -1717,15 +1717,14 @@ function TabletopPanel({ c, update }) {
       setPreview({ n, changes });
     } catch (e) { setErr(e instanceof SyntaxError ? "That doesn't look like a complete code. Copy the whole text from the sheet's Export box." : e.message); }
   };
-  return html`<section class="two">
-      <div class="frame"><${Sigils} seed="send to the table" n=${1} side="r" /><h2 class="h"><span>Send ${c.name || "this character"} to the table</span><i class="orn" aria-hidden="true"></i></h2>
-        <ol class="steps"><li>Copy this character's code.</li><li>In Tabletop Simulator, click <b>Load code</b> under your Clockwork sheet and paste it into the box.</li><li>Click <b>Apply</b>. Pips, vitals and your portrait fill in.</li></ol>
+  return html`
+      <section class="setsec"><h3 class="setsub">Send to Tabletop Simulator</h3>
+        <p class="sub">Copy the code. In Tabletop Simulator, click <b>Load code</b> under your Clockwork sheet, paste it and click <b>Apply</b>.${!c.portraitUrl ? " Add a portrait link on the Sheet so TTS shows your art." : ""}</p>
         <textarea ref=${ta} class="codebox" readonly aria-label="Tabletop code" value=${code} onFocus=${e => e.target.select()}></textarea>
         <div class="row"><button class="btn primary" onClick=${copy}>Copy code</button><button class="btn" onClick=${save}>Save as file</button>
-          <span class="muted">${code.length.toLocaleString()} characters</span></div>
-        ${!c.portraitUrl && html`<p class="muted">Tip: add a public image link under "Portrait link for Tabletop" on the Sheet so the sheet in TTS shows your art.</p>`}</div>
-      <div class="frame"><h2 class="h"><span>Bring changes back</span><i class="orn" aria-hidden="true"></i></h2>
-        <p class="muted" style="margin-top:0">After a session, click <b>Export</b> on the TTS sheet, copy its code and paste it here to update vitals, pips and Karma.</p>
+          <span class="muted">${code.length.toLocaleString()} characters</span></div></section>
+      <section class="setsec"><h3 class="setsub">Bring changes back</h3>
+        <p class="sub">After a session, paste the code from the TTS sheet's <b>Export</b> box to update vitals, pips and Karma.</p>
         <textarea class="codebox" aria-label="Code from Tabletop Simulator" placeholder='{"cw":1, …}' value=${paste} onInput=${e => { setPaste(e.target.value); setPreview(null); setErr(""); }}></textarea>
         <div class="row"><button class="btn" disabled=${!paste.trim()} onClick=${check}>Check changes</button></div>
         ${err && html`<p style="color:var(--bad)">${err}</p>`}
@@ -1733,15 +1732,17 @@ function TabletopPanel({ c, update }) {
           <ul style="margin:6px 0 10px;padding-left:18px">${preview.changes.slice(0, 30).map(x => html`<li>${x}</li>`)}</ul>
           <div class="row"><button class="btn primary" onClick=${() => { update(x => { Object.assign(x, preview.n, { id: x.id }); addLog(x, "Updated from Tabletop Simulator"); }); setPaste(""); setPreview(null); toast("Updated from the table."); }}>Apply changes</button>
             <button class="btn" onClick=${() => setPreview(null)}>Cancel</button></div>` : html`<p style="margin:0">Nothing differs from this character.</p>`}</div>`}
-      </div>
-    </section>`;
+      </section>`;
 }
 
-/* ================= settings ================= */
-// Per-browser choices (theme, text size, dice), the Tabletop code for the open character, the table backup (GM),
-// signing out, and a little about the app. Everything stored per browser starts with "cw-"; Reset clears only
-// the display choices below, never characters, the sign-in or an encounter in progress.
-const RESET_KEYS = ["cw-skin", "cw-text", "cw-anim", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp"];
+/* ================= settings: a drawer over the current page ================= */
+// Four tabs, so everything fits without a long scroll: This device (per-browser choices), Character (its modules and
+// Tabletop Simulator code), Table (sign out, the GM's backup) and About. It slides in from the right like the rules
+// panel but is set apart from it: a dark title bar with the theme's own settings icon, folder tabs in that bar, and
+// the page dimmed behind it. On phones it's a bottom sheet. Escape, × or a click on the dimmed page closes it.
+// Everything stored per browser starts with "cw-"; Reset clears only the display choices, never characters,
+// the sign-in or an encounter in progress.
+const RESET_KEYS = ["cw-skin", "cw-text", "cw-anim", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp", "cw-set-tab"];
 const REPO = "https://github.com/clockwork-companion/clockwork_companion";
 /* ================= what's new ================= */
 // The publish workflow writes changelog.json next to the page (tools/whatsnew.py) from the short notes in changes/, one
@@ -1770,7 +1771,8 @@ function WhatsNewPop({ news, seen, onClose }) {
   const dev = !!document.querySelector(".devflag"), ok = useRef(null);
   useEffect(() => {
     ok.current && ok.current.focus();
-    const key = e => { if (e.key === "Escape") onClose(); };
+    // Escape closes only this pop-up, not the Settings drawer it was opened from.
+    const key = e => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } };
     document.addEventListener("keydown", key); return () => document.removeEventListener("keydown", key);
   }, []);
   const days = [];
@@ -1789,50 +1791,69 @@ function WhatsNewPop({ news, seen, onClose }) {
     </div></div>`;
 }
 
-function SettingsView({ c, update, chars, gm, news, seen = [], onSeen, onBack }) {
-  const [reset, setReset] = useState(false);
+const SET_TABS = [["device", "This device"], ["char", "Character"], ["table", "Table"], ["about", "About"]];
+function SettingsDrawer({ c, update, chars, gm, news, seen = [], onSeen, onClose }) {
   const [newsOpen, setNewsOpen] = useState(null);   // the seen list as it was when the pop-up opened, so its "New" marks stay put
   const fresh = newsFresh(news, seen);
   const openNews = () => { setNewsOpen(seen.slice()); onSeen && onSeen(); };
+  const newsUp = useRef(false); newsUp.current = !!newsOpen;   // read by the Escape handler, which is set up once
+  const [tab, setTab] = useState(() => { const t = lsGet("cw-set-tab", "device"); return SET_TABS.some(x => x[0] === t) ? t : "device"; });
+  useEffect(() => lsSet("cw-set-tab", tab), [tab]);
+  const [reset, setReset] = useState(false);
+  const ref = useRef();
+  useEffect(() => {
+    const back = document.activeElement;
+    if (ref.current) ref.current.focus();
+    // Escape closes the drawer, unless a pop-up opened from it (a dice roll, a module prompt, What's new) is the one on top.
+    const key = e => { if (e.key === "Escape" && !newsUp.current && !document.querySelector(".dice-veil, .modveil")) { e.preventDefault(); onClose(); } };
+    window.addEventListener("keydown", key);
+    return () => { window.removeEventListener("keydown", key); if (back && back.focus) back.focus(); };
+  }, []);
   const dev = !!document.querySelector(".devflag");
   const live = Store.mode === "live" && Store.table && window.CW_WEB;
   const doReset = () => { RESET_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch {} }); location.reload(); };
-  return html`<div class="tabpane settings">
-    <div class="sethead"><button type="button" class="btn small" onClick=${onBack}>← Back</button><h1 class="ornate">Settings</h1>
-      ${news && html`<button type="button" class=${"btn small newsbtn" + (fresh ? " hasnews" : "")} onClick=${openNews} title=${fresh ? "Something has changed since you last looked" : "What's changed since the last version"}>What's new</button>`}</div>
-    ${newsOpen && html`<${WhatsNewPop} news=${news} seen=${newsOpen} onClose=${() => setNewsOpen(null)} />`}
-
-    <section class="frame"><h2 class="h"><span>This browser</span><i class="orn" aria-hidden="true"></i></h2>
-      <p class="sub">These choices are saved on this device only, so each player can set their own.</p>
-      <div class="setrows">
-        <div class="setrow"><div><label class="setname" for="set-theme">Theme</label><span class="muted">Colours, type and artwork for the whole app.</span></div><${SkinPicker} /></div>
-        <div class="setrow"><div><span class="setname" id="set-text">Text size</span><span class="muted">Larger is easier to read across the table.</span></div><${TextSizePicker} /></div>
-        <div class="setrow"><div><span class="setname" id="set-anim">Animations</span><span class="muted">Disabled keeps each theme's artwork but holds it still, and nothing moves. Easier on older phones and batteries.</span></div><${AnimPicker} /></div>
-        <div class="setrow"><div><span class="setname" id="set-dice">Dice</span><span class="muted">Roll in the app, or roll at your table (for example in Tabletop Simulator) and type the result.</span></div><${DicePicker} /></div>
-        <div class="setrow"><div><span class="setname">Reset</span><span class="muted">Puts the theme, text size, animations, dice and remembered tabs back to how they start. Characters aren't touched.</span></div>
-          ${reset ? html`<div class="row"><button class="btn small danger" onClick=${doReset}>Reset and reload</button><button class="btn small" onClick=${() => setReset(false)}>Keep</button></div>`
-            : html`<button class="btn small" onClick=${() => setReset(true)}>Reset…</button>`}</div>
-      </div>
-    </section>
-
-    ${c && html`<${ModulesPanel} c=${c} update=${update} />`}
-
-    ${c ? html`<${TabletopPanel} c=${c} update=${update} />`
-      : html`<section class="frame"><h2 class="h"><span>Tabletop Simulator</span><i class="orn" aria-hidden="true"></i></h2><p class="sub">Open a character first, then come back here to send them to the table.</p></section>`}
-
-    ${gm && html`<${BackupPanel} chars=${chars} />`}
-
-    <section class="frame"><h2 class="h"><span>About</span><i class="orn" aria-hidden="true"></i></h2>
-      <p class="sub">${dev ? "This is the Dev test page. Use a test table password so real characters stay untouched." : "This is the live Companion your table plays with."}</p>
-      <div class="row">
-        ${!news && html`<a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>`}
-        <a class="btn small" href=${`${REPO}/issues/new`} target="_blank" rel="noopener">Report a problem</a></div>
-      <p class="muted">Reporting a problem needs a free GitHub account.</p>
-    </section>
-
-    ${live && html`<section class="frame"><h2 class="h"><span>Account</span><i class="orn" aria-hidden="true"></i></h2>
-      <div class="setrow"><div><span class="setname">Signed in to ${Store.table.name}</span><span class="muted">Signing out leaves this table on this device. Your characters stay saved.</span></div>
-        <button class="btn small" onClick=${() => window.CW_WEB.leave()}>Sign out</button></div>
-    </section>`}
-  </div>`;
+  const onTabKey = e => {   // arrow keys move between the tabs, as in any tab list
+    const i = SET_TABS.findIndex(x => x[0] === tab), step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!step) return;
+    e.preventDefault(); const k = SET_TABS[(i + step + SET_TABS.length) % SET_TABS.length][0]; setTab(k);
+    const b = document.getElementById("settab-" + k); if (b) b.focus();
+  };
+  return html`<div class="setveil" aria-hidden="true" onClick=${onClose}></div>
+  <aside class="setdrawer" role="dialog" aria-modal="true" aria-labelledby="setdr-title" tabindex="-1" ref=${ref}>
+    <header class="setdhead">
+      <div class="setdtitle"><i class="seticon" aria-hidden="true"></i><h2 id="setdr-title">Settings</h2>
+        ${news && html`<button type="button" class=${"setdnews newsbtn" + (fresh ? " hasnews" : "")} onClick=${openNews} title=${fresh ? "Something has changed since you last looked" : "What's changed since the last version"}>What's new</button>`}
+        <button type="button" class="setdclose" aria-label="Close settings" onClick=${onClose}>×</button></div>
+      <div class="settabs" role="tablist" aria-label="Settings sections" onKeyDown=${onTabKey}>${SET_TABS.map(([k, n]) => html`<button type="button" role="tab"
+        id=${"settab-" + k} aria-selected=${tab === k} aria-controls="setdr-body" tabindex=${tab === k ? 0 : -1} onClick=${() => setTab(k)}>${n}</button>`)}</div>
+    </header>
+    <div class="setdbody" id="setdr-body" role="tabpanel" aria-labelledby=${"settab-" + tab} key=${tab}>
+      ${tab === "device" && html`<section class="setsec">
+        <p class="sub">Saved on this device only, so each player can set their own.</p>
+        <div class="setrows">
+          <div class="setrow"><div><label class="setname" for="set-theme">Theme</label><span class="muted">Colours, type and artwork for the whole app.</span></div><${SkinPicker} /></div>
+          <div class="setrow"><div><span class="setname" id="set-text">Text size</span><span class="muted">Larger is easier to read across the table.</span></div><${TextSizePicker} /></div>
+          <div class="setrow"><div><span class="setname" id="set-anim">Animations</span><span class="muted">Disabled keeps each theme's artwork but holds it still. Easier on older phones and batteries.</span></div><${AnimPicker} /></div>
+          <div class="setrow"><div><span class="setname" id="set-dice">Dice</span><span class="muted">Roll in the app, or roll at your table (say, in Tabletop Simulator) and type the result.</span></div><${DicePicker} /></div>
+          <div class="setrow"><div><span class="setname">Reset</span><span class="muted">Puts these choices and the remembered tabs back to how they start. Characters aren't touched.</span></div>
+            ${reset ? html`<div class="row"><button class="btn small danger" onClick=${doReset}>Reset and reload</button><button class="btn small" onClick=${() => setReset(false)}>Keep</button></div>`
+              : html`<button class="btn small" onClick=${() => setReset(true)}>Reset…</button>`}</div>
+        </div></section>`}
+      ${tab === "char" && (c ? html`<p class="sub setfor">For <b>${c.name || "this character"}</b>, the character that's open.</p>
+          <${ModulesPanel} c=${c} update=${update} /><${TabletopPanel} c=${c} update=${update} />`
+        : html`<p class="sub">Open a character first. Its modules and Tabletop Simulator code show here.</p>`)}
+      ${tab === "table" && html`${live && html`<section class="setsec"><h3 class="setsub">${Store.table.name}</h3>
+          <div class="setrow"><div><span class="muted">You're signed in here${gm ? " as the GM" : ""}. Signing out leaves this table on this device; your characters stay saved.</span></div>
+            <button class="btn small" onClick=${() => window.CW_WEB.leave()}>Sign out</button></div></section>`}
+        ${gm && html`<${BackupPanel} chars=${chars} />`}
+        ${!live && !gm && html`<p class="sub">You're not signed in to a shared table, so there's nothing to manage here.</p>`}`}
+      ${tab === "about" && html`<section class="setsec">
+        <p class="sub">${dev ? "This is the Dev test page. Use a test table password so real characters stay untouched." : "This is the live Companion your table plays with."}</p>
+        <div class="row">
+          ${!news && html`<a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>`}
+          <a class="btn small" href=${`${REPO}/issues/new`} target="_blank" rel="noopener">Report a problem</a></div>
+        <p class="muted">Reporting a problem needs a free GitHub account.</p></section>`}
+    </div>
+  </aside>
+  ${newsOpen && html`<${WhatsNewPop} news=${news} seen=${newsOpen} onClose=${() => setNewsOpen(null)} />`}`;
 }

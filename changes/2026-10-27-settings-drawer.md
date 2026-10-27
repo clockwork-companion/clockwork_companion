@@ -1,0 +1,1 @@
+Settings: opens as a drawer over the page instead of a page of its own, with four tabs (This device, Character, Table, About). Close it with ×, Escape or a click outside, and you're right where you were.
