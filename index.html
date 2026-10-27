@@ -84,6 +84,24 @@ html[data-install] .installbtn { display: inline-grid; place-items: center; }
 .top:not(:has(.viewseg)) .setbtn { margin-left: auto; }
 .setbtn:hover, .setbtn:focus-visible, .setbtn[aria-pressed="true"] { border-color: var(--brass); }
 .setbtn[aria-pressed="true"] { background: var(--sunk); }
+/* Something new in Settings → What's new: a small dot on the button. */
+.setbtn.hasnews::before { content: ""; position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--brass); box-shadow: 0 0 0 2px var(--paper); animation: newsPing 2.4s ease-out 3; }
+@keyframes newsPing { 0% { box-shadow: 0 0 0 2px var(--paper), 0 0 0 2px color-mix(in srgb, var(--brass) 60%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 2px var(--paper), 0 0 0 9px transparent; } }
+.newsbtn.hasnews::before { content: ""; position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--brass); box-shadow: 0 0 0 2px var(--paper); animation: newsPing 2.4s ease-out 3; }
+.gx-veil.newsveil { z-index: 58; }   /* above the Settings drawer it opens from */
+.newspop { max-width: 520px; gap: 10px; max-height: calc(100dvh - 32px); grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.newspop .sub { margin: 0; text-align: center; }
+.newspop .newslist { overflow-y: auto; padding-right: 4px; }
+.newspop .newsday + .newsday { margin-top: 12px; }
+.newspop .newsday h3 { margin: 0 0 4px; font: 600 12px var(--f-head); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.newspop ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.newspop li { line-height: 1.45; overflow-wrap: anywhere; }
+.newspop .newtag { font: 700 10px var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: var(--paper); background: var(--brass); padding: 1px 5px; border-radius: 3px; vertical-align: 1px; }
+.newspop .newsbtns { justify-content: center; }
+@media (max-width: 560px) { .newspop { padding: 22px 16px 16px; } }
 .seticon { width: 20px; height: 20px; background: currentColor; -webkit-mask: var(--set-icon) center / contain no-repeat; mask: var(--set-icon) center / contain no-repeat; }
 @media (hover: hover) { .setbtn[data-tip]:hover::after, .setbtn[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
   white-space: nowrap; padding: 5px 9px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 600 12px/1.3 system-ui, sans-serif; pointer-events: none; } }
@@ -104,6 +122,9 @@ html[data-install] .installbtn { display: inline-grid; place-items: center; }
 .setdclose { width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 1.5px solid color-mix(in srgb, var(--paper) 35%, transparent);
   border-radius: 2px; background: transparent; color: var(--paper); font-size: 24px; line-height: 1; cursor: pointer; }
 .setdclose:hover, .setdclose:focus-visible { border-color: var(--paper); }
+.setdnews { position: relative; min-height: 36px; padding: 6px 12px; border: 1.5px solid color-mix(in srgb, var(--paper) 35%, transparent); border-radius: 2px;
+  background: transparent; color: var(--paper); font: 600 12px/1 var(--f-head); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+.setdnews:hover, .setdnews:focus-visible { border-color: var(--paper); }
 .settabs { display: flex; gap: 4px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; }
 .settabs::-webkit-scrollbar { display: none; }
 .settabs button { flex: 0 0 auto; min-height: 44px; padding: 12px 14px 10px; border: 0; background: transparent; cursor: pointer; white-space: nowrap;
@@ -5582,7 +5603,7 @@ const RULES_INFO = {
 </script>
 <script>
 const { h, render } = preact;
-const { useState, useEffect, useMemo, useRef } = preactHooks;
+const { useState, useEffect, useLayoutEffect, useMemo, useRef } = preactHooks;
 const html = htm.bind(h);
 const R = CW;
 const num = R.num;
@@ -6039,6 +6060,8 @@ function App() {
   const [tab, setTab] = useState(() => { const t = CHAR_TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : lsGet("cw-tab", "sheet"); return CHAR_TABS.includes(t) ? t : "sheet"; });
   const [settings, setSettings] = useState(() => location.hash === "#settings");
   const openSettings = on => setSettings(on);   // a drawer over the page: nothing underneath moves
+  const news = useNews(), [newsSeen, setNewsSeen] = useState(newsSeenList);
+  const fresh = newsFresh(news, newsSeen);
   const lastEdit = useRef({});
   const [view, setView] = useState(() => (location.hash === "#gm" ? "gm" : lsGet("cw-view", "chars")));
   useEffect(() => lsSet("cw-view", view), [view]);
@@ -6113,7 +6136,7 @@ function App() {
         pick=${id => { setSel(id); setView("chars"); setSettings(false); window.scrollTo(0, 0); }} create=${create} startNew=${startNew} />
       <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
-      <button type="button" class="setbtn" aria-pressed=${settings} aria-label="Settings" data-tip="Settings" onClick=${() => openSettings(!settings)}><i class="seticon" aria-hidden="true"></i></button>
+      <button type="button" class=${"setbtn" + (fresh ? " hasnews" : "")} aria-pressed=${settings} aria-label=${fresh ? "Settings (something new)" : "Settings"} data-tip=${fresh ? "Settings · something new" : "Settings"} onClick=${() => openSettings(!settings)}><i class="seticon" aria-hidden="true"></i></button>
     </header>
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
       ? (window.CW_WEB.reason === "offline" ? "Couldn't reach the shared save, so for now characters are kept in this browser only. Check your connection and reload."
@@ -6133,7 +6156,7 @@ function App() {
           <div class="row"><button class="btn primary" onClick=${startNew}>Create a character</button></div>
           <p class="muted">Walk through creation step by step, or start from a blank sheet.</p></div>`}`}
     </div>
-    ${settings && html`<${SettingsDrawer} c=${current} update=${update} chars=${list} gm=${gm} onClose=${() => openSettings(false)} />`}
+    ${settings && html`<${SettingsDrawer} c=${current} update=${update} chars=${list} gm=${gm} news=${news} seen=${newsSeen} onSeen=${() => { const ids = [...new Set([...news.items.map(i => i.id), ...newsSeen])].slice(0, 300); lsSet("cw-news-seen", ids); setNewsSeen(ids); }} onClose=${() => openSettings(false)} />`}
     ${making === "choose" && html`<${NewChoice} onClose=${() => setMaking(null)} onGuide=${() => setMaking("guide")} onBlank=${() => { setMaking(null); create(false); }} />`}
     ${making === "guide" && html`<${Genesis} onClose=${() => setMaking(null)} onDone=${fill => { setMaking(null); create(false, null, fill); window.scrollTo(0, 0); }} />`}
     <${Toaster} /><${HoverCard} /><${DiceAsk} />
@@ -6953,6 +6976,52 @@ function investedSkills(c, attrs) {
   R.WEAPON_TYPES.forEach(([w]) => { const a = R.LEVELS.weapon.attrOf(w); if (attrs.includes(a) && num(c.weaponSkills[w]) > 0) out.push({ name: w, lv: num(c.weaponSkills[w]), attr: a, kind: "weapon" }); });
   return out.sort((a, b) => R.ATTRS.findIndex(x => x.k === a.attr) - R.ATTRS.findIndex(x => x.k === b.attr) || b.lv - a.lv || a.name.localeCompare(b.name));
 }
+// A skill's perks: folded like a rolodex, or opened into full cards. Opening deals the cards out of the stack one
+// after another while the section grows to fit; folding gathers them back into the stack, which settles into place.
+// Only a click animates (not the first draw or a filter change), and reduced-motion settings skip it.
+function PerkGroup({ g, open, flip, c, update, openSkill }) {
+  const box = useRef(null), fx = useRef(null), busy = useRef(false);
+  const cards = () => (box.current ? [...box.current.querySelectorAll(".perkcards > .perkcard")] : []);
+  const toggle = () => {
+    if (busy.current) return;
+    const el = box.current;
+    if (calm() || !el || !el.animate) { flip(g.name); return; }
+    if (!open) { fx.current = { from: el.offsetHeight, opening: true }; flip(g.name); return; }
+    // Folding: the cards slide back up into the stack (last card first), then the stack takes their place.
+    busy.current = true;
+    const list = cards(), n = list.length;
+    let longest = 0;
+    list.forEach((card, i) => {
+      const delay = Math.min(n - 1 - i, 6) * 28; longest = Math.max(longest, delay + 200);
+      card.animate([{ transform: "none", opacity: 1 }, { transform: `translateY(${-Math.min(i, 8) * 14 - 10}px) scale(.96)`, opacity: 0 }],
+        { duration: 200, delay, easing: "cubic-bezier(.4, 0, .7, .2)", fill: "forwards" });
+    });
+    setTimeout(() => { fx.current = { from: el.offsetHeight, opening: false }; busy.current = false; flip(g.name); }, longest);
+  };
+  useLayoutEffect(() => {
+    const f = fx.current, el = box.current; fx.current = null;
+    if (!f || !el || !el.animate) return;
+    const to = el.offsetHeight;
+    if (Math.abs(to - f.from) > 2) el.animate([{ height: f.from + "px", overflow: "hidden" }, { height: to + "px", overflow: "hidden" }],
+      { duration: f.opening ? 300 : 240, easing: "cubic-bezier(.2, .7, .3, 1)" });
+    if (f.opening) cards().forEach((card, i) => card.animate(
+      [{ transformOrigin: "50% 0", transform: `perspective(700px) translateY(${-Math.min(i, 8) * 14 - 16}px) rotateX(-58deg) scale(.97)`, opacity: 0 },
+       { transformOrigin: "50% 0", transform: "perspective(700px) translateY(0) rotateX(0) scale(1)", opacity: 1 }],
+      { duration: 360, delay: Math.min(i, 8) * 55, easing: "cubic-bezier(.2, .75, .3, 1.08)", fill: "backwards" }));
+    else el.querySelectorAll(".rolodex > .rdx").forEach((r, k) => r.animate(
+      [{ transform: `translateY(${-6 - Math.min(k, 8) * 2}px)`, opacity: 0 }, { transform: "none", opacity: 1 }],
+      { duration: 220, delay: Math.min(k, 8) * 22, easing: "cubic-bezier(.2, .7, .3, 1)", fill: "backwards" }));
+  }, [open]);
+  return html`<div ref=${box} class=${"perkgroup" + (open ? " open" : " folded")} style=${attStyle(g.attr)}>
+        <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small>
+          <button type="button" class="foldbtn" aria-expanded=${open} onClick=${toggle}>${open ? "Fold" : `Open ${g.perks.length} perk${g.perks.length > 1 ? "s" : ""}`}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button></h3>
+        ${open ? html`<div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div>`
+          : html`<button type="button" class="rolodex" onClick=${toggle} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${perkRows(g.perks).map((r, k) =>
+              html`<span class="rdx" style=${`--k:${k}`}><b class=${"rdxlv" + (r.ps.length > 1 ? " span" : "")}>${lvSpan(r.ps.map(p => p.l))}</b><span class="rdxn">${r.n || g.name}</span>
+                <span class="rdxps">${r.ps.map(p => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
+                  return html`<span class=${"rdxp k-" + typeKey(t)}>${r.ps.length > 1 && html`<i class="rdxat">${p.l}</i>`}${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max}</small>`}<${TypeTag} t=${t} /></span>`; })}</span></span>`)}</button>`}</div>`;
+}
+
 function TalentsTab({ c, update, openSkill }) {
   const [filter, setFilter] = useState(() => lsGet("cw-perkfilter", "all"));
   const [attrs, setAttrs] = useState(() => { const v = lsGet("cw-perkattrs", []); return Array.isArray(v) ? v.filter(a => R.ATTR_NAME[a]) : []; });
@@ -6992,15 +7061,7 @@ function TalentsTab({ c, update, openSkill }) {
       ${listed && html`<div class="attskills" role="group" aria-label=${`Skills invested in under ${attrs.map(a => R.ATTR_NAME[a]).join(", ")}`}>
         <span class="lbl">Your ${attrs.map(a => R.ATTR_NAME[a]).join(" · ")} skills</span>
         ${invested.map(x => html`<button type="button" class="skchip" style=${attStyle(x.attr)} aria-pressed=${focusOn === x.name} onClick=${() => setFocus(focusOn === x.name ? "" : x.name)}>${x.name} <small>${x.lv}</small></button>`)}</div>`}
-      ${shown.length ? shown.map(g => { const open = isOpen(g.name);
-        return html`<div class=${"perkgroup" + (open ? " open" : " folded")} style=${attStyle(g.attr)}>
-        <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small>
-          <button type="button" class="foldbtn" aria-expanded=${open} onClick=${() => flip(g.name)}>${open ? "Fold" : `Open ${g.perks.length} perk${g.perks.length > 1 ? "s" : ""}`}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button></h3>
-        ${open ? html`<div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div>`
-          : html`<button type="button" class="rolodex" onClick=${() => flip(g.name)} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${perkRows(g.perks).map((r, k) =>
-              html`<span class="rdx" style=${`--k:${k}`}><b class=${"rdxlv" + (r.ps.length > 1 ? " span" : "")}>${lvSpan(r.ps.map(p => p.l))}</b><span class="rdxn">${r.n || g.name}</span>
-                <span class="rdxps">${r.ps.map(p => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
-                  return html`<span class=${"rdxp k-" + typeKey(t)}>${r.ps.length > 1 && html`<i class="rdxat">${p.l}</i>`}${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max}</small>`}<${TypeTag} t=${t} /></span>`; })}</span></span>`)}</button>`}</div>`; })
+      ${shown.length ? shown.map(g => html`<${PerkGroup} key=${g.name} g=${g} open=${isOpen(g.name)} flip=${flip} c=${c} update=${update} openSkill=${openSkill} />`)
       : html`<p class="muted emptyline">${empty}</p>`}
     </section>
 
@@ -7269,8 +7330,59 @@ function TabletopPanel({ c, update }) {
 // the sign-in or an encounter in progress.
 const RESET_KEYS = ["cw-skin", "cw-text", "cw-anim", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp", "cw-set-tab"];
 const REPO = "https://github.com/clockwork-companion/clockwork_companion";
+/* ================= what's new ================= */
+// The publish workflow writes changelog.json next to the page (tools/whatsnew.py) from the short notes in changes/, one
+// per change, written by whoever made it: on the Dev page, everything not on the live site yet; on the live site, what
+// the latest release brought. Settings has a "What's new" button that opens them in a pop-up; it and the Settings
+// button carry a dot until every note has been seen. Builds without the file (a local build, the artifact) show neither.
+let newsLoad = null;
+const loadNews = () => newsLoad || (newsLoad = fetch("changelog.json", { cache: "no-cache" })
+  .then(r => (r.ok ? r.json() : null))
+  .then(j => (j && Array.isArray(j.items) ? { since: j.since || "", items: j.items.filter(i => i && i.id && i.t) } : null))
+  .catch(() => null));
+function useNews() {
+  const [news, setNews] = useState(null);
+  useEffect(() => { let on = true; loadNews().then(d => { if (on) setNews(d); }); return () => { on = false; }; }, []);
+  return news;
+}
+const newsSeenList = () => { const v = lsGet("cw-news-seen", []); return Array.isArray(v) ? v : []; };
+const newsFresh = (news, seen) => !!(news && news.items.some(i => !seen.includes(i.id)));
+const newsDate = iso => new Date(iso + "T12:00:00").toLocaleDateString([], { day: "numeric", month: "long" });
+const newsDay = iso => {
+  const d = new Date(iso + "T12:00:00"), today = new Date(); today.setHours(12, 0, 0, 0);
+  const ago = Math.round((today - d) / 864e5);
+  return ago === 0 ? "Today" : ago === 1 ? "Yesterday" : d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" });
+};
+function WhatsNewPop({ news, seen, onClose }) {
+  const dev = !!document.querySelector(".devflag"), ok = useRef(null);
+  useEffect(() => {
+    ok.current && ok.current.focus();
+    // Escape closes only this pop-up, not the Settings drawer it was opened from.
+    const key = e => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } };
+    document.addEventListener("keydown", key); return () => document.removeEventListener("keydown", key);
+  }, []);
+  const days = [];
+  news.items.forEach(i => { const d = days[days.length - 1]; if (d && d.date === i.date) d.items.push(i); else days.push({ date: i.date, items: [i] }); });
+  const sub = dev ? (news.since ? `On the Dev page, not on the live site yet. Since the release of ${newsDate(news.since)}.` : "On the Dev page, not on the live site yet.")
+                  : (news.since ? `What the release of ${newsDate(news.since)} brought.` : "What the latest release brought.");
+  return html`<div class="gx-veil newsveil" onClick=${e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div class="gx-choose newspop" role="dialog" aria-modal="true" aria-labelledby="news-title">
+      <button type="button" class="btn small gx-x" onClick=${onClose} aria-label="Close">✕</button>
+      <h2 class="ornate" id="news-title">What's new</h2>
+      <p class="sub">${sub}</p>
+      ${days.length ? html`<div class="newslist">${days.map(d => html`<div class="newsday"><h3>${newsDay(d.date)}</h3>
+        <ul>${d.items.map(i => html`<li>${!seen.includes(i.id) && html`<b class="newtag">New</b> `}${i.t}</li>`)}</ul></div>`)}</div>`
+        : html`<p class="muted">Nothing new since the last release.</p>`}
+      <div class="row newsbtns"><button type="button" class="btn primary" ref=${ok} onClick=${onClose}>Got it</button></div>
+    </div></div>`;
+}
+
 const SET_TABS = [["device", "This device"], ["char", "Character"], ["table", "Table"], ["about", "About"]];
-function SettingsDrawer({ c, update, chars, gm, onClose }) {
+function SettingsDrawer({ c, update, chars, gm, news, seen = [], onSeen, onClose }) {
+  const [newsOpen, setNewsOpen] = useState(null);   // the seen list as it was when the pop-up opened, so its "New" marks stay put
+  const fresh = newsFresh(news, seen);
+  const openNews = () => { setNewsOpen(seen.slice()); onSeen && onSeen(); };
+  const newsUp = useRef(false); newsUp.current = !!newsOpen;   // read by the Escape handler, which is set up once
   const [tab, setTab] = useState(() => { const t = lsGet("cw-set-tab", "device"); return SET_TABS.some(x => x[0] === t) ? t : "device"; });
   useEffect(() => lsSet("cw-set-tab", tab), [tab]);
   const [reset, setReset] = useState(false);
@@ -7278,8 +7390,8 @@ function SettingsDrawer({ c, update, chars, gm, onClose }) {
   useEffect(() => {
     const back = document.activeElement;
     if (ref.current) ref.current.focus();
-    // Escape closes the drawer, unless a pop-up opened from it (a dice roll, a module prompt) is the one on top.
-    const key = e => { if (e.key === "Escape" && !document.querySelector(".dice-veil, .modveil")) { e.preventDefault(); onClose(); } };
+    // Escape closes the drawer, unless a pop-up opened from it (a dice roll, a module prompt, What's new) is the one on top.
+    const key = e => { if (e.key === "Escape" && !newsUp.current && !document.querySelector(".dice-veil, .modveil")) { e.preventDefault(); onClose(); } };
     window.addEventListener("keydown", key);
     return () => { window.removeEventListener("keydown", key); if (back && back.focus) back.focus(); };
   }, []);
@@ -7296,6 +7408,7 @@ function SettingsDrawer({ c, update, chars, gm, onClose }) {
   <aside class="setdrawer" role="dialog" aria-modal="true" aria-labelledby="setdr-title" tabindex="-1" ref=${ref}>
     <header class="setdhead">
       <div class="setdtitle"><i class="seticon" aria-hidden="true"></i><h2 id="setdr-title">Settings</h2>
+        ${news && html`<button type="button" class=${"setdnews newsbtn" + (fresh ? " hasnews" : "")} onClick=${openNews} title=${fresh ? "Something has changed since you last looked" : "What's changed since the last version"}>What's new</button>`}
         <button type="button" class="setdclose" aria-label="Close settings" onClick=${onClose}>×</button></div>
       <div class="settabs" role="tablist" aria-label="Settings sections" onKeyDown=${onTabKey}>${SET_TABS.map(([k, n]) => html`<button type="button" role="tab"
         id=${"settab-" + k} aria-selected=${tab === k} aria-controls="setdr-body" tabindex=${tab === k ? 0 : -1} onClick=${() => setTab(k)}>${n}</button>`)}</div>
@@ -7323,11 +7436,12 @@ function SettingsDrawer({ c, update, chars, gm, onClose }) {
       ${tab === "about" && html`<section class="setsec">
         <p class="sub">${dev ? "This is the Dev test page. Use a test table password so real characters stay untouched." : "This is the live Companion your table plays with."}</p>
         <div class="row">
-          <a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>
+          ${!news && html`<a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>`}
           <a class="btn small" href=${`${REPO}/issues/new`} target="_blank" rel="noopener">Report a problem</a></div>
         <p class="muted">Reporting a problem needs a free GitHub account.</p></section>`}
     </div>
-  </aside>`;
+  </aside>
+  ${newsOpen && html`<${WhatsNewPop} news=${news} seen=${newsOpen} onClose=${() => setNewsOpen(null)} />`}`;
 }
 /* ================= the Blackwall (Cyberpunk theme only) =================
    A living firewall of red and violet data, drawn with a WebGL fragment shader on a canvas behind the page.

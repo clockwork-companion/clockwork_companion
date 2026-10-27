@@ -74,6 +74,24 @@ html[data-install] .installbtn { display: inline-grid; place-items: center; }
 .top:not(:has(.viewseg)) .setbtn { margin-left: auto; }
 .setbtn:hover, .setbtn:focus-visible, .setbtn[aria-pressed="true"] { border-color: var(--brass); }
 .setbtn[aria-pressed="true"] { background: var(--sunk); }
+/* Something new in Settings → What's new: a small dot on the button. */
+.setbtn.hasnews::before { content: ""; position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--brass); box-shadow: 0 0 0 2px var(--paper); animation: newsPing 2.4s ease-out 3; }
+@keyframes newsPing { 0% { box-shadow: 0 0 0 2px var(--paper), 0 0 0 2px color-mix(in srgb, var(--brass) 60%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 2px var(--paper), 0 0 0 9px transparent; } }
+.newsbtn.hasnews::before { content: ""; position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--brass); box-shadow: 0 0 0 2px var(--paper); animation: newsPing 2.4s ease-out 3; }
+.gx-veil.newsveil { z-index: 58; }   /* above the Settings drawer it opens from */
+.newspop { max-width: 520px; gap: 10px; max-height: calc(100dvh - 32px); grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.newspop .sub { margin: 0; text-align: center; }
+.newspop .newslist { overflow-y: auto; padding-right: 4px; }
+.newspop .newsday + .newsday { margin-top: 12px; }
+.newspop .newsday h3 { margin: 0 0 4px; font: 600 12px var(--f-head); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.newspop ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.newspop li { line-height: 1.45; overflow-wrap: anywhere; }
+.newspop .newtag { font: 700 10px var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: var(--paper); background: var(--brass); padding: 1px 5px; border-radius: 3px; vertical-align: 1px; }
+.newspop .newsbtns { justify-content: center; }
+@media (max-width: 560px) { .newspop { padding: 22px 16px 16px; } }
 .seticon { width: 20px; height: 20px; background: currentColor; -webkit-mask: var(--set-icon) center / contain no-repeat; mask: var(--set-icon) center / contain no-repeat; }
 @media (hover: hover) { .setbtn[data-tip]:hover::after, .setbtn[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
   white-space: nowrap; padding: 5px 9px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 600 12px/1.3 system-ui, sans-serif; pointer-events: none; } }
@@ -94,6 +112,9 @@ html[data-install] .installbtn { display: inline-grid; place-items: center; }
 .setdclose { width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border: 1.5px solid color-mix(in srgb, var(--paper) 35%, transparent);
   border-radius: 2px; background: transparent; color: var(--paper); font-size: 24px; line-height: 1; cursor: pointer; }
 .setdclose:hover, .setdclose:focus-visible { border-color: var(--paper); }
+.setdnews { position: relative; min-height: 36px; padding: 6px 12px; border: 1.5px solid color-mix(in srgb, var(--paper) 35%, transparent); border-radius: 2px;
+  background: transparent; color: var(--paper); font: 600 12px/1 var(--f-head); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+.setdnews:hover, .setdnews:focus-visible { border-color: var(--paper); }
 .settabs { display: flex; gap: 4px; margin-top: 12px; overflow-x: auto; scrollbar-width: none; }
 .settabs::-webkit-scrollbar { display: none; }
 .settabs button { flex: 0 0 auto; min-height: 44px; padding: 12px 14px 10px; border: 0; background: transparent; cursor: pointer; white-space: nowrap;
