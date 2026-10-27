@@ -1,5 +1,5 @@
 /* Clockwork Companion: offline support (service worker).
-   - The page itself: try the network first (so you always get the newest version), fall back to the saved copy offline.
+   - The page itself (and changelog.json): try the network first (so you always get the newest version), fall back to the saved copy offline.
    - Icons, the hidden games' art, the Firebase code and fonts: kept after the first load and served from the saved copy.
    - Never touches Firebase's database or sign-in traffic; Firestore keeps its own offline copy of characters.
    build.py replaces the version string on every build, so a new release replaces the old saved files. */
@@ -28,7 +28,7 @@ self.addEventListener("fetch", e => {
   if (same && url.pathname.startsWith(SCOPE + "dev/")) return;
   if (same && !url.pathname.startsWith(SCOPE)) return;
 
-  if (req.mode === "navigate" || (same && /(\/|index\.html|firebase-config\.js)$/.test(url.pathname))) {
+  if (req.mode === "navigate" || (same && /(\/|index\.html|firebase-config\.js|changelog\.json)$/.test(url.pathname))) {
     e.respondWith(networkFirst(req, req.mode === "navigate" ? "index.html" : null));
   } else if (same || KEEP.test(req.url)) {
     e.respondWith(cacheFirst(req));

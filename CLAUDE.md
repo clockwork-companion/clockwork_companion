@@ -39,6 +39,16 @@ your feature branch ──PR──▶ Dev ──(tested on the Dev page)──PR
   (Branch from Dev, not main: Dev runs ahead of main between releases, so a branch from main can lack the very code it changes.)
 - **Never push to someone else's branch** unless they asked you to.
 - **One PR per feature.** The PR description says, in plain words, what changed for the user and how to test it.
+- **Every change players will notice gets a What's new note**, written by the Claude that made it, in the same PR.
+  The app's Settings → What's new button opens them in a pop-up (it and the Settings button show a dot until read):
+  on the Dev page, every note not on the live site yet; on the live site, what the latest release brought.
+  - A note is one small file, `changes/YYYY-MM-DD-short-name.md` (the day you write it): one or two plain sentences
+    for players, starting with where in the app ("Skills & Talents: perks deal out of the stack when a skill opens").
+    One file per change, so branches never conflict over it. `changes/README.md` has the details.
+  - Fixing your own change before it's released? Edit its note, don't add another. Don't delete old notes.
+  - Changes players won't notice (tests, workflows, docs, CLAUDE.md) get no note.
+  - The publish workflow gathers the notes (`tools/whatsnew.py` → `changelog.json`); nobody posts them by hand.
+  - PR titles still say plainly what changed, but they no longer feed the list.
 - When main changes and Dev is behind, bring Dev up to main (a pull request from main into Dev) so the Dev page
   isn't testing something older than the live site.
 
@@ -97,6 +107,7 @@ If an older branch still has it, a merge may report `sw.js` as deleted: keep it 
 | `gm.js` | GM table: players and roles, backups, the initiative deck. |
 | `web-backend.js`, `web/` | Website-only parts: sign-in, Firestore storage, the rules file, the README template. |
 | `web/art/` | The 2021 rulebook's paintings behind the perk cards: a clean 16:9 window around each skill's subject, cut from the rulebook pages by `tools/rulebook_art_focal.py` (aims in `tools/rulebook_art_focus.json`). The build copies it next to `index.html`; website only. |
+| `../tools/whatsnew.py`, `../changes/` | Not in `src/`: the What's new notes (one file per change) and the script the publish workflow runs after each build. It writes `changelog.json` beside the page: on Dev the notes not yet in main, on main the notes the latest release (the last Dev → main merge) brought. Settings → What's new opens them in a pop-up (`WhatsNewPop` in `app.js`; seen notes are remembered per browser in `cw-news-seen`); without the file the button hides and About's commits link shows. |
 | `egg.html`, `egg-furnace.html` | Hidden mini-games (website only). They are self-contained, so don't couple app code to them. |
 | `vendor/` | Preact 10.19.3 and htm 3.1.1, inlined into the website build. |
 | `clockwork-sheet.lua` | The Tabletop Simulator sheet. It exchanges a JSON code with the app's Tabletop tab. |
@@ -157,8 +168,9 @@ version must keep working in a newer one, and the live site must survive data wr
    - the screens you changed, in at least the default theme and one dark theme;
    - the browser console has no errors;
    - the page doesn't scroll sideways.
-4. Commit with a message saying what changed for the user. Keep the build output and the `src/` change in the same commit.
-5. When your person says yes, open the PR into **Dev**, not main.
+4. If players will notice the change, add its What's new note in `changes/` (section 1).
+5. Commit with a message saying what changed for the user. Keep the build output and the `src/` change in the same commit.
+6. When your person says yes, open the PR into **Dev**, not main.
 
 ## 7. Decisions log
 
@@ -212,5 +224,7 @@ Add one line per settled design decision: date, decision, who decided.
 - **2026-10-27:** Hunting is one page: the trophies on top, Carving and Merging as drop-down bars under them that swap the picture above (a "← Your trophies" bar sits above them while one is open); the belt, beast and altar share one frame size and crossfade. Trophies are drawn as the real parts, four more can be carved (head, spike, tongue, ear), and a merged trophy shows the giver's part attached to it. Utku.
 - **2026-10-27:** Merging happens on a hunter's table, not an altar: a scarred butcher's block against a plank wall (lantern, hooks with a drying pelt and herbs, knives, a mounted skull, bow and quiver; sinew spool, salt, whetstone, a cleaver in the wood). The trophies lie root to root and are sewn together with a needle (no spinning); the result hangs on the hook. Merged parts go on top, then the left, then the right, then across the front, at most four drawn, and each pair has its own fit (a tongue in a skull's mouth, eyes in its sockets, hide wrapped round a claw, a spike through a heart…), always with visible stitches. Utku.
 - **2026-10-26:** Armor has an edit mode and a flush finished card like weapons; in play only the Soak Pool (and Wear) changes. Prosthetics sit below Weapons in Gear. Each secondary skill's side panel opens with an italic flavour line (Entrada has none until the book says what it covers). Sinan.
+- **2026-10-27:** Every update to Dev gets a changelog, shown in the app (a dot on the Settings button until it's seen). Bedo.
+- **2026-10-27:** What's new is a pop-up from a button in Settings listing the changes since the last version (on Dev: not yet released; on the live site: the latest release). Its lines are short notes the Claudes write with each change (`changes/`), not PR titles. Bedo.
 - **2026-10-26:** On phones (560 px and under) a skill row is two lines: the name and its percentage on top, the dots underneath, so names are never cut short (ten dots leave no room beside them). Secondary skills keep one line, with their note under the name. Sinan, from Utku's report.
 - **2026-10-27:** Settings → Animations: Enabled or Disabled, per browser. Disabled does what the device's reduce-motion setting does (background effects hold one still frame, animations stop) and keeps each theme's artwork. `build.py` repeats every `prefers-reduced-motion` rule under `:root[data-anim="off"]`, so write reduce-motion rules as usual and Disabled follows; background modules treat `data-anim="off"` as reduced motion. Reduce motion now also stops animations on `::before`/`::after`. Bedo.

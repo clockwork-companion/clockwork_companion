@@ -456,6 +456,8 @@ function App() {
   const [tab, setTab] = useState(() => { const t = CHAR_TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : lsGet("cw-tab", "sheet"); return CHAR_TABS.includes(t) ? t : "sheet"; });
   const [settings, setSettings] = useState(() => location.hash === "#settings");
   const openSettings = on => { setSettings(on); window.scrollTo(0, 0); };
+  const news = useNews(), [newsSeen, setNewsSeen] = useState(newsSeenList);
+  const fresh = newsFresh(news, newsSeen);
   const lastEdit = useRef({});
   const [view, setView] = useState(() => (location.hash === "#gm" ? "gm" : lsGet("cw-view", "chars")));
   useEffect(() => lsSet("cw-view", view), [view]);
@@ -530,7 +532,7 @@ function App() {
         pick=${id => { setSel(id); setView("chars"); setSettings(false); window.scrollTo(0, 0); }} create=${create} startNew=${startNew} />
       <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
-      <button type="button" class="setbtn" aria-pressed=${settings} aria-label="Settings" data-tip="Settings" onClick=${() => openSettings(!settings)}><i class="seticon" aria-hidden="true"></i></button>
+      <button type="button" class=${"setbtn" + (fresh ? " hasnews" : "")} aria-pressed=${settings} aria-label=${fresh ? "Settings (something new)" : "Settings"} data-tip=${fresh ? "Settings · something new" : "Settings"} onClick=${() => openSettings(!settings)}><i class="seticon" aria-hidden="true"></i></button>
     </header>
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
       ? (window.CW_WEB.reason === "offline" ? "Couldn't reach the shared save, so for now characters are kept in this browser only. Check your connection and reload."
@@ -539,7 +541,7 @@ function App() {
     ${Store.readOnly && html`<div class="banner">You're viewing these characters read-only. To edit, ask the owner to invite you as an Editor.</div>`}
     ${Store.error && html`<div class="banner">Couldn't load the shared characters just now. Reload the page to try again.</div>`}
     <div class="viewswap" key=${page} data-dir=${pageNav.current.dir}>
-    ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} onBack=${() => openSettings(false)} />`
+    ${settings ? html`<${SettingsView} c=${current} update=${update} chars=${list} gm=${gm} news=${news} seen=${newsSeen} onSeen=${() => { const ids = [...new Set([...news.items.map(i => i.id), ...newsSeen])].slice(0, 300); lsSet("cw-news-seen", ids); setNewsSeen(ids); }} onBack=${() => openSettings(false)} />`
       : view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />`
       : view === "table" ? html`<${TableView} chars=${list} current=${current} />` : html`
     ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
@@ -1723,13 +1725,64 @@ function TabletopPanel({ c, update }) {
 // the display choices below, never characters, the sign-in or an encounter in progress.
 const RESET_KEYS = ["cw-skin", "cw-text", "cw-anim", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp"];
 const REPO = "https://github.com/clockwork-companion/clockwork_companion";
-function SettingsView({ c, update, chars, gm, onBack }) {
+/* ================= what's new ================= */
+// The publish workflow writes changelog.json next to the page (tools/whatsnew.py) from the short notes in changes/, one
+// per change, written by whoever made it: on the Dev page, everything not on the live site yet; on the live site, what
+// the latest release brought. Settings has a "What's new" button that opens them in a pop-up; it and the Settings
+// button carry a dot until every note has been seen. Builds without the file (a local build, the artifact) show neither.
+let newsLoad = null;
+const loadNews = () => newsLoad || (newsLoad = fetch("changelog.json", { cache: "no-cache" })
+  .then(r => (r.ok ? r.json() : null))
+  .then(j => (j && Array.isArray(j.items) ? { since: j.since || "", items: j.items.filter(i => i && i.id && i.t) } : null))
+  .catch(() => null));
+function useNews() {
+  const [news, setNews] = useState(null);
+  useEffect(() => { let on = true; loadNews().then(d => { if (on) setNews(d); }); return () => { on = false; }; }, []);
+  return news;
+}
+const newsSeenList = () => { const v = lsGet("cw-news-seen", []); return Array.isArray(v) ? v : []; };
+const newsFresh = (news, seen) => !!(news && news.items.some(i => !seen.includes(i.id)));
+const newsDate = iso => new Date(iso + "T12:00:00").toLocaleDateString([], { day: "numeric", month: "long" });
+const newsDay = iso => {
+  const d = new Date(iso + "T12:00:00"), today = new Date(); today.setHours(12, 0, 0, 0);
+  const ago = Math.round((today - d) / 864e5);
+  return ago === 0 ? "Today" : ago === 1 ? "Yesterday" : d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" });
+};
+function WhatsNewPop({ news, seen, onClose }) {
+  const dev = !!document.querySelector(".devflag"), ok = useRef(null);
+  useEffect(() => {
+    ok.current && ok.current.focus();
+    const key = e => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", key); return () => document.removeEventListener("keydown", key);
+  }, []);
+  const days = [];
+  news.items.forEach(i => { const d = days[days.length - 1]; if (d && d.date === i.date) d.items.push(i); else days.push({ date: i.date, items: [i] }); });
+  const sub = dev ? (news.since ? `On the Dev page, not on the live site yet. Since the release of ${newsDate(news.since)}.` : "On the Dev page, not on the live site yet.")
+                  : (news.since ? `What the release of ${newsDate(news.since)} brought.` : "What the latest release brought.");
+  return html`<div class="gx-veil newsveil" onClick=${e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div class="gx-choose newspop" role="dialog" aria-modal="true" aria-labelledby="news-title">
+      <button type="button" class="btn small gx-x" onClick=${onClose} aria-label="Close">✕</button>
+      <h2 class="ornate" id="news-title">What's new</h2>
+      <p class="sub">${sub}</p>
+      ${days.length ? html`<div class="newslist">${days.map(d => html`<div class="newsday"><h3>${newsDay(d.date)}</h3>
+        <ul>${d.items.map(i => html`<li>${!seen.includes(i.id) && html`<b class="newtag">New</b> `}${i.t}</li>`)}</ul></div>`)}</div>`
+        : html`<p class="muted">Nothing new since the last release.</p>`}
+      <div class="row newsbtns"><button type="button" class="btn primary" ref=${ok} onClick=${onClose}>Got it</button></div>
+    </div></div>`;
+}
+
+function SettingsView({ c, update, chars, gm, news, seen = [], onSeen, onBack }) {
   const [reset, setReset] = useState(false);
+  const [newsOpen, setNewsOpen] = useState(null);   // the seen list as it was when the pop-up opened, so its "New" marks stay put
+  const fresh = newsFresh(news, seen);
+  const openNews = () => { setNewsOpen(seen.slice()); onSeen && onSeen(); };
   const dev = !!document.querySelector(".devflag");
   const live = Store.mode === "live" && Store.table && window.CW_WEB;
   const doReset = () => { RESET_KEYS.forEach(k => { try { localStorage.removeItem(k); } catch {} }); location.reload(); };
   return html`<div class="tabpane settings">
-    <div class="sethead"><button type="button" class="btn small" onClick=${onBack}>← Back</button><h1 class="ornate">Settings</h1></div>
+    <div class="sethead"><button type="button" class="btn small" onClick=${onBack}>← Back</button><h1 class="ornate">Settings</h1>
+      ${news && html`<button type="button" class=${"btn small newsbtn" + (fresh ? " hasnews" : "")} onClick=${openNews} title=${fresh ? "Something has changed since you last looked" : "What's changed since the last version"}>What's new</button>`}</div>
+    ${newsOpen && html`<${WhatsNewPop} news=${news} seen=${newsOpen} onClose=${() => setNewsOpen(null)} />`}
 
     <section class="frame"><h2 class="h"><span>This browser</span><i class="orn" aria-hidden="true"></i></h2>
       <p class="sub">These choices are saved on this device only, so each player can set their own.</p>
@@ -1754,7 +1807,7 @@ function SettingsView({ c, update, chars, gm, onBack }) {
     <section class="frame"><h2 class="h"><span>About</span><i class="orn" aria-hidden="true"></i></h2>
       <p class="sub">${dev ? "This is the Dev test page. Use a test table password so real characters stay untouched." : "This is the live Companion your table plays with."}</p>
       <div class="row">
-        <a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>
+        ${!news && html`<a class="btn small" href=${`${REPO}/commits/${dev ? "Dev" : "main"}`} target="_blank" rel="noopener">What's new</a>`}
         <a class="btn small" href=${`${REPO}/issues/new`} target="_blank" rel="noopener">Report a problem</a></div>
       <p class="muted">Reporting a problem needs a free GitHub account.</p>
     </section>
