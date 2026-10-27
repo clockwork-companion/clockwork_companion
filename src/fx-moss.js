@@ -19,7 +19,7 @@
   let bucket = null;           // where corner() puts the leaves it grows
   let swapping = 0, follow = 0, followUntil = 0, gust = null;
   let px = -1e5, py = -1e5, vx = 0, vy = 0, lastT = 0;
-  const still = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const still = () => document.documentElement.dataset.anim === "off" || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);   // Settings → Animations → Disabled, or the device
   const on = () => document.documentElement.dataset.skin === "moss";
   // A small seeded random, so each section grows the same ivy every time it is drawn.
   const rng = seed => { let s = (seed * 2654435761) >>> 0 || 7; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); };
@@ -188,10 +188,12 @@
     old.style.animation = "none";
     const ghost = document.createElement("div");
     ghost.className = "wrap mh-ghost"; ghost.setAttribute("aria-hidden", "true"); ghost.inert = true;
-    ghost.style.cssText = `left:${x}px;top:${y}px;width:${r.width}px;height:${Math.max(0, Math.min(old.scrollHeight || 4000, innerHeight - r.top))}px`;
+    // The ghost is a .wrap, so Larger text zooms it too: measure in its own (unzoomed) pixels so it sits exactly over the section.
+    const zw = nu.closest(".wrap"), z = (zw && parseFloat(getComputedStyle(zw).zoom)) || 1;
+    ghost.style.cssText = `left:${x / z}px;top:${y / z}px;width:${r.width / z}px;height:${Math.max(0, Math.min(old.scrollHeight || 4000, (innerHeight - r.top) / z))}px`;
     ghost.appendChild(old);
     document.body.appendChild(ghost);
-    ghost.style.height = Math.max(0, Math.min(old.scrollHeight, innerHeight - r.top)) + "px";
+    ghost.style.height = Math.max(0, Math.min(old.scrollHeight, (innerHeight - r.top) / z)) + "px";
     const dirCls = wind < 0 ? "wind-l" : "wind-r";
     ghost.classList.add("mh-wipe-out", dirCls); nu.classList.add("mh-wipe-in", dirCls);
     // the leaves ride the edge of the wipe, across the part of the section that's on screen
@@ -290,6 +292,7 @@
   }
   const sync = () => (on() && document.body ? start() : stop());
   new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-skin"] });
+  new MutationObserver(() => { stop(); sync(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-anim"] });   // Animations switched: restart in the new mode
   document.addEventListener("visibilitychange", () => { if (document.hidden && raf) { cancelAnimationFrame(raf); raf = 0; } });
   if (document.body) sync(); else document.addEventListener("DOMContentLoaded", sync);
 })();

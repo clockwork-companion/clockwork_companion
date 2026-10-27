@@ -228,7 +228,7 @@ function levelTip(c, mode, kind, name, to, raiseBtn = "L", lowerBtn = "R") {
 // value changes while the same character stays open: never on first draw, and not when another character is opened.
 // The "reduce motion" setting switches every animation off in app.css.
 let animScope = "";          // the open character's id, set by Character; hooks compare against it
-const calm = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
+const calm = () => { if (document.documentElement.dataset.anim === "off") return true; try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
 // Replays a CSS animation class on an element, even if it's already there, and clears it once the animation ends.
 function replay(el, cls, delayMs = 0, also = []) {
   if (!el) return;
@@ -373,6 +373,17 @@ function SkinPicker() {
 }
 
 /* ================= text size: per browser, like the theme ================= */
+/* ================= animations: per browser. Disabled does what the device's "reduce motion" setting does ================= */
+// Backgrounds (Blackwall, steppe, ivy) hold one still frame and the app's animations stop. app.css needs nothing extra:
+// build.py repeats every reduce-motion rule under :root[data-anim="off"].
+function applyAnim(key) { if (key === "off") document.documentElement.dataset.anim = "off"; else delete document.documentElement.dataset.anim; }
+applyAnim(lsGet("cw-anim", "on"));
+function AnimPicker() {
+  const [m, setM] = useState(() => lsGet("cw-anim", "on"));
+  useEffect(() => { applyAnim(m); lsSet("cw-anim", m); }, [m]);
+  return html`<div class="seg" role="group" aria-labelledby="set-anim">${[["on", "Enabled"], ["off", "Disabled"]].map(([k, n]) => html`<button type="button" aria-pressed=${m === k} onClick=${() => setM(k)}>${n}</button>`)}</div>`;
+}
+
 const TEXT_SIZES = [["normal", "Normal"], ["large", "Larger"]];
 function applyText(key) { if (key === "large") document.documentElement.dataset.text = "large"; else delete document.documentElement.dataset.text; }
 applyText(lsGet("cw-text", "normal"));
@@ -1674,7 +1685,7 @@ function TabletopPanel({ c, update }) {
 // Per-browser choices (theme, text size, dice), the Tabletop code for the open character, the table backup (GM),
 // signing out, and a little about the app. Everything stored per browser starts with "cw-"; Reset clears only
 // the display choices below, never characters, the sign-in or an encounter in progress.
-const RESET_KEYS = ["cw-skin", "cw-text", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp"];
+const RESET_KEYS = ["cw-skin", "cw-text", "cw-anim", "cw-dice", "cw-tab", "cw-view", "cw-sel", "cw-mode", "cw-invested2", "cw-perkfilter", "cw-craft-sub", "cw-am-mode", "cw-wm-mode", "cw-gm-camp"];
 const REPO = "https://github.com/clockwork-companion/clockwork_companion";
 /* ================= what's new: the changelog ================= */
 // The publish workflow writes changelog.json next to the page (tools/changelog.py): a daily summary of the pull requests
@@ -1723,8 +1734,9 @@ function SettingsView({ c, update, chars, gm, news, onSeen, onBack }) {
       <div class="setrows">
         <div class="setrow"><div><label class="setname" for="set-theme">Theme</label><span class="muted">Colours, type and artwork for the whole app.</span></div><${SkinPicker} /></div>
         <div class="setrow"><div><span class="setname" id="set-text">Text size</span><span class="muted">Larger is easier to read across the table.</span></div><${TextSizePicker} /></div>
+        <div class="setrow"><div><span class="setname" id="set-anim">Animations</span><span class="muted">Disabled keeps each theme's artwork but holds it still, and nothing moves. Easier on older phones and batteries.</span></div><${AnimPicker} /></div>
         <div class="setrow"><div><span class="setname" id="set-dice">Dice</span><span class="muted">Roll in the app, or roll at your table (for example in Tabletop Simulator) and type the result.</span></div><${DicePicker} /></div>
-        <div class="setrow"><div><span class="setname">Reset</span><span class="muted">Puts the theme, text size, dice and remembered tabs back to how they start. Characters aren't touched.</span></div>
+        <div class="setrow"><div><span class="setname">Reset</span><span class="muted">Puts the theme, text size, animations, dice and remembered tabs back to how they start. Characters aren't touched.</span></div>
           ${reset ? html`<div class="row"><button class="btn small danger" onClick=${doReset}>Reset and reload</button><button class="btn small" onClick=${() => setReset(false)}>Keep</button></div>`
             : html`<button class="btn small" onClick=${() => setReset(true)}>Reset…</button>`}</div>
       </div>
