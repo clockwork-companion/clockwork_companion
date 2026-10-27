@@ -1372,50 +1372,63 @@ function investedSkills(c, attrs) {
   R.WEAPON_TYPES.forEach(([w]) => { const a = R.LEVELS.weapon.attrOf(w); if (attrs.includes(a) && num(c.weaponSkills[w]) > 0) out.push({ name: w, lv: num(c.weaponSkills[w]), attr: a, kind: "weapon" }); });
   return out.sort((a, b) => R.ATTRS.findIndex(x => x.k === a.attr) - R.ATTRS.findIndex(x => x.k === b.attr) || b.lv - a.lv || a.name.localeCompare(b.name));
 }
-// A skill's perks: folded like a rolodex, or opened into full cards. Opening deals the cards out of the stack one
-// after another while the section grows to fit; folding gathers them back into the stack, which settles into place.
-// Only a click animates (not the first draw or a filter change), and reduced-motion settings skip it.
-function PerkGroup({ g, open, flip, c, update, openSkill }) {
+// A skill's perks: folded like a rolodex (one slim row per perk name), or opened into full cards. Clicking a row deals
+// out just that perk's cards under it (both levels of a perk like Wreck 3–4) and clicking it again gathers them back;
+// the heading's button opens or folds the whole skill. Cards deal out one after another while the section grows to fit,
+// and fold back up into their row. Only a click animates (not the first draw or a filter change); reduced motion skips it.
+function PerkGroup({ g, open, flip, rowOpen, flipRow, c, update, openSkill }) {
   const box = useRef(null), fx = useRef(null), busy = useRef(false);
-  const cards = () => (box.current ? [...box.current.querySelectorAll(".perkcards > .perkcard")] : []);
-  const toggle = () => {
+  const rows = perkRows(g.perks), rk = r => r.n || g.name;
+  // the cards a click opens or folds: one row's (key), or every card in the skill (key null)
+  const cards = key => {
+    const el = box.current; if (!el) return [];
+    if (key == null) return [...el.querySelectorAll(".perkcards > .perkcard")];
+    const d = [...el.querySelectorAll(".rdxcards")].find(x => x.dataset.row === key);
+    return d ? [...d.children].filter(x => x.classList.contains("perkcard")) : [];
+  };
+  const run = (key, isOpen, doFlip) => {
     if (busy.current) return;
     const el = box.current;
-    if (calm() || !el || !el.animate) { flip(g.name); return; }
-    if (!open) { fx.current = { from: el.offsetHeight, opening: true }; flip(g.name); return; }
-    // Folding: the cards slide back up into the stack (last card first), then the stack takes their place.
+    if (calm() || !el || !el.animate) { doFlip(); return; }
+    if (!isOpen) { fx.current = { from: el.offsetHeight, opening: true, key }; doFlip(); return; }
+    // Folding: the cards slide back up (last card first), then their row or the stack takes their place.
     busy.current = true;
-    const list = cards(), n = list.length;
+    const list = cards(key), n = list.length;
     let longest = 0;
     list.forEach((card, i) => {
       const delay = Math.min(n - 1 - i, 6) * 28; longest = Math.max(longest, delay + 200);
       card.animate([{ transform: "none", opacity: 1 }, { transform: `translateY(${-Math.min(i, 8) * 14 - 10}px) scale(.96)`, opacity: 0 }],
         { duration: 200, delay, easing: "cubic-bezier(.4, 0, .7, .2)", fill: "forwards" });
     });
-    setTimeout(() => { fx.current = { from: el.offsetHeight, opening: false }; busy.current = false; flip(g.name); }, longest);
+    setTimeout(() => { fx.current = { from: el.offsetHeight, opening: false, key }; busy.current = false; doFlip(); }, longest);
   };
+  const toggle = () => run(null, open, () => flip(g.name));
+  const toggleRow = r => run(rk(r), rowOpen(rk(r)), () => flipRow(g.name, rk(r)));
   useLayoutEffect(() => {
     const f = fx.current, el = box.current; fx.current = null;
     if (!f || !el || !el.animate) return;
     const to = el.offsetHeight;
     if (Math.abs(to - f.from) > 2) el.animate([{ height: f.from + "px", overflow: "hidden" }, { height: to + "px", overflow: "hidden" }],
       { duration: f.opening ? 300 : 240, easing: "cubic-bezier(.2, .7, .3, 1)" });
-    if (f.opening) cards().forEach((card, i) => card.animate(
+    if (f.opening) cards(f.key).forEach((card, i) => card.animate(
       [{ transformOrigin: "50% 0", transform: `perspective(700px) translateY(${-Math.min(i, 8) * 14 - 16}px) rotateX(-58deg) scale(.97)`, opacity: 0 },
        { transformOrigin: "50% 0", transform: "perspective(700px) translateY(0) rotateX(0) scale(1)", opacity: 1 }],
       { duration: 360, delay: Math.min(i, 8) * 55, easing: "cubic-bezier(.2, .75, .3, 1.08)", fill: "backwards" }));
-    else el.querySelectorAll(".rolodex > .rdx").forEach((r, k) => r.animate(
+    else if (f.key == null) el.querySelectorAll(".rolodex > .rdx").forEach((r, k) => r.animate(
       [{ transform: `translateY(${-6 - Math.min(k, 8) * 2}px)`, opacity: 0 }, { transform: "none", opacity: 1 }],
       { duration: 220, delay: Math.min(k, 8) * 22, easing: "cubic-bezier(.2, .7, .3, 1)", fill: "backwards" }));
-  }, [open]);
+  });
+  const card = p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`;
   return html`<div ref=${box} class=${"perkgroup" + (open ? " open" : " folded")} style=${attStyle(g.attr)}>
         <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small>
-          <button type="button" class="foldbtn" aria-expanded=${open} onClick=${toggle}>${open ? "Fold" : `Open ${g.perks.length} perk${g.perks.length > 1 ? "s" : ""}`}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button></h3>
-        ${open ? html`<div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div>`
-          : html`<button type="button" class="rolodex" onClick=${toggle} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${perkRows(g.perks).map((r, k) =>
-              html`<span class="rdx" style=${`--k:${k}`}><b class=${"rdxlv" + (r.ps.length > 1 ? " span" : "")}>${lvSpan(r.ps.map(p => p.l))}</b><span class="rdxn">${r.n || g.name}</span>
+          <button type="button" class="foldbtn" aria-expanded=${open} onClick=${toggle}>${open ? "Fold" : `Open ${g.perks.length > 1 ? "all " : ""}${g.perks.length} perk${g.perks.length > 1 ? "s" : ""}`}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button></h3>
+        ${open ? html`<div class="perkcards">${g.perks.map(card)}</div>`
+          : html`<div class="rolodex">${rows.map((r, k) => { const key = rk(r), on = rowOpen(key);
+              return [html`<button type="button" key=${"r:" + key} class=${"rdx" + (on ? " on" : "")} style=${`--k:${k}`} aria-expanded=${on} onClick=${() => toggleRow(r)}
+                  aria-label=${`${on ? "Fold" : "Open"} ${key}${r.ps.length > 1 ? ` (levels ${lvSpan(r.ps.map(p => p.l))})` : ""}`}><b class=${"rdxlv" + (r.ps.length > 1 ? " span" : "")}>${lvSpan(r.ps.map(p => p.l))}</b><span class="rdxn">${key}</span>
                 <span class="rdxps">${r.ps.map(p => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
-                  return html`<span class=${"rdxp k-" + typeKey(t)}>${r.ps.length > 1 && html`<i class="rdxat">${p.l}</i>`}${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max}</small>`}<${TypeTag} t=${t} /></span>`; })}</span></span>`)}</button>`}</div>`;
+                  return html`<span class=${"rdxp k-" + typeKey(t)}>${r.ps.length > 1 && html`<i class="rdxat">${p.l}</i>`}${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max}</small>`}<${TypeTag} t=${t} /></span>`; })}</span></button>`,
+                on && html`<div key=${"c:" + key} class="perkcards rdxcards" data-row=${key}>${r.ps.map(card)}</div>`]; })}</div>`}</div>`;
 }
 
 function TalentsTab({ c, update, openSkill }) {
@@ -1437,10 +1450,15 @@ function TalentsTab({ c, update, openSkill }) {
   const shown = all.filter(groupOk).map(g => Object.assign({}, g, { perks: g.perks.filter(p => typeOk(p)) })).filter(g => g.perks.length);
   const toggleAttr = a => { setAttrs(xs => (xs.includes(a) ? xs.filter(x => x !== a) : R.ATTRS.map(x => x.k).filter(k => k === a || xs.includes(k)))); };
   const spentAny = Object.values(c.uses || {}).some(v => num(v));
-  // Each skill's perks sit folded like a rolodex (a slim card per perk, overlapping); clicking opens them into full cards.
+  // Each skill's perks sit folded like a rolodex (a slim card per perk name, overlapping); clicking one opens its full cards.
   // Which skills are open is kept per browser. A skill picked in the attribute panel opens by itself.
   const [openSk, setOpenSk] = useState(() => { const v = lsGet("cw-perkopen", []); return Array.isArray(v) ? v : []; });
-  const flip = n => setOpenSk(xs => { const v = xs.includes(n) ? xs.filter(x => x !== n) : xs.concat(n); lsSet("cw-perkopen", v); return v; });
+  // One perk name opened on its own is kept as "skill\nperk name"; opening or folding the whole skill clears those.
+  const [openRows, setOpenRows] = useState(() => { const v = lsGet("cw-perkrows", []); return Array.isArray(v) ? v : []; });
+  const saveRows = f => setOpenRows(xs => { const v = f(xs); lsSet("cw-perkrows", v); return v; });
+  const flip = n => { setOpenSk(xs => { const v = xs.includes(n) ? xs.filter(x => x !== n) : xs.concat(n); lsSet("cw-perkopen", v); return v; });
+    saveRows(xs => xs.filter(x => !x.startsWith(n + "\n"))); };
+  const flipRow = (n, r) => saveRows(xs => { const k = n + "\n" + r; return xs.includes(k) ? xs.filter(x => x !== k) : xs.concat(k); });
   const isOpen = n => openSk.includes(n) || focusOn === n;
   const addTalent = () => update(x => { x.talents.push({ id: rid(), name: "", source: "", type: "A", uses: 1, recharge: "Long rest", ap: "", stamina: "", turns: "", text: "", final: false }); });
   const empty = !all.length ? "No perks unlocked yet. A skill's first perk comes at level 3."
@@ -1457,7 +1475,7 @@ function TalentsTab({ c, update, openSkill }) {
       ${listed && html`<div class="attskills" role="group" aria-label=${`Skills invested in under ${attrs.map(a => R.ATTR_NAME[a]).join(", ")}`}>
         <span class="lbl">Your ${attrs.map(a => R.ATTR_NAME[a]).join(" · ")} skills</span>
         ${invested.map(x => html`<button type="button" class="skchip" style=${attStyle(x.attr)} aria-pressed=${focusOn === x.name} onClick=${() => setFocus(focusOn === x.name ? "" : x.name)}>${x.name} <small>${x.lv}</small></button>`)}</div>`}
-      ${shown.length ? shown.map(g => html`<${PerkGroup} key=${g.name} g=${g} open=${isOpen(g.name)} flip=${flip} c=${c} update=${update} openSkill=${openSkill} />`)
+      ${shown.length ? shown.map(g => html`<${PerkGroup} key=${g.name} g=${g} open=${isOpen(g.name)} flip=${flip} rowOpen=${r => openRows.includes(g.name + "\n" + r)} flipRow=${flipRow} c=${c} update=${update} openSkill=${openSkill} />`)
       : html`<p class="muted emptyline">${empty}</p>`}
     </section>
 
