@@ -31,10 +31,19 @@ with sync_playwright() as p:
         pg.goto(url); pg.wait_for_timeout(1500)
         pg.get_by_role("tab", name="Crafting").click(); pg.wait_for_timeout(1200)
         ch = lambda: pg.evaluate("Store.chars.hu")
-        check(tag + "the Hunting bench is in Crafting, trophies & belt first", pg.locator(".hunting").count() == 1 and pg.locator(".huntpages button").all_inner_texts()[0].lower() == "trophies & belt")
+        check(tag + "the Hunting bench is one page: the belt on top, Carving and Merging folded under it", pg.locator(".hunting").count() == 1 and pg.locator(".huntbelt").count() == 1
+              and [x.strip() for x in pg.locator(".huntdropb").all_inner_texts()] == ["Carving", "Merging"] and pg.locator(".huntdropbody").count() == 0)
         pg.evaluate("CW.rollDie = () => 1")
         # carve a level 3 fang from a chimera
-        pg.locator(".huntpages button", has_text="Carving").click(); pg.wait_for_timeout(400)
+        pg.locator(".huntdropb", has_text="Carving").click(); pg.wait_for_timeout(400)
+        check(tag + "twelve parts to carve, the head and ears among them", pg.locator(".hparts .dvchip").count() == 12 and pg.locator(".hparts .dvchip", has_text="Head").count() == 1)
+        check(tag + "opening Carving swaps the belt for the beast", pg.locator(".huntcarcass").count() == 1 and pg.locator(".huntbelt").count() == 0 and pg.locator(".huntdrop.open").count() == 1)
+        pg.screenshot(path=str(SHOTS / f"hunt-carve-{W}.png"), full_page=True)
+        pg.locator(".hback .huntdropb").click(); pg.wait_for_timeout(400)
+        check(tag + "\"← Your trophies\" brings the belt back", pg.locator(".huntbelt").count() == 1 and pg.locator(".huntdrop.open").count() == 0)
+        pg.locator(".huntdropb", has_text="Merging").click(); pg.wait_for_timeout(300); pg.locator(".huntdropb", has_text="Merging").click(); pg.wait_for_timeout(300)
+        check(tag + "clicking an open bar again closes it", pg.locator(".huntbelt").count() == 1)
+        pg.locator(".huntdropb", has_text="Carving").click(); pg.wait_for_timeout(400)
         pg.fill("#hc-m", "Chimera"); pg.locator(".hparts .dvchip", has_text="Fang").click(); pg.locator(".huntlvl button", has_text="3").click()
         pg.locator(".forgebtn", has_text="Carve").click(); pg.wait_for_selector(".trophyform .hpe input", timeout=30000); pg.wait_for_timeout(300)
         kinds = [k.get_attribute("class").split()[-1] for k in pg.locator(".hkinds .hk").all()]
@@ -45,7 +54,7 @@ with sync_playwright() as p:
         t = ch()["craft"]["hunt"]["trophies"]
         check(tag + "the trophy is saved: name, monster, part, level, properties", len(t) == 1 and t[0]["n"] == "Chimera's Fang" and t[0]["monster"] == "Chimera" and t[0]["part"] == "fang"
               and t[0]["lvl"] == 3 and [p["kind"] for p in t[0]["props"]] == ["pos"] * 5 + ["void"] and t[0]["props"][0]["t"] == "Power 1", t)
-        check(tag + "and it's back on the trophy case", pg.locator(".huntcard").count() == 1)
+        check(tag + "and it's back on the trophy case, Carving folded", pg.locator(".huntcard").count() == 1 and pg.locator(".huntdropbody").count() == 0)
         # one found by hand
         pg.locator(".hadd").click(); pg.fill("#tf-n", "Wyrm Scale"); pg.locator(".trophyform .hpe input").first.fill("+2 AV against fire")
         pg.locator(".trophyform .btn.primary").click(); pg.wait_for_timeout(400)
@@ -64,14 +73,18 @@ with sync_playwright() as p:
         pg.wait_for_timeout(1500)
         check(tag + "after 3 turns the release ends", ch()["craft"]["hunt"]["release"] is None)
         # merge: the fang gives to the scale; −29 passes up to 8, the fang has 5
-        pg.locator(".huntpages button", has_text="Merging").click(); pg.wait_for_timeout(400)
+        pg.screenshot(path=str(SHOTS / f"hunt-case-{W}.png"), full_page=True)
+        pg.locator(".huntdropb", has_text="Merging").click(); pg.wait_for_timeout(400)
+        check(tag + "opening Merging swaps in the altar", pg.locator(".huntaltar").count() == 1 and pg.locator(".huntbelt").count() == 0)
         pg.locator(".hmergepick").nth(0).locator(".hmchip", has_text="Wyrm").click(); pg.locator(".hmergepick").nth(1).locator(".hmchip", has_text="Chimera").click()
         pg.locator(".forgebtn", has_text="Merge").click(); pg.wait_for_selector(".huntread .btn.primary", timeout=30000); pg.wait_for_timeout(300)
         check(tag + "−29 on the Combining Roll: up to 8 pass, the giver has 5", "8 positive properties can pass" in pg.locator(".huntread").inner_text())
+        pg.screenshot(path=str(SHOTS / f"hunt-merge-{W}.png"), full_page=True)
         pg.locator(".huntread .btn.primary").click(); pg.wait_for_timeout(1500)
         t = ch()["craft"]["hunt"]["trophies"]
         check(tag + "the giver burns; its 5 positives fill the scale's void, then are added", len(t) == 1 and t[0]["n"] == "Wyrm Scale"
               and [p["kind"] for p in t[0]["props"]] == ["pos"] * 6 and [p["t"] for p in t[0]["props"]][1] == "Power 1" and t[0]["merged"] == ["Chimera's Fang"], t)
+        check(tag + "the merged trophy carries the giver's fang, drawn on it", t[0].get("attached") == ["fang"] and pg.locator(".huntpic svg").count() == 1, t[0].get("attached"))
         check(tag + "no sideways scroll", not pg.evaluate("document.documentElement.scrollWidth > innerWidth + 1"))
         check(tag + "no page errors", not errs, errs[:3])
         ctx.close()
@@ -87,6 +100,14 @@ with sync_playwright() as p:
     check("a property rolled alone: 62 negative, 50 void", r["rest"] == ["neg", "void"], r["rest"])
     check("Combining Roll: 0, 0, 1, 2, 3 … 9", r["comb"] == [0, 0, 1, 2, 3, 9], r["comb"])
     check("trophies you can use: none at 2, level 1 at 3, +1 a point, at most 5", r["lv"] == [0, 1, 2, 5, 5], r["lv"])
+    m = pg.evaluate("""(() => { const st = (b, a) => huntPlace(b, a).map(p => p.st);
+      return { tongue: st("head", ["tongue"]), eyes: st("head", ["eye", "eye", "eye"]), wrap: st("claw", ["hide"]), patch: st("heart", ["hide"]),
+        pierce: st("heart", ["eye", "spike"]), onto: st("hide", ["fang"]), order: huntPlace("horn", ["fang", "claw", "spike", "bone"]).map(p => p.si),
+        five: huntPlace("bone", ["fang", "claw", "spike", "ear", "horn"]).length, hood: st("eye", ["hide", "hide"]) }; })()""")
+    check("merging, where parts go: a tongue in a skull's mouth, eyes in its sockets then the brow", m["tongue"] == ["mouth"] and m["eyes"] == ["socket", "socket", "set"], m)
+    check("hide wraps a claw, patches a heart, hoods an eye (then patches)", m["wrap"] == ["wrap"] and m["patch"] == ["patch"] and m["hood"] == ["hood", "patch"], m)
+    check("a spike pierces a heart; a fang is sewn flat onto a hide", m["pierce"] == ["set", "pierce"] and m["onto"] == ["onto"], m)
+    check("slots fill on top, left, right, then the front; past four the picture stays", m["order"] == [0, 1, 2, 3] and m["five"] == 4, m)
     b.close()
 
 print("PASS" if all(checks) else "FAIL"); sys.exit(0 if all(checks) else 1)

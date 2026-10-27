@@ -11,7 +11,8 @@
    Rules: huntState, salvagePlan, salvageRest, combineCount in rules.js; data in c.craft.hunt. */
 
 const HuntFrag = preact.Fragment;
-const HUNT_PAGES = [["case", "Trophies & belt"], ["carve", "Carving"], ["merge", "Merging"]];
+// One page: the trophies on top; Carving and Merging fold open beneath them and take over the picture above.
+const HUNT_DROPS = [["carve", "Carving"], ["merge", "Merging"]];
 const huntSrc = t => !t ? "" : t.img ? (Store.assets && Store.assets.urlFor ? Store.assets.urlFor(t.img) : "") : t.imgData || "";
 const HUNT_KIND = { pos: ["+", "Positive"], neg: ["−", "Negative"], void: ["∅", "Void"] };
 
@@ -68,6 +69,10 @@ const HUNT_PARTS = [
   { k: "heart", n: "Heart", at: [262, 212], cut: "M250 198 C256 190 270 192 274 202 C276 214 266 224 260 228 C252 222 246 210 250 198" },
   { k: "tail", n: "Tail", at: [548, 240], cut: "M512 214 C506 222 504 230 506 238" },
   { k: "bone", n: "Bone", at: [492, 270], cut: "M486 256 C493 264 494 274 489 283" },
+  { k: "head", n: "Head", at: [208, 212], cut: "M200 176 C212 196 214 226 200 250" },
+  { k: "spike", n: "Spike", at: [370, 104], cut: "M359 121 C365 117 373 117 379 121" },
+  { k: "tongue", n: "Tongue", at: [62, 262], cut: "M82 238 C87 237 92 239 95 244" },
+  { k: "ear", n: "Ear", at: [210, 156], cut: "M184 172 C188 176 192 179 196 180" },
 ];
 // The carcass, as layers drawn twice: once in colour, once more with the fur texture over it.
 const HC_SHAPES = {
@@ -85,29 +90,42 @@ const HUNT_GLYPH = {
   fang: "M-5 -9H5C5 -2 2 5 0 10C-2 5 -5 -2 -5 -9Z", claw: "M-8 8C-6 0 -1 -6 7 -9C3 -4 1 2 1 8Z M-2 9C0 3 3 -1 8 -3",
   hide: "M-9 -7C-4 -9 4 -9 9 -7C8 -2 9 3 8 8C3 9 -3 9 -8 8C-9 3 -8 -2 -9 -7Z", heart: "M0 8C-8 2 -9 -3 -6 -6C-3 -9 0 -6 0 -4C0 -6 3 -9 6 -6C9 -3 8 2 0 8Z",
   tail: "M-9 6C-4 6 2 3 4 -2C5 -6 8 -8 9 -9C9 -4 7 2 3 5C0 7 -5 8 -9 6Z", bone: "M-7 -7a2.4 2.4 0 1 1 3 -1L4 6a2.4 2.4 0 1 1 1 3a2.4 2.4 0 1 1 -3 1L-6 -2a2.4 2.4 0 1 1 -1 -5Z",
+  head: "M-8 -1C-8 -7 8 -7 8 -1C8 4 5 5 4 9H-4C-5 5 -8 4 -8 -1Z M-7 -5L-11 -10L-5 -7Z M7 -5L11 -10L5 -7Z", spike: "M-7 -8C-3 -10 3 -10 7 -8L1 10H-1Z",
+  tongue: "M-4 -9H4V2C4 7 2 10 0 10C-2 10 -4 7 -4 2Z", ear: "M-6 -8C-8 0 -5 5 1 10C4 3 6 -3 5 -9C1 -10 -3 -10 -6 -8Z",
   other: "M0 -9L8 0L0 9L-8 0Z",
 };
 const HuntGlyph = ({ part }) => html`<svg class="hglyph" viewBox="-11 -11 22 22" aria-hidden="true"><path d=${HUNT_GLYPH[part] || HUNT_GLYPH.other} /></svg>`;
 const HuntPips = ({ lvl }) => html`<span class="hpips" aria-label=${`Level ${lvl}`}>${[1, 2, 3, 4, 5].map(i => html`<i class=${i <= lvl ? "on" : ""}></i>`)}</span>`;
-// A trophy's medallion: its picture, or the part's glyph on a disc.
-const HuntMedal = ({ t, size = 64, cls = "" }) => { const src = huntSrc(t);   // a brass-rimmed disc of bone, or the trophy's picture
-  return html`<span class=${"hmedal " + cls} style=${`--s:${size}px`}>${src ? html`<img src=${src} alt="" />` : html`<${HuntGlyph} part=${t.part} />`}</span>`; };
+
 
 function Hunting({ c, update }) {
   const st = R.huntState(c), h = c.craft.hunt;
-  const [page, setPageState] = useState(() => lsGet("cw-hunt-page", "case"));
-  const setPage = p => { setPageState(p); lsSet("cw-hunt-page", p); };
+  const [page, setPageState] = useState(() => { const p = lsGet("cw-hunt-page", "case"); return p === "carve" || p === "merge" ? p : "case"; });
+  const [busy, setBusy] = useState(false), wrap = useRef(null), first = useRef(true);
+  const setPage = p => { lsSet("cw-hunt-page", p);
+    if (!document.startViewTransition || reduceMotion() || document.hidden) return setPageState(p);
+    document.startViewTransition(() => new Promise(res => { setPageState(p); setTimeout(res, 0); })); };
+  // Opening a drop-down changes the picture above it: bring that into view if it scrolled away.
+  useEffect(() => { if (first.current) { first.current = false; return; }
+    const el = wrap.current && wrap.current.querySelector(".huntone"); if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: "start", behavior: reduceMotion() ? "auto" : "smooth" }); }, [page]);
+  const bars = body => html`<div class="huntdrops">${page !== "case" && html`<div class="huntdrop hback" key="back">
+      <button type="button" class="huntdropb" disabled=${busy} title=${busy ? "Finish this first" : ""} onClick=${() => setPage("case")}>
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10H4m5-5-5 5 5 5" /></svg><span>Your trophies</span></button></div>`}${HUNT_DROPS.map(([k, n]) => { const on = page === k;
+    return html`<div class=${"huntdrop" + (on ? " open" : "")} key=${k}>
+      <button type="button" class="huntdropb" aria-expanded=${on} disabled=${busy} title=${on ? "Close: back to your trophies" : ""} onClick=${() => setPage(on ? "case" : k)}>
+        ${k === "carve" ? KNIFE : MERGE_ICON}<span>${n}</span><svg class="hchev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg></button>
+      ${on && html`<div class="huntdropbody" key="b">${body}</div>`}</div>`; })}</div>`;
   const log = (x, name, rolls) => { x.craft.hunt.ledger = [{ id: rid(), t: Date.now(), name, rolls: rolls || [] }, ...x.craft.hunt.ledger].slice(0, 30); addLog(x, "Hunting: " + name); };
-  return html`<div class="hunting">
+  const kids = { c, st, update, log, bars, onBusy: setBusy, toCase: () => setPage("case") };
+  return html`<div class="hunting" ref=${wrap}><${HuntArtDefs} />
     <section class="frame hunthead"><${Head} title="Hunting" topic="hunting" />
       <div class="facts ptfacts">${[["Hunting", `${st.lvl} · ${st.mod}%`], ["Trophies you can use", st.maxLvl ? `Up to level ${st.maxLvl}` : "From Hunting 3"],
         ["Belt", `${st.belted.length} of ${st.slots}${st.attuned.length ? ` · ${st.attuned.length} attuned` : ""}`]].map(([k, v]) => html`<div class="fact"><span>${k}</span><b>${v}</b></div>`)}</div>
       <${HuntMyths} c=${c} st=${st} update=${update} />
     </section>
-    <div class="seg huntpages" role="tablist" aria-label="Hunting">${HUNT_PAGES.map(([k, n]) => html`<button role="tab" aria-selected=${page === k} aria-pressed=${page === k} onClick=${() => setPage(k)}>${n}</button>`)}</div>
-    ${page === "case" && html`<${HuntCase} key="case" c=${c} st=${st} update=${update} log=${log} toCarve=${() => setPage("carve")} />`}
-    ${page === "carve" && html`<${HuntCarve} key="carve" c=${c} st=${st} update=${update} log=${log} toCase=${() => setPage("case")} />`}
-    ${page === "merge" && html`<${HuntMerge} key="merge" c=${c} st=${st} update=${update} log=${log} />`}
+    ${page === "case" && html`<${HuntCase} key="case" ...${kids} toCarve=${() => setPage("carve")} />`}
+    ${page === "carve" && html`<${HuntCarve} key="carve" ...${kids} />`}
+    ${page === "merge" && html`<${HuntMerge} key="merge" ...${kids} />`}
     <${HuntLedger} c=${c} update=${update} />
   </div>`;
 }
@@ -124,7 +142,7 @@ function HuntMyths({ c, st, update }) {
 }
 
 /* ---------------- Trophies & belt ---------------- */
-function HuntCase({ c, st, update, log, toCarve }) {
+function HuntCase({ c, st, update, log, toCarve, bars }) {
   const h = c.craft.hunt, [sel, setSel] = useState(""), [edit, setEdit] = useState(null), [fx, setFx] = useState(null);
   const flash = (id, kind) => { setFx({ id, kind, k: Date.now() }); setTimeout(() => setFx(f => f && f.id === id && f.kind === kind ? null : f), reduceMotion() ? 50 : 1600); };
   const cur = h.trophies.find(t => t.id === sel);
@@ -162,7 +180,7 @@ function HuntCase({ c, st, update, log, toCarve }) {
       ["release", "second"].forEach(k => { if (x.craft.hunt[k] && x.craft.hunt[k].id === t.id) x.craft.hunt[k] = null; }); }); setSel(""); };
 
   const blank = () => setEdit({ n: "", monster: "", part: "other", lvl: 1, props: [{ id: rid(), kind: "pos", t: "" }, { id: rid(), kind: "void", t: "" }], note: "" });
-  return html`<section class="frame huntbeltf">
+  return html`<section class="frame huntone huntbeltf">
     <h2 class="h"><span>Your trophies</span><i class="orn" aria-hidden="true"></i>${!edit && html`<button class="btn small hadd" key="add" onClick=${blank} title="Add a trophy you found or bought">+ Add</button>`}</h2>
     <div class="huntbeltwrap">
       <${HuntBelt} st=${st} h=${h} belt=${belt} sel=${sel} fx=${fx} onPick=${id => setSel(id === sel ? "" : id)} />
@@ -187,6 +205,7 @@ function HuntCase({ c, st, update, log, toCarve }) {
       : h.trophies.length ? html`<div class="huntcards" key="cards">${h.trophies.map(t => html`<${TrophyCard} key=${t.id} t=${t} st=${st} sel=${sel === t.id} rel=${rel && rel.id === t.id}
           onBelt=${() => (t.belted ? offBelt(t) : toBelt(t))} onEdit=${() => setEdit(t)} onRemove=${() => remove(t)} onPick=${() => setSel(t.id)} />`)}</div>`
       : html`<p class="muted" key="none">No trophies yet. ${st.salvage ? html`<a href="#" onClick=${e => { e.preventDefault(); toCarve(); }}>Carve one</a>, or add` : "Add"} one you found or bought.</p>`}
+    ${!edit && bars(null)}
   </section>`;
 }
 
@@ -195,7 +214,7 @@ function HuntCase({ c, st, update, log, toCarve }) {
 function HuntBelt({ st, h, belt, sel, fx, onPick }) {
   const n = st.slots, x0 = 120, x1 = 570, step = (x1 - x0) / n;
   const slot = i => x0 + step * (i + .5);
-  return html`<div class="huntbelt" style=${huntTex("wood") ? `background-image: radial-gradient(ellipse at 50% 40%, transparent 40%, rgb(20 10 4 / .55)), url(${huntTex("wood")})` : ""}>
+  return html`<div class="huntbelt huntframe" style=${huntTex("wood") ? `background-image: radial-gradient(ellipse at 50% 40%, transparent 40%, rgb(20 10 4 / .55)), url(${huntTex("wood")})` : ""}>
     <svg viewBox="0 0 600 250" role="group" aria-label=${`Your belt: ${belt.length} of ${n} loops taken`}>
       <defs>
         <linearGradient id="hb-leather" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5532" /><stop offset=".18" stop-color="#6e4024" /><stop offset=".8" stop-color="#4e2b16" /><stop offset="1" stop-color="#2e180a" /></linearGradient>
@@ -227,22 +246,24 @@ function HuntBelt({ st, h, belt, sel, fx, onPick }) {
           <path d=${`M${x - 12} 47 H${x + 12} M${x - 12} 85 H${x + 12}`} class="hbstitch" />
           <circle cx=${x - 9} cy="52" r="2.6" fill="url(#hb-rivet)" /><circle cx=${x + 9} cy="52" r="2.6" fill="url(#hb-rivet)" /><circle cx=${x - 9} cy="80" r="2.6" fill="url(#hb-rivet)" /><circle cx=${x + 9} cy="80" r="2.6" fill="url(#hb-rivet)" /></g>`; })}
       ${belt.map((t, i) => { const x = slot(i), on = sel === t.id, released = h.release && h.release.id === t.id, f = fx && fx.id === t.id ? fx.kind : "";
+        const pic = huntSrc(t), sc = (t.attached || []).length ? .78 : 1, top = pic ? 139 : 170 - 38 * sc;   // the cord ends where the trophy is tied
         return html`<g key=${t.id} class=${"hbcharm" + (on ? " sel" : "") + (t.attuned ? " attuned" : "") + (released ? " released" : "") + (f ? " fx-" + f : "")}
             style=${`--x:${x}px; --d:${(i * .37).toFixed(2)}s`} role="button" tabindex="0" aria-label=${`${t.n || "Trophy"}${t.attuned ? ", attuned" : ""}`}
             onClick=${() => onPick(t.id)} onKeyDown=${e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(t.id); } }}>
           <g class="hbswing">
             <ellipse class="hbcast" cx=${x + 10} cy="214" rx="30" ry="9" fill="url(#hb-shadow)" />
-            <path class="hbcord" d=${`M${x} 72 C${x - 3} 100 ${x + 3} 122 ${x} 142`} /><path class="hbcord2" d=${`M${x} 72 C${x - 3} 100 ${x + 3} 122 ${x} 142`} />
+            <path class="hbcord" d=${`M${x} 72 C${x - 3} 100 ${x + 3} ${top - 18} ${x} ${top}`} /><path class="hbcord2" d=${`M${x} 72 C${x - 3} 100 ${x + 3} ${top - 18} ${x} ${top}`} />
             <g transform=${`translate(${x} 170)`}>
               <circle class="hbaura" r="48" fill="url(#hb-glow)" />
-              ${t.attuned && html`<circle class="hbring" r="35" />`}
-              <circle r="30" fill="#1a0e05" opacity=".5" transform="translate(2 3)" />
-              <circle class="hbrim" r="29" fill="url(#hb-brass)" /><circle r="25.5" fill="#2a1608" />
-              ${huntSrc(t) ? html`<image href=${huntSrc(t)} x="-24" y="-24" width="48" height="48" preserveAspectRatio="xMidYMid slice" clip-path="url(#hb-disc)" />`
-                : html`<circle r="24" fill="url(#hb-bone)" /><g transform="scale(1.6)"><path d=${HUNT_GLYPH[t.part] || HUNT_GLYPH.other} fill="#fff8e6" opacity=".7" transform="translate(.5 .7)" /><path class="hbglyph" d=${HUNT_GLYPH[t.part] || HUNT_GLYPH.other} /></g>`}
-              <circle r="24" fill="url(#hb-shine)" /><circle r="28" fill="none" stroke="#fff3c8" stroke-width=".8" opacity=".6" />
-              <circle cy="-31" r="4.5" fill="none" stroke="url(#hb-brass)" stroke-width="2.4" />
-              <text y="60" class="hbname">${(t.n || "Trophy").length > 14 ? (t.n || "Trophy").slice(0, 13) + "…" : t.n || "Trophy"}</text>
+              ${t.attuned && html`<circle class="hbring" r="40" />`}
+              ${pic ? html`<g key="pic"><circle r="30" fill="#1a0e05" opacity=".5" transform="translate(2 3)" />
+                  <circle class="hbrim" r="29" fill="url(#hb-brass)" /><circle r="25.5" fill="#2a1608" />
+                  <image href=${pic} x="-24" y="-24" width="48" height="48" preserveAspectRatio="xMidYMid slice" clip-path="url(#hb-disc)" />
+                  <circle r="24" fill="url(#hb-shine)" /><circle r="28" fill="none" stroke="#fff3c8" stroke-width=".8" opacity=".6" />
+                  <circle cy="-31" r="4.5" fill="none" stroke="url(#hb-brass)" stroke-width="2.4" /></g>`
+                : html`<g key="art"><g transform=${`scale(${sc})`}><${HuntTrophyArt} part=${t.part} attached=${t.attached} /></g>
+                  <circle cy=${-38 * sc} r="3" fill="none" stroke="url(#hb-brass)" stroke-width="1.8" /></g>`}
+              <text y="62" class="hbname">${(() => { const nm = t.n || "Trophy", fit = Math.max(5, Math.floor(step / 6.6)); return nm.length > fit ? nm.slice(0, fit - 1) + "…" : nm; })()}</text>
               ${released && html`<g class="hbrays">${Array.from({ length: 12 }, (_, k) => html`<path d="M0 -36V-46" transform=${`rotate(${k * 30})`} />`)}</g>`}
             </g></g></g>`; })}
     </svg></div>`;
@@ -252,7 +273,7 @@ function TrophyCard({ t, st, sel, rel, onBelt, onEdit, onRemove, onPick }) {
   const part = (HUNT_PARTS.find(p => p.k === t.part) || {}).n;
   const tooStrong = st.maxLvl && t.lvl > st.maxLvl;
   return html`<article class=${"huntcard" + (t.belted ? " belted" : "") + (t.attuned ? " attuned" : "") + (sel ? " sel" : "")} onClick=${e => { if (!e.target.closest("button")) onPick(); }}>
-    <header><${HuntMedal} t=${t} size=${38} /><div class="huntcardn"><b>${t.n || "Unnamed trophy"}</b>
+    <header><${HuntTrophy} t=${t} size=${54} /><div class="huntcardn"><b>${t.n || "Unnamed trophy"}</b>
       <small><${HuntPips} lvl=${t.lvl} /> ${[t.monster, part].filter(Boolean).join(" · ")}${t.attuned ? html` <span class="flag brass">Attuned</span>` : ""}${rel ? html` <span class="flag brass">Released</span>` : ""}${tooStrong ? html` <span class="flag bad">Too strong</span>` : ""}</small></div>
       <div class="hcardbtns"><button class=${"iconbtn hbeltbtn" + (t.belted ? " on" : "")} aria-pressed=${!!t.belted} aria-label=${t.belted ? "Take it off the belt" : "Put it on the belt"} title=${t.belted ? "On your belt: click to take it off" : "Put it on your belt"} onClick=${onBelt}>${BELT_ICON}</button>
         <button class="iconbtn" aria-label=${`Edit ${t.n || "this trophy"}`} title="Edit" onClick=${onEdit}>✎</button><button class="iconbtn" aria-label=${`Throw away ${t.n || "this trophy"}`} title="Throw away" onClick=${onRemove}>×</button></div></header>
@@ -264,7 +285,7 @@ function TrophyCard({ t, st, sel, rel, onBelt, onEdit, onRemove, onPick }) {
 
 // Name a trophy, write its properties, give it a picture.
 function TrophyForm({ init, onSave, onCancel, title = "The trophy", fixedKinds = false }) {
-  const [f, setF] = useState(() => Object.assign({ n: "", monster: "", part: "other", lvl: 1, note: "", img: "", imgData: "" }, init, { props: (init.props || []).map(p => Object.assign({ id: rid() }, p)) }));
+  const [f, setF] = useState(() => Object.assign({ n: "", monster: "", part: "other", lvl: 1, note: "", img: "", imgData: "", attached: [] }, init, { props: (init.props || []).map(p => Object.assign({ id: rid() }, p)) }));
   const [busy, setBusy] = useState(false);
   const set = p => setF(Object.assign({}, f, p));
   const setP = (i, p) => set({ props: f.props.map((x, j) => j === i ? Object.assign({}, x, p) : x) });
@@ -273,7 +294,7 @@ function TrophyForm({ init, onSave, onCancel, title = "The trophy", fixedKinds =
     catch (err) { toast("That picture couldn't be used."); } setBusy(false); };
   const id = k => "tf-" + k;
   return html`<form class="trophyform" onSubmit=${e => { e.preventDefault(); onSave(Object.assign({}, f, { n: f.n.trim(), monster: f.monster.trim(), note: f.note.trim(), props: f.props.map(p => Object.assign({}, p, { t: (p.t || "").trim() })) })); }}>
-    <div class="trophyformtop"><label class="huntpic">${huntSrc(f) ? html`<img src=${huntSrc(f)} alt="" />` : html`<${HuntGlyph} part=${f.part} />`}
+    <div class="trophyformtop"><label class="huntpic">${huntSrc(f) ? html`<img src=${huntSrc(f)} alt="" />` : html`<svg viewBox=${huntBox(f)} aria-hidden="true"><${HuntTrophyArt} part=${f.part} attached=${f.attached} /></svg>`}
         <input type="file" accept="image/*" onChange=${pic} /><span>${busy ? "Loading…" : huntSrc(f) ? "Change the picture" : "Add a picture"}</span></label>
       <div class="trophyformf">
         <div class="mini"><label for=${id("n")}>Name</label><input id=${id("n")} value=${f.n} placeholder="e.g. Chimera's Fang" onInput=${e => set({ n: e.target.value })} /></div>
@@ -306,7 +327,7 @@ function HuntLedger({ c, update }) {
 }
 
 /* ---------------- Carving ---------------- */
-function HuntCarve({ c, st, update, log, toCase }) {
+function HuntCarve({ c, st, update, log, toCase, bars, onBusy }) {
   const [part, setPart] = useState("horn"), [monster, setMonster] = useState(""), [lvl, setLvl] = useState(1);
   const [run, setRunState] = useState(null), runRef = useRef(null), timers = useRef([]);
   const setRun = r => { runRef.current = r; setRunState(r); };
@@ -316,6 +337,8 @@ function HuntCarve({ c, st, update, log, toCase }) {
   const P = HUNT_PARTS.find(p => p.k === part) || HUNT_PARTS[0];
   const block = !st.salvage ? `Carving trophies needs Hunting 4. ${c.name || "This character"} has ${st.lvl}.` : "";
   const busy = !!run && !run.done;
+  const held = busy || (!!run && run.phase === "name");   // a carved trophy waiting for its name is lost if you leave
+  useEffect(() => { onBusy(held); }, [held]); useEffect(() => () => onBusy(false), []);
   const carve = async () => {
     if (block || busy) return;
     const n = 2 * lvl, name = monster.trim();
@@ -351,38 +374,30 @@ function HuntCarve({ c, st, update, log, toCase }) {
     toast(`${t.n || "The trophy"} is in your trophy case.`); setRun(null); toCase();
   };
   const sum = run && run.kinds ? run.kinds : [];
-  return html`<${HuntFrag}>
-    <section class="frame huntcarvef">
-      <h2 class="h"><span>Carving</span><i class="orn" aria-hidden="true"></i></h2>
-      <div class="ptgrid">
-        <div class="ptstage">
-          <${HuntCarcass} part=${run ? run.part : part} run=${run} onPick=${k => !busy && setPart(k)} />
-          <div class="ptforge">
-            ${!run ? html`<button class="btn primary big forgebtn" key="go" disabled=${!!block} onClick=${carve}>${KNIFE}Carve the ${P.n.toLowerCase()}</button>${block && html`<p class="muted ptwhy">${block}</p>`}`
-              : html`<div class="huntread" key="read" aria-live="polite">
-                <p><b>${run.phase === "cut" ? "Cutting…" : run.phase === "fail" ? "The trophy is ruined." : run.plan ? `${run.r} − ${st.mod} = ${run.total}` : ""}</b>
-                  ${run.plan && !run.plan.fail && html` · ${run.plan.neg === run.plan.n ? "all negative" : run.plan.pos ? `${run.plan.pos} positive${run.plan.capped ? " (a trophy can't be all positive)" : ""}` : `${run.plan.neg} negative`}${run.plan.rest ? `, ${run.plan.rest} to roll` : ""}`}</p>
-                <div class="hkinds">${Array.from({ length: 2 * run.lvl }, (_, i) => html`<span key=${i} class=${"hk " + (sum[i] ? "hp-" + sum[i] : "wait")}>${sum[i] ? HUNT_KIND[sum[i]][0] : ""}</span>`)}</div>
-                ${run.phase === "fail" && html`<button class="btn small" onClick=${() => setRun(null)}>Done</button>`}
-              </div>`}
-          </div>
-        </div>
-        <div class="ptside">
-          ${run && run.phase === "name" ? html`<${TrophyForm} key="name" title="Name your trophy" fixedKinds=${true}
-              init=${{ n: run.monster ? `${run.monster}'s ${P.n}` : "", monster: run.monster, part: run.part, lvl: run.lvl, props: run.kinds.map(k => ({ kind: k, t: "" })), note: "" }}
-              onSave=${keep} onCancel=${null} />`
-            : html`<div class="ptpick huntpick" key="pick">
-              <div class="mini"><label for="hc-m">Monster</label><input id="hc-m" value=${monster} disabled=${busy} placeholder="e.g. Chimera" onInput=${e => setMonster(e.target.value)} /></div>
-              <span class="lbl">Part</span>
-              <div class="hparts">${HUNT_PARTS.map(p => html`<button type="button" class=${"dvchip" + (part === p.k ? " on" : "")} aria-pressed=${part === p.k} disabled=${busy} onClick=${() => setPart(p.k)}><${HuntGlyph} part=${p.k} />${p.n}</button>`)}</div>
-              <span class="lbl">Level (the GM's) · ${2 * lvl} properties</span>
-              <div class="seg huntlvl" role="group" aria-label="Trophy level">${[1, 2, 3, 4, 5].map(l => html`<button type="button" aria-pressed=${lvl === l} disabled=${busy} onClick=${() => setLvl(l)}>${l}</button>`)}</div>
-              ${st.maxLvl && lvl > st.maxLvl && html`<small class="muted">You can only use up to level ${st.maxLvl} for now.</small>`}
-            </div>`}
-        </div>
-      </div>
-    </section>
-  </${HuntFrag}>`;
+  return html`<section class="frame huntone huntcarvef">
+    <h2 class="h"><span>Carving</span><i class="orn" aria-hidden="true"></i></h2>
+    <div class="huntstage" key="stage">
+      <${HuntCarcass} part=${run ? run.part : part} run=${run} onPick=${k => !busy && setPart(k)} />
+      ${run && html`<div class="ptforge"><div class="huntread" key="read" aria-live="polite">
+        <p><b>${run.phase === "cut" ? "Cutting…" : run.phase === "fail" ? "The trophy is ruined." : run.plan ? `${run.r} − ${st.mod} = ${run.total}` : ""}</b>
+          ${run.plan && !run.plan.fail && html` · ${run.plan.neg === run.plan.n ? "all negative" : run.plan.pos ? `${run.plan.pos} positive${run.plan.capped ? " (a trophy can't be all positive)" : ""}` : `${run.plan.neg} negative`}${run.plan.rest ? `, ${run.plan.rest} to roll` : ""}`}</p>
+        <div class="hkinds">${Array.from({ length: 2 * run.lvl }, (_, i) => html`<span key=${i} class=${"hk " + (sum[i] ? "hp-" + sum[i] : "wait")}>${sum[i] ? HUNT_KIND[sum[i]][0] : ""}</span>`)}</div>
+        ${run.phase === "fail" && html`<button class="btn small" onClick=${() => setRun(null)}>Done</button>`}
+      </div></div>`}
+    </div>
+    ${bars(run && run.phase === "name" ? html`<${TrophyForm} key="name" title="Name your trophy" fixedKinds=${true}
+        init=${{ n: run.monster ? `${run.monster}'s ${P.n}` : "", monster: run.monster, part: run.part, lvl: run.lvl, props: run.kinds.map(k => ({ kind: k, t: "" })), note: "" }}
+        onSave=${keep} onCancel=${null} />`
+      : html`<div class="huntpick" key="pick">
+        <div class="mini"><label for="hc-m">Monster</label><input id="hc-m" value=${monster} disabled=${busy} placeholder="e.g. Chimera" onInput=${e => setMonster(e.target.value)} /></div>
+        <div class="mini"><span class="lbl">Level (the GM's) · ${2 * lvl} properties</span>
+          <div class="seg huntlvl" role="group" aria-label="Trophy level">${[1, 2, 3, 4, 5].map(l => html`<button type="button" aria-pressed=${lvl === l} disabled=${busy} onClick=${() => setLvl(l)}>${l}</button>`)}</div></div>
+        <div class="mini hpartsw"><span class="lbl">Part</span>
+          <div class="hparts">${HUNT_PARTS.map(p => html`<button type="button" class=${"dvchip" + (part === p.k ? " on" : "")} aria-pressed=${part === p.k} disabled=${busy} onClick=${() => setPart(p.k)}><${HuntGlyph} part=${p.k} />${p.n}</button>`)}</div></div>
+        ${st.maxLvl && lvl > st.maxLvl && html`<small class="muted hpartsw">You can only use up to level ${st.maxLvl} for now.</small>`}
+        <div class="huntgo">${!run && html`<button class="btn primary forgebtn" key="go" disabled=${!!block} onClick=${carve}>${KNIFE}Carve the ${P.n.toLowerCase()}</button>`}${block && html`<small class="muted">${block}</small>`}</div>
+      </div>`)}
+  </section>`;
 }
 const KNIFE = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17 12.5 7.5 15 5c1.5-1.5 2.5-1 2.5-1s.5 1-1 2.5L14 9 4.5 18.5Z M10.5 9.5l2 2" /></svg>`;
 
@@ -391,8 +406,8 @@ const KNIFE = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17 12
 function HuntCarcass({ part, run, onPick }) {
   const P = HUNT_PARTS.find(p => p.k === part) || HUNT_PARTS[0], phase = run ? run.phase : "";
   const order = ["farFront", "farHind", "tail", "body", "nearFront", "nearHind", "head", "ear"];
-  return html`<div class=${"huntcarcass ph-" + (phase || "idle")}>
-    <svg viewBox="0 0 600 320" role="group" aria-label="The slain monster: choose a part to carve">
+  return html`<div class=${"huntcarcass huntframe ph-" + (phase || "idle")} style=${huntTex("dirt") ? `background-image: linear-gradient(transparent 58%, rgb(216 207 186 / .6) 64%, transparent 72%), linear-gradient(transparent 66%, rgb(92 74 51 / .15) 66%), url(${huntTex("dirt")}), linear-gradient(#adaa9b 0%, #cdc3ad 56%, #a69273 63%, #7d6849 67%, #5c4a33 100%); background-size: auto, auto, auto 34%, auto; background-position: 0 0, 0 0, left bottom, 0 0; background-repeat: no-repeat, no-repeat, repeat-x, no-repeat` : ""}>
+    <svg viewBox="-12 28 624 260" role="group" aria-label="The slain monster: choose a part to carve">
       <defs>
         <linearGradient id="hc-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9a597" /><stop offset=".55" stop-color="#cdc3ad" /><stop offset=".64" stop-color="#9c8a6b" /><stop offset="1" stop-color="#5c4a33" /></linearGradient>
         <linearGradient id="hc-mist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8cfba" stop-opacity="0" /><stop offset=".5" stop-color="#d8cfba" stop-opacity=".75" /><stop offset="1" stop-color="#8a7556" stop-opacity="0" /></linearGradient>
@@ -406,11 +421,11 @@ function HuntCarcass({ part, run, onPick }) {
         <radialGradient id="hc-trophy"><stop offset="0" stop-color="#fff2c4" stop-opacity=".95" /><stop offset=".5" stop-color="#e8b04a" stop-opacity=".55" /><stop offset="1" stop-color="#e8b04a" stop-opacity="0" /></radialGradient>
         <${HuntPattern} id="hc-furtex" k="fur" /><${HuntPattern} id="hc-dirt" k="dirt" h=${128} />
       </defs>
-      <rect width="600" height="320" fill="url(#hc-sky)" />
-      <path class="hchills" d="M0 196 C60 180 110 186 160 178 C220 168 270 184 330 176 C390 168 440 182 500 174 C540 170 570 178 600 176 V206 H0 Z" />
-      <path class="hchills near" d="M0 204 C80 192 140 200 220 192 C300 186 380 198 460 190 C520 186 560 194 600 190 V210 H0 Z" />
-      <rect y="200" width="600" height="120" fill="url(#hc-dirt)" opacity=".9" />
-      <rect y="180" width="600" height="44" fill="url(#hc-mist)" />
+      <rect x="-20" width="640" height="320" fill="url(#hc-sky)" />
+      <path class="hchills" d="M-20 198 L0 196 C60 180 110 186 160 178 C220 168 270 184 330 176 C390 168 440 182 500 174 C540 170 570 178 600 176 L620 176 V206 H-20 Z" />
+      <path class="hchills near" d="M-20 205 L0 204 C80 192 140 200 220 192 C300 186 380 198 460 190 C520 186 560 194 600 190 L620 190 V210 H-20 Z" />
+      <rect x="-20" y="200" width="640" height="120" fill="url(#hc-dirt)" opacity=".9" />
+      <rect x="-20" y="180" width="640" height="44" fill="url(#hc-mist)" />
       <path class="hcgrass" d="M20 214 l3 -12 l2 12 M34 210 l-2 -10 l5 10 M560 212 l2 -11 l3 11 M584 222 l-3 -12 l4 12 M300 300 l2 -9 l3 9 M120 306 l-2 -10 l4 10 M430 304 l3 -9 l2 9" />
       <ellipse cx="320" cy="266" rx="250" ry="20" fill="url(#hc-contact)" />
       <ellipse cx="128" cy="262" rx="120" ry="16" fill="url(#hc-pool)" />
@@ -443,14 +458,14 @@ function HuntCarcass({ part, run, onPick }) {
       ${run && html`<g key=${"run" + run.part} class="hcrun">
         <path class="hcslice" d=${P.cut} pathLength="100" />
         <g class="hcknife" style=${`offset-path: path("${P.cut}")`}><path class="hcblade" d="M0 0 L20 -6 L24 -2 L4 4 Z" /><path class="hcgrip" d="M-16 7 L0 0 L4 4 L-12 11 Z" /></g>
-        ${phase !== "cut" && phase !== "fail" && html`<g class="hcprize" transform=${`translate(${P.at[0]} ${P.at[1]})`}><circle r="40" fill="url(#hc-trophy)" /><g transform="scale(2)"><path class="hcprizeg" d=${HUNT_GLYPH[P.k]} /></g></g>`}
+        ${phase !== "cut" && phase !== "fail" && html`<g class="hcprize" transform=${`translate(${P.at[0]} ${P.at[1]})`}><circle r="40" fill="url(#hc-trophy)" /><g class="hcprizeart" transform="scale(.72)"><${HuntTrophyArt} part=${P.k} /></g></g>`}
         ${phase === "fail" && html`<g class="hcdust" transform=${`translate(${P.at[0]} ${P.at[1]})`}>${Array.from({ length: 10 }, (_, k) => html`<circle r="2.4" style=${`--a:${k * 36}deg`} />`)}</g>`}
       </g>`}
     </svg></div>`;
 }
 
 /* ---------------- Merging ---------------- */
-function HuntMerge({ c, st, update, log }) {
+function HuntMerge({ c, st, update, log, bars, onBusy, toCase }) {
   const h = c.craft.hunt, [recv, setRecv] = useState(""), [give, setGive] = useState(""), [cost, setCost] = useState("");
   const [run, setRunState] = useState(null), runRef = useRef(null), timers = useRef([]);
   const setRun = r => { runRef.current = r; setRunState(r); };
@@ -460,6 +475,7 @@ function HuntMerge({ c, st, update, log }) {
   const R1 = h.trophies.find(t => t.id === recv), G1 = h.trophies.find(t => t.id === give);
   const gPos = G1 ? G1.props.filter(p => p.kind === "pos") : [];
   const busy = !!run && !run.done;
+  useEffect(() => { onBusy(busy); }, [busy]); useEffect(() => () => onBusy(false), []);
   const block = !st.combine ? `Merging trophies needs Hunting 7. ${c.name || "This character"} has ${st.lvl}.`
     : !R1 || !G1 ? "Choose a trophy to receive and one to give." : !gPos.length ? `${G1.n || "The giver"} has no positive properties to pass on.` : "";
   const roll = async again => {
@@ -471,12 +487,12 @@ function HuntMerge({ c, st, update, log }) {
     if (block || busy) return;
     const first = await roll(false); if (!first) return;
     setRun({ phase: "fuse", recv: R1, give: G1, rolls: [first], rerolled: false });
-    await wait(1800);
+    await wait(3000);
     patch({ phase: "read" });
   };
   const again = async () => {
     const r = await roll(true); if (!r) return;
-    patch(g => ({ phase: "fuse", rolls: [...g.rolls, r], rerolled: true })); await wait(1400); patch({ phase: "read" });
+    patch(g => ({ phase: "fuse", rolls: [...g.rolls, r], rerolled: true })); await wait(3000); patch({ phase: "read" });
   };
   const last = run && run.rolls[run.rolls.length - 1];
   const nMove = last && !last.res.fail ? Math.min(last.res.n, run.give.props.filter(p => p.kind === "pos").length) : 0;
@@ -493,6 +509,7 @@ function HuntMerge({ c, st, update, log }) {
         moving.forEach(p => { const at = rv.props.findIndex(q => q.kind === "void"), at2 = at >= 0 ? at : rv.props.findIndex(q => q.kind === "neg"), np = { id: rid(), kind: "pos", t: p.t };
           if (at2 >= 0) rv.props[at2] = np; else rv.props.push(np); });
         rv.merged = [...(rv.merged || []), f.give.n || "a trophy"];
+        rv.attached = [...(rv.attached || []), f.give.part || "other", ...(f.give.attached || [])].slice(0, HUNT_ATTACH_MAX);
       }
       H.trophies = H.trophies.filter(t => t.id !== f.give.id);
       ["release", "second"].forEach(k => { if (H[k] && H[k].id === f.give.id) H[k] = null; });
@@ -503,79 +520,141 @@ function HuntMerge({ c, st, update, log }) {
     patch({ phase: "made", done: true, moved: moving.length }); setGive("");
   };
   const fresh = run && run.phase === "made" ? h.trophies.find(t => t.id === run.recv.id) : null;
-  const pickRow = (label, val, set, other) => html`<div class="mini"><label>${label}</label>
+  const pickRow = (label, val, set, other) => html`<div class="mini hpartsw"><label>${label}</label>
     <div class="hmergepick">${h.trophies.filter(t => t.id !== other).map(t => html`<button type="button" key=${t.id} class=${"hmchip" + (val === t.id ? " on" : "")} aria-pressed=${val === t.id} disabled=${busy} onClick=${() => set(t.id)}>
-      <${HuntMedal} t=${t} size=${26} /><span>${t.n || "Unnamed"}</span><small>${t.props.filter(p => p.kind === "pos").length}+</small></button>`)}</div></div>`;
-  return html`<${HuntFrag}>
-    <section class="frame huntmergef">
-      <h2 class="h"><span>Merging</span><i class="orn" aria-hidden="true"></i></h2>
-      <div class="ptgrid">
-        <div class="ptstage">
-          <${HuntAltar} recv=${run ? run.recv : R1} give=${run ? run.give : G1} run=${run} fresh=${fresh} />
-          <div class="ptforge">
-            ${!run ? html`<button class="btn primary big forgebtn" key="go" disabled=${!!block} onClick=${start}>${MERGE_ICON}Merge</button>${block && html`<p class="muted ptwhy">${block}</p>`}`
-              : html`<div class="huntread" key="read" aria-live="polite">
-                ${run.phase === "fuse" && html`<p><b>The trophies fuse…</b></p>`}
-                ${run.phase === "read" && html`<div key="read2"><p><b>${last.r} − ${st.mod} = ${last.total}</b> · ${last.res.fail ? "nothing passes" : `${last.res.n} positive propert${last.res.n === 1 ? "y" : "ies"} can pass`}${!last.res.fail && last.res.n > nMove ? ` (the giver has ${nMove})` : ""}</p>
-                  ${nMove > 0 && run.give.props.filter(p => p.kind === "pos").length > nMove && html`<div class="hmovepick">${run.give.props.filter(p => p.kind === "pos").map(p => html`<label class="demonguard" key=${p.id}>
-                    <input type="checkbox" checked=${chosen.includes(p.id)} disabled=${!chosen.includes(p.id) && chosen.length >= nMove} onChange=${e => setChosen(e.target.checked ? [...chosen, p.id] : chosen.filter(i => i !== p.id))} /> ${p.t || "Positive property"}</label>`)}</div>`}
-                  <div class="row">${st.reroll && !run.rerolled && html`<button class="btn small" onClick=${again}>Ignore it and roll again (cost ×3)</button>`}
-                    <button class="btn small primary" onClick=${apply}>${nMove ? `Pass ${chosen.length} to ${run.recv.n || "the receiver"}` : "Burn the giver"}</button>
-                    <button class="btn small" onClick=${() => setRun(null)}>Cancel</button></div></div>`}
-                ${run.phase === "made" && html`<p key="made"><b>${run.moved ? `${run.moved} propert${run.moved === 1 ? "y" : "ies"} passed to ${run.recv.n || "the receiver"}.` : "Nothing passed; the giver is gone."}</b></p>`}
-              </div>`}
-          </div>
-        </div>
-        <div class="ptside">
-          ${run && run.phase === "made" && fresh ? html`<div key="rename">
-              <${TrophyForm} key=${"rn" + fresh.id} init=${fresh} onSave=${t => { update(x => { const i = x.craft.hunt.trophies.findIndex(y => y.id === t.id); if (i >= 0) x.craft.hunt.trophies[i] = Object.assign({}, x.craft.hunt.trophies[i], t); }); setRun(null); toast(`${t.n || "The trophy"} is saved.`); }}
-                onCancel=${() => setRun(null)} /></div>`
-            : html`<div class="ptpick" key="pick">
-              ${h.trophies.length < 2 ? html`<p class="muted">You need two trophies to merge.</p>` : html`<${HuntFrag}>
-                ${pickRow("Receiver", recv, setRecv, give)}
-                ${pickRow("Giver (burns)", give, setGive, recv)}
-                <div class="mini"><label for="hm-cost">Cost (the GM's)</label><input id="hm-cost" type="number" min="0" value=${cost} placeholder="e.g. 200" disabled=${busy} onInput=${e => setCost(e.target.value)} /></div>
-</${HuntFrag}>`}
-            </div>`}
-        </div>
-      </div>
-    </section>
-  </${HuntFrag}>`;
+      <${HuntTrophy} t=${t} size=${30} /><span>${t.n || "Unnamed"}</span><small>${t.props.filter(p => p.kind === "pos").length}+</small></button>`)}</div></div>`;
+  return html`<section class="frame huntone huntmergef">
+    <h2 class="h"><span>Merging</span><i class="orn" aria-hidden="true"></i></h2>
+    <div class="huntstage" key="stage">
+      <${HuntButcher} recv=${run ? run.recv : R1} give=${run ? run.give : G1} run=${run} fresh=${fresh} />
+      ${run && html`<div class="ptforge"><div class="huntread" key="read" aria-live="polite">
+        ${run.phase === "fuse" && html`<p><b>The trophies fuse…</b></p>`}
+        ${run.phase === "read" && html`<div key="read2"><p><b>${last.r} − ${st.mod} = ${last.total}</b> · ${last.res.fail ? "nothing passes" : `${last.res.n} positive propert${last.res.n === 1 ? "y" : "ies"} can pass`}${!last.res.fail && last.res.n > nMove ? ` (the giver has ${nMove})` : ""}</p>
+          ${nMove > 0 && run.give.props.filter(p => p.kind === "pos").length > nMove && html`<div class="hmovepick">${run.give.props.filter(p => p.kind === "pos").map(p => html`<label class="demonguard" key=${p.id}>
+            <input type="checkbox" checked=${chosen.includes(p.id)} disabled=${!chosen.includes(p.id) && chosen.length >= nMove} onChange=${e => setChosen(e.target.checked ? [...chosen, p.id] : chosen.filter(i => i !== p.id))} /> ${p.t || "Positive property"}</label>`)}</div>`}
+          <div class="row">${st.reroll && !run.rerolled && html`<button class="btn small" onClick=${again}>Ignore it and roll again (cost ×3)</button>`}
+            <button class="btn small primary" onClick=${apply}>${nMove ? `Pass ${chosen.length} to ${run.recv.n || "the receiver"}` : "Burn the giver"}</button>
+            <button class="btn small" onClick=${() => setRun(null)}>Cancel</button></div></div>`}
+        ${run.phase === "made" && html`<p key="made"><b>${run.moved ? `${run.moved} propert${run.moved === 1 ? "y" : "ies"} passed to ${run.recv.n || "the receiver"}.` : "Nothing passed; the giver is gone."}</b></p>`}
+      </div></div>`}
+    </div>
+    ${bars(run && run.phase === "made" && fresh ? html`<${TrophyForm} key=${"rn" + fresh.id} init=${fresh} onSave=${t => { update(x => { const i = x.craft.hunt.trophies.findIndex(y => y.id === t.id); if (i >= 0) x.craft.hunt.trophies[i] = Object.assign({}, x.craft.hunt.trophies[i], t); }); setRun(null); toast(`${t.n || "The trophy"} is saved.`); toCase(); }}
+        onCancel=${() => { setRun(null); toCase(); }} />`
+      : html`<div class="huntpick" key="pick">
+        ${h.trophies.length < 2 ? html`<p class="muted hpartsw">You need two trophies to merge.</p>` : html`<${HuntFrag}>
+          ${pickRow("Receiver", recv, setRecv, give)}
+          ${pickRow("Giver (burns)", give, setGive, recv)}
+          <div class="mini"><label for="hm-cost">Cost (the GM's)</label><input id="hm-cost" type="number" min="0" value=${cost} placeholder="e.g. 200" disabled=${busy} onInput=${e => setCost(e.target.value)} /></div>
+        </${HuntFrag}>`}
+        <div class="huntgo">${!run && html`<button class="btn primary forgebtn" key="go" disabled=${!!block} onClick=${start}>${MERGE_ICON}Merge</button>`}${block && h.trophies.length >= 2 && html`<small class="muted">${block}</small>`}</div>
+      </div>`)}
+  </section>`;
 }
 const BELT_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M1 7h18v5H1z M7 5.5h5v8H7z M9.5 13.5v2.5 M8 17.5a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" /></svg>`;
 const MERGE_ICON = html`<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="10" r="4.5" /><circle cx="13" cy="10" r="4.5" /></svg>`;
 
-// A stone altar with a ring of carved notches: the receiver on the left, the giver on the right. Merging spins them
-// together; the giver breaks into motes that pour into the receiver, which flares.
-function HuntAltar({ recv, give, run, fresh }) {
-  const phase = run ? run.phase : "", R0 = fresh || recv;
-  const medal = (t, x, cls) => html`<g class=${"hamedal " + cls} style=${`--x:${x}px`}>${t ? html`<g transform=${`translate(${x} 130)`}>
-      <circle r="47" fill="#0d0805" opacity=".45" transform="translate(3 5)" /><circle r="45" class="harim" fill="url(#ha-brass)" /><circle r="41" fill="#2a1608" />
-      ${huntSrc(t) ? html`<image href=${huntSrc(t)} x="-40" y="-40" width="80" height="80" preserveAspectRatio="xMidYMid slice" clip-path="url(#ha-disc)" />`
-        : html`<circle r="40" fill="url(#ha-bone)" /><g transform="scale(2.6)"><path d=${HUNT_GLYPH[t.part] || HUNT_GLYPH.other} fill="#fff8e6" opacity=".7" transform="translate(.4 .6)" /><path class="hbglyph" d=${HUNT_GLYPH[t.part] || HUNT_GLYPH.other} /></g>`}
-      <circle r="40" fill="url(#ha-shine)" />
-      <text y="66" class="hbname">${(t.n || "Trophy").slice(0, 20)}</text></g>`
-    : html`<g transform=${`translate(${x} 130)`}><circle r="44" class="haempty" /><text y="5" class="haq">${cls === "recv" ? "Receiver" : "Giver"}</text></g>`}</g>`;
-  return html`<div class=${"huntaltar ph-" + (phase || "idle")}>
-    <svg viewBox="0 0 600 280" role="img" aria-label="The merging altar">
-      <defs><clipPath id="ha-disc"><circle r="40" /></clipPath>
-        
-        <linearGradient id="ha-brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe7a6" /><stop offset=".3" stop-color="#d1a24a" /><stop offset=".6" stop-color="#8f6522" /><stop offset=".8" stop-color="#d8ad58" /><stop offset="1" stop-color="#5e4012" /></linearGradient>
-        <radialGradient id="ha-bone" cx=".38" cy=".32" r=".75"><stop offset="0" stop-color="#f1e6cc" /><stop offset=".6" stop-color="#cdbb94" /><stop offset="1" stop-color="#8f7b58" /></radialGradient>
-        <linearGradient id="ha-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".3" /><stop offset=".5" stop-color="#fff" stop-opacity="0" /></linearGradient>
-        <radialGradient id="ha-floor" cx=".5" cy=".55" r=".6"><stop offset="0" stop-color="#6b665e" /><stop offset="1" stop-color="#2b2925" /></radialGradient>
-        <${HuntPattern} id="ha-stone" k="stone" />
-        <radialGradient id="ha-flare"><stop offset="0" stop-color="#fff6d8" /><stop offset=".4" stop-color="#e8b04a" stop-opacity=".6" /><stop offset="1" stop-color="#e8b04a" stop-opacity="0" /></radialGradient></defs>
-      <rect width="600" height="280" fill="url(#ha-floor)" /><rect width="600" height="280" fill="url(#ha-stone)" />
-      <ellipse cx="300" cy="150" rx="236" ry="112" fill="#141210" opacity=".35" />
-      <ellipse cx="300" cy="140" rx="228" ry="106" fill="#8d877d" /><ellipse cx="300" cy="140" rx="228" ry="106" fill="url(#ha-stone)" />
-      <ellipse cx="300" cy="140" rx="228" ry="106" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="2" />
-      <ellipse cx="300" cy="140" rx="210" ry="100" class="haring" />
-      <ellipse cx="300" cy="140" rx="190" ry="88" class="haring thin" />
-      ${Array.from({ length: 24 }, (_, i) => { const a = i / 24 * Math.PI * 2; return html`<path class="hanotch" d=${`M${300 + Math.cos(a) * 196} ${140 + Math.sin(a) * 92}l${Math.cos(a) * 10} ${Math.sin(a) * 5}`} />`; })}
-      <path class="hastream" d="M420 130 C380 90 340 92 300 110 C260 128 220 132 180 130" />
-      ${medal(R0, 180, "recv")}${phase !== "made" && medal(give, 420, "give")}
-      ${(phase === "fuse" || phase === "made") && html`<g class="hamotes" key=${"m" + (run ? run.rolls.length : 0)}>${Array.from({ length: 16 }, (_, i) => html`<circle r=${1.6 + (i % 3)} style=${`--i:${i}`} />`)}</g>`}
-      ${phase === "made" && html`<circle class="haflare" cx="180" cy="130" r="80" fill="url(#ha-flare)" />`}
+// The hunter's table: a scarred butcher's block against a plank wall, lit by a lantern. On the wall an iron rail with
+// hooks (a drying pelt, a bundle of herbs, an empty hook for the finished trophy), a rack of knives and a mounted skull;
+// on the block a sinew spool and needle, a salt bowl, a whetstone, bone scraps and a cleaver bitten into the wood.
+// The two trophies lie root to root; merging slides the giver up against the receiver and a needle sews them together
+// (the seam drawn stitch by stitch); the finished trophy is hung on the empty hook.
+function HuntButcher({ recv, give, run, fresh }) {
+  const phase = run ? run.phase : "", wood = huntTex("wood");
+  // how big each lies on the block; the giver slides until its root meets the receiver's, and the seam runs there
+  const sc = t => !t ? 1 : huntSrc(t) ? 1 : (t.attached || []).length ? .9 : 1.22, half = t => huntSrc(t) ? 30 : 38 * sc(t);
+  const RX = 222, GX = 380, rootR = RX + half(recv), slide = Math.round(rootR + half(give) - GX);
+  const seam = `M${rootR - 7} 166` + [172, 178, 184, 190, 196].map((y, k) => ` L${rootR + (k % 2 ? -7 : 7)} ${y}`).join("") + ` L${rootR + 7} 202`;
+  const tag = t => { const n = (t && t.n) || "Trophy"; return n.length > 18 ? n.slice(0, 17) + "…" : n; };
+  const piece = (t, rot) => huntSrc(t) ? html`<g key="pic"><circle r="30" fill="#2a1608" /><image href=${huntSrc(t)} x="-28" y="-28" width="56" height="56" preserveAspectRatio="xMidYMid slice" clip-path="url(#hbt-disc)" />
+      <circle r="29" fill="none" stroke="url(#hta-brass)" stroke-width="2.4" /></g>`
+    : html`<g key="art" transform=${`rotate(${rot}) scale(${sc(t)})`}><${HuntTrophyArt} part=${t.part} attached=${t.attached} /></g>`;
+  const lay = (t, x, rot, cls, label) => html`<g class=${"hbtitem " + cls} key=${cls}>
+    ${t ? html`<g class="hbtmove" style=${`--slide:${slide}px`}><g transform=${`translate(${x} 184)`}><ellipse cx="0" cy="22" rx=${half(t) + 6} ry="8" fill="#140904" opacity=".5" />${piece(t, rot)}</g></g>
+        <text x=${x} y="241" class="hbtname">${tag(t)}</text>`
+      : html`<g transform=${`translate(${x} 182)`}><ellipse rx="44" ry="22" class="hbtempty" /><text y="4" class="hbtq">${label}</text></g>`}</g>`;
+  const hook = x => html`<path d=${`M${x} 21 V33 C${x} 41 ${x + 8} 41 ${x + 8} 35`} fill="none" stroke="url(#hbt-iron)" stroke-width="2.4" stroke-linecap="round" />`;
+  const plank = [64, 131, 190, 262, 330, 389, 455, 528];
+  return html`<div class=${"huntaltar huntframe hbt ph-" + (phase || "idle")} style=${wood ? `background-image: linear-gradient(rgb(22 13 7 / .78) 0 48%, rgb(40 22 10 / .3) 48% 88.8%, rgb(18 10 5 / .8) 88.8%), url(${wood}); background-size: auto, 512px 256px` : ""}>
+    <svg viewBox="0 0 600 250" role="img" aria-label="The hunter's table">
+      <defs>
+        ${wood && html`<pattern id="hbt-wall" patternUnits="userSpaceOnUse" width="512" height="256" patternTransform="rotate(90)"><image href=${wood} width="512" height="256" /></pattern>
+          <pattern id="hbt-top" patternUnits="userSpaceOnUse" width="512" height="256"><image href=${wood} width="512" height="256" /></pattern>`}
+        <linearGradient id="hbt-walldark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c0603" stop-opacity=".78" /><stop offset=".7" stop-color="#140a05" stop-opacity=".32" /><stop offset="1" stop-color="#0c0603" stop-opacity=".7" /></linearGradient>
+        <radialGradient id="hbt-glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffcf7a" stop-opacity=".5" /><stop offset=".45" stop-color="#e88a2a" stop-opacity=".16" /><stop offset="1" stop-color="#e88a2a" stop-opacity="0" /></radialGradient>
+        <radialGradient id="hbt-light" cx=".35" cy=".15" r=".95"><stop offset="0" stop-color="#ffd590" stop-opacity=".38" /><stop offset=".6" stop-color="#000" stop-opacity="0" /><stop offset="1" stop-color="#000" stop-opacity=".32" /></radialGradient>
+        <linearGradient id="hbt-iron" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8a8580" /><stop offset=".5" stop-color="#3a3632" /><stop offset="1" stop-color="#1a1816" /></linearGradient>
+        <linearGradient id="hbt-steel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a5650" /><stop offset=".4" stop-color="#d8d4cc" /><stop offset=".7" stop-color="#8a867e" /><stop offset="1" stop-color="#4a4640" /></linearGradient>
+        <radialGradient id="hbt-blood" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#3a0507" stop-opacity=".75" /><stop offset=".7" stop-color="#4a0a0c" stop-opacity=".4" /><stop offset="1" stop-color="#4a0a0c" stop-opacity="0" /></radialGradient>
+        <linearGradient id="hbt-handle" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2a170a" /><stop offset=".5" stop-color="#6a4426" /><stop offset="1" stop-color="#22130a" /></linearGradient>
+        <clipPath id="hbt-disc"><circle r="28" /></clipPath>
+      </defs>
+      <!-- the wall -->
+      <rect width="600" height="120" fill="#3a2414" />${wood && html`<rect width="600" height="120" fill="url(#hbt-wall)" opacity=".75" />`}
+      <rect width="600" height="120" fill="url(#hbt-walldark)" />
+      ${plank.map(x => html`<path key=${x} d=${`M${x} 0V120`} stroke="#0c0603" stroke-width="2" opacity=".7" />`)}
+      ${plank.map(x => html`<g key=${"n" + x}><circle cx=${x - 6} cy="12" r="1.4" fill="#1a1410" /><circle cx=${x - 6} cy="100" r="1.4" fill="#1a1410" /></g>`)}
+      <circle class="hbtglow" cx="46" cy="64" r="130" fill="url(#hbt-glow)" />
+      <!-- lantern -->
+      <g class="hbtlamp"><path d="M46 0 V26" stroke="url(#hbt-iron)" stroke-width="1.6" stroke-dasharray="3 2" />
+        <path d="M37 30 L55 30 L52 25 L40 25 Z" fill="#2a2420" /><path d="M43 25 C43 20 49 20 49 25" fill="none" stroke="#2a2420" stroke-width="1.6" />
+        <rect x="36" y="31" width="20" height="30" rx="2" fill="#ffcf7a" opacity=".85" /><rect x="36" y="31" width="20" height="30" rx="2" fill="url(#hbt-glow)" />
+        <path class="hbtflame" d="M46 52 C42 47 44 42 46 37 C48 42 50 47 46 52 Z" fill="#fff4cf" />
+        <path d="M36 31 H56 M36 61 H56 M41 31 V61 M51 31 V61" stroke="#1e1a16" stroke-width="1.6" fill="none" /><path d="M34 61 H58 L55 66 H37 Z" fill="#2a2420" /></g>
+      <!-- the rail and its hooks: a drying pelt, herbs, and the empty hook for the finished trophy -->
+      <rect x="108" y="17" width="236" height="4.4" rx="2.2" fill="url(#hbt-iron)" /><path d="M110 15 V25 M342 15 V25" stroke="#1a1816" stroke-width="3" />
+      ${hook(150)}${hook(222)}${hook(300)}
+      <g class="hbtpelt"><path d="M158 36 C150 38 136 40 130 46 C126 60 132 74 128 88 C134 98 150 100 158 96 C168 100 182 96 186 88 C182 74 188 58 184 46 C178 40 166 38 158 36 Z" fill="url(#hta-pelt)" />
+        <path d="M158 36 C150 38 136 40 130 46 C126 60 132 74 128 88 C134 98 150 100 158 96 C168 100 182 96 186 88 C182 74 188 58 184 46 C178 40 166 38 158 36 Z" fill="url(#hta-fur)" />
+        <path d="M186 88 C184 80 186 72 184 64 C180 72 176 80 172 92 Z" fill="url(#hta-skin)" opacity=".85" /></g>
+      <g class="hbtherbs">${[-12, -7, -2, 3, 8, 12].map((dx, k) => html`<path key=${k} d=${`M230 38 C${230 + dx * .4} 52 ${230 + dx} 64 ${230 + dx * 1.3} 80`} stroke=${k % 2 ? "#5a6a32" : "#6e5a2e"} stroke-width="1.6" fill="none" />`)}
+        ${[[222, 58], [236, 60], [226, 70], [240, 72], [218, 74], [232, 80]].map(([x, y], k) => html`<ellipse key=${"l" + k} cx=${x} cy=${y} rx="3.4" ry="1.6" fill=${k % 2 ? "#4e5e2a" : "#7a6a3a"} transform=${`rotate(${k * 30 - 60} ${x} ${y})`} />`)}
+        <path d="M225 40 H235 M225 43 H235" stroke="#c9a46a" stroke-width="1.6" /></g>
+      <!-- knife rack -->
+      <rect x="366" y="26" width="92" height="9" rx="2" fill="url(#hbt-handle)" /><circle cx="372" cy="30.5" r="1.6" fill="#1a1410" /><circle cx="452" cy="30.5" r="1.6" fill="#1a1410" />
+      <g><rect x="378" y="35" width="7" height="18" rx="2" fill="url(#hbt-handle)" /><path d="M374 53 H398 V78 C390 80 382 80 374 78 Z" fill="url(#hbt-steel)" /><circle cx="392" cy="60" r="2.4" fill="#1a1410" /></g>
+      <g><rect x="408" y="35" width="6" height="20" rx="2" fill="url(#hbt-handle)" /><path d="M408 55 H414 C416 66 418 78 412 92 C410 80 408 68 408 55 Z" fill="url(#hbt-steel)" /></g>
+      <g><path d="M434 35 H442 V48 H434 Z" fill="url(#hbt-handle)" /><path d="M436 48 H446 V96 H436 Z" fill="url(#hbt-steel)" /><path d=${"M436 52" + Array.from({ length: 11 }, (_, k) => ` l-2.4 2 l2.4 2`).join("")} fill="none" stroke="#8a867e" stroke-width="1.2" /></g>
+      <!-- mounted skull -->
+      <path d="M496 30 C496 24 528 24 528 30 L532 74 C524 88 500 88 492 74 Z" fill="url(#hbt-handle)" /><path d="M496 30 C496 24 528 24 528 30 L532 74 C524 88 500 88 492 74 Z" fill="none" stroke="#120a05" stroke-width="1.4" />
+      <g transform="translate(512 58) scale(.78)">${HUNT_ART.head.draw()}</g>
+      <g class="hbtbow"><path d="M584 18 C566 40 566 84 584 106" fill="none" stroke="url(#hbt-handle)" stroke-width="4" stroke-linecap="round" />
+        <path d="M584 18 L584 106" stroke="#e3cf9f" stroke-width=".8" /><path d="M570 56 H574 M570 66 H574" stroke="#c9a46a" stroke-width="2.4" /></g>
+      <g transform="translate(552 36) rotate(10)"><rect x="-7" y="0" width="14" height="52" rx="5" fill="#4a2e18" /><rect x="-7" y="0" width="14" height="52" rx="5" fill="url(#hta-fur)" opacity=".4" />
+        <path d="M-7 10 H7 M-7 42 H7" stroke="#2a1608" stroke-width="2" />${[-4, 0, 4].map(x => html`<g key=${x}><path d=${`M${x} 0 V-14`} stroke="#8a6a3a" stroke-width="1.2" /><path d=${`M${x} -14 l-2.4 -6 M${x} -14 l2.4 -6 M${x} -12 l-2.4 -6 M${x} -12 l2.4 -6`} stroke="#b8402a" stroke-width="1" /></g>`)}</g>
+      <rect y="108" width="600" height="12" fill="#0c0603" opacity=".55" />
+      <!-- the butcher's block -->
+      <rect y="118" width="600" height="104" fill="#5a3a22" />${wood && html`<rect y="118" width="600" height="104" fill="url(#hbt-top)" opacity=".9" />`}
+      <rect y="118" width="600" height="104" fill="url(#hbt-light)" />
+      <path d="M0 150 H600 M0 186 H600" stroke="#1a0d05" stroke-width="1.8" opacity=".6" /><path d="M0 151.5 H600 M0 187.5 H600" stroke="#c89a6a" stroke-width=".7" opacity=".25" />
+      <path d="M118 138 l22 -5 M410 202 l18 7 M472 148 l-14 8 M176 212 l26 -3 M330 132 l-10 9 M548 196 l16 -6" stroke="#e8c8a0" stroke-width="1" opacity=".3" />
+      <ellipse cx="300" cy="196" rx="70" ry="12" fill="url(#hbt-blood)" /><ellipse cx="452" cy="168" rx="20" ry="6" fill="url(#hbt-blood)" /><ellipse cx="150" cy="160" rx="14" ry="4" fill="url(#hbt-blood)" />
+      <rect y="118" width="600" height="2" fill="#0c0603" opacity=".6" />
+      <rect y="222" width="600" height="28" fill="#2e1b0e" />${wood && html`<rect y="222" width="600" height="28" fill="url(#hbt-top)" opacity=".35" />`}
+      <path d="M0 222.6 H600" stroke="#d8a874" stroke-width="1.2" opacity=".35" /><rect y="224" width="600" height="26" fill="#0c0603" opacity=".35" />
+      <!-- on the block: sinew spool and needle, salt, whetstone, scraps, a cleaver bitten into the wood -->
+      <g transform="translate(78 196)"><ellipse cx="0" cy="10" rx="20" ry="5" fill="#140904" opacity=".5" /><rect x="-13" y="-12" width="26" height="20" rx="3" fill="#c9b48a" />
+        ${[-8, -4, 0, 4].map(y => html`<path key=${y} d=${`M-12 ${y} C-4 ${y - 2} 4 ${y + 2} 12 ${y}`} stroke="#8a6a3a" stroke-width=".8" fill="none" />`)}
+        <ellipse cx="0" cy="-12" rx="15" ry="4" fill="#6a4426" /><ellipse cx="0" cy="8" rx="15" ry="4" fill="#4a2e18" /><ellipse cx="0" cy="-12" rx="3" ry="1" fill="#1a0d05" />
+        <path d="M12 -2 C24 2 30 10 40 12" stroke="#e3cf9f" stroke-width="1" fill="none" /></g>
+      <g transform="translate(36 150)"><ellipse cx="0" cy="8" rx="24" ry="7" fill="#140904" opacity=".45" />${[18, 14, 10, 6].map(r => html`<ellipse key=${r} cx="0" cy="0" rx=${r + 4} ry=${r * .38 + 2} fill="none" stroke="#a88a5a" stroke-width="3.2" />`)}
+        ${[18, 14, 10, 6].map(r => html`<ellipse key=${"d" + r} cx="0" cy="0" rx=${r + 4} ry=${r * .38 + 2} fill="none" stroke="#5a4428" stroke-width="3.2" stroke-dasharray="2 3" opacity=".55" />`)}</g>
+      <g class="hbtrest"><path d="M108 212 L138 207 L141 206.5 L138 209 Z" fill="url(#hbt-steel)" /><ellipse cx="111" cy="211.4" rx="1.6" ry=".7" fill="#1a1410" /></g>
+      <g transform="translate(506 152)"><ellipse cx="0" cy="8" rx="24" ry="6" fill="#140904" opacity=".5" /><path d="M-20 -2 C-18 10 18 10 20 -2 Z" fill="url(#hbt-handle)" /><ellipse cx="0" cy="-2" rx="20" ry="5" fill="#3a2414" />
+        <path d="M-15 -2 C-8 -8 8 -8 15 -2 C8 1 -8 1 -15 -2 Z" fill="#f0ebe0" /><circle cx="-4" cy="-5" r=".8" fill="#fff" /><circle cx="5" cy="-4" r=".8" fill="#d8d2c4" /></g>
+      <g transform="translate(470 210) rotate(-8)"><rect x="-18" y="-5" width="36" height="10" rx="4" fill="#6b665e" /><rect x="-18" y="-5" width="36" height="4" rx="2" fill="#8d877d" /></g>
+      <g transform="translate(428 206) rotate(24) scale(.22)">${HUNT_ART.bone.draw()}</g><g transform="translate(404 214) rotate(-60) scale(.16)">${HUNT_ART.fang.draw()}</g>
+      <g transform="translate(560 150)"><path d="M-30 -6 L6 -24 L14 -8 L-22 10 Z" fill="url(#hbt-steel)" /><path d="M-22 10 L14 -8" stroke="#1a1410" stroke-width="1.6" opacity=".7" />
+        <circle cx="-16" cy="-1" r="2.6" fill="#2a2420" /><path d="M6 -24 L22 -32 L26 -24 L14 -8" fill="url(#hbt-handle)" /><path d="M-22 11 L14 -7" stroke="#0a0503" stroke-width="2.6" opacity=".55" /></g>
+      <!-- the work: receiver and giver lie root to root; the needle sews the seam; the finished trophy hangs on the hook -->
+      ${phase !== "made" && lay(recv, RX, 90, "recv", "Receiver")}
+      ${phase !== "made" && lay(give, GX, -90, "give", "Giver")}
+      ${(phase === "fuse" || phase === "read") && html`<g key=${"seam" + (run ? run.rolls.length : 0)} class="hbtsew">
+        <path d=${seam} class="hbtthread0" pathLength="100" /><path d=${seam} class="hbtthread" pathLength="100" />
+        <g class="hbtneedle" style=${`offset-path: path("${seam}")`}><path d="M-32 0 C-26 -2 -20 2 -14 0" stroke="#e3cf9f" stroke-width="1" fill="none" />
+          <path d="M-14 0 L10 -1.3 L15 0 L10 1.3 Z" fill="url(#hbt-steel)" /><ellipse cx="-10" cy="0" rx="2" ry=".6" fill="#1a1410" /></g></g>`}
+      ${phase === "made" && fresh && html`<g class="hbtresult" key="made">
+        <path d="M300 35 V48" stroke="#e3cf9f" stroke-width="1.4" />
+        <g transform=${`translate(300 ${huntSrc(fresh) ? 80 : Math.round(48 + 38 * ((fresh.attached || []).length ? 1.15 : 1.4))})`}>${huntSrc(fresh) ? piece(fresh, 0) : html`<g transform=${`scale(${(fresh.attached || []).length ? 1.15 : 1.4})`}><${HuntTrophyArt} part=${fresh.part} attached=${fresh.attached} /></g>`}</g>
+        <text x="300" y="241" class="hbtname">${tag(fresh)}</text></g>`}
     </svg></div>`;
 }

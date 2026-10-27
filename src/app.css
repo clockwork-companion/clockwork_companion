@@ -3304,7 +3304,41 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 
 /* ================= Crafting → Hunting ================= */
 .hunting { display: grid; gap: 0; --hglow: #e8b04a; --hpos: #3f8f4e; --hneg: #b8423a; --hvoid: color-mix(in srgb, var(--ink) 40%, transparent); }
-.huntpages { max-width: 560px; margin: 4px 0 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* one page: the picture on top changes with the open drop-down (Carving, Merging) under it */
+.huntone .huntstage { margin-top: 12px; }
+@supports not (view-transition-name: a) { .huntone .huntstage { animation: huntSwap .3s ease both; } }
+@keyframes huntSwap { from { opacity: 0; transform: translateY(6px); } }
+/* the three pictures share one frame: the trophies picture's shape and size, a border with a brass hairline round it.
+   A frame wider than its drawing shows a backdrop that matches the drawing's edges (and the drawing fades into it). */
+.huntframe { position: relative; width: 100%; aspect-ratio: 600 / 250; max-height: 250px; box-sizing: border-box; overflow: hidden;
+  border: 2px solid var(--rule); border-radius: 3px; outline: 1px solid color-mix(in srgb, var(--brass) 65%, transparent); outline-offset: 3px;
+  box-shadow: inset 0 0 30px rgb(0 0 0 / .45); }
+.huntframe > svg { display: block; width: 100%; height: 100%; max-height: none; }
+.huntcarcass.huntframe > svg, .huntaltar.huntframe > svg { width: auto; max-width: 100%; margin: 0 auto; }
+.huntcarcass.huntframe { background-color: #8a7556; background-image: linear-gradient(transparent 58%, rgb(216 207 186 / .6) 64%, transparent 72%), linear-gradient(#adaa9b 0%, #cdc3ad 56%, #a69273 63%, #7d6849 67%, #5c4a33 100%); }
+.huntcarcass.huntframe > svg, .huntaltar.huntframe > svg { -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+@media (max-width: 700px) { .huntcarcass.huntframe > svg, .huntaltar.huntframe > svg { -webkit-mask-image: none; mask-image: none; } }
+.huntone .huntstage { view-transition-name: hunt-stage; }
+::view-transition-group(hunt-stage) { animation-duration: .32s; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+::view-transition-old(hunt-stage), ::view-transition-new(hunt-stage) { animation-duration: .32s; height: 100%; object-fit: cover; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .28s; }
+.huntone .ptforge { margin-top: 10px; }
+.huntdrops { display: grid; gap: 8px; margin-top: 16px; }
+.huntdrop { border: 1.5px solid var(--hair); border-radius: 2px; transition: border-color .2s; }
+.huntdrop.open { border-color: var(--brass); }
+.huntdropb { display: flex; width: 100%; align-items: center; gap: 10px; padding: 10px 14px; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 600; letter-spacing: .02em; cursor: pointer; text-align: left; }
+.huntdropb:hover:not(:disabled) { background: color-mix(in srgb, var(--brass) 8%, transparent); }
+.huntdropb:disabled { opacity: .5; cursor: default; }
+.huntdropb > svg:first-child { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.hchev { margin-left: auto; width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; transition: transform .2s; }
+.huntdrop.open .hchev { transform: rotate(180deg); }
+.huntdropbody { padding: 0 14px 14px; border-top: 1px solid var(--hair); }
+.huntpick { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 18px; align-items: end; padding-top: 12px; }
+.hpartsw, .huntgo { grid-column: 1 / -1; }
+.huntgo { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.huntdropbody .trophyform { margin-top: 12px; }
+@media (max-width: 560px) { .huntpick { grid-template-columns: minmax(0, 1fr); } .huntdropbody { padding: 0 10px 12px; } }
+@media (prefers-reduced-motion: reduce) { .huntone .huntstage { animation: none; } .hchev { transition: none; } }
 .huntmyths { margin-top: 8px; gap: 6px; flex-wrap: wrap; align-items: center; }
 .huntmyths form { gap: 6px; }
 .hmyth { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border: 1px solid var(--rule); border-radius: 999px; font-size: 13px; }
@@ -3313,13 +3347,15 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .hglyph { width: 1.1em; height: 1.1em; fill: currentColor; vertical-align: -.18em; }
 .hpips { display: inline-flex; gap: 3px; } .hpips i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--brass); }
 .hpips i.on { background: var(--brass); }
-.hmedal { width: var(--s); height: var(--s); flex: none; border-radius: 50%; display: grid; place-items: center; overflow: hidden; color: #4e3c22;
-  background: radial-gradient(circle at 38% 32%, #f1e6cc, #cdbb94 60%, #8f7b58); box-shadow: 0 0 0 2px #2a1608, 0 0 0 4px #c99a45, 0 0 0 5px #5e4012, 0 3px 8px #0006, inset 0 2px 4px #fff8, inset 0 -3px 6px #0003; }
-.hmedal img { width: 100%; height: 100%; object-fit: cover; }
-.hmedal .hglyph { width: 52%; height: 52%; filter: drop-shadow(.5px .8px 0 #fff8e6aa); }
+/* a trophy on a card or chip: the drawn trophy (or its picture) on a dark leather plaque with a brass edge */
+.hart { width: var(--s); height: var(--s); flex: none; border-radius: 7px; display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(circle at 50% 38%, #4a3424, #24170f 70%, #140c07); box-shadow: inset 0 0 0 1px #0a0603, inset 0 0 10px rgb(0 0 0 / .6), 0 0 0 1.5px color-mix(in srgb, var(--brass) 75%, transparent); }
+.hart svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.hart img { width: 100%; height: 100%; object-fit: cover; }
+.htdefs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
 /* the belt */
-.huntbelt { border: 1.5px solid var(--rule); background: #5a3d26; background-size: auto, 512px 256px; overflow: hidden; box-shadow: inset 0 0 30px rgb(0 0 0 / .45); }
-.huntbelt svg { display: block; width: 100%; height: auto; max-height: 230px; margin: 0 auto; overflow: visible; }
+.huntbelt { background: #5a3d26; background-size: auto, 512px 256px; }
+.huntbelt svg { overflow: visible; }
 .hbstitch { fill: none; stroke: #e2c393; stroke-width: 1.3; stroke-dasharray: 4 3.5; opacity: .7; }
 .hbedge { fill: none; stroke: #1c0e05; stroke-width: 1.6; opacity: .7; }
 .hbtool { fill: none; stroke: #2a1608; stroke-width: 1; stroke-dasharray: 10 3 2 3; opacity: .45; }
@@ -3390,7 +3426,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .trophyform input:not([type=file]):not([type=checkbox]), .trophyform select { width: 100%; box-sizing: border-box; }
 .huntpic { position: relative; width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; cursor: pointer; color: #f1dfb6;
   background: radial-gradient(circle at 35% 30%, #6b5a46, #2f251d 70%); box-shadow: inset 0 0 0 3px #b98a35, inset 0 0 0 6px #3a2a1a; }
-.huntpic img { width: 100%; height: 100%; object-fit: cover; } .huntpic .hglyph { width: 46%; height: 46%; }
+.huntpic img { width: 100%; height: 100%; object-fit: cover; } .huntpic > svg { width: 82%; height: 82%; margin-bottom: 10px; overflow: visible; }
 .huntpic input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .huntpic span { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; font-size: 11px; color: #fff; text-shadow: 0 1px 2px #000; pointer-events: none; }
 .hpropedit { display: grid; gap: 6px; }
@@ -3400,8 +3436,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .hpe.hp-neg .hkind button[aria-pressed=true] { background: var(--hneg); border-color: var(--hneg); color: #fff; }
 @media (max-width: 560px) { .trophyformtop { grid-template-columns: 1fr; justify-items: center; } .trophyformf { width: 100%; } }
 /* carving */
-.huntcarcass { position: relative; overflow: hidden; background: #8a7556; box-shadow: inset 0 0 40px rgb(0 0 0 / .35); }
-.huntcarcass svg { display: block; width: 100%; height: auto; }
+.huntcarcass { background: #8a7556; }
 .hcgrass { fill: none; stroke: #4f5a2a; stroke-width: 1.4; stroke-linecap: round; opacity: .8; }
 .hcblood { fill: none; stroke: #2a0304; stroke-width: 2; opacity: .55; stroke-linecap: round; }
 .hctex path { mix-blend-mode: multiply; opacity: .9; } .hcsheen { pointer-events: none; }
@@ -3452,30 +3487,34 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .hparts { display: flex; flex-wrap: wrap; gap: 6px; } .hparts .dvchip { display: inline-flex; gap: 6px; align-items: center; }
 .huntlvl { max-width: 260px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 /* merging */
-.huntaltar { border: 1.5px solid var(--rule); overflow: hidden; background: #3b3833; }
-.huntaltar svg { display: block; width: 100%; height: auto; }
-.haslab { stroke: #3a3936; stroke-width: 1.2; }
-.haring { fill: none; stroke: #2a2724; stroke-width: 1.8; opacity: .8; } .haring.thin { stroke-dasharray: 3 5; stroke-width: 1.2; }
-.hanotch { stroke: #2a2724; stroke-width: 2; opacity: .8; }
-.harim { stroke: #3d2a0c; stroke-width: 1; }
-.haempty { fill: #0004; stroke: #e8e2d6; stroke-width: 1.5; stroke-dasharray: 5 5; opacity: .7; }
-.haq { font: 600 11px var(--f-head); fill: #e8e2d6; text-anchor: middle; letter-spacing: .08em; text-transform: uppercase; }
-.hastream { fill: none; stroke: #e8b04a; stroke-width: 2; stroke-dasharray: 2 8; opacity: 0; }
-.hamedal { transform-box: view-box; transform-origin: 300px 130px; }
-.ph-fuse .hamedal.recv { animation: haOrbitL 1.7s cubic-bezier(.5, 0, .5, 1) both; }
-.ph-fuse .hamedal.give { animation: haOrbitR 1.7s cubic-bezier(.5, 0, .5, 1) both; }
-.ph-fuse .hamedal .hbname { opacity: 0; transition: opacity .2s; }
-@keyframes haOrbitL { 50% { transform: rotate(-160deg) scale(.86); } 100% { transform: rotate(-360deg); } }
-@keyframes haOrbitR { 50% { transform: rotate(-160deg) scale(.86); } 100% { transform: rotate(-360deg) scale(.92); opacity: .75; } }
-.ph-read .hastream, .ph-fuse .hastream { opacity: .9; animation: haStream 1s linear infinite; }
-@keyframes haStream { to { stroke-dashoffset: -20; } }
-.hamotes circle { fill: #ffd97a; offset-path: path("M420 130 C380 90 340 92 300 110 C260 128 220 132 180 130"); offset-distance: 0%; opacity: 0; animation: haMote 1.6s ease-in infinite; animation-delay: calc(var(--i) * .1s); }
-@keyframes haMote { 10% { opacity: 1; } 90% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
-.ph-made .hamotes circle { animation-iteration-count: 1; }
-.haflare { transform-box: fill-box; transform-origin: center; animation: haFlare 1.4s ease-out both; }
-@keyframes haFlare { 0% { transform: scale(.2); opacity: 0; } 30% { opacity: 1; } 100% { transform: scale(1.2); opacity: 0; } }
-.ph-made .hamedal.recv { animation: haBloom 1.2s cubic-bezier(.3, 1.4, .5, 1) both; }
-@keyframes haBloom { from { transform: scale(.8); } }
+.huntaltar { background-color: #3b2414; }
+/* the hunter's table */
+.hbtname { font: 600 12px var(--f-body, system-ui); fill: #f1e2c4; text-anchor: middle; paint-order: stroke; stroke: #0c0603; stroke-width: 3px; letter-spacing: .02em; }
+.hbtempty { fill: rgb(0 0 0 / .18); stroke: #e8d6b4; stroke-width: 1.4; stroke-dasharray: 4 5; opacity: .6; }
+.hbtq { font: 600 10.5px var(--f-head); fill: #e8d6b4; text-anchor: middle; letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
+.hbtglow { animation: hbtFlicker 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.hbtflame { animation: hbtFlame 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes hbtFlicker { 0%, 100% { opacity: .9; } 30% { opacity: 1; } 45% { opacity: .78; } 60% { opacity: .95; } 80% { opacity: .84; } }
+@keyframes hbtFlame { 0%, 100% { transform: scale(1, 1); } 40% { transform: scale(.9, 1.08) skewX(-3deg); } 70% { transform: scale(1.05, .94) skewX(2deg); } }
+.hbtpelt, .hbtherbs { transform-box: fill-box; transform-origin: 50% 0; animation: hbtSway 7s ease-in-out infinite; }
+.hbtherbs { animation-duration: 5.5s; animation-delay: -2s; }
+@keyframes hbtSway { 0%, 100% { transform: rotate(-.8deg); } 50% { transform: rotate(.8deg); } }
+/* the giver slides up against the receiver, root to root, then the needle sews the seam */
+.hbtitem.give .hbtmove { transition: transform .3s; }
+.ph-fuse .hbtitem.give .hbtmove { animation: hbtSlide 3s cubic-bezier(.4, 0, .2, 1) both; }
+.ph-read .hbtitem.give .hbtmove { transform: translateX(var(--slide)); }
+@keyframes hbtSlide { 0% { transform: none; } 24%, 86%, 100% { transform: translateX(var(--slide)); } 92% { transform: translateX(calc(var(--slide) - 2px)); } }
+.hbtthread0, .hbtthread { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.hbtthread0 { stroke: #140b06; stroke-width: 3.6; opacity: .55; stroke-dasharray: 100; stroke-dashoffset: 0; }
+.hbtthread { stroke: #e9d6a8; stroke-width: 1.9; stroke-dasharray: 100; stroke-dashoffset: 0; }
+.ph-fuse .hbtthread, .ph-fuse .hbtthread0 { animation: hbtSew 3s linear both; }
+@keyframes hbtSew { 0%, 30% { stroke-dashoffset: 100; } 88%, 100% { stroke-dashoffset: 0; } }
+.hbtneedle { offset-rotate: auto; offset-distance: 100%; opacity: 0; }
+.ph-fuse .hbtneedle { animation: hbtNeedle 3s linear both; }
+@keyframes hbtNeedle { 0%, 28% { offset-distance: 0%; opacity: 0; } 31% { opacity: 1; } 88% { offset-distance: 100%; opacity: 1; } 96%, 100% { offset-distance: 100%; opacity: 0; } }
+.ph-fuse .hbtrest, .ph-read .hbtrest { opacity: 0; transition: opacity .3s; }
+.hbtresult { transform-box: view-box; transform-origin: 300px 35px; animation: hbtHang 1.4s cubic-bezier(.3, 1.3, .5, 1) both; }
+@keyframes hbtHang { 0% { opacity: 0; transform: translateY(-16px) rotate(4deg); } 40% { opacity: 1; transform: translateY(0) rotate(-3deg); } 70% { transform: rotate(1.5deg); } 100% { transform: none; } }
 .hmergepick { display: flex; flex-wrap: wrap; gap: 6px; }
 .hmchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 3px; border: 1px solid var(--rule); border-radius: 999px; background: var(--card); color: var(--ink); cursor: pointer; font-size: 13.5px; }
 .hmchip small { color: var(--hpos); font: 700 12px var(--f-mono); }
@@ -3484,5 +3523,6 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 @media (prefers-reduced-motion: reduce) {
   .hunting *, .hunting *::before { animation: none !important; transition: none !important; }
   .hcslice { stroke-dashoffset: 0; } .hcknife { display: none; }
+  .ph-fuse .hbtitem.give .hbtmove { transform: translateX(var(--slide)); }
 }
 </style>
