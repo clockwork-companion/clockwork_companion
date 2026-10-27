@@ -656,6 +656,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .cnchev[aria-expanded="true"] svg { transform: rotate(180deg); }
 .cnmenu { left: auto; right: 0; width: min(760px, calc(100vw - 32px)); }
 .cnadd { justify-content: flex-start; padding-top: 6px; border-top: 1px solid var(--hair); }
+/* the menu drops over the page, so it needs a solid base even where a theme paints its panels see-through (Cyberpunk, Retro) */
+:root[data-skin] .rpanel.cnmenu { background-color: var(--paper); }
 @media (max-width: 560px) { .charnav { margin-left: 0; width: 100%; } }   /* on phones the menu is the bottom sheet (.rpanel) */
 
 .campbar { gap: 6px; }
@@ -886,6 +888,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .phead .uline + .ttag { margin-left: 10px; }
 .phead .pname + .ttag { margin-left: auto; }
 .ttag.tt-A { color: var(--card); background: var(--ink); border-color: var(--ink); }
+:root[data-skin="glass"] .ttag.tt-A { color: var(--paper); }   /* Glass cards are see-through white, so the label text takes the page colour */
 .ttag.tt-E { color: var(--att-ink, var(--life)); border-color: currentColor; box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 18%, transparent); }
 .perkcard.k-A { box-shadow: 3px 3px 0 color-mix(in srgb, var(--ink) 22%, transparent); }
 .perkcard.k-E { outline: 1.5px solid color-mix(in srgb, var(--att, var(--life)) 55%, transparent); outline-offset: 2px; box-shadow: 0 0 14px color-mix(in srgb, var(--att, var(--life)) 22%, transparent); }
@@ -7981,10 +7984,12 @@ void main() {
     old.style.animation = "none";
     const ghost = document.createElement("div");
     ghost.className = "wrap mh-ghost"; ghost.setAttribute("aria-hidden", "true"); ghost.inert = true;
-    ghost.style.cssText = `left:${x}px;top:${y}px;width:${r.width}px;height:${Math.max(0, Math.min(old.scrollHeight || 4000, innerHeight - r.top))}px`;
+    // The ghost is a .wrap, so Larger text zooms it too: measure in its own (unzoomed) pixels so it sits exactly over the section.
+    const zw = nu.closest(".wrap"), z = (zw && parseFloat(getComputedStyle(zw).zoom)) || 1;
+    ghost.style.cssText = `left:${x / z}px;top:${y / z}px;width:${r.width / z}px;height:${Math.max(0, Math.min(old.scrollHeight || 4000, (innerHeight - r.top) / z))}px`;
     ghost.appendChild(old);
     document.body.appendChild(ghost);
-    ghost.style.height = Math.max(0, Math.min(old.scrollHeight, innerHeight - r.top)) + "px";
+    ghost.style.height = Math.max(0, Math.min(old.scrollHeight, (innerHeight - r.top) / z)) + "px";
     const dirCls = wind < 0 ? "wind-l" : "wind-r";
     ghost.classList.add("mh-wipe-out", dirCls); nu.classList.add("mh-wipe-in", dirCls);
     // the leaves ride the edge of the wipe, across the part of the section that's on screen
@@ -8761,6 +8766,8 @@ function Munition({ m, rc, sum, st, focus, partState, forging, phase, onPick }) 
   const area = show("area") ? (rc.area && rc.area.k ? rc.area : m.shape === "grenade" ? { k: "Sphere" } : null) : null;
   const anchorFor = p => shape.anchors[p];
   const final = phase === "done", scrap = phase === "scrap" || phase === "scrapping";
+  // The parts are keyed by shape, so a new munition is drawn fresh: patching one shape's parts into another's
+  // (arrow to cartridge, say) could crash the page and leave the drawing and the picker out of step.
   return html`<div class=${"ptmun" + (forging ? " forging" : "") + (final ? " final" : "") + (scrap ? " scrap" : "") + " shape-" + m.shape}>
     <svg class="ptsvg" viewBox="0 0 360 460" role="img" aria-label=${`${m.n}: ${R.PT_PARTS.filter(p => sum[p].access && sum[p].value).map(p => `${PT_LABEL[p]} ${sum[p].value}`).join(", ") || "plain"}`}>
       <defs>
@@ -8779,7 +8786,7 @@ function Munition({ m, rc, sum, st, focus, partState, forging, phase, onPick }) 
       <g class="ptlines">${R.PT_PARTS.map(p => { const [side, ly] = CALLOUTS[p]; const [ax, ay] = anchorFor(p); const lx = side === "l" ? 112 : 248;
         return html`<g class=${"ptline" + (focus === p ? " on" : "") + (sum[p].access ? "" : " na") + (sum[p].access && !sum[p].open && p !== "coat" ? " locked" : "")}>
           <path d=${`M${lx} ${ly} H${side === "l" ? lx + 12 : lx - 12} L${ax} ${ay}`} /><circle cx=${ax} cy=${ay} r="3.6" /></g>`; })}</g>
-      <g class="ptbody">${shape.draw(S, coatFill, tipFill, core, status, area)}</g>
+      <g class="ptbody" key=${m.shape}>${shape.draw(S, coatFill, tipFill, core, status, area)}</g>
       <g clip-path="url(#pt-clip-all)"><rect class="ptglint" x="-60" y="-40" width="80" height="540" fill="url(#pt-glint)" /></g>
       ${forging && focus && !["done", "scrap", "nothing", "scrapping"].includes(phase) && html`<g class=${"ptsparks" + (phase === "hit" ? " burst" : "")} transform=${`translate(${anchorFor(focus)[0]} ${anchorFor(focus)[1]})`}>
         ${Array.from({ length: 10 }, (_, i) => html`<line x1="0" y1="0" x2="0" y2="-9" style=${`--a:${i * 36 + 8}deg;--d:${(i % 3) * 60}ms`} />`)}</g>`}
@@ -13656,11 +13663,11 @@ function TableView({ chars, current }) {
     </header>
 
     <div class="tgrid">
-      <div class="tcol">
+      <div class="tcol frame">
         <${GmText} title="The setting" icon="book" camp=${camp} field="setting" rows=${10} empty=${gm ? "Write what the players should know about the world: places, powers, the mood of the age." : "The GM hasn't written about the setting yet."} hint="The world, its powers and its mood…" />
         <${GmText} title="Last time…" icon="info" camp=${camp} field="recap" empty=${gm ? "After each session, a few lines on what happened." : "No recap yet."} hint="What happened last session…" />
       </div>
-      <div class="tcol">
+      <div class="tcol frame">
         <section class="tsec"><${Banner} title="The party" i="star" tag="h3" />
           ${party.length ? html`<div class="tparty">${party.map(r => html`<button type="button" class="tmember" onClick=${() => setWho(r)}>
               <${Thumb} c=${r} lg /><span class="who"><b>${r.name}</b><span>${[r.profession, r.player].filter(Boolean).join(" · ") || "—"}</span></span></button>`)}</div>`
@@ -13721,7 +13728,7 @@ function Handouts({ camp }) {
   const img = h => (h.img && Store.assets && Store.assets.urlFor(h.img)) || h.imgUrl || "";
   const upload = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f || !Store.assets) return; setBusy(true);
     try { const r = await Store.assets.upload(f, null); setEdit(x => Object.assign({}, x, { img: r.id })); } catch { toast("Couldn't upload that picture. Use a PNG, JPG or WebP."); } setBusy(false); };
-  return html`<section class="tsec thandouts"><div class="tsech"><${Banner} title="Handouts" i="info" tag="h3" />
+  return html`<section class="tsec thandouts frame"><div class="tsech"><${Banner} title="Handouts" i="info" tag="h3" />
       ${gm && !edit && html`<button type="button" class="btn small" onClick=${() => setEdit({ camp: k, title: "", text: "", img: "", imgUrl: "", shown: false })}>+ New handout</button>`}</div>
     ${edit && html`<div class="tedit hedit">
       <input class="inp" aria-label="Handout title" placeholder="A letter sealed in black wax" value=${edit.title} onInput=${e => setEdit(Object.assign({}, edit, { title: e.target.value }))} />

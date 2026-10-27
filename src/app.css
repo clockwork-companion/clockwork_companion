@@ -646,6 +646,8 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .cnchev[aria-expanded="true"] svg { transform: rotate(180deg); }
 .cnmenu { left: auto; right: 0; width: min(760px, calc(100vw - 32px)); }
 .cnadd { justify-content: flex-start; padding-top: 6px; border-top: 1px solid var(--hair); }
+/* the menu drops over the page, so it needs a solid base even where a theme paints its panels see-through (Cyberpunk, Retro) */
+:root[data-skin] .rpanel.cnmenu { background-color: var(--paper); }
 @media (max-width: 560px) { .charnav { margin-left: 0; width: 100%; } }   /* on phones the menu is the bottom sheet (.rpanel) */
 
 .campbar { gap: 6px; }
@@ -876,6 +878,7 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .phead .uline + .ttag { margin-left: 10px; }
 .phead .pname + .ttag { margin-left: auto; }
 .ttag.tt-A { color: var(--card); background: var(--ink); border-color: var(--ink); }
+:root[data-skin="glass"] .ttag.tt-A { color: var(--paper); }   /* Glass cards are see-through white, so the label text takes the page colour */
 .ttag.tt-E { color: var(--att-ink, var(--life)); border-color: currentColor; box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 18%, transparent); }
 .perkcard.k-A { box-shadow: 3px 3px 0 color-mix(in srgb, var(--ink) 22%, transparent); }
 .perkcard.k-E { outline: 1.5px solid color-mix(in srgb, var(--att, var(--life)) 55%, transparent); outline-offset: 2px; box-shadow: 0 0 14px color-mix(in srgb, var(--att, var(--life)) 22%, transparent); }

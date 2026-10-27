@@ -673,6 +673,8 @@ function Munition({ m, rc, sum, st, focus, partState, forging, phase, onPick }) 
   const area = show("area") ? (rc.area && rc.area.k ? rc.area : m.shape === "grenade" ? { k: "Sphere" } : null) : null;
   const anchorFor = p => shape.anchors[p];
   const final = phase === "done", scrap = phase === "scrap" || phase === "scrapping";
+  // The parts are keyed by shape, so a new munition is drawn fresh: patching one shape's parts into another's
+  // (arrow to cartridge, say) could crash the page and leave the drawing and the picker out of step.
   return html`<div class=${"ptmun" + (forging ? " forging" : "") + (final ? " final" : "") + (scrap ? " scrap" : "") + " shape-" + m.shape}>
     <svg class="ptsvg" viewBox="0 0 360 460" role="img" aria-label=${`${m.n}: ${R.PT_PARTS.filter(p => sum[p].access && sum[p].value).map(p => `${PT_LABEL[p]} ${sum[p].value}`).join(", ") || "plain"}`}>
       <defs>
@@ -691,7 +693,7 @@ function Munition({ m, rc, sum, st, focus, partState, forging, phase, onPick }) 
       <g class="ptlines">${R.PT_PARTS.map(p => { const [side, ly] = CALLOUTS[p]; const [ax, ay] = anchorFor(p); const lx = side === "l" ? 112 : 248;
         return html`<g class=${"ptline" + (focus === p ? " on" : "") + (sum[p].access ? "" : " na") + (sum[p].access && !sum[p].open && p !== "coat" ? " locked" : "")}>
           <path d=${`M${lx} ${ly} H${side === "l" ? lx + 12 : lx - 12} L${ax} ${ay}`} /><circle cx=${ax} cy=${ay} r="3.6" /></g>`; })}</g>
-      <g class="ptbody">${shape.draw(S, coatFill, tipFill, core, status, area)}</g>
+      <g class="ptbody" key=${m.shape}>${shape.draw(S, coatFill, tipFill, core, status, area)}</g>
       <g clip-path="url(#pt-clip-all)"><rect class="ptglint" x="-60" y="-40" width="80" height="540" fill="url(#pt-glint)" /></g>
       ${forging && focus && !["done", "scrap", "nothing", "scrapping"].includes(phase) && html`<g class=${"ptsparks" + (phase === "hit" ? " burst" : "")} transform=${`translate(${anchorFor(focus)[0]} ${anchorFor(focus)[1]})`}>
         ${Array.from({ length: 10 }, (_, i) => html`<line x1="0" y1="0" x2="0" y2="-9" style=${`--a:${i * 36 + 8}deg;--d:${(i % 3) * 60}ms`} />`)}</g>`}

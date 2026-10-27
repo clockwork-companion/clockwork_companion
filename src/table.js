@@ -105,11 +105,11 @@ function TableView({ chars, current }) {
     </header>
 
     <div class="tgrid">
-      <div class="tcol">
+      <div class="tcol frame">
         <${GmText} title="The setting" icon="book" camp=${camp} field="setting" rows=${10} empty=${gm ? "Write what the players should know about the world: places, powers, the mood of the age." : "The GM hasn't written about the setting yet."} hint="The world, its powers and its mood…" />
         <${GmText} title="Last time…" icon="info" camp=${camp} field="recap" empty=${gm ? "After each session, a few lines on what happened." : "No recap yet."} hint="What happened last session…" />
       </div>
-      <div class="tcol">
+      <div class="tcol frame">
         <section class="tsec"><${Banner} title="The party" i="star" tag="h3" />
           ${party.length ? html`<div class="tparty">${party.map(r => html`<button type="button" class="tmember" onClick=${() => setWho(r)}>
               <${Thumb} c=${r} lg /><span class="who"><b>${r.name}</b><span>${[r.profession, r.player].filter(Boolean).join(" · ") || "—"}</span></span></button>`)}</div>`
@@ -170,7 +170,7 @@ function Handouts({ camp }) {
   const img = h => (h.img && Store.assets && Store.assets.urlFor(h.img)) || h.imgUrl || "";
   const upload = async e => { const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f || !Store.assets) return; setBusy(true);
     try { const r = await Store.assets.upload(f, null); setEdit(x => Object.assign({}, x, { img: r.id })); } catch { toast("Couldn't upload that picture. Use a PNG, JPG or WebP."); } setBusy(false); };
-  return html`<section class="tsec thandouts"><div class="tsech"><${Banner} title="Handouts" i="info" tag="h3" />
+  return html`<section class="tsec thandouts frame"><div class="tsech"><${Banner} title="Handouts" i="info" tag="h3" />
       ${gm && !edit && html`<button type="button" class="btn small" onClick=${() => setEdit({ camp: k, title: "", text: "", img: "", imgUrl: "", shown: false })}>+ New handout</button>`}</div>
     ${edit && html`<div class="tedit hedit">
       <input class="inp" aria-label="Handout title" placeholder="A letter sealed in black wax" value=${edit.title} onInput=${e => setEdit(Object.assign({}, edit, { title: e.target.value }))} />
