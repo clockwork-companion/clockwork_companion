@@ -3562,9 +3562,12 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 :root[data-anim="off"] .drstars circle, :root[data-anim="off"] .drmist, :root[data-anim="off"] .draurora path, :root[data-anim="off"] .drbubble, :root[data-anim="off"] .drsphereb, :root[data-anim="off"] .dvorb, :root[data-anim="off"] .dreamscene *, :root[data-anim="off"] .dreamscene { animation: none !important; transition: none !important; }
 :root[data-anim="off"] .drpop { display: none; }
 :root[data-anim="off"] .alchfig .alayer, :root[data-anim="off"] .alchfig .alayer *, :root[data-anim="off"] .aarcs path, :root[data-anim="off"] .aflash, :root[data-anim="off"] .alchfig .aglow { animation: none !important; }
+:root[data-anim="off"] .huntone .huntstage { animation: none; }
+:root[data-anim="off"] .hchev { transition: none; }
 :root[data-anim="off"] .hunting *, :root[data-anim="off"] .hunting *::before { animation: none !important; transition: none !important; }
 :root[data-anim="off"] .hcslice { stroke-dashoffset: 0; }
 :root[data-anim="off"] .hcknife { display: none; }
+:root[data-anim="off"] .ph-fuse .hbtitem.give .hbtmove { transform: translateX(var(--slide)); }
 </style>
 <div id="app"></div>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
@@ -5537,7 +5540,7 @@ const RULES_INFO = {
 </script>
 <script>
 const { h, render } = preact;
-const { useState, useEffect, useMemo, useRef } = preactHooks;
+const { useState, useEffect, useLayoutEffect, useMemo, useRef } = preactHooks;
 const html = htm.bind(h);
 const R = CW;
 const num = R.num;
@@ -6908,6 +6911,52 @@ function investedSkills(c, attrs) {
   R.WEAPON_TYPES.forEach(([w]) => { const a = R.LEVELS.weapon.attrOf(w); if (attrs.includes(a) && num(c.weaponSkills[w]) > 0) out.push({ name: w, lv: num(c.weaponSkills[w]), attr: a, kind: "weapon" }); });
   return out.sort((a, b) => R.ATTRS.findIndex(x => x.k === a.attr) - R.ATTRS.findIndex(x => x.k === b.attr) || b.lv - a.lv || a.name.localeCompare(b.name));
 }
+// A skill's perks: folded like a rolodex, or opened into full cards. Opening deals the cards out of the stack one
+// after another while the section grows to fit; folding gathers them back into the stack, which settles into place.
+// Only a click animates (not the first draw or a filter change), and reduced-motion settings skip it.
+function PerkGroup({ g, open, flip, c, update, openSkill }) {
+  const box = useRef(null), fx = useRef(null), busy = useRef(false);
+  const cards = () => (box.current ? [...box.current.querySelectorAll(".perkcards > .perkcard")] : []);
+  const toggle = () => {
+    if (busy.current) return;
+    const el = box.current;
+    if (calm() || !el || !el.animate) { flip(g.name); return; }
+    if (!open) { fx.current = { from: el.offsetHeight, opening: true }; flip(g.name); return; }
+    // Folding: the cards slide back up into the stack (last card first), then the stack takes their place.
+    busy.current = true;
+    const list = cards(), n = list.length;
+    let longest = 0;
+    list.forEach((card, i) => {
+      const delay = Math.min(n - 1 - i, 6) * 28; longest = Math.max(longest, delay + 200);
+      card.animate([{ transform: "none", opacity: 1 }, { transform: `translateY(${-Math.min(i, 8) * 14 - 10}px) scale(.96)`, opacity: 0 }],
+        { duration: 200, delay, easing: "cubic-bezier(.4, 0, .7, .2)", fill: "forwards" });
+    });
+    setTimeout(() => { fx.current = { from: el.offsetHeight, opening: false }; busy.current = false; flip(g.name); }, longest);
+  };
+  useLayoutEffect(() => {
+    const f = fx.current, el = box.current; fx.current = null;
+    if (!f || !el || !el.animate) return;
+    const to = el.offsetHeight;
+    if (Math.abs(to - f.from) > 2) el.animate([{ height: f.from + "px", overflow: "hidden" }, { height: to + "px", overflow: "hidden" }],
+      { duration: f.opening ? 300 : 240, easing: "cubic-bezier(.2, .7, .3, 1)" });
+    if (f.opening) cards().forEach((card, i) => card.animate(
+      [{ transformOrigin: "50% 0", transform: `perspective(700px) translateY(${-Math.min(i, 8) * 14 - 16}px) rotateX(-58deg) scale(.97)`, opacity: 0 },
+       { transformOrigin: "50% 0", transform: "perspective(700px) translateY(0) rotateX(0) scale(1)", opacity: 1 }],
+      { duration: 360, delay: Math.min(i, 8) * 55, easing: "cubic-bezier(.2, .75, .3, 1.08)", fill: "backwards" }));
+    else el.querySelectorAll(".rolodex > .rdx").forEach((r, k) => r.animate(
+      [{ transform: `translateY(${-6 - Math.min(k, 8) * 2}px)`, opacity: 0 }, { transform: "none", opacity: 1 }],
+      { duration: 220, delay: Math.min(k, 8) * 22, easing: "cubic-bezier(.2, .7, .3, 1)", fill: "backwards" }));
+  }, [open]);
+  return html`<div ref=${box} class=${"perkgroup" + (open ? " open" : " folded")} style=${attStyle(g.attr)}>
+        <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small>
+          <button type="button" class="foldbtn" aria-expanded=${open} onClick=${toggle}>${open ? "Fold" : `Open ${g.perks.length} perk${g.perks.length > 1 ? "s" : ""}`}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button></h3>
+        ${open ? html`<div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div>`
+          : html`<button type="button" class="rolodex" onClick=${toggle} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${perkRows(g.perks).map((r, k) =>
+              html`<span class="rdx" style=${`--k:${k}`}><b class=${"rdxlv" + (r.ps.length > 1 ? " span" : "")}>${lvSpan(r.ps.map(p => p.l))}</b><span class="rdxn">${r.n || g.name}</span>
+                <span class="rdxps">${r.ps.map(p => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
+                  return html`<span class=${"rdxp k-" + typeKey(t)}>${r.ps.length > 1 && html`<i class="rdxat">${p.l}</i>`}${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max}</small>`}<${TypeTag} t=${t} /></span>`; })}</span></span>`)}</button>`}</div>`;
+}
+
 function TalentsTab({ c, update, openSkill }) {
   const [filter, setFilter] = useState(() => lsGet("cw-perkfilter", "all"));
   const [attrs, setAttrs] = useState(() => { const v = lsGet("cw-perkattrs", []); return Array.isArray(v) ? v.filter(a => R.ATTR_NAME[a]) : []; });
@@ -6947,15 +6996,7 @@ function TalentsTab({ c, update, openSkill }) {
       ${listed && html`<div class="attskills" role="group" aria-label=${`Skills invested in under ${attrs.map(a => R.ATTR_NAME[a]).join(", ")}`}>
         <span class="lbl">Your ${attrs.map(a => R.ATTR_NAME[a]).join(" · ")} skills</span>
         ${invested.map(x => html`<button type="button" class="skchip" style=${attStyle(x.attr)} aria-pressed=${focusOn === x.name} onClick=${() => setFocus(focusOn === x.name ? "" : x.name)}>${x.name} <small>${x.lv}</small></button>`)}</div>`}
-      ${shown.length ? shown.map(g => { const open = isOpen(g.name);
-        return html`<div class=${"perkgroup" + (open ? " open" : " folded")} style=${attStyle(g.attr)}>
-        <h3><span class="amedal" title=${R.ATTR_NAME[g.attr]}><${AttrGlyph} a=${g.attr} /></span><button type="button" class="sname" onClick=${() => openSkill(g.kind, g.name)}>${g.name}</button> <small>${g.kind === "weapon" ? R.proficiency(g.lv) : R.ATTR_NAME[g.attr]} · level ${g.lv}</small>
-          <button type="button" class="foldbtn" aria-expanded=${open} onClick=${() => flip(g.name)}>${open ? "Fold" : `Open ${g.perks.length} perk${g.perks.length > 1 ? "s" : ""}`}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg></button></h3>
-        ${open ? html`<div class="perkcards">${g.perks.map(p => html`<${PerkCard} key=${p.key} c=${c} p=${p} update=${update} skill=${g.name} attr=${g.attr} art=${skillArt(g.name, g.kind, p.gi || 0)} />`)}</div>`
-          : html`<button type="button" class="rolodex" onClick=${() => flip(g.name)} aria-label=${`Open ${g.name}'s ${g.perks.length} perks`}>${perkRows(g.perks).map((r, k) =>
-              html`<span class="rdx" style=${`--k:${k}`}><b class=${"rdxlv" + (r.ps.length > 1 ? " span" : "")}>${lvSpan(r.ps.map(p => p.l))}</b><span class="rdxn">${r.n || g.name}</span>
-                <span class="rdxps">${r.ps.map(p => { const t = p.t || "P", used = num((c.uses || {})[p.key]), max = p.u && p.u.uses ? num(p.u.uses) : 0;
-                  return html`<span class=${"rdxp k-" + typeKey(t)}>${r.ps.length > 1 && html`<i class="rdxat">${p.l}</i>`}${max > 0 && html`<small class="rdxuse">${Math.max(0, max - used)}/${max}</small>`}<${TypeTag} t=${t} /></span>`; })}</span></span>`)}</button>`}</div>`; })
+      ${shown.length ? shown.map(g => html`<${PerkGroup} key=${g.name} g=${g} open=${isOpen(g.name)} flip=${flip} c=${c} update=${update} openSkill=${openSkill} />`)
       : html`<p class="muted emptyline">${empty}</p>`}
     </section>
 
