@@ -5,9 +5,10 @@
 Serves SITE_DIR (made by `python3 src/build.py --web SITE_DIR`) on a local port and opens it in headless Chromium,
 at a desktop width and at 390 px, in every theme in the theme picker. Firebase is blocked, so the page runs in
 "this browser only" mode and no real data is touched. It creates a blank character, opens every tab, opens and
-closes both hidden games, and fails on page errors, console errors or sideways scrolling.
+closes both hidden games, opens Settings, and fails on page errors, console errors or sideways scrolling.
 """
 import functools, http.server, json, pathlib, sys, threading
+import os
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve()
@@ -36,7 +37,7 @@ def run_case(browser, url, width, height, skin, mobile, games):
         page.goto(url); page.wait_for_timeout(1500)
         shown = page.evaluate("document.documentElement.dataset.skin || 'ledger'")
         if shown != skin: problems.append(f"theme didn't apply: asked for {skin!r}, the page shows {shown!r}")
-        page.get_by_text("+ New character").first.click(); page.wait_for_timeout(300)
+        page.locator(".charnav .cnchev").click(); page.wait_for_timeout(200); page.get_by_text("+ New character").first.click(); page.wait_for_timeout(300)
         page.get_by_text("Blank character sheet").first.click(); page.wait_for_timeout(800)
         tabs = page.get_by_role("tab")
         n = tabs.count()
@@ -46,6 +47,11 @@ def run_case(browser, url, width, height, skin, mobile, games):
             if page.evaluate("document.documentElement.scrollWidth > innerWidth + 1"):
                 problems.append(f"sideways scroll on tab {tabs.nth(i).inner_text().strip()!r}")
         page.screenshot(path=str(SHOTS / f"{name}.png"), full_page=False)
+        page.locator(".setbtn").click(); page.wait_for_timeout(400)
+        if not page.locator(".settings").count(): problems.append("Settings didn't open")
+        elif page.evaluate("document.documentElement.scrollWidth > innerWidth + 1"): problems.append("sideways scroll on Settings")
+        page.screenshot(path=str(SHOTS / f"{name}-settings.png"), full_page=True)
+        page.get_by_role("button", name="← Back").click(); page.wait_for_timeout(250)
         if games:   # the hidden games (keyboard triggers), once per run
             page.locator("body").click(position={"x": 5, "y": 5}); page.keyboard.type("steam"); page.wait_for_timeout(400)
             if not page.locator("#cw-egg").count(): problems.append("Skyward Boiler didn't open")
@@ -63,9 +69,10 @@ def run_case(browser, url, width, height, skin, mobile, games):
 def main():
     srv, url = serve(); failed = False
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        browser = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None)
         # Every theme in the picker (new themes are picked up automatically), at a desktop width and at 390 px.
         probe = browser.new_page(); probe.goto(url); probe.wait_for_timeout(1000)
+        probe.locator(".setbtn").click(); probe.wait_for_timeout(300)   # the theme picker lives in Settings
         skins = probe.evaluate("[...document.querySelector('.skinpick select').options].map(o => o.value)"); probe.close()
         if len(skins) < 2: print(f"FAIL couldn't read the theme list ({skins})"); sys.exit(1)
         print(f"themes: {', '.join(skins)}")

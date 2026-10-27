@@ -6,6 +6,7 @@ Two players at one test table: u1 plays Batbayar (owns a worn sabre), u2 plays A
 Each page is one player; the stand-in's store is per page, so the other side of a job is written straight into it.
 """
 import functools, hashlib, http.server, json, pathlib, re, shutil, sys, tempfile, threading
+import os
 from playwright.sync_api import sync_playwright
 
 SITE = pathlib.Path(sys.argv[1]).resolve(); SHOTS = pathlib.Path(sys.argv[2] if len(sys.argv) > 2 else "smoke-shots"); SHOTS.mkdir(parents=True, exist_ok=True)
@@ -19,8 +20,9 @@ page_html = page_html.replace('<script src="firebase-config.js"></script>', '<sc
 
 key = hashlib.sha256(b"clockwork-table:test table").hexdigest(); T = f"tables/{key}"
 SABRE = {"id": "w1", "name": "Steppe sabre", "skill": "Slashing", "hands": 1, "damage": 6, "crit": 5, "dur": 20, "durMax": 100, "durDie": "d10", "props": "", "final": True}
-BAT = {"name": "Batbayar", "campaign": "Steppe Wars", "players": ["u1"], "weapons": [SABRE]}
-ARS = {"name": "Arslan", "campaign": "Steppe Wars", "players": ["u2"], "skills": {"Weapon Maintenance": 6}, "attrs": {"WIS": {"base": 16, "value": 16}}, "craft": {"supplies": {"weapon": 9000}}}
+BAT = {"modules": {"craft": True, "magic": True}, "name": "Batbayar", "campaign": "Steppe Wars", "players": ["u1"], "weapons": [SABRE], "coins": 100, "items": [{"id": "i1", "name": "Bandages", "qty": 10, "size": "bundle"}]}
+PAY = {"coins": 30, "items": [{"name": "Bandages", "qty": 2, "size": "bundle"}], "note": "a round of ale"}
+ARS = {"modules": {"craft": True, "magic": True}, "name": "Arslan", "campaign": "Steppe Wars", "players": ["u2"], "skills": {"Weapon Maintenance": 6}, "attrs": {"WIS": {"base": 16, "value": 16}}, "craft": {"supplies": {"weapon": 9000}}}
 base = {f"{T}/meta/table": {"owner": "gm1"}, f"{T}/members/gm1": {"role": "gm", "name": "sinan"},
         f"{T}/members/u1": {"role": "player", "name": "utku"}, f"{T}/members/u2": {"role": "player", "name": "bedo"},
         f"{T}/characters/bat": BAT, f"{T}/characters/ars": ARS,
@@ -52,41 +54,123 @@ jobs = lambda pg: pg.evaluate(f"[...window.__mockStore.keys()].filter(k => k.sta
 put = lambda pg, path, d: pg.evaluate(f"firebase.firestore().doc('{T}/{path}').set({json.dumps(d)})")
 
 with sync_playwright() as p:
-    b = p.chromium.launch()
-    # ---- the owner (u1): sends the sabre, then gets it back repaired
+    b = p.chromium.launch(channel=os.environ.get("PW_CHANNEL") or None)
+    # ---- the owner (u1): sends the sabre from the Gear tab with a payment, then gets it back repaired
     pg, errs = as_player(b, "u1", base)
-    bench(pg, "Weapon upkeep", "Repair")
-    check("owner sees Arslan as a weaponsmith", pg.locator(".shopsend .ptopt", has_text="Arslan").count() == 1)
-    check("but not Kael, a smith in another campaign", pg.locator(".shopsend .ptopt", has_text="Kael").count() == 0)
-    pg.locator(".shopsend .ptopt", has_text="Arslan").click(); pg.wait_for_timeout(500)
+    me = lambda: get(pg, "characters/bat") or {}
+    gear = lambda: (pg.get_by_role("tab", name="Gear").click(), pg.wait_for_timeout(300))
+    gear()
+    pg.locator(".wcard.final .shopbtn").click(); pg.wait_for_timeout(300)
+    opts = pg.evaluate("[...document.querySelector(\".shopgear select[id^='sg-to']\").options].map(o => o.textContent)")
+    check("owner sees Arslan as a weaponsmith", any("Arslan" in o for o in opts), opts)
+    check("but not Kael, a smith in another campaign", not any("Kael" in o for o in opts), opts)
+    check("the town smith (GM) is offered too", any("Town smith" in o for o in opts), opts)
+    pg.select_option(".shopgear select[id^='sg-to']", "ars")
+    pg.fill(".shopgear input[id^='sg-coins']", "30"); pg.select_option(".shopgear select[id^='sg-item']", "i1"); pg.wait_for_timeout(100)
+    pg.fill(".shopgear input[id^='sg-qty']", "2"); pg.fill(".shopgear input[id^='sg-note']", "a round of ale")
+    pg.screenshot(path=str(SHOTS / "workshop-gear-send.png"))
+    pg.locator(".shopgear .btn.primary", has_text="Send to Arslan").click(); pg.wait_for_timeout(1600)   # the sheet saves shortly after a change
     js = jobs(pg); j = js[0] if js else {}
     check("job written with both sides' players", len(js) == 1 and j.get("from", {}).get("uids") == ["u1"] and j.get("to", {}).get("uids") == ["u2"] and j.get("status") == "open", js)
     check("only the sabre travels", j.get("item", {}).get("id") == "w1" and "skills" not in j.get("item", {}))
-    check("the sabre is marked as away, and can't be repaired at home meanwhile", pg.locator(".shopaway .flag", has_text="At Arslan's bench").count() == 1 and pg.locator(".forgebtn").is_disabled())
-    pg.screenshot(path=str(SHOTS / "workshop-sent.png"))
-    done = dict(j); done.pop("id", None); done.update({"status": "done", "result": {"gained": 41, "roll": "check 7 → 9 × d10: 41", "by": "Arslan"}})
+    check("the payment travels with it", j.get("pay") == PAY, j.get("pay"))
+    check("and leaves the owner's sheet", me().get("coins") == 70 and me().get("items", [{}])[0].get("qty") == 8, (me().get("coins"), me().get("items")))
+    check("the Gear card says it's away", pg.locator(".shopgear.away .flag", has_text="With Arslan").count() == 1)
+    check("it stays in the owner's Gear", [w.get("id") for w in me().get("weapons", [])] == ["w1"])
+    check("but is locked: durability and edit can't be used", pg.locator(".wcard.final.away").count() == 1 and pg.locator(".wcard.away button[aria-label='Lose 1 durability']").is_disabled() and pg.locator(".wcard.away button[aria-label^='Edit']").is_disabled())
+    pg.locator(".wcard.final").screenshot(path=str(SHOTS / "workshop-locked.png"))
+    check("no crafting skills, so no Crafting tab for the owner", pg.get_by_role("tab", name="Crafting").count() == 0)
+    done = dict(j); done.pop("id", None); done.update({"status": "done", "result": {"gained": 41, "roll": "check 7 → 9 × d10: 41", "times": 1, "by": "Arslan"}})
     put(pg, f"jobs/{j['id']}", done); pg.wait_for_timeout(1800)
-    sab = (get(pg, "characters/bat") or {}).get("weapons", [{}])[0]
+    sab = me().get("weapons", [{}])[0]
     check("owner's app wrote the repair onto the sabre", sab.get("dur") == 61, sab.get("dur"))
     check("and cleared the job", jobs(pg) == [])
+    check("the payment doesn't come back after a repair", me().get("coins") == 70)
+    gear(); check("back from the smith, the card unlocks", pg.locator(".wcard.away").count() == 0 and pg.locator(".wcard.final .shopbtn").count() == 1)
+    # sent back unrepaired: the payment comes home
+    pg.locator(".wcard.final .shopbtn").click(); pg.select_option(".shopgear select[id^='sg-to']", "ars"); pg.fill(".shopgear input[id^='sg-coins']", "20")
+    pg.locator(".shopgear .btn.primary").click(); pg.wait_for_timeout(600)
+    j = jobs(pg)[0]; back = dict(j); back.pop("id", None); back.update({"status": "declined"})
+    put(pg, f"jobs/{j['id']}", back); pg.wait_for_timeout(1800)
+    check("sent back unrepaired: the coins come back, the sabre is as it was", me().get("coins") == 70 and jobs(pg) == [] and me().get("weapons", [{}])[0].get("dur") == 61, me().get("coins"))
+    # taken back by the owner: the payment comes home too
+    pg.locator(".wcard.final .shopbtn").click(); pg.select_option(".shopgear select[id^='sg-to']", "ars"); pg.fill(".shopgear input[id^='sg-coins']", "10")
+    pg.locator(".shopgear .btn.primary").click(); pg.wait_for_timeout(1600)
+    check("paid 10 more", me().get("coins") == 60)
+    pg.locator(".shopgear.away .btn", has_text="Take it back").click(); pg.wait_for_timeout(1600)
+    check("taken back: the coins come back", me().get("coins") == 70 and jobs(pg) == [], me().get("coins"))
+    check("the sender never gets the smith's pop-up", pg.locator(".shopnote").count() == 0)
+    # the town smith (an NPC the GM runs): the job goes to "gm"; the payment isn't refunded once it's repaired
+    pg.locator(".wcard.final .shopbtn").click(); pg.select_option(".shopgear select[id^='sg-to']", "gm"); pg.fill(".shopgear input[id^='sg-coins']", "15")
+    pg.locator(".shopgear .btn.primary", has_text="Send to the town smith").click(); pg.wait_for_timeout(1600)
+    tj = [x for x in jobs(pg) if x.get("to", {}).get("char") == "gm"]
+    check("a town smith job goes to the GM", len(tj) == 1 and tj[0]["to"]["uids"] == [] and tj[0].get("pay", {}).get("coins") == 15, tj)
+    check("and the card says it's with the town smith", pg.locator(".shopgear.away .flag", has_text="With Town smith (GM)").count() == 1 and me().get("coins") == 55)
+    done = dict(tj[0]); done.pop("id", None); done.update({"status": "done", "result": {"gained": 25, "roll": "set by the GM", "times": 1, "by": "Town smith (GM)"}})
+    put(pg, f"jobs/{tj[0]['id']}", done); pg.wait_for_timeout(1800)
+    check("the GM's repair lands on the sabre; the town smith keeps the payment", me().get("weapons", [{}])[0].get("dur") == 86 and me().get("coins") == 55 and jobs(pg) == [], (me().get("weapons", [{}])[0].get("dur"), me().get("coins")))
     check("owner's roster card is published", (get(pg, "roster/bat") or {}).get("uids") == ["u1"])
     check("no page errors (owner)", not errs, errs[:3])
     pg.context.close()
 
+    # ---- a GM holds both characters: the pop-up shows only while the smith's character is open
+    gseed = dict(base); gseed[f"{T}/jobs/j9"] = {"kind": "weapon", "mode": "repair", "status": "open", "t": 1,
+        "from": {"char": "bat", "name": "Batbayar", "uids": ["u1"]}, "to": {"char": "ars", "name": "Arslan", "uids": ["u2"]}, "item": SABRE, "pay": PAY}
+    gseed[f"{T}/characters/ars"] = dict(ARS, players=[])
+    gseed[f"{T}/jobs/j9"]["to"]["uids"] = []
+    pg, errs = as_player(b, "gm1", gseed)
+    pg.evaluate("localStorage.setItem('cw-sel', JSON.stringify('bat'))"); pg.reload(); pg.wait_for_selector(".tabs", timeout=20000); pg.wait_for_timeout(900)
+    check("GM on the sender's sheet: no pop-up", pg.locator(".shopnote").count() == 0)
+    pg.locator(".charnav .cnchev").click(); pg.wait_for_timeout(300); pg.locator(".rpanel .rmain", has_text="Arslan").click(); pg.wait_for_timeout(900)
+    check("GM opens the smith's sheet: the pop-up shows", pg.locator(".shopnote", has_text="Batbayar").count() == 1)
+    pg.locator(".shopnote .btn", has_text="Later").click(); pg.wait_for_timeout(200)
+    # a job for the town smith pops up for the GM and waits on the GM table
+    town = dict(gseed[f"{T}/jobs/j9"]); town["to"] = {"char": "gm", "name": "Town smith (GM)", "uids": []}
+    put(pg, "jobs/t1", town); pg.wait_for_timeout(800)
+    check("the town smith's job pops up for the GM", pg.locator(".shopnote", has_text="town smith").count() == 1)
+    pg.locator(".shopnote .btn", has_text="Open the GM table").click(); pg.wait_for_timeout(700)
+    check("the GM table lists it", pg.locator(".townsmith .townjob", has_text="Batbayar's Steppe sabre").count() == 1)
+    pg.locator(".townsmith").screenshot(path=str(SHOTS / "workshop-town.png"))
+    pg.fill(".townjob input[id^='ts-']", "30"); pg.locator(".townjob .btn.primary", has_text="Send it back").click(); pg.wait_for_timeout(800)
+    t1 = get(pg, "jobs/t1") or {}
+    check("the GM sends it back with the amount set", t1.get("status") == "done" and (t1.get("result") or {}).get("gained") == 30, t1)
+    check("and the list clears", pg.locator(".townsmith").count() == 0)
+    check("no page errors (GM)", not errs, errs[:3])
+    pg.context.close()
+
     # ---- the smith (u2): sees the job, repairs it with his own roll and materials; crafts a gift
     seed = dict(base); seed[f"{T}/jobs/j1"] = {"kind": "weapon", "mode": "repair", "status": "open", "t": 1,
-        "from": {"char": "bat", "name": "Batbayar", "uids": ["u1"]}, "to": {"char": "ars", "name": "Arslan", "uids": ["u2"]}, "item": SABRE}
+        "from": {"char": "bat", "name": "Batbayar", "uids": ["u1"]}, "to": {"char": "ars", "name": "Arslan", "uids": ["u2"]}, "item": SABRE, "pay": PAY}
     pg, errs = as_player(b, "u2", seed)
-    bench(pg, "Weapon upkeep", "Repair")
-    check("smith sees the job", pg.locator(".ptside .ptcheck", has_text="Batbayar's Steppe sabre").count() == 1)
-    pg.locator(".ptside .ptcheck", has_text="Batbayar's Steppe sabre").click(); pg.wait_for_timeout(300)
+    check("a notice pops up for the smith", pg.locator(".shopnote", has_text="Batbayar").count() == 1 and pg.locator(".shopnote", has_text="30 coins").count() == 1)
+    pg.screenshot(path=str(SHOTS / "workshop-notice.png"))
+    pg.locator(".shopnote .btn", has_text="Open the Repair bench").click(); pg.wait_for_timeout(600)
+    check("it opens the Repair bench on that job", pg.locator(".ptside .ptcheck[aria-pressed='true']", has_text="Batbayar's Steppe sabre").count() == 1)
+    check("and doesn't pop up again", pg.locator(".shopnote").count() == 0)
+    check("the job shows the payment", pg.locator(".ptside .shoppaid", has_text="30 coins").count() == 1)
     pg.screenshot(path=str(SHOTS / "workshop-smith.png"))
     pg.evaluate("window.Q=[25,8,8,8,8,8,8,8,8,8]"); pg.locator(".forgebtn").click(); pg.wait_for_selector(".ptread.end", timeout=20000); pg.wait_for_timeout(1500)
     j1 = get(pg, "jobs/j1") or {}
-    check("smith's result is on the job", j1.get("status") == "done" and (j1.get("result") or {}).get("gained") == 72, j1)
+    check("one repair stays on the job, still open", j1.get("status") == "open" and (j1.get("result") or {}).get("gained") == 72 and (j1.get("result") or {}).get("times") == 1, j1)
     check("the owner's sheet is untouched by the smith", (get(pg, "characters/bat") or {}).get("weapons", [{}])[0].get("dur") == 20)
     check("the smith paid the materials", ((get(pg, "characters/ars") or {}).get("craft", {}).get("supplies", {}).get("weapon")) == 8600)
-    pg.locator(".ptread.end .btn", has_text="Back to").click(); pg.wait_for_timeout(200)
+    check("no payment yet", not (get(pg, "characters/ars") or {}).get("coins"))
+    check("the result offers Repair again and Send it back", pg.locator(".ptread.end .btn", has_text="Repair again").count() == 1 and pg.locator(".ptread.end .btn", has_text="Send it back to Batbayar").count() == 1)
+    pg.screenshot(path=str(SHOTS / "workshop-again.png"))
+    pg.evaluate("window.Q=[25,8,8,8,8,8,8,8,8,8]"); pg.locator(".ptread.end .btn", has_text="Repair again").click()
+    pg.wait_for_selector(".ptread.end", timeout=20000); pg.wait_for_timeout(1500)
+    j1 = get(pg, "jobs/j1") or {}
+    check("a second repair adds up (up to full)", j1.get("status") == "open" and (j1.get("result") or {}).get("gained") == 80 and (j1.get("result") or {}).get("times") == 2, j1.get("result"))
+    check("fully repaired: only Send it back", pg.locator(".ptread.end .btn", has_text="Repair again").count() == 0 and pg.locator(".ptread.end", has_text="fully repaired").count() == 1)
+    pg.locator(".ptread.end .btn", has_text="Send it back to Batbayar").click(); pg.wait_for_timeout(1600)
+    j1 = get(pg, "jobs/j1") or {}
+    check("sent back: done, with both repairs", j1.get("status") == "done" and (j1.get("result") or {}).get("gained") == 80, j1)
+    ars = get(pg, "characters/ars") or {}
+    check("the smith paid materials twice", ars.get("craft", {}).get("supplies", {}).get("weapon") == 8200, ars.get("craft", {}).get("supplies"))
+    check("and got the payment", ars.get("coins") == 30 and any(i.get("name") == "Bandages" and i.get("qty") == 2 for i in ars.get("items", [])), (ars.get("coins"), ars.get("items")))
+    check("the bench is clear", pg.locator(".ptside .ptcheck", has_text="Batbayar's").count() == 0)
+    pg.locator(".ammode button", has_text="Craft").click(); pg.wait_for_timeout(300)
+    pg.locator(".ammode button", has_text="Repair").click(); pg.wait_for_timeout(300)
     pg.locator(".ammode button", has_text="Craft").click(); pg.wait_for_timeout(300)
     pg.locator(".ptlabel").first.click()
     opts = pg.evaluate("[...document.querySelector(\"select[id^='mf-']\").options].map(o => o.textContent)")

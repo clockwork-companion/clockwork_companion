@@ -75,7 +75,7 @@ def build(libs, web=False, dev=False):
         if libs[k] not in seen:
             seen.add(libs[k]); tags.append(f'<script src="{libs[k]}"></script>')
     DATA = ["rules.js", "skills-data.js", "skill-tables.js", "rules-info.js"]
-    APP = ["app.js", "fx-blackwall.js", "fx-steppe.js", "fx-moss.js", "craft.js", "craft-shop.js", "craft-armor.js", "craft-weapon.js", "craft-brew.js", "craft-rune.js", "genesis.js", "gm.js"]
+    APP = ["app.js", "fx-blackwall.js", "fx-steppe.js", "fx-moss.js", "craft.js", "craft-shop.js", "craft-armor.js", "craft-weapon.js", "craft-brew.js", "craft-rune.js", "craft-hunt.js", "craft-hunt-art.js", "magic.js", "magic-harmony.js", "magic-demon.js", "magic-dream.js", "magic-alchemy.js", "genesis.js", "table.js", "gm.js"]
     # Every script in src/ must be bundled. A file left out of these lists (for example by a merge that kept only one
     # side of this line) builds a page that crashes when its code is needed, so stop here and say which file is missing.
     missing = sorted(f.name for f in HERE.glob("*.js") if f.name not in DATA + APP + ["web-backend.js"])
@@ -102,6 +102,8 @@ if __name__ == "__main__":
             shutil.copy(HERE / "web" / f, d / f)
         if (HERE / "web" / "egg").is_dir():   # art and sound for the hidden games
             shutil.copytree(HERE / "web" / "egg", d / "egg", dirs_exist_ok=True)
+        if (HERE / "web" / "art").is_dir():   # the 2021 rulebook's paintings, behind the perk cards
+            shutil.copytree(HERE / "web" / "art", d / "art", dirs_exist_ok=True)
         (d / "manifest.webmanifest").write_text(manifest("--dev" in a))
         version = hashlib.sha256((d / "index.html").read_bytes()).hexdigest()[:12]
         (d / "sw.js").write_text(read("web/sw.js").replace("__BUILD_VERSION__", version))
