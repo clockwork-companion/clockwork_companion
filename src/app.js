@@ -504,6 +504,31 @@ function App() {
   Shop.updater = updateChar; Shop.start();   // the workshop writes finished jobs onto this app's characters
   const openChar = id => { setSel(id); setView("chars"); setSettings(false); setTab("sheet"); window.scrollTo(0, 0); };
 
+  // Combat mode (combat.js): the GM switches it on for the table; characters in the fight get the battle view.
+  // "Sheet" in the band steps this browser back to the tabs until "Back to combat".
+  const fight = useFight();
+  const [away, setAway] = useState(false);
+  useEffect(() => { if (!fight.on) setAway(false); }, [fight.on]);
+  const stale = id => { const n = all[id] && norm(all[id]); return n && (n.combat.turn || n.combat.ended || n.combat.running.length || num(n.combat.ap) !== 5 || (n.cards || []).some(k => !k.keep)); };
+  const startFight = () => {
+    const e = Store.encounter;
+    const ids = e && e.combatants ? e.combatants.filter(x => x.kind === "pc" && !x.out && all[x.charId]).map(x => x.charId) : [];
+    (ids.length ? ids : list.map(c => c.id)).forEach(id => stale(id) && updateChar(id, x => { x.combat = freshCombat(x); }));
+    Fight.set(Object.assign({ on: true, chars: ids }, fightFromDeck(e, all) || { round: 1, up: "", upId: "", next: "" }));
+    setAway(false); toast("Combat mode is on for the table.");
+  };
+  const endFight = () => {
+    (fight.chars.length ? fight.chars : list.map(c => c.id)).forEach(id => stale(id) && updateChar(id, x => { x.combat = freshCombat(x); x.cards = (x.cards || []).filter(k => k.keep); }));
+    Fight.set(blankFight()); toast("Combat is over.");
+  };
+  // The GM's app keeps the band's round, who's up and who's next in step with the initiative deck.
+  useEffect(() => {
+    if (!gm || !fight.on) return;
+    const s = fightFromDeck(Store.encounter, all); if (!s) return;
+    if (s.round !== num(fight.round) || s.up !== fight.up || s.upId !== fight.upId || s.next !== fight.next) Fight.set(s);
+  });
+  const fighting = !!(current && view === "chars" && Fight.has(current.id));
+
   // A new character belongs to the player who made it. A companion belongs to whoever plays its master.
   // fill(c): the creation guide's choices, applied to the new character before it's saved.
   const create = (rolled, master, fill) => {
@@ -532,8 +557,11 @@ function App() {
         pick=${id => { setSel(id); setView("chars"); setSettings(false); window.scrollTo(0, 0); }} create=${create} startNew=${startNew} />
       <div class="status">${Store.mode === "live" && Store.table ? html`<i class="dot live"></i>${Store.table.name}${gm ? " · GM" : ""} <button type="button" class="installbtn" data-install-btn data-tip="Install the Companion as an app" aria-label="Install the Companion as an app" dangerouslySetInnerHTML=${{ __html: INSTALL_ICON }}></button>`
         : Store.mode === "live" ? html`<i class="dot live"></i>Shared · saves for everyone` : Store.mode === "local" ? html`<i class="dot local"></i>This browser only` : html`<i class="dot"></i>Connecting…`}</div>
+      ${gm && !fight.on && Store.mode !== "loading" && html`<${FightStart} start=${startFight} />`}
       <button type="button" class=${"setbtn" + (fresh ? " hasnews" : "")} aria-pressed=${settings} aria-label=${fresh ? "Settings (something new)" : "Settings"} data-tip=${fresh ? "Settings · something new" : "Settings"} onClick=${() => openSettings(!settings)}><i class="seticon" aria-hidden="true"></i></button>
     </header>
+    ${fight.on && html`<${FightBand} fight=${fight} gm=${gm} mine=${fighting ? current : null} away=${away} setAway=${v => { setAway(v); window.scrollTo(0, 0); }}
+      chars=${list} end=${endFight} setChars=${ids => Fight.set({ chars: ids })} />`}
     ${Store.mode === "local" && html`<div class="banner">${window.CW_WEB
       ? (window.CW_WEB.reason === "offline" ? "Couldn't reach the shared save, so for now characters are kept in this browser only. Check your connection and reload."
         : "Shared saving isn't set up yet, so characters are kept in this browser only. Add your Firebase settings to firebase-config.js to share them with your table.")
@@ -543,7 +571,8 @@ function App() {
     <div class="viewswap" key=${page} data-dir=${pageNav.current.dir}>
     ${view === "gm" && gm ? html`<${GMView} chars=${list} updateChar=${updateChar} openChar=${openChar} />`
       : view === "table" ? html`<${TableView} chars=${list} current=${current} />` : html`
-    ${current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
+    ${current && fighting && !away ? html`<${CombatView} c=${current} update=${update} />`
+      : current ? html`<${Character} c=${current} update=${update} tab=${tab} setTab=${setTab} onDelete=${remove} />`
       : Store.mode === "loading" ? html`<div class="empty"><p class="muted">Opening the character ledger…</p></div>`
       : html`<div class="empty">
           <div class="ornate">${gm ? "No characters yet" : "Welcome to the table"}</div>

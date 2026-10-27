@@ -89,6 +89,13 @@ const RULES_INFO = {
     { t: { cols: ["Load up to", "Tier", "Travel", "Defending", "Move"], rows: [["3 units", "Unencumbered", "10 km/h · 40 km a day", "—", "—"], ["4 units", "Lightly", "5 km/h · 20 km", "−10", "−2 m"], ["5 units", "Heavily", "2 km/h · 10 km", "−20", "−4 m"], ["6 units", "Severely", "1 km/h · 5 km", "−40", "−8 m"], ["More", "Over encumbered", "Can't travel", "Can't defend", "—"]] } },
     { note: "The app reads Strong Back 5, 7 and 9 as removing the Lightly, Heavily and Severely penalties." } ] },
 
+  combat: { kicker: "Combat", title: "Turns and AP", body: [
+    "Every character gets 5 Action Points (AP) at the start of each turn. Moving, attacking, reloading and most Active abilities cost AP.",
+    { h: "Reactions" }, { ul: ["AP you haven't spent when your turn ends stays ready for reactions until your next turn.", "A reaction costs the same AP as the action it is (a parry, an evade, a Riposte).", "Abilities marked ⟲ by their AP cost can be used as reactions."] },
+    { h: "Carrying AP over (Alacrity)" }, { ul: ["Alacrity 8 (Blur): carry up to 1 unspent AP into your next turn.", "Alacrity 9 (True Haste): carry up to 1 more.", "Alacrity 10: the True Haste Empowerment makes actions that cost up to 5 AP cost 2 instead, for its turns."] },
+    { h: "In the app" }, { ul: ["Start my turn gives you 5 AP plus what you carried over; End turn counts down everything that lasts a number of turns.", "Using an ability spends its AP, ticks a use, takes its Stamina and starts its countdown.", "The GM switches combat mode on and off for everyone at the table."] },
+    { note: "The app counts the AP left after a reaction as what Alacrity carries over. Death saves are tallied but what the tally means is the GM's call." },
+  ] },
   armor: { kicker: "Gear", title: "Armor", body: [
     { ul: ["Armor Value (AV): taken off every hit.", "Soak pool: each hit drains soak, up to the AV. Damage past the AV goes to HP.", "At 0 soak the armor breaks, and only a skilled craftsman can mend it."] },
     { t: { cols: ["Type", "AV", "Needs", "Penalties"], rows: [["Light", "1–4", "—", "Casting −2×AV"], ["Medium", "5–7", "STR 10", "Stealth −AV, casting −2×AV"], ["Heavy", "8–11", "STR 13, Armor Mastery 3", "Dex skills −AV, Stealth disadv., casting and Entrada −2×AV"], ["Plate", "12–15", "STR 15, Armor Mastery 5", "Dex skills and STR/DEX saves −AV, Stealth disadv., casting −2×AV, travel checks −2×AV"]] } },

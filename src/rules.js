@@ -132,6 +132,10 @@ const CW = (() => {
       harmony: { els: [], ch: {}, rel: [], turns: 0, kept: 0, ledger: [] },
       demon: { daemons: [], out: [], guardian: "", today: 0, army: false, ledger: [] },
       dream: { inRealm: false, mundane: false, travelers: 0, tolls: [], vault: [], sphere: null, seeds: [], ledger: [] },
+      // Combat mode (combat.js): this character's turn (AP left, AP carried over, reaction used), countdowns, death saves.
+      combat: { turn: false, ended: false, ap: 5, carry: 0, reacted: false, running: [], saves: { ok: 0, fail: 0 } },
+      // Custom cards (combat.js): a condition, feature, ability or counter of the player's own, or one the GM handed out.
+      cards: [],
       alch: { circles: [], arrays: {}, ledger: [] },   // Alchemy: saved circles (one may be a Signature Circle), arrays on the body   // Dreamwalking: what the dreamwalker sustains   // Demonology: contracts, who is summoned, summons used today   // Occult: Harmony: known elements, chakra → element, released chakras
       items: [], weapons: [], armor: [], log: [],
       craft: { supplies: { container: 0 }, bonus: 0, batch: {}, recipe: { type: "rifle" }, recipes: {}, ledger: [], parts: [], saved: [],
@@ -198,6 +202,12 @@ const CW = (() => {
     ["tolls", "vault", "seeds", "ledger"].forEach(k => { if (!Array.isArray(out.dream[k])) out.dream[k] = []; });
     out.dream.inRealm = !!out.dream.inRealm; out.dream.mundane = !!out.dream.mundane; out.dream.travelers = Math.max(0, num(out.dream.travelers));
     if (out.dream.sphere && typeof out.dream.sphere !== "object") out.dream.sphere = null;
+    // Combat mode and custom cards: added 2026-10-27; older characters get the defaults.
+    out.combat = Object.assign({}, b.combat, c && c.combat && typeof c.combat === "object" ? c.combat : {});
+    out.combat.saves = Object.assign({ ok: 0, fail: 0 }, out.combat.saves);
+    if (!Array.isArray(out.combat.running)) out.combat.running = [];
+    out.combat.ap = clamp(num(out.combat.ap), 0, 12); out.combat.carry = clamp(num(out.combat.carry), 0, 2);
+    out.cards = Array.isArray(c && c.cards) ? c.cards.filter(k => k && typeof k === "object" && k.id) : [];
     if (out.dream.sphere) ["x", "y"].forEach(k => { if (out.dream.sphere[k] != null && !Number.isFinite(+out.dream.sphere[k])) delete out.dream.sphere[k]; });
     out.dream.vault.forEach(v => { if ((v.kind === "weapon" || v.kind === "armor") && !(v.obj && typeof v.obj === "object")) delete v.kind; });
     out.alch = Object.assign({}, b.alch, out.alch);

@@ -104,6 +104,12 @@ service cloud.firestore {
       allow write: if isGM(t);
     }
 
+    // Combat mode: the GM switches it on for the table; everyone reads it (round, who's up, who's in).
+    match /tables/{t}/combat/{id} {
+      allow read: if isMember(t);
+      allow write: if isGM(t);
+    }
+
     // The initiative deck is the GM's.
     match /tables/{t}/encounters/{id} {
       allow read, write: if isGM(t);

@@ -64,7 +64,7 @@ jobs:
           - group: smoke test, every theme
             tests: smoke
           - group: Warding and Powdertinkering
-            tests: warding powder_saved craft_unlock
+            tests: warding powder_saved craft_unlock combat
           - group: Daemonology, Dreamwalking, Harmony, Hunting
             tests: demonology dreamwalking harmony hunting
           - group: workshop, Alchemy, fixes
