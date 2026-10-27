@@ -954,18 +954,22 @@ button.track:hover, button.track:focus-visible { border-color: var(--brass); }
 .perkcard.hasart { overflow: hidden; }
 .perkcard.hasart > :not(.partbg) { position: relative; }
 .perkcard.hasart .pmain p { text-shadow: 0 0 6px var(--card), 0 0 2px var(--card); }
-/* folded skills: a rolodex of slim cards, one per perk, each overlapping the one above; click to open the full cards */
+/* folded skills: a rolodex of slim cards, one per perk name, each overlapping the one above; click one to open its full cards under it */
 .perkgroup h3 .foldbtn { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: 0; background: none; padding: 2px 0; cursor: pointer;
   font: 600 11.5px var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
 .perkgroup h3 .foldbtn:hover { color: var(--ink); }
 .foldbtn svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform .2s; }
 .perkgroup.open .foldbtn svg { transform: rotate(180deg); }
-.rolodex { display: grid; width: 100%; max-width: 640px; padding: 0 0 4px; border: 0; background: none; cursor: pointer; text-align: left; font: inherit; color: inherit; }
-.rdx { position: relative; z-index: calc(50 - var(--k)); display: flex; align-items: center; gap: 10px; min-width: 0; padding: 7px 10px 7px 0; margin-top: -5px;
+.rolodex { display: grid; width: 100%; padding: 0 0 4px; }
+.rdx { position: relative; z-index: calc(50 - var(--k)); display: flex; align-items: center; gap: 10px; width: 100%; max-width: 640px; min-width: 0; padding: 7px 10px 7px 0; margin-top: -5px;
+  cursor: pointer; text-align: left; font: inherit; color: inherit;
   background: var(--card); border: 1.5px solid color-mix(in srgb, var(--att, var(--hair)) 35%, var(--hair)); border-radius: 3px 3px 0 0; box-shadow: 0 -2px 4px rgb(0 0 0 / .05);
   transition: transform .15s ease-out; }
 .rdx:first-child { margin-top: 0; }
-.rolodex:hover .rdx { transform: translateY(calc(var(--k) * 1.5px)); }
+.rdx:not(.on):hover { transform: translateY(2px); }
+.rdx.on { border-color: var(--att, var(--rule)); box-shadow: none; }
+.rdxcards { margin: 8px 0 14px; }
+.rdxcards + .rdx { margin-top: 0; }
 .rdxlv { flex: none; width: 34px; align-self: stretch; margin: -7px 0; display: grid; place-items: center; color: #fff; font: 700 15px var(--f-display);
   background: var(--att, var(--rule)); border-radius: 2px 0 0 0; }
 /* one card per perk name: the name once, then each level's uses and kind, marked with its level number */
